@@ -1192,6 +1192,14 @@
     width: auto;
     display: block;
     object-fit: contain;
+    flex-shrink: 0;
+  }
+  /* Texto em 2 linhas, altura combinada alinhada ao logo */
+  .nav-logo-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
   }
   @media (max-width: 820px) { .nav-logo-img { height: 30px; } }
   @media (max-width: 480px) { .nav-logo-img { height: 28px; } }
