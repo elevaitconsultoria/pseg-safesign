@@ -231,6 +231,31 @@
     }
     .btn-lg { min-height: 52px; padding: 0 clamp(1.5rem,3.5vw,2.2rem); font-size: clamp(.82rem,1vw + .38rem,.92rem); }
 
+    /* CTA hero principal – máximo contraste */
+    .btn-cta-hero {
+      background: var(--gold); color: var(--navy); border-color: var(--gold);
+      box-shadow: 0 6px 28px rgba(201,161,74,.45), 0 2px 8px rgba(201,161,74,.25);
+      font-weight: 700; letter-spacing: .06em; font-size: clamp(.78rem,.9vw + .32rem,.88rem);
+    }
+    @media (hover:hover) {
+      .btn-cta-hero:hover {
+        background: var(--gold-h); border-color: var(--gold-h);
+        box-shadow: 0 10px 36px rgba(201,161,74,.55), 0 3px 10px rgba(201,161,74,.3);
+        transform: translateY(-1px);
+      }
+    }
+    /* WA secundário no hero – ghost discreto */
+    .btn-ghost-hero {
+      background: transparent; color: rgba(255,255,255,.82);
+      border-color: rgba(255,255,255,.32);
+    }
+    @media (hover:hover) {
+      .btn-ghost-hero:hover {
+        background: rgba(255,255,255,.08); color: var(--white);
+        border-color: rgba(255,255,255,.6);
+      }
+    }
+
     /* Button groups */
     .btn-row { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; }
     .btn-row.center { justify-content: center; }
@@ -251,19 +276,20 @@
       background: rgba(11,31,58,.97);
       backdrop-filter: blur(16px) saturate(160%);
       -webkit-backdrop-filter: blur(16px) saturate(160%);
-      padding: 11px 0;
+      padding: 7px 0;
       box-shadow: 0 2px 20px rgba(0,0,0,.2);
     }
     .nav-i { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-6); }
     .nav-logo { display: flex; flex-direction: column; color: var(--white); flex-shrink: 0; }
     .nav-logo-name {
-      font-family: 'Playfair Display', serif; font-size: clamp(1.2rem,2vw,1.45rem);
-      font-weight: 700; letter-spacing: .03em; line-height: 1;
+      font-family: 'Playfair Display', serif; font-size: clamp(1rem,1.6vw,1.18rem);
+      font-weight: 700; letter-spacing: .02em; line-height: 1;
     }
     .nav-logo-sub {
-      font-size: .56rem; font-weight: 400; letter-spacing: .32em;
-      text-transform: uppercase; color: var(--gold); margin-top: 4px;
+      font-size: .52rem; font-weight: 400; letter-spacing: .28em;
+      text-transform: uppercase; color: var(--gold); margin-top: 3px;
     }
+    @media (max-width: 480px) { .nav-logo-sub { display: none; } }
     .nav-links {
       display: flex; align-items: center; gap: clamp(16px,2.5vw,28px);
       /* Hide on mobile */
@@ -1160,15 +1186,15 @@
   /* ════════════════════════════════════════
      V2 – LOGO IMG
   ════════════════════════════════════════ */
-  .nav-logo { flex-direction: row; align-items: center; gap: 10px; }
+  .nav-logo { flex-direction: row; align-items: center; gap: 8px; }
   .nav-logo-img {
-    height: clamp(38px, 4.5vw, 48px);
+    height: clamp(30px, 3.5vw, 38px);
     width: auto;
     display: block;
     object-fit: contain;
   }
-  @media (max-width: 820px) { .nav-logo-img { height: 36px; } }
-  @media (max-width: 480px) { .nav-logo-img { height: 32px; } }
+  @media (max-width: 820px) { .nav-logo-img { height: 30px; } }
+  @media (max-width: 480px) { .nav-logo-img { height: 28px; } }
 
   /* ════════════════════════════════════════
      V2 – AVALIAÇÕES GOOGLE
@@ -1496,12 +1522,12 @@
           <h1>Advocacia em <em>Direito Civil, Família e Trabalhista</em></h1>
           <p class="hero-sub">Atendimento presencial na Zona Norte de São Paulo e online para todo o Brasil. Orientação jurídica clara, ética e sem burocracia.</p>
           <div class="btn-row">
+            <a href="#" class="btn btn-cta-hero btn-lg" onclick="scrollToId('formulario')" aria-label="Iniciar atendimento prioritário">Iniciar Atendimento Prioritário</a>
             <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
-               class="btn btn-gold btn-lg" target="_blank" rel="noopener" aria-label="Falar com o escritório no WhatsApp">
-              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
-              Falar no WhatsApp
+               class="btn btn-ghost-hero btn-lg" target="_blank" rel="noopener" aria-label="Falar com o escritório no WhatsApp">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+              WhatsApp
             </a>
-            <a href="#" class="btn btn-ghost-gold btn-lg" onclick="scrollToId('formulario')" aria-label="Descrever meu caso e falar no WhatsApp">Descrever meu caso</a>
           </div>
           <div class="hero-sep" aria-hidden="true"></div>
           <div class="hero-creds" aria-label="Credenciais do escritório">
@@ -1779,7 +1805,7 @@
             <span class="overline">Contato rápido</span>
             <h2 id="form-ttl">Fale diretamente com o escritório</h2>
             <div class="gold-rule"></div>
-            <p class="lead">Escolha a área, o tema e descreva brevemente seu caso. Sua mensagem será enviada ao WhatsApp do advogado Marcos Aurélio Mendanha (OAB/SP 368.689).</p>
+            <p class="lead">Escolha a área, o tema e descreva brevemente seu caso. Sua mensagem será enviada ao WhatsApp do escritório MB Mendanha (OAB/SP 368.689).</p>
             <div class="trust-list">
               <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Resposta rápida</strong> — atendimento ágil pelo WhatsApp.</p></div>
               <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Sem compromisso</strong> — a orientação inicial é gratuita.</p></div>
