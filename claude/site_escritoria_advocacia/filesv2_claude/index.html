@@ -28,6 +28,9 @@
   {"@context":"https://schema.org","@type":"LegalService","name":"MB Mendanha Sociedade de Advocacia","description":"Sociedade de advocacia atuante em Direito Civil, de Família e do Trabalho na Zona Norte de São Paulo.","url":"https://www.mbmendanha.adv.br","telephone":"+5511965030211","email":"advocacia.mendanha@gmail.com","founder":{"@type":"Person","name":"Marcos Aurélio Mendanha","jobTitle":"Advogado","identifier":"OAB/SP 368.689"},"address":{"@type":"PostalAddress","streetAddress":"Av. Imirim, 4301 - SALA 03, Vila Nova Cachoeirinha","addressLocality":"São Paulo","addressRegion":"SP","postalCode":"02465-500","addressCountry":"BR"},"areaServed":["Zona Norte de São Paulo","Cachoeirinha","Brasilândia","Taipas","Jaraguá","Vila Souza"],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"18:00"}],"sameAs":["https://www.instagram.com/mbmendanha.advocacia"]}
   </script>
 
+  <!-- Hero image preload – melhora LCP (Largest Contentful Paint) -->
+  <link rel="preload" as="image" href="./assets/hero-bg.jpg" fetchpriority="high"/>
+
   <!-- PERFORMANCE: preconnect only what's needed -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -344,24 +347,36 @@
     ════════════════════════════════════════ */
     #hero {
       min-height: 100svh; /* small viewport height – avoids mobile browser chrome issue */
-      background: var(--navy);
+      background-color: var(--navy-d); /* fallback enquanto a imagem carrega */
+      background-image: url('./assets/hero-bg.jpg');
+      background-size: cover;
+      background-position: center 30%; /* exibe área da mesa/balança – ajuste por imagem */
+      background-repeat: no-repeat;
       display: flex; align-items: center;
       padding: max(90px, 15vh) 0 var(--sp-24);
       position: relative; overflow: hidden;
     }
-    /* Pure CSS atmospheric background – zero JS cost */
+    @media (max-width: 680px) {
+      #hero { background-position: 42% center; }
+    }
+    /* Overlay escuro direcional — preserva legibilidade e mantém identidade institucional */
     .hero-bg {
       position: absolute; inset: 0; pointer-events: none;
       background:
-        radial-gradient(ellipse 70% 90% at 80% 55%, rgba(201,161,74,.065) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 60% at 5% 80%,  rgba(22,48,87,.7)     0%, transparent 55%),
-        linear-gradient(148deg, #0B1F3A 0%, #112040 45%, #0B1F3A 100%);
+        linear-gradient(
+          108deg,
+          rgba(7,20,38,.96)  0%,
+          rgba(11,31,58,.90) 38%,
+          rgba(11,31,58,.72) 65%,
+          rgba(11,31,58,.82) 100%
+        ),
+        radial-gradient(ellipse 50% 70% at 82% 52%, rgba(201,161,74,.055) 0%, transparent 58%);
     }
-    /* Thin decorative rings – CSS only, no extra DOM weight */
+    /* Thin decorative rings – reduzidos para não competir com a foto */
     .hero-rings {
       position: absolute; right: -8vw; top: 50%; transform: translateY(-50%);
       width: clamp(280px,45vw,520px); height: clamp(280px,45vw,520px);
-      pointer-events: none; opacity: .55;
+      pointer-events: none; opacity: .28;
     }
     .hero-rings circle { fill: none; }
 
