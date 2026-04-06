@@ -1132,6 +1132,108 @@
       opacity: .55; cursor: not-allowed;
     }
     #wa-sub-hint.wa-flow-hint { margin: -8px 0 12px; }
+
+  /* ════════════════════════════════════════
+     V2 – LOGO MARK
+  ════════════════════════════════════════ */
+  .nav-logo { flex-direction: row; align-items: center; gap: 10px; }
+  .nav-logo-mark {
+    width: 36px; height: 36px; min-width: 36px;
+    background: rgba(201,161,74,.12);
+    border: 1px solid rgba(201,161,74,.32);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .nav-logo-text { display: flex; flex-direction: column; }
+
+  /* ════════════════════════════════════════
+     V2 – IMAGEM INSTITUCIONAL
+  ════════════════════════════════════════ */
+  .inst-img-box {
+    position: relative;
+    border-radius: var(--radius-l);
+    overflow: hidden;
+    min-height: 380px;
+    /* Photo-ready: swap for background-image url('foto-escritorio.jpg')
+       background-size: cover; background-position: center center; */
+    background: linear-gradient(148deg, var(--navy-d) 0%, #1a3870 50%, var(--navy) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .inst-img-pattern {
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: .06;
+  }
+  .inst-img-pattern svg { width: 220px; height: 220px; }
+  .inst-img-badge {
+    position: absolute; top: clamp(1rem,2.5vw,1.5rem); right: clamp(1rem,2.5vw,1.5rem);
+    background: var(--gold); border-radius: var(--radius-m);
+    padding: clamp(.75rem,1.5vw,1rem) clamp(1rem,2vw,1.25rem);
+    box-shadow: var(--shadow-gold); z-index: 3; text-align: center;
+  }
+  .inst-img-badge-n {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem,2.5vw,2rem); font-weight: 700; color: var(--navy); line-height: 1;
+  }
+  .inst-img-badge-l { font-size: .63rem; font-weight: 700; color: var(--navy-l); letter-spacing: .06em; margin-top: 3px; }
+  .inst-img-quote {
+    position: relative; z-index: 2;
+    padding: clamp(1.5rem,3.5vw,2rem);
+    background: linear-gradient(0deg, rgba(7,20,38,.97) 0%, rgba(7,20,38,.55) 100%);
+  }
+  .inst-img-quote blockquote {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem,1.5vw,1.15rem);
+    font-style: italic; color: rgba(255,255,255,.9);
+    line-height: 1.6; margin-bottom: var(--sp-4);
+  }
+  .inst-img-quote cite {
+    font-style: normal;
+    font-size: .67rem; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--gold);
+  }
+
+  /* ════════════════════════════════════════
+     V2 – MAPA EMBED
+  ════════════════════════════════════════ */
+  .map-embed-wrap {
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-s);
+    margin-bottom: var(--sp-4);
+  }
+  .map-embed-wrap iframe { display: block; width: 100%; height: 300px; border: 0; }
+  .map-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+  /* ════════════════════════════════════════
+     V2 – EQUIPE (skeleton pronto p/ crescer)
+  ════════════════════════════════════════ */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: clamp(1rem,2.5vw,1.5rem);
+    margin-top: clamp(1.5rem,3vw,2.5rem);
+  }
+  .team-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--radius-m); padding: clamp(1.25rem,2.5vw,1.75rem);
+    text-align: center;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  @media (hover:hover) { .team-card:hover { border-color: var(--gold-border); box-shadow: var(--shadow-s); } }
+  .team-av {
+    width: 80px; height: 80px; margin: 0 auto clamp(.75rem,2vw,1rem);
+    background: rgba(201,161,74,.1); border: 2px solid var(--gold-border);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--gold);
+    overflow: hidden;
+  }
+  .team-av img { width: 100%; height: 100%; object-fit: cover; }
+  .team-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--navy); margin-bottom: 4px; }
+  .team-role { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: clamp(.5rem,1.5vw,.75rem); }
+  .team-bio { font-size: .86rem; line-height: 1.72; color: var(--muted); }
 </style>
 
 <!-- ══════════════════════════════════
@@ -1162,8 +1264,15 @@
   <div class="wrap">
     <div class="nav-i">
       <a href="#" class="nav-logo" onclick="goto('home')" aria-label="MB Mendanha Sociedade de Advocacia – página inicial">
-        <span class="nav-logo-name">MB Mendanha</span>
-        <span class="nav-logo-sub">Sociedade de Advocacia</span>
+        <div class="nav-logo-mark" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16" stroke="#C9A14A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="nav-logo-text">
+          <span class="nav-logo-name">MB Mendanha</span>
+          <span class="nav-logo-sub">Sociedade de Advocacia</span>
+        </div>
       </a>
       <ul class="nav-links" role="list">
         <li><a href="#" onclick="goto('home')">Home</a></li>
@@ -1222,8 +1331,8 @@
             <div class="hero-eyebrow-line" aria-hidden="true"></div>
             <span>MB Mendanha Sociedade de Advocacia – São Paulo</span>
           </div>
-          <h1>Advocacia em <em>Civil, Família e Trabalho</em> na Zona Norte de SP</h1>
-          <p class="hero-sub">Orientação jurídica séria e acessível em Direito Civil, de Família e do Trabalho. Atendimento na Vila Nova Cachoeirinha, Zona Norte de São Paulo, e online em todo o Brasil.</p>
+          <h1>Advocacia em <em>Direito Civil, Família e Trabalhista</em></h1>
+          <p class="hero-sub">Atendimento presencial na Zona Norte de São Paulo e online para todo o Brasil. Orientação jurídica clara, ética e sem burocracia.</p>
           <div class="btn-row">
             <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
                class="btn btn-gold btn-lg" target="_blank" rel="noopener" aria-label="Falar com o escritório no WhatsApp">
@@ -1280,16 +1389,23 @@
               <a href="#" class="btn btn-ghost-navy" onclick="goto('sobre')">Conheça o escritório</a>
             </div>
           </div>
-          <div class="reveal d1" style="position:relative;padding-bottom:1.5rem">
-            <div class="sobre-card">
-              <div class="sobre-card-line" aria-hidden="true"></div>
-              <blockquote>"Cada pessoa merece atenção individualizada, informações claras e defesa técnica qualificada."</blockquote>
-              <p class="sobre-card-sig">Marcos Aurélio Mendanha — OAB/SP 368.689</p>
-            </div>
-            <div class="sobre-badge">
-              <div class="sobre-badge-n">+10</div>
-              <div class="sobre-badge-l">Anos de experiência</div>
-            </div>
+          <div class="reveal d1">
+            <figure class="inst-img-box" aria-label="Escritório MB Mendanha Sociedade de Advocacia">
+              <!-- Padrão decorativo: substitua o background do .inst-img-box por uma foto real do escritório quando disponível -->
+              <div class="inst-img-pattern" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16" stroke="white" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="inst-img-badge" aria-hidden="true">
+                <div class="inst-img-badge-n">+10</div>
+                <div class="inst-img-badge-l">Anos de<br/>experiência</div>
+              </div>
+              <figcaption class="inst-img-quote">
+                <blockquote>"Cada pessoa merece atenção individualizada, informações claras e defesa técnica qualificada."</blockquote>
+                <cite>Marcos Aurélio Mendanha — OAB/SP 368.689</cite>
+              </figcaption>
+            </figure>
           </div>
         </div>
       </div>
@@ -1389,6 +1505,18 @@
             <p style="margin-top:1.25rem">Também realizamos <strong>atendimento online</strong> para clientes em qualquer região do Brasil — por videoconferência ou WhatsApp.</p>
           </div>
           <div class="reveal d1">
+            <div class="map-embed-wrap">
+              <iframe
+                src="https://maps.google.com/maps?q=Av.+Imirim,+4301,+Vila+Nova+Cachoeirinha,+S%C3%A3o+Paulo,+SP&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Localização do escritório MB Mendanha – Av. Imirim 4301, Vila Nova Cachoeirinha"
+                aria-label="Mapa do escritório MB Mendanha na Av. Imirim 4301"
+              ></iframe>
+            </div>
+            <div class="map-actions" style="margin-bottom:clamp(1rem,2.5vw,1.5rem)">
+              <a href="https://www.google.com/maps/search/?api=1&query=Av.+Imirim+4301+Sala+03+Vila+Nova+Cachoeirinha+S%C3%A3o+Paulo+SP" target="_blank" rel="noopener" class="btn btn-navy">Abrir no Google Maps</a>
+            </div>
             <div class="info-card" itemscope itemtype="https://schema.org/PostalAddress">
               <h3>Contato direto</h3>
               <div class="info-row">
@@ -1434,8 +1562,8 @@
               <div class="wa-panel-header">
                 <div class="wa-panel-icon" aria-hidden="true"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg></div>
                 <div>
-                  <div class="wa-panel-title">Iniciar conversa no WhatsApp</div>
-                  <div class="wa-panel-sub">Área, tema e descrição do caso</div>
+                  <div class="wa-panel-title">Fale com o advogado agora</div>
+                  <div class="wa-panel-sub">Selecione o tema e descreva sua situação</div>
                 </div>
               </div>
 
@@ -1458,12 +1586,12 @@
               <p class="wa-flow-hint" id="wa-sub-hint">Selecione um subtema na lista.</p>
 
               <label for="wa-desc-input" style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-l);display:block;margin-bottom:8px">
-                3. Descreva brevemente seu caso
+                3. Contexto do caso <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span>
               </label>
               <textarea
                 id="wa-desc-input"
                 class="wa-desc"
-                placeholder="Ex.: contexto do caso, datas relevantes ou dúvidas principais…"
+                placeholder="Ex.: fui demitido ontem e não recebi as verbas rescisórias. Trabalho há 3 anos na empresa."
                 aria-label="Breve descrição do caso"
                 maxlength="500"
               ></textarea>
@@ -1471,7 +1599,7 @@
               <!-- Send -->
               <button type="button" class="wa-send-btn" onclick="sendToWA()" aria-label="Abrir WhatsApp com sua mensagem">
               <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
-                Enviar para o WhatsApp agora
+                Iniciar conversa no WhatsApp
               </button>
               <p class="wa-privacy">🔒 Seus dados são sigilosos e protegidos.</p>
             </div>
@@ -1576,16 +1704,22 @@
     </section>
     <section class="section" style="background:var(--surface)">
       <div class="wrap">
-        <span class="overline">O advogado responsável</span>
-        <h2>Marcos Aurélio Mendanha</h2>
+        <span class="overline">Quem nos representa</span>
+        <h2>Nosso fundador</h2>
         <div class="gold-rule"></div>
         <div class="adv-card" itemscope itemtype="https://schema.org/Person">
+          <!-- Substitua o elemento abaixo por <img src="foto-marcos.jpg" alt="Marcos Aurélio Mendanha" class="adv-av" style="object-fit:cover"> quando a foto estiver disponível -->
           <div class="adv-av" role="img" aria-label="Iniciais: MA">MA</div>
           <div>
             <h3 class="adv-name" itemprop="name">Marcos Aurélio Mendanha</h3>
-            <p class="adv-oab" itemprop="identifier">OAB/SP 368.689 — Advogado</p>
-            <p class="adv-bio" itemprop="description">Advogado com experiência em Direito Civil, de Família e do Trabalho, com atuação relevante na Zona Norte de São Paulo. Atua em contratos e responsabilidade civil, questões familiares (divórcio, pensão, guarda) e em demandas trabalhistas como demissões, verbas, jornada, assédio, vínculo, FGTS e acidentes. Graduado em Direito, inscrito na OAB/SP.</p>
+            <p class="adv-oab" itemprop="identifier">OAB/SP 368.689 — Advogado e Fundador</p>
+            <p class="adv-bio" itemprop="description">Fundador da MB Mendanha Sociedade de Advocacia, o Dr. Marcos Aurélio Mendanha atua nas áreas de Direito Civil, de Família e do Trabalho, com mais de 10 anos de experiência e presença consolidada na Zona Norte de São Paulo. Conduz cada caso com ética, transparência e atenção individualizada — explicando os caminhos possíveis sem juridiquês e sem promessas vazias. Atende presencialmente em Vila Nova Cachoeirinha e online para clientes de todo o Brasil.</p>
           </div>
+        </div>
+        <!-- Equipe – estrutura pronta para crescer -->
+        <div style="margin-top:clamp(1.5rem,3vw,2.5rem);padding-top:clamp(1.5rem,3vw,2.5rem);border-top:1px solid var(--line)">
+          <span class="overline">A equipe</span>
+          <p style="margin-top:var(--sp-3);font-size:.9rem;color:var(--muted);max-width:52ch">O escritório está estruturado para crescer. Novos profissionais integrarão a equipe para ampliar o alcance e a qualidade do atendimento.</p>
         </div>
       </div>
     </section>
@@ -1735,11 +1869,21 @@
             </div>
           </div>
           <div>
-            <div class="map-card">
-              <div class="map-pin" aria-hidden="true">📍</div>
-              <h4>MB Mendanha Sociedade de Advocacia</h4>
-              <p>Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP · CEP 02465-500</p>
-              <a href="https://www.google.com/maps/search/?api=1&amp;query=Av.+Imirim+4301+Sala+03+Vila+Nova+Cachoeirinha+S%C3%A3o+Paulo+SP+02465-500" target="_blank" rel="noopener" class="btn btn-navy">Ver no Google Maps</a>
+            <div class="map-card" style="padding:0;overflow:hidden">
+              <iframe
+                src="https://maps.google.com/maps?q=Av.+Imirim,+4301,+Vila+Nova+Cachoeirinha,+S%C3%A3o+Paulo,+SP&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Localização MB Mendanha – Av. Imirim 4301, Vila Nova Cachoeirinha, SP"
+                aria-label="Mapa do escritório MB Mendanha"
+                style="display:block;width:100%;height:260px;border:0"
+              ></iframe>
+              <div style="padding:clamp(1.25rem,3vw,1.75rem);text-align:center">
+                <p style="font-size:.88rem;margin-bottom:var(--sp-4);color:var(--muted)">
+                  Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha · São Paulo – SP<br/>CEP 02465-500
+                </p>
+                <a href="https://www.google.com/maps/search/?api=1&query=Av.+Imirim+4301+Sala+03+Vila+Nova+Cachoeirinha+S%C3%A3o+Paulo+SP+02465-500" target="_blank" rel="noopener" class="btn btn-navy">Abrir no Google Maps</a>
+              </div>
             </div>
             <div class="online-box">
               <h4>Atendimento Online Disponível</h4>
@@ -1760,9 +1904,16 @@
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-brand">
-        <div class="nav-logo">
-          <span class="nav-logo-name">MB Mendanha</span>
-          <span class="nav-logo-sub">Sociedade de Advocacia</span>
+        <div class="nav-logo" style="margin-bottom:clamp(.75rem,2vw,1rem)">
+          <div class="nav-logo-mark" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16" stroke="#C9A14A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="nav-logo-text">
+            <span class="nav-logo-name">MB Mendanha</span>
+            <span class="nav-logo-sub">Sociedade de Advocacia</span>
+          </div>
         </div>
         <p>Direito Civil, de Família e do Trabalho na Zona Norte de São Paulo. Atendimento presencial e online.</p>
         <div style="margin-top:1rem">
@@ -2020,10 +2171,9 @@ function sendToWA() {
   const descText = descEl ? descEl.value.trim() : '';
   const areaLabel = WA_AREA_LABEL[selectedAreaKey] || selectedAreaKey;
 
-  let msg = 'Olá, acessei o site da MB Mendanha Sociedade de Advocacia.';
-  msg += ' Área: ' + areaLabel + '.';
+  let msg = 'Olá! Vim pelo site da MB Mendanha e gostaria de falar sobre um caso de ' + areaLabel + '.';
   msg += ' Tema: ' + sub + '.';
-  if (descText) msg += ' Descrição: ' + descText;
+  if (descText) msg += ' Contexto: ' + descText;
 
   const url = 'https://wa.me/5511965030211?text=' + encodeURIComponent(msg);
   const a = document.createElement('a');
