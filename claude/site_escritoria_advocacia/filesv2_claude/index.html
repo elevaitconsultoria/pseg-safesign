@@ -1149,9 +1149,18 @@
     #wa-sub-hint.wa-flow-hint { margin: -8px 0 12px; }
 
   /* ════════════════════════════════════════
+     V2 – PROFESSIONAL SVG ICONS
+  ════════════════════════════════════════ */
+  .ico {
+    display: block; flex-shrink: 0;
+    stroke: currentColor; stroke-width: 1.5; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* ════════════════════════════════════════
      V2 – LOGO IMG
   ════════════════════════════════════════ */
-  .nav-logo { flex-direction: row; align-items: center; }
+  .nav-logo { flex-direction: row; align-items: center; gap: 10px; }
   .nav-logo-img {
     height: clamp(38px, 4.5vw, 48px);
     width: auto;
@@ -1223,10 +1232,19 @@
     border-radius: var(--radius-l);
     overflow: hidden;
     min-height: 380px;
-    /* Photo-ready: swap for background-image url('foto-escritorio.jpg')
-       background-size: cover; background-position: center center; */
-    background: linear-gradient(148deg, var(--navy-d) 0%, #1a3870 50%, var(--navy) 100%);
     display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .inst-img-box::before {
+    content: ''; position: absolute; inset: -12px;
+    background-image: url('./assets/hero-bg.jpg');
+    background-size: cover; background-position: center 20%;
+    filter: blur(5px) brightness(.82) saturate(1.15);
+    z-index: 0;
+  }
+  .inst-img-box::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(11,31,58,.12) 0%, rgba(7,20,38,.9) 100%);
+    z-index: 1;
   }
   .inst-img-pattern {
     position: absolute; inset: 0; pointer-events: none;
@@ -1317,10 +1335,85 @@
 </script>
 </head>
 <body>
-<!-- Sprite: ícone WhatsApp (uma definição, várias instâncias via <use>) -->
+<!-- Sprite: ícones (uma definição, várias instâncias via <use>) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
   <symbol id="icon-wa" viewBox="0 0 24 24">
     <path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+  </symbol>
+  <!-- Balança da justiça -->
+  <symbol id="icon-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16"/>
+  </symbol>
+  <!-- Localização -->
+  <symbol id="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+  </symbol>
+  <!-- Telefone -->
+  <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+  </symbol>
+  <!-- E-mail -->
+  <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+  </symbol>
+  <!-- Instagram -->
+  <symbol id="icon-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/>
+  </symbol>
+  <!-- Documento -->
+  <symbol id="icon-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+  </symbol>
+  <!-- Família / Pessoas -->
+  <symbol id="icon-family" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+  </symbol>
+  <!-- Escudo -->
+  <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+  </symbol>
+  <!-- Coração / Acolhimento -->
+  <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+  </symbol>
+  <!-- Diálogo / Balão -->
+  <symbol id="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+  </symbol>
+  <!-- Livro / Técnica -->
+  <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+  </symbol>
+  <!-- Relógio -->
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </symbol>
+  <!-- Timer / Prazo -->
+  <symbol id="icon-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6v6l4 2m-4-14v2M8 2.698l1 1.732M16 2.698l-1 1.732M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </symbol>
+  <!-- Saúde / Acidente -->
+  <symbol id="icon-health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/>
+  </symbol>
+  <!-- Aperto de mão / Ética -->
+  <symbol id="icon-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+  </symbol>
+  <!-- Globo -->
+  <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3.284 14.253A8.959 8.959 0 013 12c0-1.268.26-2.476.726-3.577"/>
+  </symbol>
+  <!-- Alerta -->
+  <symbol id="icon-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+  </symbol>
+  <!-- Cobrança / Cartão -->
+  <symbol id="icon-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
   </symbol>
 </svg>
 
@@ -1338,6 +1431,10 @@
              width="48" height="48"
              loading="eager"
              decoding="async"/>
+        <div class="nav-logo-text">
+          <span class="nav-logo-name">MB Mendanha</span>
+          <span class="nav-logo-sub">Sociedade de Advocacia</span>
+        </div>
       </a>
       <ul class="nav-links" role="list">
         <li><a href="#" onclick="goto('home')">Home</a></li>
@@ -1409,15 +1506,15 @@
           <div class="hero-sep" aria-hidden="true"></div>
           <div class="hero-creds" aria-label="Credenciais do escritório">
             <div class="hero-cred">
-              <div class="hero-cred-ico" aria-hidden="true">⚖️</div>
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-scale"/></svg></div>
               <div class="hero-cred-text"><strong>Marcos Aurélio Mendanha</strong>OAB/SP 368.689</div>
             </div>
             <div class="hero-cred">
-              <div class="hero-cred-ico" aria-hidden="true">📍</div>
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-pin"/></svg></div>
               <div class="hero-cred-text"><strong>Vila Nova Cachoeirinha</strong>São Paulo – SP</div>
             </div>
             <div class="hero-cred">
-              <div class="hero-cred-ico" aria-hidden="true">📱</div>
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-phone"/></svg></div>
               <div class="hero-cred-text"><strong>(11) 96503-0211</strong>WhatsApp disponível</div>
             </div>
           </div>
@@ -1568,7 +1665,7 @@
         </div>
         <div class="areas-grid">
           <article class="area-card reveal">
-            <div class="area-ico" aria-hidden="true">📋</div>
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-doc"/></svg></div>
             <h3>Direito Civil</h3>
             <p>Contratos, indenizações, cobranças e conflitos patrimoniais. Orientação objetiva para proteger seus interesses.</p>
             <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20Civil." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito Civil no WhatsApp">
@@ -1576,7 +1673,7 @@
             </a>
           </article>
           <article class="area-card reveal d1">
-            <div class="area-ico" aria-hidden="true">👨‍👩‍👧</div>
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-family"/></svg></div>
             <h3>Direito de Família</h3>
             <p>Divórcio, pensão alimentícia, guarda e convivência. Atendimento respeitoso e estratégico.</p>
             <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20de%20Fam%C3%ADlia." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito de Família no WhatsApp">
@@ -1584,7 +1681,7 @@
             </a>
           </article>
           <article class="area-card reveal d2">
-            <div class="area-ico" aria-hidden="true">⚖️</div>
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-scale"/></svg></div>
             <h3>Direito do Trabalho</h3>
             <p>Demissões, jornada, FGTS, assédio, vínculo e acidentes. Defesa dos direitos do trabalhador.</p>
             <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20do%20Trabalho." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito do Trabalho no WhatsApp">
@@ -1633,7 +1730,7 @@
               <span class="tag" role="listitem">Vila Souza</span>
               <span class="tag" role="listitem">Zona Norte</span>
               <span class="tag" role="listitem">Grande São Paulo</span>
-              <span class="tag" role="listitem">Todo o Brasil 🌐</span>
+              <span class="tag" role="listitem">Todo o Brasil</span>
             </div>
             <p style="margin-top:1.25rem">Além do atendimento presencial, realizamos consultas por <strong>videoconferência e WhatsApp</strong> — sem deslocamento, sem burocracia.</p>
           </div>
@@ -1653,19 +1750,19 @@
             <div class="info-card" itemscope itemtype="https://schema.org/PostalAddress">
               <h3>Contato direto</h3>
               <div class="info-row">
-                <div class="info-ico" aria-hidden="true">📱</div>
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-phone"/></svg></div>
                 <div><div class="info-lbl">WhatsApp</div><div class="info-val"><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener">(11) 96503-0211</a></div></div>
               </div>
               <div class="info-row">
-                <div class="info-ico" aria-hidden="true">✉️</div>
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-mail"/></svg></div>
                 <div><div class="info-lbl">E-mail</div><div class="info-val"><a href="mailto:advocacia.mendanha@gmail.com">advocacia.mendanha@gmail.com</a></div></div>
               </div>
               <div class="info-row">
-                <div class="info-ico" aria-hidden="true">📍</div>
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-pin"/></svg></div>
                 <div><div class="info-lbl">Endereço</div><div class="info-val" itemprop="streetAddress">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</div></div>
               </div>
               <div class="info-row" style="margin-bottom:0">
-                <div class="info-ico" aria-hidden="true">📸</div>
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-instagram"/></svg></div>
                 <div><div class="info-lbl">Instagram</div><div class="info-val"><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></div></div>
               </div>
             </div>
@@ -1785,7 +1882,7 @@
             </div>
           </div>
           <div class="faq-note">
-            <p><strong>⚠️ Aviso:</strong> As respostas têm caráter informativo. Cada caso exige análise jurídica individualizada.
+            <p><strong><svg class="ico" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px"><use href="#icon-warn"/></svg> Aviso:</strong> As respostas têm caráter informativo. Cada caso exige análise jurídica individualizada.
             <a href="#" onclick="goto('faq')">Ver todas as perguntas →</a></p>
           </div>
         </div>
@@ -1862,10 +1959,10 @@
         <h2>O que nos orienta</h2>
         <div class="gold-rule"></div>
         <div class="values-grid">
-          <div class="value-card"><div class="value-ico">🤝</div><h4>Ética</h4><p>Integridade em todas as etapas, respeitando a confiança de cada cliente e os princípios da profissão.</p></div>
-          <div class="value-card"><div class="value-ico">💬</div><h4>Transparência</h4><p>Comunicamos riscos e expectativas com honestidade, sem promessas vagas ou linguagem confusa.</p></div>
-          <div class="value-card"><div class="value-ico">❤️</div><h4>Acolhimento</h4><p>Ouvimos com empatia e tratamos cada situação com atenção e respeito que ela merece.</p></div>
-          <div class="value-card"><div class="value-ico">📚</div><h4>Técnica</h4><p>Atualização constante para argumentação sólida e estratégias jurídicas bem fundamentadas.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-handshake"/></svg></div><h4>Ética</h4><p>Integridade em todas as etapas, respeitando a confiança de cada cliente e os princípios da profissão.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-chat"/></svg></div><h4>Transparência</h4><p>Comunicamos riscos e expectativas com honestidade, sem promessas vagas ou linguagem confusa.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-heart"/></svg></div><h4>Acolhimento</h4><p>Ouvimos com empatia e tratamos cada situação com atenção e respeito que ela merece.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-book"/></svg></div><h4>Técnica</h4><p>Atualização constante para argumentação sólida e estratégias jurídicas bem fundamentadas.</p></div>
         </div>
       </div>
     </section>
@@ -1897,17 +1994,17 @@
     <section class="section" style="background:var(--surface)">
       <div class="wrap">
         <h2 class="area-practice-h2">Direito Civil</h2>
-        <article class="area-full"><h3><span aria-hidden="true">📋</span> Contratos e obrigações</h3><p>Análise e revisão de contratos, inadimplemento e medidas para proteção patrimonial.</p><ul><li>Contratos civis e comerciais</li><li>Rescisão e negociação</li><li>Indenização por danos</li></ul></article>
-        <article class="area-full"><h3><span aria-hidden="true">💳</span> Cobrança e responsabilidade civil</h3><p>Atuação em cobranças, acordos e execuções, sempre com transparência de custos e prazos.</p><ul><li>Cobrança extrajudicial e judicial</li><li>Execuções e acordos</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-doc"/></svg></span>Contratos e obrigações</h3><p>Análise e revisão de contratos, inadimplemento e medidas para proteção patrimonial.</p><ul><li>Contratos civis e comerciais</li><li>Rescisão e negociação</li><li>Indenização por danos</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-card"/></svg></span>Cobrança e responsabilidade civil</h3><p>Atuação em cobranças, acordos e execuções, sempre com transparência de custos e prazos.</p><ul><li>Cobrança extrajudicial e judicial</li><li>Execuções e acordos</li></ul></article>
 
         <h2 class="area-practice-h2">Direito de Família</h2>
-        <article class="area-full"><h3><span aria-hidden="true">👨‍👩‍👧</span> Família e convivência</h3><p>Orientação em divórcio, pensão alimentícia, guarda e convivência, com abordagem respeitosa.</p><ul><li>Divórcio e separação</li><li>Pensão e guarda</li><li>Mediação de conflitos familiares</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-family"/></svg></span>Família e convivência</h3><p>Orientação em divórcio, pensão alimentícia, guarda e convivência, com abordagem respeitosa.</p><ul><li>Divórcio e separação</li><li>Pensão e guarda</li><li>Mediação de conflitos familiares</li></ul></article>
 
         <h2 class="area-practice-h2">Direito do Trabalho</h2>
-        <article class="area-full"><h3><span aria-hidden="true">📋</span> Demissão e verbas rescisórias</h3><p>Revisão de rescisões, verbas, FGTS, férias e 13º para trabalhadores na Zona Norte e em todo o Brasil.</p><ul><li>Demissão sem justa causa e rescisão indireta</li><li>Revisão de cálculos e TRCT</li></ul></article>
-        <article class="area-full"><h3><span aria-hidden="true">⏱️</span> Jornada e direitos trabalhistas</h3><p>Horas extras, adicional noturno, banco de horas e intervalos.</p><ul><li>Horas extras não pagas</li><li>Sobreaviso e adicional noturno</li></ul></article>
-        <article class="area-full"><h3><span aria-hidden="true">🛡️</span> Assédio e vínculo empregatício</h3><p>Assédio moral e sexual; reconhecimento de vínculo sem registro em carteira.</p></article>
-        <article class="area-full"><h3><span aria-hidden="true">🏥</span> Acidente e estabilidade</h3><p>Acidente de trabalho, benefícios, estabilidade e reintegração quando cabível.</p></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-doc"/></svg></span>Demissão e verbas rescisórias</h3><p>Revisão de rescisões, verbas, FGTS, férias e 13º para trabalhadores na Zona Norte e em todo o Brasil.</p><ul><li>Demissão sem justa causa e rescisão indireta</li><li>Revisão de cálculos e TRCT</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-timer"/></svg></span>Jornada e direitos trabalhistas</h3><p>Horas extras, adicional noturno, banco de horas e intervalos.</p><ul><li>Horas extras não pagas</li><li>Sobreaviso e adicional noturno</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-shield"/></svg></span>Assédio e vínculo empregatício</h3><p>Assédio moral e sexual; reconhecimento de vínculo sem registro em carteira.</p></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-health"/></svg></span>Acidente e estabilidade</h3><p>Acidente de trabalho, benefícios, estabilidade e reintegração quando cabível.</p></article>
       </div>
     </section>
     <section class="section-s text-c" style="background:var(--navy)">
@@ -1938,7 +2035,7 @@
     <section class="section" style="background:var(--white)">
       <div class="wrap-s">
         <div style="background:var(--gold-pale);border-left:3px solid var(--gold);border-radius:var(--radius-s);padding:1rem 1.25rem;margin-bottom:2.5rem">
-          <p style="color:var(--navy);font-size:.86rem"><strong>⚠️ Aviso importante:</strong> As respostas têm caráter informativo. Cada caso possui particularidades e exige análise jurídica individual. Para orientação sobre sua situação, entre em contato com a MB Mendanha Sociedade de Advocacia.</p>
+          <p style="color:var(--navy);font-size:.86rem"><strong><svg class="ico" width="15" height="15" style="display:inline;vertical-align:middle;margin-right:4px"><use href="#icon-warn"/></svg> Aviso importante:</strong> As respostas têm caráter informativo. Cada caso possui particularidades e exige análise jurídica individual. Para orientação sobre sua situação, entre em contato com a MB Mendanha Sociedade de Advocacia.</p>
         </div>
         <div class="faq-full" itemscope itemtype="https://schema.org/FAQPage">
           <div class="faq-cols">
@@ -1993,12 +2090,12 @@
             <div class="gold-rule"></div>
             <p class="lead">Atendemos presencialmente na Zona Norte de São Paulo e online para clientes de todo o Brasil.</p>
             <div class="contato-items" itemscope itemtype="https://schema.org/LegalService">
-              <div class="ci"><div class="ci-ico" aria-hidden="true">📱</div><div><div class="ci-lbl">WhatsApp</div><div class="ci-val"><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener" itemprop="telephone">(11) 96503-0211</a></div></div></div>
-              <div class="ci"><div class="ci-ico" aria-hidden="true">✉️</div><div><div class="ci-lbl">E-mail</div><div class="ci-val"><a href="mailto:advocacia.mendanha@gmail.com" itemprop="email">advocacia.mendanha@gmail.com</a></div></div></div>
-              <div class="ci"><div class="ci-ico" aria-hidden="true">📍</div><div><div class="ci-lbl">Endereço</div><div class="ci-val" itemprop="address">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</div></div></div>
-              <div class="ci"><div class="ci-ico" aria-hidden="true">📸</div><div><div class="ci-lbl">Instagram</div><div class="ci-val"><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></div></div></div>
-              <div class="ci"><div class="ci-ico" aria-hidden="true">⚖️</div><div><div class="ci-lbl">Registro OAB</div><div class="ci-val">Marcos Aurélio Mendanha<br/>OAB/SP 368.689</div></div></div>
-              <div class="ci"><div class="ci-ico" aria-hidden="true">🕐</div><div><div class="ci-lbl">Horário</div><div class="ci-val">Seg a sex: 9h às 18h<br/>Sábados: mediante agendamento</div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-phone"/></svg></div><div><div class="ci-lbl">WhatsApp</div><div class="ci-val"><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener" itemprop="telephone">(11) 96503-0211</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-mail"/></svg></div><div><div class="ci-lbl">E-mail</div><div class="ci-val"><a href="mailto:advocacia.mendanha@gmail.com" itemprop="email">advocacia.mendanha@gmail.com</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-pin"/></svg></div><div><div class="ci-lbl">Endereço</div><div class="ci-val" itemprop="address">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-instagram"/></svg></div><div><div class="ci-lbl">Instagram</div><div class="ci-val"><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-scale"/></svg></div><div><div class="ci-lbl">Registro OAB</div><div class="ci-val">Marcos Aurélio Mendanha<br/>OAB/SP 368.689</div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-clock"/></svg></div><div><div class="ci-lbl">Horário</div><div class="ci-val">Seg a sex: 9h às 18h<br/>Sábados: mediante agendamento</div></div></div>
             </div>
           </div>
           <div>
