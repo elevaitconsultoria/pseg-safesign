@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>PSEG — Admin · Questionário & Análise</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -4592,8 +4593,8 @@ async function gerarLaudoPDF() {
 
 // CONFIGURAÇÃO — substitua pelos valores do seu projeto Supabase
 // NUNCA use a service_role key aqui. Apenas a chave anon.
-const SUPA_URL  = typeof __SUPA_URL__  !== 'undefined' ? __SUPA_URL__  : 'https://SEU_PROJETO.supabase.co';
-const SUPA_ANON = typeof __SUPA_ANON__ !== 'undefined' ? __SUPA_ANON__ : 'SUA_CHAVE_ANON_AQUI';
+const SUPA_URL  = typeof __SUPA_URL__  !== 'undefined' ? __SUPA_URL__  : 'https://vftyiildukrpgmnbcnao.supabase.co';
+const SUPA_ANON = typeof __SUPA_ANON__ !== 'undefined' ? __SUPA_ANON__ : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdHlpaWxkdWtycGdtbmJjbmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQ3MTAsImV4cCI6MjA4OTg4MDcxMH0.2t_HSq52rHbNq-IgwyiTSo2lnxJj2KqW8UcDoL9zZ_A';
 
 let sbAdmin = null;
 let currentUser = null;
