@@ -1471,11 +1471,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost" onclick="abrirModalEmpresa()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Nova empresa
       </button>
       <button class="btn btn-g" onclick="abrirModalLink()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo link
       </button>
     </div>
@@ -2291,9 +2291,11 @@ function abrirModalEmpresa() {
   document.getElementById('ne-cnpj').value = '';
   document.getElementById('ne-contato').value = '';
   document.getElementById('ne-erro').style.display = 'none';
-  document.getElementById('ne-btn').disabled = false;
-  document.getElementById('ne-btn').textContent = 'Cadastrar empresa';
+  const btn = document.getElementById('ne-btn');
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar empresa`;
   document.getElementById('modal-empresa').classList.add('open');
+  setTimeout(() => document.getElementById('ne-nome').focus(), 50);
 }
 
 function fecharModalEmpresa() {
@@ -2333,7 +2335,7 @@ async function salvarNovaEmpresa() {
   }
 
   btn.disabled = true;
-  btn.textContent = 'Salvando...';
+  btn.innerHTML = 'Salvando...';
   try {
     const { data, error } = await sbAdmin
       .from('empresas')
@@ -2350,7 +2352,7 @@ async function salvarNovaEmpresa() {
     erroEl.textContent = 'Erro ao salvar: ' + e.message;
     erroEl.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = 'Cadastrar empresa';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar empresa`;
   }
 }
 
@@ -4623,20 +4625,12 @@ async function checkSession() {
     return;
   }
 
+  // Painel administrativo restrito: sempre exibir login primeiro.
+  // Encerrar qualquer sessão anterior para forçar nova autenticação.
+  showLogin();
   try {
-    const { data: { session } } = await sbAdmin.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-      showApp();
-    } else {
-      showLogin();
-    }
-  } catch(e) {
-    // Fallback para modo demo se Supabase não responder
-    isDemoMode = true;
-    currentUser = { email: 'demo@pseg.com.br' };
-    showApp();
-  }
+    await sbAdmin.auth.signOut();
+  } catch(e) { /* ignorar erro de logout */ }
 }
 
 function showLogin() {
