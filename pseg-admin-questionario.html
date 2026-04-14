@@ -413,9 +413,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <label class="login-label" for="login-email">E-mail</label>
     <input class="login-input" type="email" id="login-email" placeholder="seu@pseg.com.br" autocomplete="email"/>
     <label class="login-label" for="login-senha">Senha</label>
-    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"/>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
     <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
-    <div class="login-err" id="login-err">Credenciais inválidas. Verifique e tente novamente.</div>
+    <div class="login-err" id="login-err"></div>
+    <!-- Diagnóstico de conexão (aparece automaticamente) -->
+    <div id="login-diag" style="margin-top:14px;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;display:none"></div>
   </div>
 </div>
 
@@ -4618,12 +4620,84 @@ function initSupabase() {
 function checkSession() {
   sbAdmin = initSupabase();
   if (isDemoMode) {
-    // Credenciais não configuradas → modo demo, pula login
     currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
     showApp();
+    return;
   }
-  // Modo real: login-overlay já está visível por CSS (display:flex).
-  // O usuário deve preencher e-mail/senha. fazerLogin() chama showApp().
+  // Modo real: tela de login já visível por CSS.
+  // Rodar diagnóstico de conexão para ajudar no debug.
+  diagnosticarConexao();
+}
+
+async function diagnosticarConexao() {
+  const diag = document.getElementById('login-diag');
+  if (!diag) return;
+
+  const ok  = '✅';
+  const err = '❌';
+  const linhas = [];
+
+  // 1. Supabase JS carregado?
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    linhas.push(ok + ' Supabase SDK carregado');
+  } else {
+    linhas.push(err + ' Supabase SDK NÃO carregado (CDN falhou)');
+    mostrarDiag(diag, linhas, true);
+    return;
+  }
+
+  // 2. Cliente inicializado?
+  if (sbAdmin) {
+    linhas.push(ok + ' Cliente Supabase inicializado');
+  } else {
+    linhas.push(err + ' Cliente Supabase NÃO inicializado');
+    mostrarDiag(diag, linhas, true);
+    return;
+  }
+
+  // 3. Conectividade com o projeto?
+  try {
+    const res = await fetch(SUPA_URL + '/rest/v1/', {
+      headers: { apikey: SUPA_ANON }
+    });
+    if (res.ok || res.status === 404 || res.status === 400) {
+      linhas.push(ok + ' Projeto Supabase acessível');
+    } else {
+      linhas.push(err + ' Projeto retornou status ' + res.status);
+    }
+  } catch(e) {
+    linhas.push(err + ' Sem conexão com o Supabase: ' + e.message);
+    mostrarDiag(diag, linhas, true);
+    return;
+  }
+
+  // 4. Auth habilitado?
+  try {
+    const res = await fetch(SUPA_URL + '/auth/v1/settings', {
+      headers: { apikey: SUPA_ANON }
+    });
+    const json = await res.json();
+    if (json?.external?.email) {
+      linhas.push(ok + ' Auth por e-mail habilitado');
+    } else {
+      linhas.push(err + ' Auth por e-mail pode estar desabilitado');
+    }
+    // Verificar se confirmação de e-mail está exigida
+    if (json?.mailer_autoconfirm === false) {
+      linhas.push('⚠️ "Email confirmations" está ATIVO — desative em Auth → Settings');
+    }
+  } catch(e) { /* ignorar */ }
+
+  const temErro = linhas.some(l => l.startsWith(err));
+  mostrarDiag(diag, linhas, temErro);
+}
+
+function mostrarDiag(el, linhas, isErro) {
+  el.style.display = 'block';
+  el.style.background = isErro ? '#fef2f2' : '#f0fdf4';
+  el.style.border = '1px solid ' + (isErro ? '#fca5a5' : '#bbf7d0');
+  el.style.color = isErro ? '#991b1b' : '#166534';
+  el.innerHTML = '<strong>Diagnóstico de conexão:</strong><br>' + linhas.join('<br>');
 }
 
 function showLogin() {
@@ -4662,6 +4736,12 @@ async function fazerLogin() {
     err.classList.add('show'); return;
   }
 
+  // Verificar se o cliente Supabase foi inicializado
+  if (!sbAdmin) {
+    err.textContent = 'Erro: cliente Supabase não inicializado. Verifique se a URL e a chave anon estão corretas no código.';
+    err.classList.add('show'); return;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Entrando...';
 
@@ -4671,7 +4751,18 @@ async function fazerLogin() {
     currentUser = data.user;
     showApp();
   } catch(e) {
-    err.textContent = 'Credenciais inválidas. Verifique e tente novamente.';
+    // Mostrar erro real para diagnóstico
+    const msg = e?.message || String(e);
+    console.error('[PSEG Login]', msg);
+    if (msg.includes('Email not confirmed')) {
+      err.textContent = 'E-mail não confirmado. No Supabase: Authentication → Settings → desative "Enable email confirmations".';
+    } else if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+      err.textContent = 'E-mail ou senha incorretos. Verifique as credenciais cadastradas no Supabase.';
+    } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      err.textContent = 'Erro de rede: não foi possível conectar ao Supabase. Verifique sua conexão.';
+    } else {
+      err.textContent = 'Erro: ' + msg;
+    }
     err.classList.add('show');
   } finally {
     btn.disabled = false;
