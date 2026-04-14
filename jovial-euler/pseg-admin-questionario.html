@@ -77,8 +77,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .login-btn{width:100%;background:var(--tx);color:white;border:none;border-radius:var(--r);padding:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;transition:opacity .15s}
 .login-btn:hover{opacity:.85}
 .login-btn:disabled{opacity:.5;cursor:not-allowed}
-.login-err{font-size:11px;color:var(--red);margin-top:8px;display:none;padding:8px 10px;background:var(--redbg);border-radius:5px}
-.login-err.show{display:block}
+/* login-err agora usa inline style — gerenciado por _loginErro() / _loginOk() */
 
 /* ── MOBILE ── */
 @media(max-width:768px){
@@ -415,9 +414,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <label class="login-label" for="login-senha">Senha</label>
     <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
     <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
-    <div class="login-err" id="login-err"></div>
-    <!-- Diagnóstico de conexão (aparece automaticamente) -->
-    <div id="login-diag" style="margin-top:14px;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;display:none"></div>
+    <p style="margin:8px 0 0;font-size:11px;color:#6b7280;text-align:center">
+      Esqueceu a senha? Redefina pelo painel <strong>Supabase → Authentication → Users</strong>.
+    </p>
+    <div id="login-err" style="display:none;margin-top:10px;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b"></div>
+    <!-- Diagnóstico de conexão (sempre visível após checkSession) -->
+    <div id="login-diag" style="margin-top:12px;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;display:none"></div>
   </div>
 </div>
 
@@ -4723,50 +4725,115 @@ function showApp() {
   });
 }
 
+function _loginErro(msg) {
+  console.error('[PSEG Login erro]', msg);
+  const el = document.getElementById('login-err');
+  if (!el) { alert('Erro de login: ' + msg); return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function _loginOk(user) {
+  const el = document.getElementById('login-err');
+  if (el) el.style.display = 'none';
+  currentUser = user;
+  showApp();
+}
+
 async function fazerLogin() {
   if (isDemoMode) { showApp(); return; }
-  const email = document.getElementById('login-email').value.trim();
-  const senha = document.getElementById('login-senha').value;
-  const btn   = document.getElementById('login-btn');
-  const err   = document.getElementById('login-err');
-  err.classList.remove('show');
+
+  const emailEl = document.getElementById('login-email');
+  const senhaEl = document.getElementById('login-senha');
+  const btn     = document.getElementById('login-btn');
+  const errEl   = document.getElementById('login-err');
+
+  // Ocultar erro anterior
+  if (errEl) errEl.style.display = 'none';
+
+  const email = (emailEl?.value || '').trim();
+  const senha = senhaEl?.value || '';
 
   if (!email || !senha) {
-    err.textContent = 'Preencha e-mail e senha.';
-    err.classList.add('show'); return;
+    _loginErro('Preencha o e-mail e a senha antes de continuar.');
+    return;
   }
 
-  // Verificar se o cliente Supabase foi inicializado
-  if (!sbAdmin) {
-    err.textContent = 'Erro: cliente Supabase não inicializado. Verifique se a URL e a chave anon estão corretas no código.';
-    err.classList.add('show'); return;
-  }
+  // Feedback visual imediato
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando…'; }
 
-  btn.disabled = true;
-  btn.textContent = 'Entrando...';
-
-  try {
-    const { data, error } = await sbAdmin.auth.signInWithPassword({ email, password: senha });
-    if (error) throw error;
-    currentUser = data.user;
-    showApp();
-  } catch(e) {
-    // Mostrar erro real para diagnóstico
-    const msg = e?.message || String(e);
-    console.error('[PSEG Login]', msg);
-    if (msg.includes('Email not confirmed')) {
-      err.textContent = 'E-mail não confirmado. No Supabase: Authentication → Settings → desative "Enable email confirmations".';
-    } else if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-      err.textContent = 'E-mail ou senha incorretos. Verifique as credenciais cadastradas no Supabase.';
-    } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
-      err.textContent = 'Erro de rede: não foi possível conectar ao Supabase. Verifique sua conexão.';
-    } else {
-      err.textContent = 'Erro: ' + msg;
+  // ── Tentativa 1: SDK Supabase ───────────────────────────────
+  if (sbAdmin) {
+    try {
+      console.log('[PSEG Login] tentando SDK signInWithPassword…');
+      const { data, error } = await sbAdmin.auth.signInWithPassword({ email, password: senha });
+      if (error) throw error;
+      console.log('[PSEG Login] SDK: sucesso', data.user?.email);
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+      _loginOk(data.user);
+      return;
+    } catch(e) {
+      const msg = e?.message || String(e);
+      console.warn('[PSEG Login] SDK falhou:', msg);
+      // Se for erro de credenciais (não de rede), não tenta fetch fallback
+      if (msg.includes('Invalid login') || msg.includes('invalid_credentials') ||
+          msg.includes('Email not confirmed') || msg.includes('email_not_confirmed')) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+        if (msg.includes('not confirmed') || msg.includes('email_not_confirmed')) {
+          _loginErro('E-mail não confirmado. No Supabase: Authentication → Settings → desative "Enable email confirmations".');
+        } else {
+          _loginErro('E-mail ou senha incorretos. Verifique as credenciais no Supabase.');
+        }
+        return;
+      }
+      // Senão, tenta fallback via fetch direto
+      console.warn('[PSEG Login] erro de rede/SDK, tentando fetch direto…');
     }
-    err.classList.add('show');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Entrar';
+  } else {
+    console.warn('[PSEG Login] sbAdmin é null, tentando fetch direto…');
+  }
+
+  // ── Tentativa 2: fetch direto à API REST do Supabase Auth ───
+  try {
+    console.log('[PSEG Login] fetch direto para', SUPA_URL + '/auth/v1/token');
+    const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+      method : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey'      : SUPA_ANON,
+        'Authorization': 'Bearer ' + SUPA_ANON
+      },
+      body: JSON.stringify({ email, password: senha })
+    });
+    const json = await res.json();
+    console.log('[PSEG Login] fetch resposta status', res.status, json);
+
+    if (!res.ok) {
+      const msg = json?.error_description || json?.msg || json?.error || ('HTTP ' + res.status);
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+      if (msg.includes('not confirmed') || msg.includes('email_not_confirmed')) {
+        _loginErro('E-mail não confirmado. No Supabase: Authentication → Settings → desative "Enable email confirmations".');
+      } else if (msg.includes('Invalid') || msg.includes('invalid') || res.status === 400) {
+        _loginErro('E-mail ou senha incorretos (' + msg + ').');
+      } else {
+        _loginErro('Erro ao autenticar: ' + msg);
+      }
+      return;
+    }
+
+    // Sucesso via fetch — reinicializar o cliente com o token
+    const accessToken = json.access_token;
+    if (sbAdmin && accessToken) {
+      await sbAdmin.auth.setSession({ access_token: accessToken, refresh_token: json.refresh_token });
+    }
+    const user = json.user || { email, id: json.user_id || 'unknown' };
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    _loginOk(user);
+
+  } catch(e2) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    console.error('[PSEG Login] fetch também falhou:', e2);
+    _loginErro('Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
   }
 }
 
