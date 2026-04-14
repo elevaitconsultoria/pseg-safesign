@@ -1,5 +1,7 @@
 {
+  "cleanUrls": true,
   "rewrites": [
+    { "source": "/",      "destination": "/pseg-admin-questionario.html" },
     { "source": "/admin", "destination": "/pseg-admin-questionario.html" },
     { "source": "/form",  "destination": "/pseg-forms.html" }
   ],
