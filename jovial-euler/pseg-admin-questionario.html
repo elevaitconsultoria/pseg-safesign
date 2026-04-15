@@ -5021,7 +5021,7 @@ async function checkSession() {
         showApp();
       }
     }
-    if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+    if ((event === 'SIGNED_OUT') || (event === 'TOKEN_REFRESHED' && !session)) {
       currentUser = null;
       showLogin();
     }
@@ -5128,12 +5128,13 @@ function showApp() {
         if (existe) setEmpresaAtiva(existe.id, existe.nome);
         else setEmpresaAtiva('', '');
       }
+      // Combos dependem de _links já carregados — ficam dentro do .then() correto
+      buildCombo('combo-setor'); buildCombo('combo-funcao');
+      buildCombo('combo-nivel');
+      if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
+      if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
+      if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
     });
-    buildCombo('combo-setor'); buildCombo('combo-funcao');
-    buildCombo('combo-nivel');
-    if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
-    if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
-    if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
   });
 }
 
@@ -5536,7 +5537,10 @@ try { buildCombo('combo-ld-setor'); }   catch(e) { console.warn('combo-ld-setor:
 try { buildLaudoSecoesChecks(); }       catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
 // Auth — sempre executa, independente de erros acima
-checkSession();
+(async () => {
+  try { await checkSession(); }
+  catch(e) { console.error('[PSEG] checkSession falhou:', e); showLogin(); }
+})();
 </script>
 </body>
 </html>
