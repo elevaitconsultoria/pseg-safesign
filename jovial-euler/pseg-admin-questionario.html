@@ -4777,6 +4777,13 @@ let sbAdmin = null;
 let currentUser = null;
 let isDemoMode = false;
 
+// ─────────────────────────────────────────────────────────────
+// DEV: bypass de autenticação — DESATIVAR antes de ir p/ produção
+// Troque para false quando quiser reativar o login real
+const DEV_BYPASS_AUTH = true;
+const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+// ─────────────────────────────────────────────────────────────
+
 function initSupabase() {
   if (SUPA_URL.includes('SEU_PROJETO') || SUPA_ANON.includes('SUA_CHAVE')) {
     isDemoMode = true;
@@ -4791,6 +4798,13 @@ function initSupabase() {
 }
 
 function checkSession() {
+  // DEV: entrar direto sem login
+  if (DEV_BYPASS_AUTH) {
+    sbAdmin = initSupabase(); // ainda inicializa o cliente para usar o banco
+    currentUser = DEV_USER;
+    showApp();
+    return;
+  }
   sbAdmin = initSupabase();
   if (isDemoMode) {
     currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
@@ -4798,7 +4812,6 @@ function checkSession() {
     return;
   }
   // Modo real: tela de login já visível por CSS.
-  // Rodar diagnóstico de conexão para ajudar no debug.
   diagnosticarConexao();
 }
 
@@ -4883,7 +4896,7 @@ function showApp() {
   document.getElementById('app-shell').style.display = 'grid';
   const email = currentUser?.email || 'admin';
   document.getElementById('user-email-display').textContent =
-    isDemoMode ? 'Modo demonstração' : email;
+    DEV_BYPASS_AUTH ? '⚙ DEV · ' + email : isDemoMode ? 'Modo demonstração' : email;
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
   carregarEmpresas().then(() => {
