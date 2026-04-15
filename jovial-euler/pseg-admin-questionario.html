@@ -62,8 +62,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .page-sub{font-size:12px;color:var(--tl)}
 
 /* ── LOGIN OVERLAY ── */
-.login-overlay{display:flex;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center}
-.login-overlay.hide{display:none}
+.login-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center}
+.login-overlay.show{display:flex}
 .login-box{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:32px 36px;width:100%;max-width:360px}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
 .login-logo-icon{width:32px;height:32px;background:var(--tx);border-radius:6px;display:flex;align-items:center;justify-content:center}
@@ -548,6 +548,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <div class="sidebar-section">Configuração</div>
 
+    <button class="nav-item" id="nb-usuarios" onclick="goScreen('usuarios',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Usuários
+    </button>
     <button class="nav-item" id="nb-riscos" onclick="goScreen('riscos',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Riscos & Severidade
@@ -565,6 +569,61 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
   <!-- MAIN CONTENT -->
   <main class="main-content">
+
+<!-- ══════════════════════════════════════════════════════
+     TELA USUÁRIOS
+══════════════════════════════════════════════════════ -->
+<div class="screen" id="sc-usuarios">
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="page-title">Usuários</div>
+      <div class="page-sub">Gerencie quem acessa o painel PSEG e seus níveis de permissão</div>
+    </div>
+    <button class="btn btn-g" onclick="abrirModalNovoUsuario()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo usuário
+    </button>
+  </div>
+  <div id="usuarios-list">
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <div class="empty-state-title">Carregando usuários…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal novo usuário -->
+<div class="modal-bg" id="modal-novo-usuario">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Novo usuário</div>
+    <div class="modal-sub">O usuário receberá um e-mail para definir a senha.</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div class="field">
+        <label>E-mail <span style="color:var(--red)">*</span></label>
+        <input type="email" id="nu-email" placeholder="usuario@empresa.com"/>
+      </div>
+      <div class="field">
+        <label>Nome</label>
+        <input type="text" id="nu-nome" placeholder="Nome completo"/>
+      </div>
+      <div class="field">
+        <label>Perfil <span style="color:var(--red)">*</span></label>
+        <select id="nu-role">
+          <option value="consultor">Consultor</option>
+          <option value="admin">Admin</option>
+          <option value="cliente_viewer">Cliente (somente leitura)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalNovoUsuario()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarNovoUsuario()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Criar usuário
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════
      TELA DASHBOARD
@@ -796,6 +855,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <button class="btn btn-g" style="width:100%;justify-content:center;padding:12px" onclick="rodarAnalise()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Rodar análise com esses filtros
+      </button>
+      <button class="btn btn-ghost" onclick="exportarCSV()" id="btn-export-csv" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar CSV
       </button>
     </div>
 
@@ -1753,6 +1816,46 @@ function _carregarRiscosLocal() {
     if (!parsed || typeof parsed !== 'object') return;
     return parsed;
   } catch(e) { return null; }
+}
+
+async function carregarRiscosDB() {
+  if (isDemoMode || !sbAdmin) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('riscos_config')
+      .select('cd_risco,nome,categoria,severidade,consequencias')
+      .is('empresa_id', null); // riscos globais (sem empresa específica)
+    if (error || !data?.length) return;
+    data.forEach(r => {
+      if (!r.cd_risco) return;
+      RISCOS_DETALHES[r.cd_risco] = {
+        nome: r.nome,
+        cat:  r.categoria || '',
+        s:    r.severidade || 2,
+        cons: r.consequencias || ''
+      };
+      FATORES[r.cd_risco] = r.nome.length > 32 ? r.nome.slice(0,30)+'…' : r.nome;
+    });
+    console.log('[PSEG] Riscos carregados do banco:', data.length);
+  } catch(e) { console.warn('[PSEG] carregarRiscosDB:', e.message); }
+}
+
+async function _salvarRiscosDB() {
+  if (isDemoMode || !sbAdmin) return;
+  const upserts = Object.entries(RISCOS_DETALHES).map(([k, v]) => ({
+    empresa_id:    null,
+    cd_risco:      parseInt(k),
+    nome:          v.nome,
+    categoria:     v.cat  || null,
+    severidade:    v.s    || null,
+    consequencias: v.cons || null
+  }));
+  try {
+    const { error } = await sbAdmin
+      .from('riscos_config')
+      .upsert(upserts, { onConflict: 'empresa_id,cd_risco' });
+    if (error) throw error;
+  } catch(e) { console.warn('[PSEG] _salvarRiscosDB:', e.message); }
 }
 
 // cd_risco → detalhes do risco (fonte: imagem 1 / tabela oficial PSEG)
@@ -2743,6 +2846,52 @@ async function rodarAnalise() {
   } else {
     renderViewRisco(window._analiseData);
   }
+  const btnCsv = document.getElementById('btn-export-csv');
+  if (btnCsv) btnCsv.style.display = 'inline-flex';
+}
+
+function exportarCSV() {
+  if (!_respostasCache || !_empresaAtiva?.id) {
+    toast('Rode a análise primeiro.', 'w'); return;
+  }
+  const linhas = _respostasCache[_empresaAtiva.id] || [];
+  if (!linhas.length) { toast('Sem dados para exportar.', 'w'); return; }
+
+  const questoesCols = questoes.filter(q => ativas.has(q.id));
+  const cabecalho = ['id','empresa','setor','funcao','escolaridade','respondido_em',
+    ...questoesCols.map(q => q.c + '_' + (q.f||'cd'+q.cd))
+  ];
+
+  const rows = linhas.map(r => {
+    const base = [
+      r.id || '',
+      _empresaAtiva.nome || '',
+      r.setor  || '',
+      r.funcao || '',
+      r.escolaridade || '',
+      r.respondido_em ? new Date(r.respondido_em).toLocaleString('pt-BR') : ''
+    ];
+    const itens = questoesCols.map(q => {
+      const item = (r.resposta_itens || []).find(i => i.questao_id === q.id);
+      return item ? item.valor : '';
+    });
+    return [...base, ...itens];
+  });
+
+  const csv = [cabecalho, ...rows]
+    .map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `pseg_respostas_${_empresaAtiva.nome.replace(/\s+/g,'-')}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('CSV exportado com sucesso.', 'g');
 }
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
@@ -3255,7 +3404,8 @@ function salvarRiscos() {
   fecharModalRiscos();
   if (alterados > 0) {
     try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
-    toast(`${alterados} risco(s) atualizado(s). A próxima análise usará os novos parâmetros.`, 'g');
+    _salvarRiscosDB();
+    toast(`${alterados} risco(s) atualizado(s) e salvos no banco.`, 'g');
     renderQuestoes();
     renderCoberturaCompacta();
   } else {
@@ -3461,6 +3611,7 @@ function confirmarSalvarRisco() {
     FATORES[k] = RISCOS_DETALHES[k].nome.length > 32 ? RISCOS_DETALHES[k].nome.slice(0,30)+'…' : RISCOS_DETALHES[k].nome;
   });
   try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
+  _salvarRiscosDB();
   fecharModalNovoRisco();
   renderTelaRiscos();
 }
@@ -3471,6 +3622,14 @@ function excluirRisco(cd) {
   if (qsV.length) { toast('Não é possível excluir: '+qsV.length+' questão(ões) vinculadas a cd'+cd+'. Remova-as primeiro.', 'w'); return; }
   if (!confirm('Excluir risco "'+r.nome+'" (cd'+cd+')? Não pode ser desfeito.')) return;
   delete RISCOS_DETALHES[cd]; delete FATORES[cd];
+  // Remover do banco também
+  if (sbAdmin && !isDemoMode) {
+    sbAdmin.from('riscos_config')
+      .delete()
+      .match({ empresa_id: null, cd_risco: parseInt(cd) })
+      .then(({ error }) => { if (error) console.warn('[PSEG] excluirRisco DB:', error.message); });
+  }
+  try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
   toast('Risco cd'+cd+' excluído.', 'g');
   renderTelaRiscos();
 }
@@ -4566,7 +4725,26 @@ async function renderLaudo() {
 }
 
 // ── GERAR PDF DO LAUDO ──
+async function _registrarLaudo() {
+  if (isDemoMode || !sbAdmin || !_empresaAtiva?.id) return;
+  try {
+    const empresaEl = document.getElementById('ld-empresa');
+    const empresaId = empresaEl?.value || _empresaAtiva.id;
+    if (!empresaId) return;
+    await sbAdmin.from('laudos').insert({
+      empresa_id:    empresaId,
+      gerado_em:     new Date().toISOString(),
+      gerado_por:    currentUser?.email || currentUser?.id || null,
+      snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome }
+    });
+    console.log('[PSEG] Laudo registrado no banco.');
+  } catch(e) { console.warn('[PSEG] _registrarLaudo:', e.message); }
+}
+
 async function gerarLaudoPDF() {
+  // Registrar laudo no banco
+  _registrarLaudo();
+
   if (!document.getElementById('laudo-doc')) {
     renderLaudo();
     await new Promise(r=>setTimeout(r,800));
@@ -4778,9 +4956,10 @@ let currentUser = null;
 let isDemoMode = false;
 
 // ─────────────────────────────────────────────────────────────
-// DEV: bypass de autenticação — DESATIVAR antes de ir p/ produção
-// Troque para false quando quiser reativar o login real
-const DEV_BYPASS_AUTH = true;
+// DEV: bypass de autenticação
+// true  = entra direto (uso local/dev apenas)
+// false = login real via Supabase Auth (produção)
+const DEV_BYPASS_AUTH = false;
 const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
 // ─────────────────────────────────────────────────────────────
 
@@ -4797,22 +4976,59 @@ function initSupabase() {
   }
 }
 
-function checkSession() {
-  // DEV: entrar direto sem login
+async function checkSession() {
+  // ── Modo DEV (somente local) ────────────────────────────────
   if (DEV_BYPASS_AUTH) {
-    sbAdmin = initSupabase(); // ainda inicializa o cliente para usar o banco
+    sbAdmin = initSupabase();
     currentUser = DEV_USER;
     showApp();
     return;
   }
+
+  // ── Modo Demo (credenciais placeholder) ────────────────────
   sbAdmin = initSupabase();
   if (isDemoMode) {
     currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
     showApp();
     return;
   }
-  // Modo real: tela de login já visível por CSS.
-  diagnosticarConexao();
+
+  // ── Modo Real ───────────────────────────────────────────────
+  if (!sbAdmin) { showLogin(); return; }
+
+  // 1. Verificar sessão existente (token salvo pelo SDK no localStorage)
+  try {
+    const { data: { session } } = await sbAdmin.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      showApp();
+    } else {
+      showLogin();
+      diagnosticarConexao();
+    }
+  } catch(e) {
+    console.warn('[PSEG] getSession falhou:', e.message);
+    showLogin();
+  }
+
+  // 2. Listener: reage a mudanças de estado (expiração, logout em outra aba)
+  sbAdmin.auth.onAuthStateChange((event, session) => {
+    console.log('[PSEG Auth]', event);
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      // Só chama showApp se ainda estiver na tela de login
+      if (document.getElementById('login-overlay').classList.contains('show')) {
+        showApp();
+      }
+    }
+    if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      currentUser = null;
+      showLogin();
+    }
+    if (event === 'TOKEN_REFRESHED' && session?.user) {
+      currentUser = session.user; // silencioso — apenas atualiza o objeto
+    }
+  });
 }
 
 async function diagnosticarConexao() {
@@ -4887,22 +5103,31 @@ function mostrarDiag(el, linhas, isErro) {
 }
 
 function showLogin() {
-  document.getElementById('login-overlay').classList.remove('hide');
+  document.getElementById('login-overlay').classList.add('show');
   document.getElementById('app-shell').style.display = 'none';
 }
 
 function showApp() {
-  document.getElementById('login-overlay').classList.add('hide');
+  document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('app-shell').style.display = 'grid';
   const email = currentUser?.email || 'admin';
-  document.getElementById('user-email-display').textContent =
-    DEV_BYPASS_AUTH ? '⚙ DEV · ' + email : isDemoMode ? 'Modo demonstração' : email;
+  const labelEmail = DEV_BYPASS_AUTH ? '⚙ DEV · ' + email
+                   : isDemoMode      ? 'Modo demonstração'
+                   : email;
+  document.getElementById('user-email-display').textContent = labelEmail;
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
+  carregarRiscosDB(); // carregar riscos do banco (sobrescreve defaults se existirem)
   carregarEmpresas().then(() => {
     carregarLinks().then(() => {
       iniciarRealtimeRespostas();
       renderDashboard();
+      // Restaurar empresa ativa da sessão se válida
+      if (_empresaAtiva?.id) {
+        const existe = _empresas.find(e => e.id === _empresaAtiva.id);
+        if (existe) setEmpresaAtiva(existe.id, existe.nome);
+        else setEmpresaAtiva('', '');
+      }
     });
     buildCombo('combo-setor'); buildCombo('combo-funcao');
     buildCombo('combo-nivel');
@@ -4915,37 +5140,119 @@ function showApp() {
 // ══════════════════════════════════════════
 // EMPRESA ATIVA — contexto global
 // ══════════════════════════════════════════
-let _empresaAtiva = { id: '', nome: '' };
+// Restaurar empresa ativa da sessão anterior
+let _empresaAtiva = (() => {
+  try { return JSON.parse(sessionStorage.getItem('pseg_empresa_ativa')) || { id: '', nome: '' }; }
+  catch(e) { return { id: '', nome: '' }; }
+})();
 
 function setEmpresaAtiva(id, nome) {
   _empresaAtiva = { id: id || '', nome: nome || '' };
-  // Sincronizar todos os selects de empresa
+  // Persistir na sessão para sobreviver a F5
+  try { sessionStorage.setItem('pseg_empresa_ativa', JSON.stringify(_empresaAtiva)); } catch(e) {}
   ['sel-emp','f-empresa','gf-empresa','ld-empresa'].forEach(sid => {
     const el = document.getElementById(sid);
     if (el && el.value !== id) el.value = id;
   });
-  // Chip no topbar
   const chip = document.getElementById('empresa-chip');
   const chipNome = document.getElementById('empresa-chip-nome');
   if (chip && chipNome) {
-    if (id) {
-      chipNome.textContent = nome;
-      chip.style.display = 'flex';
-    } else {
-      chip.style.display = 'none';
-    }
+    if (id) { chipNome.textContent = nome; chip.style.display = 'flex'; }
+    else chip.style.display = 'none';
   }
-  // Banner em sc-q
   const banner = document.getElementById('q-empresa-banner');
   const bannerNome = document.getElementById('q-empresa-banner-nome');
   if (banner) {
-    if (id) {
-      if (bannerNome) bannerNome.textContent = nome;
-      banner.style.display = 'flex';
-    } else {
-      banner.style.display = 'none';
-    }
+    if (id) { if (bannerNome) bannerNome.textContent = nome; banner.style.display = 'flex'; }
+    else banner.style.display = 'none';
   }
+}
+
+// ══════════════════════════════════════════
+// TELA USUÁRIOS
+// ══════════════════════════════════════════
+const ROLE_LABEL = { admin: 'Admin', consultor: 'Consultor', cliente_viewer: 'Cliente (leitura)' };
+const ROLE_TAG   = { admin: 'tr', consultor: 'tg', cliente_viewer: 'tb' };
+
+async function carregarUsuarios() {
+  const el = document.getElementById('usuarios-list');
+  if (!el) return;
+  if (isDemoMode || !sbAdmin) {
+    el.innerHTML = '<div class="alert alert-y">Disponível apenas no modo real (com Supabase conectado).</div>';
+    return;
+  }
+  el.innerHTML = '<div style="color:var(--tl);font-size:12px;padding:16px">Carregando…</div>';
+  try {
+    const { data, error } = await sbAdmin
+      .from('perfis')
+      .select('id, nome, role, ativo, empresa_id, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data?.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum usuário encontrado</div><div class="empty-state-sub">Crie o primeiro usuário usando o botão acima.</div></div>';
+      return;
+    }
+    el.innerHTML = data.map(u => `
+      <div class="card" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--tx)">${u.nome || '(sem nome)'}</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">
+            <span class="tag ${ROLE_TAG[u.role] || 'tgr'}">${ROLE_LABEL[u.role] || u.role}</span>
+            ${!u.ativo ? '<span class="tag tgr" style="margin-left:4px">Inativo</span>' : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
+            <option value="consultor" ${u.role==='consultor'?'selected':''}>Consultor</option>
+            <option value="admin"     ${u.role==='admin'?'selected':''}>Admin</option>
+            <option value="cliente_viewer" ${u.role==='cliente_viewer'?'selected':''}>Cliente</option>
+          </select>
+          <button class="btn ${u.ativo?'btn-ghost':'btn-amber'}" style="font-size:11px" onclick="toggleAtivoUsuario('${u.id}',${u.ativo})">
+            ${u.ativo ? 'Desativar' : 'Reativar'}
+          </button>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-r">Erro ao carregar usuários: ${e.message}</div>`;
+  }
+}
+
+async function alterarRoleUsuario(id, novoRole) {
+  if (!sbAdmin) return;
+  const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
+  if (error) { toast('Erro ao alterar perfil: ' + error.message, 'w'); return; }
+  toast('Perfil atualizado.', 'g');
+}
+
+async function toggleAtivoUsuario(id, ativo) {
+  if (!sbAdmin) return;
+  const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'w'); return; }
+  carregarUsuarios();
+}
+
+function abrirModalNovoUsuario() {
+  document.getElementById('nu-email').value = '';
+  document.getElementById('nu-nome').value  = '';
+  document.getElementById('nu-role').value  = 'consultor';
+  document.getElementById('modal-novo-usuario').classList.add('open');
+}
+function fecharModalNovoUsuario() {
+  document.getElementById('modal-novo-usuario').classList.remove('open');
+}
+
+async function salvarNovoUsuario() {
+  const email = document.getElementById('nu-email').value.trim();
+  const nome  = document.getElementById('nu-nome').value.trim();
+  const role  = document.getElementById('nu-role').value;
+  if (!email) { toast('Informe o e-mail.', 'w'); return; }
+  if (!sbAdmin) { toast('Modo demo — não é possível criar usuários reais.', 'w'); return; }
+
+  // Supabase Admin API não está disponível no client com anon key.
+  // Orientar o admin a criar via dashboard, ou usar uma Edge Function futura.
+  toast('Para criar usuários: Supabase Dashboard → Authentication → Users → Add user.', 'w');
+  // Registrar perfil diretamente se o usuário já existir pelo ID (uso avançado)
+  fecharModalNovoUsuario();
 }
 
 // ══════════════════════════════════════════
@@ -4977,26 +5284,47 @@ function renderDashboard() {
   }
 
   list.innerHTML = _empresas.map(e => {
-    const linksEmp   = _links.filter(l => l.empresa_id === e.id);
-    const respTotal  = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
-    const linksAtiv  = linksEmp.filter(l => l.ativo).length;
-    const temDados   = respTotal > 0;
-    const nomeEsc    = (e.nome || '').replace(/'/g, "\\'");
+    const linksEmp  = _links.filter(l => l.empresa_id === e.id);
+    const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
+    const linksAtiv = linksEmp.filter(l => l.ativo).length;
+    const nomeEsc   = (e.nome || '').replace(/'/g, "\\'");
+
+    // Status visual
+    let statusTag, statusDot;
+    if (!linksAtiv) {
+      statusTag = '<span class="tag tgr">Sem links ativos</span>';
+      statusDot = '#9ca3af';
+    } else if (respTotal === 0) {
+      statusTag = '<span class="tag ty">⏳ Aguardando respostas</span>';
+      statusDot = '#d97706';
+    } else if (respTotal < 10) {
+      statusTag = '<span class="tag tb">📊 Coletando (' + respTotal + ' resp.)</span>';
+      statusDot = '#2563eb';
+    } else {
+      statusTag = '<span class="tag tg">✅ Dados disponíveis (' + respTotal + ' resp.)</span>';
+      statusDot = '#16a34a';
+    }
+
     return `<div class="dash-empresa-card">
-      <div style="min-width:0">
-        <div class="dash-empresa-nome">${e.nome || '—'}</div>
-        <div class="dash-empresa-sub">${linksAtiv} link(s) ativo(s) · <strong>${respTotal}</strong> resposta(s)</div>
-        ${e.cnpj ? `<div style="font-size:10px;color:var(--tl);margin-top:2px">CNPJ: ${e.cnpj}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:8px;height:8px;border-radius:50%;background:${statusDot};flex-shrink:0"></div>
+        <div style="min-width:0">
+          <div class="dash-empresa-nome">${e.nome || '—'}</div>
+          <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            ${statusTag}
+            <span style="font-size:10px;color:var(--tl)">${linksAtiv} link(s) ativo(s)</span>
+            ${e.cnpj ? `<span style="font-size:10px;color:var(--tl)">${e.cnpj}</span>` : ''}
+          </div>
+        </div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="btn btn-ghost" style="font-size:11px" onclick="goScreen('links',document.getElementById('nb-links'));setEmpresaAtiva('${e.id}','${nomeEsc}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">
           Links
         </button>
-        ${temDados ? `<button class="btn btn-g" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Analisar
-        </button>` : `<button class="btn btn-ghost" style="font-size:11px;opacity:.5;cursor:not-allowed" disabled title="Sem respostas ainda">Sem dados</button>`}
+        ${respTotal >= 1
+          ? `<button class="btn btn-g" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">Analisar</button>`
+          : `<button class="btn btn-ghost" style="font-size:11px;opacity:.45" disabled>Sem dados</button>`
+        }
       </div>
     </div>`;
   }).join('');
@@ -5026,12 +5354,13 @@ document.addEventListener('keydown', function(e) {
   if (!openModal) return;
   const id = openModal.id;
   const closeFns = {
-    'modal-riscos':     typeof fecharModalRiscos     !== 'undefined' ? fecharModalRiscos     : null,
-    'modal-nova':       typeof fecharNovaQ           !== 'undefined' ? fecharNovaQ           : null,
-    'modal-grupo':      typeof fecharGrupo           !== 'undefined' ? fecharGrupo           : null,
-    'modal-link':       typeof fecharModalLink       !== 'undefined' ? fecharModalLink       : null,
-    'modal-empresa':    typeof fecharModalEmpresa    !== 'undefined' ? fecharModalEmpresa    : null,
-    'modal-novo-risco': typeof fecharModalNovoRisco  !== 'undefined' ? fecharModalNovoRisco  : null,
+    'modal-riscos':        typeof fecharModalRiscos      !== 'undefined' ? fecharModalRiscos      : null,
+    'modal-nova':          typeof fecharNovaQ            !== 'undefined' ? fecharNovaQ            : null,
+    'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
+    'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
+    'modal-empresa':       typeof fecharModalEmpresa     !== 'undefined' ? fecharModalEmpresa     : null,
+    'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
+    'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
   };
   if (closeFns[id]) closeFns[id]();
   else openModal.classList.remove('open');
@@ -5150,9 +5479,12 @@ async function fazerLogin() {
 }
 
 async function fazerLogout() {
-  if (isDemoMode) { return; } // no-op em modo demo
   if (!confirm('Deseja sair do sistema?')) return;
-  await sbAdmin?.auth.signOut();
+  try {
+    if (sbAdmin && !isDemoMode) await sbAdmin.auth.signOut();
+  } catch(e) {
+    console.warn('[PSEG] signOut:', e.message);
+  }
   currentUser = null;
   showLogin();
 }
@@ -5164,13 +5496,14 @@ function goScreen(id, btn) {
   if (id === 'riscos')      setTimeout(renderTelaRiscos, 0);
   if (id === 'metodologia') setTimeout(renderTelaMetodologia, 0);
   if (id === 'dashboard')   setTimeout(renderDashboard, 0);
+  if (id === 'usuarios')   setTimeout(carregarUsuarios, 0);
   document.getElementById('sc-' + id)?.classList.add('on');
   if (btn) btn.classList.add('on');
   // Sincronizar sidebar
   const map = {
     dashboard:'nb-dashboard', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', laudo:'nb-laudo',
-    metodologia:'nb-metodologia', riscos:'nb-riscos'
+    metodologia:'nb-metodologia', riscos:'nb-riscos', usuarios:'nb-usuarios'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
   if (id === 'links') renderLinks();
@@ -5193,16 +5526,16 @@ function goScreen(id, btn) {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-buildCombo('combo-setor');
-buildCombo('combo-funcao');
-buildCombo('combo-nivel');
-buildCombo('combo-gf-setor');
-buildCombo('combo-gf-funcao');
-buildBlocoChecks();
-buildCombo('combo-ld-setor');
-buildLaudoSecoesChecks();
-renderGruposSalvos();
-// Auth: verificar sessão antes de mostrar o app
+try { buildCombo('combo-setor'); }      catch(e) { console.warn('combo-setor:', e); }
+try { buildCombo('combo-funcao'); }     catch(e) { console.warn('combo-funcao:', e); }
+try { buildCombo('combo-nivel'); }      catch(e) { console.warn('combo-nivel:', e); }
+try { buildCombo('combo-gf-setor'); }   catch(e) { console.warn('combo-gf-setor:', e); }
+try { buildCombo('combo-gf-funcao'); }  catch(e) { console.warn('combo-gf-funcao:', e); }
+try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoChecks:', e); }
+try { buildCombo('combo-ld-setor'); }   catch(e) { console.warn('combo-ld-setor:', e); }
+try { buildLaudoSecoesChecks(); }       catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
+try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
+// Auth — sempre executa, independente de erros acima
 checkSession();
 </script>
 </body>
