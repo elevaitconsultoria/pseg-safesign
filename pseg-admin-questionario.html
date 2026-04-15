@@ -4778,9 +4778,10 @@ let currentUser = null;
 let isDemoMode = false;
 
 // ─────────────────────────────────────────────────────────────
-// DEV: bypass de autenticação — DESATIVAR antes de ir p/ produção
-// Troque para false quando quiser reativar o login real
-const DEV_BYPASS_AUTH = true;
+// DEV: bypass de autenticação
+// true  = entra direto (uso local/dev apenas)
+// false = login real via Supabase Auth (produção)
+const DEV_BYPASS_AUTH = false;
 const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
 // ─────────────────────────────────────────────────────────────
 
@@ -4797,23 +4798,59 @@ function initSupabase() {
   }
 }
 
-function checkSession() {
-  // DEV: entrar direto sem login
+async function checkSession() {
+  // ── Modo DEV (somente local) ────────────────────────────────
   if (DEV_BYPASS_AUTH) {
-    sbAdmin = initSupabase(); // ainda inicializa o cliente para usar o banco
+    sbAdmin = initSupabase();
     currentUser = DEV_USER;
     showApp();
     return;
   }
+
+  // ── Modo Demo (credenciais placeholder) ────────────────────
   sbAdmin = initSupabase();
   if (isDemoMode) {
     currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
     showApp();
     return;
   }
-  // Modo real: exibir tela de login e rodar diagnóstico
-  showLogin();
-  diagnosticarConexao();
+
+  // ── Modo Real ───────────────────────────────────────────────
+  if (!sbAdmin) { showLogin(); return; }
+
+  // 1. Verificar sessão existente (token salvo pelo SDK no localStorage)
+  try {
+    const { data: { session } } = await sbAdmin.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      showApp();
+    } else {
+      showLogin();
+      diagnosticarConexao();
+    }
+  } catch(e) {
+    console.warn('[PSEG] getSession falhou:', e.message);
+    showLogin();
+  }
+
+  // 2. Listener: reage a mudanças de estado (expiração, logout em outra aba)
+  sbAdmin.auth.onAuthStateChange((event, session) => {
+    console.log('[PSEG Auth]', event);
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      // Só chama showApp se ainda estiver na tela de login
+      if (document.getElementById('login-overlay').classList.contains('show')) {
+        showApp();
+      }
+    }
+    if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      currentUser = null;
+      showLogin();
+    }
+    if (event === 'TOKEN_REFRESHED' && session?.user) {
+      currentUser = session.user; // silencioso — apenas atualiza o objeto
+    }
+  });
 }
 
 async function diagnosticarConexao() {
@@ -4896,8 +4933,10 @@ function showApp() {
   document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('app-shell').style.display = 'grid';
   const email = currentUser?.email || 'admin';
-  document.getElementById('user-email-display').textContent =
-    DEV_BYPASS_AUTH ? '⚙ DEV · ' + email : isDemoMode ? 'Modo demonstração' : email;
+  const labelEmail = DEV_BYPASS_AUTH ? '⚙ DEV · ' + email
+                   : isDemoMode      ? 'Modo demonstração'
+                   : email;
+  document.getElementById('user-email-display').textContent = labelEmail;
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
   carregarEmpresas().then(() => {
@@ -5151,9 +5190,12 @@ async function fazerLogin() {
 }
 
 async function fazerLogout() {
-  if (isDemoMode) { return; } // no-op em modo demo
   if (!confirm('Deseja sair do sistema?')) return;
-  await sbAdmin?.auth.signOut();
+  try {
+    if (sbAdmin && !isDemoMode) await sbAdmin.auth.signOut();
+  } catch(e) {
+    console.warn('[PSEG] signOut:', e.message);
+  }
   currentUser = null;
   showLogin();
 }
