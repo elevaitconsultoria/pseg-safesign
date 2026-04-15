@@ -457,7 +457,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <body>
 
 <!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="login-overlay">
+<div class="login-overlay show" id="login-overlay">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
@@ -470,11 +470,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <label class="login-label" for="login-senha">Senha</label>
     <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
     <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
-    <p style="margin:8px 0 0;font-size:11px;color:#6b7280;text-align:center">
-      Esqueceu a senha? Redefina pelo painel <strong>Supabase → Authentication → Users</strong>.
-    </p>
+
+    <!-- Separador -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+      <div style="flex:1;height:1px;background:#e5e7eb"></div>
+      <span style="font-size:10px;color:#9ca3af;white-space:nowrap">ou acesso rápido</span>
+      <div style="flex:1;height:1px;background:#e5e7eb"></div>
+    </div>
+
+    <!-- Botão bypass admin — para testes e configuração inicial -->
+    <button
+      onclick="entrarModoAdmin()"
+      style="width:100%;background:#f0fdf4;color:#16532d;border:1px solid #bbf7d0;border-radius:6px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"
+    >⚙ Entrar como Admin (modo configuração)</button>
+
     <div id="login-err" style="display:none;margin-top:10px;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b"></div>
-    <!-- Diagnóstico de conexão (sempre visível após checkSession) -->
+    <!-- Diagnóstico de conexão -->
     <div id="login-diag" style="margin-top:12px;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;display:none"></div>
   </div>
 </div>
@@ -4977,6 +4988,10 @@ function initSupabase() {
 }
 
 async function checkSession() {
+  // ── Garantia: login sempre visível enquanto verificamos a sessão ────
+  // (Evita tela em branco — o HTML já começa com .show, mas reforçamos aqui)
+  showLogin();
+
   // ── Modo DEV (somente local) ────────────────────────────────
   if (DEV_BYPASS_AUTH) {
     sbAdmin = initSupabase();
@@ -4985,8 +5000,10 @@ async function checkSession() {
     return;
   }
 
-  // ── Modo Demo (credenciais placeholder) ────────────────────
+  // ── Inicializar cliente ─────────────────────────────────────
   sbAdmin = initSupabase();
+
+  // ── Modo Demo (credenciais placeholder) ────────────────────
   if (isDemoMode) {
     currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
     showApp();
@@ -4994,11 +5011,34 @@ async function checkSession() {
   }
 
   // ── Modo Real ───────────────────────────────────────────────
-  if (!sbAdmin) { showLogin(); return; }
+  if (!sbAdmin) {
+    showLogin();
+    diagnosticarConexao();
+    return;
+  }
 
-  // 1. Verificar sessão existente (token salvo pelo SDK no localStorage)
+  // Registrar listener ANTES de getSession (captura INITIAL_SESSION)
+  sbAdmin.auth.onAuthStateChange((event, session) => {
+    console.log('[PSEG Auth]', event);
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      if (document.getElementById('login-overlay').classList.contains('show')) {
+        showApp();
+      }
+    }
+    if ((event === 'SIGNED_OUT') || (event === 'TOKEN_REFRESHED' && !session)) {
+      currentUser = null;
+      showLogin();
+    }
+    if (event === 'TOKEN_REFRESHED' && session?.user) {
+      currentUser = session.user;
+    }
+  });
+
+  // Verificar sessão existente (token no localStorage)
   try {
-    const { data: { session } } = await sbAdmin.auth.getSession();
+    const { data: { session }, error } = await sbAdmin.auth.getSession();
+    if (error) throw error;
     if (session?.user) {
       currentUser = session.user;
       showApp();
@@ -5009,26 +5049,8 @@ async function checkSession() {
   } catch(e) {
     console.warn('[PSEG] getSession falhou:', e.message);
     showLogin();
+    diagnosticarConexao();
   }
-
-  // 2. Listener: reage a mudanças de estado (expiração, logout em outra aba)
-  sbAdmin.auth.onAuthStateChange((event, session) => {
-    console.log('[PSEG Auth]', event);
-    if (event === 'SIGNED_IN' && session?.user) {
-      currentUser = session.user;
-      // Só chama showApp se ainda estiver na tela de login
-      if (document.getElementById('login-overlay').classList.contains('show')) {
-        showApp();
-      }
-    }
-    if ((event === 'SIGNED_OUT') || (event === 'TOKEN_REFRESHED' && !session)) {
-      currentUser = null;
-      showLogin();
-    }
-    if (event === 'TOKEN_REFRESHED' && session?.user) {
-      currentUser = session.user; // silencioso — apenas atualiza o objeto
-    }
-  });
 }
 
 async function diagnosticarConexao() {
@@ -5367,6 +5389,17 @@ document.addEventListener('keydown', function(e) {
   else openModal.classList.remove('open');
 });
 
+// Acesso admin sem autenticação — para configuração inicial e testes
+// Remove este botão da tela quando o sistema estiver em produção definitiva
+function entrarModoAdmin() {
+  currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'local-admin' };
+  // Inicializar cliente Supabase mesmo no modo bypass para que as queries funcionem
+  if (!sbAdmin) sbAdmin = initSupabase();
+  const el = document.getElementById('login-err');
+  if (el) el.style.display = 'none';
+  showApp();
+}
+
 function _loginErro(msg) {
   console.error('[PSEG Login erro]', msg);
   const el = document.getElementById('login-err');
@@ -5399,6 +5432,15 @@ async function fazerLogin() {
   if (!email || !senha) {
     _loginErro('Preencha o e-mail e a senha antes de continuar.');
     return;
+  }
+
+  // Garantir que sbAdmin está inicializado
+  if (!sbAdmin) {
+    sbAdmin = initSupabase();
+    if (!sbAdmin) {
+      _loginErro('Não foi possível conectar ao Supabase. Verifique sua conexão com a internet e recarregue a página.');
+      return;
+    }
   }
 
   // Feedback visual imediato
