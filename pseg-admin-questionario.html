@@ -4970,7 +4970,7 @@ let isDemoMode = false;
 // DEV: bypass de autenticação
 // true  = entra direto (uso local/dev apenas)
 // false = login real via Supabase Auth (produção)
-const DEV_BYPASS_AUTH = false;
+const DEV_BYPASS_AUTH = true; // temporário — voltar para false quando auth estiver OK
 const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
 // ─────────────────────────────────────────────────────────────
 
