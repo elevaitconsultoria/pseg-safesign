@@ -3007,7 +3007,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
         const gid = 'fdist-'+grupo.nome.replace(/\s/g,'_')+'-'+(f.cd||f.id);
         const barra = renderBarraDistribuicao(f.avgDist, f.p, 1, null, false);
         return '<div>'+
-          '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--bs)" onclick="toggleFatorDist(''+gid+'')">'+
+          '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--bs)" onclick="toggleFatorDist(\''+gid+'\')">'+
           '<div>'+
           '<div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:1px">'+f.nome+'</div>'+
           '<div style="font-size:10px;color:var(--tl);margin-bottom:6px">'+
@@ -3029,7 +3029,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
           '<div id="'+gid+'" style="display:none">'+renderDistQuestoes(f.distQuestoes, gid)+'</div>'+
           '</div>';
       }).join('')+
-      (ocultos ? '<div style="font-size:11px;color:var(--tl);padding:10px 16px;border-top:1px solid var(--bs)">'+ocultos+' risco(s) ocultos pelo filtro de nível. <span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="selectAllCombo('combo-nivel');buildCombo('combo-nivel');rodarAnalise()">Mostrar todos</span></div>' : '')+
+      (ocultos ? '<div style="font-size:11px;color:var(--tl);padding:10px 16px;border-top:1px solid var(--bs)">'+ocultos+' risco(s) ocultos pelo filtro de nível. <span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="selectAllCombo(\'combo-nivel\');buildCombo(\'combo-nivel\');rodarAnalise()">Mostrar todos</span></div>' : '')+
       '</div>';
   });
   document.getElementById('view-content').innerHTML = html || '<div style="font-size:13px;color:var(--tl)">Nenhum resultado encontrado.</div>';
