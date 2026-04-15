@@ -457,7 +457,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <body>
 
 <!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="login-overlay">
+<div class="login-overlay" id="login-overlay" style="display:none!important">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
@@ -491,7 +491,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- APP SHELL -->
-<div class="app-shell" id="app-shell" style="display:grid">
+<div class="app-shell" id="app-shell" style="display:grid!important">
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -5581,11 +5581,32 @@ try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoCheck
 try { buildCombo('combo-ld-setor'); }   catch(e) { console.warn('combo-ld-setor:', e); }
 try { buildLaudoSecoesChecks(); }       catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
-// Auth — sempre executa, independente de erros acima
-(async () => {
-  try { await checkSession(); }
-  catch(e) { console.error('[PSEG] checkSession falhou:', e); showLogin(); }
-})();
+// ── INIT AUTH (login temporariamente desabilitado) ──────────────
+sbAdmin      = initSupabase();
+currentUser  = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+try {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app-shell').style.display     = 'grid';
+  document.getElementById('user-email-display').textContent = '⚙ Admin Dev';
+} catch(e) { console.warn('init-ui:', e); }
+// Carregar dados em background (não bloqueia a UI)
+setTimeout(() => {
+  try { carregarMapaQuestoesAdmin(); } catch(e) {}
+  try { carregarRiscosDB(); }          catch(e) {}
+  carregarEmpresas().then(() =>
+    carregarLinks().then(() => {
+      try { iniciarRealtimeRespostas(); } catch(e) {}
+      try { renderDashboard(); }          catch(e) {}
+      try { buildCombo('combo-setor');  buildCombo('combo-funcao');
+            buildCombo('combo-nivel');
+            if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
+            if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
+            if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
+      } catch(e) {}
+    })
+  ).catch(()=>{});
+}, 0);
+// ── Reativar login: substitua este bloco por: (async()=>{await checkSession();})(); ──
 </script>
 </body>
 </html>
