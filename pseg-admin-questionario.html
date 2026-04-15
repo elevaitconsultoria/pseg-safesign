@@ -62,8 +62,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .page-sub{font-size:12px;color:var(--tl)}
 
 /* ── LOGIN OVERLAY ── */
-.login-overlay{display:flex;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center}
-.login-overlay.hide{display:none}
+.login-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center}
+.login-overlay.show{display:flex}
 .login-box{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:32px 36px;width:100%;max-width:360px}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
 .login-logo-icon{width:32px;height:32px;background:var(--tx);border-radius:6px;display:flex;align-items:center;justify-content:center}
@@ -4811,7 +4811,8 @@ function checkSession() {
     showApp();
     return;
   }
-  // Modo real: tela de login já visível por CSS.
+  // Modo real: exibir tela de login e rodar diagnóstico
+  showLogin();
   diagnosticarConexao();
 }
 
@@ -4887,12 +4888,12 @@ function mostrarDiag(el, linhas, isErro) {
 }
 
 function showLogin() {
-  document.getElementById('login-overlay').classList.remove('hide');
+  document.getElementById('login-overlay').classList.add('show');
   document.getElementById('app-shell').style.display = 'none';
 }
 
 function showApp() {
-  document.getElementById('login-overlay').classList.add('hide');
+  document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('app-shell').style.display = 'grid';
   const email = currentUser?.email || 'admin';
   document.getElementById('user-email-display').textContent =
@@ -5193,16 +5194,16 @@ function goScreen(id, btn) {
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-buildCombo('combo-setor');
-buildCombo('combo-funcao');
-buildCombo('combo-nivel');
-buildCombo('combo-gf-setor');
-buildCombo('combo-gf-funcao');
-buildBlocoChecks();
-buildCombo('combo-ld-setor');
-buildLaudoSecoesChecks();
-renderGruposSalvos();
-// Auth: verificar sessão antes de mostrar o app
+try { buildCombo('combo-setor'); }      catch(e) { console.warn('combo-setor:', e); }
+try { buildCombo('combo-funcao'); }     catch(e) { console.warn('combo-funcao:', e); }
+try { buildCombo('combo-nivel'); }      catch(e) { console.warn('combo-nivel:', e); }
+try { buildCombo('combo-gf-setor'); }   catch(e) { console.warn('combo-gf-setor:', e); }
+try { buildCombo('combo-gf-funcao'); }  catch(e) { console.warn('combo-gf-funcao:', e); }
+try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoChecks:', e); }
+try { buildCombo('combo-ld-setor'); }   catch(e) { console.warn('combo-ld-setor:', e); }
+try { buildLaudoSecoesChecks(); }       catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
+try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
+// Auth — sempre executa, independente de erros acima
 checkSession();
 </script>
 </body>
