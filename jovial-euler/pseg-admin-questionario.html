@@ -2683,14 +2683,22 @@ const NIVEIS_CORES = {
 // Estado: comboState[comboId] = Set de itens selecionados
 // ══════════════════════════════════════════
 const comboState = {
-  'combo-setor':  new Set(SETORES_DEMO),
-  'combo-funcao': new Set(FUNCOES_DEMO),
-  'combo-nivel':  new Set(NIVEIS_ORDEM),
+  'combo-setor':     new Set(SETORES_DEMO),
+  'combo-funcao':    new Set(FUNCOES_DEMO),
+  'combo-nivel':     new Set(NIVEIS_ORDEM),
+  // Tela Distribuição (graficos)
+  'combo-gf-setor':  new Set(SETORES_DEMO),
+  'combo-gf-funcao': new Set(FUNCOES_DEMO),
+  // Tela Laudo
+  'combo-ld-setor':  new Set(SETORES_DEMO),
 };
 const comboItems = {
-  'combo-setor':  () => SETORES_DEMO,
-  'combo-funcao': () => FUNCOES_DEMO,
-  'combo-nivel':  () => NIVEIS_ORDEM,
+  'combo-setor':     () => SETORES_DEMO,
+  'combo-funcao':    () => FUNCOES_DEMO,
+  'combo-nivel':     () => NIVEIS_ORDEM,
+  'combo-gf-setor':  () => SETORES_DEMO,
+  'combo-gf-funcao': () => FUNCOES_DEMO,
+  'combo-ld-setor':  () => SETORES_DEMO,
 };
 
 function toggleCombo(id) {
@@ -2775,7 +2783,10 @@ function updateComboPreview(id) {
   }
 
   if (!sel.length) {
-    preview.innerHTML = `<span class="combo-placeholder">${id==='combo-nivel'?'Todos os níveis':id==='combo-setor'?'Todos os setores':'Todas as funções'}</span>`;
+    const ph = id==='combo-nivel'?'Todos os níveis'
+             : id.includes('funcao')?'Todas as funções'
+             : 'Todos os setores';
+    preview.innerHTML = `<span class="combo-placeholder">${ph}</span>`;
     return;
   }
   if (sel.length === all.length) {
@@ -3820,7 +3831,7 @@ function renderLinks() {
           <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--tx)">${l.nomeEmpresa}</div>
-            <div style="font-size:11px;color:var(--tm);margin-top:1px">${l.setor?`Setor sugerido: ${l.setor}`:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
+            <div style="font-size:11px;color:var(--tm);margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido}`:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
@@ -4021,8 +4032,7 @@ const GF_Q_MAP = Object.fromEntries(QS_OFICIAIS.map(q=>[q.id,q]));
 // Estado dos combos da aba gráfica
 comboState['combo-gf-setor']  = new Set(SETORES_DEMO);
 comboState['combo-gf-funcao'] = new Set(FUNCOES_DEMO);
-comboItems['combo-gf-setor']  = () => SETORES_DEMO;
-comboItems['combo-gf-funcao'] = () => FUNCOES_DEMO;
+// combo-gf-setor e combo-gf-funcao já definidos em comboItems/comboState acima
 
 let grafBlocosVisiveis = new Set(['A','B','C']);
 let chartInstances = {}; // guarda instâncias Chart.js para destroy/recreate
@@ -4533,7 +4543,7 @@ const ACOES_SUGERIDAS = {
 
 // ── Estado combos laudo ──
 comboState['combo-ld-setor'] = new Set(SETORES_DEMO);
-comboItems['combo-ld-setor'] = () => SETORES_DEMO;
+// combo-ld-setor já definido em comboItems/comboState acima
 
 const LAUDO_SECOES = [
   {id:'capa',       label:'Capa & identificação',      on:true},
@@ -5585,33 +5595,84 @@ async function fazerLogout() {
   showLogin();
 }
 
-// goScreen atualizado para sidebar
 function goScreen(id, btn) {
+  // 1. Esconder todas as telas e desativar todos os nav items
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('on'));
-  if (id === 'riscos')      setTimeout(renderTelaRiscos, 0);
-  if (id === 'metodologia') setTimeout(renderTelaMetodologia, 0);
-  if (id === 'dashboard')   setTimeout(renderDashboard, 0);
-  if (id === 'usuarios')   setTimeout(carregarUsuarios, 0);
-  document.getElementById('sc-' + id)?.classList.add('on');
+
+  // 2. Mostrar a tela alvo
+  const tela = document.getElementById('sc-' + id);
+  if (tela) tela.classList.add('on');
+
+  // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
-  // Sincronizar sidebar
   const map = {
     dashboard:'nb-dashboard', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', laudo:'nb-laudo',
     metodologia:'nb-metodologia', riscos:'nb-riscos', usuarios:'nb-usuarios'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
-  if (id === 'links') renderLinks();
-  // Propagar empresa ativa para a tela
-  if (_empresaAtiva?.id) {
+
+  // 4. Propagar empresa ativa para todos os selects da tela
+  const temEmpresa = !!_empresaAtiva?.id;
+  if (temEmpresa) {
     ['sel-emp','f-empresa','gf-empresa','ld-empresa'].forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
-    if (id === 'analise') setTimeout(onEmpresaChange, 0);
   }
-  // Fechar sidebar no mobile após navegar
+
+  // 5. Render específico por tela
+  setTimeout(() => {
+    try {
+      switch(id) {
+        case 'dashboard':
+          renderDashboard();
+          break;
+        case 'links':
+          renderLinks();
+          break;
+        case 'analise':
+          // Sincronizar empresa e rodar análise automaticamente se há dados
+          if (temEmpresa || _links.length) {
+            onEmpresaChange();
+            setTimeout(rodarAnalise, 50);
+          }
+          break;
+        case 'graficos':
+          // Reconstruir combos de setores/funções e gerar gráficos
+          buildCombo('combo-gf-setor');
+          buildCombo('combo-gf-funcao');
+          if (temEmpresa || _links.length) setTimeout(renderGraficos, 50);
+          break;
+        case 'laudo':
+          buildCombo('combo-ld-setor');
+          if (temEmpresa || _links.length) setTimeout(renderLaudo, 50);
+          break;
+        case 'riscos':
+          renderTelaRiscos();
+          break;
+        case 'metodologia':
+          renderTelaMetodologia();
+          break;
+        case 'usuarios':
+          carregarUsuarios();
+          break;
+        case 'q':
+          // Se empresa ativa está definida, carregar questionário dela
+          if (temEmpresa) {
+            const selEmp = document.getElementById('sel-emp');
+            if (selEmp && !selEmp.value) {
+              selEmp.value = _empresaAtiva.id;
+              loadEmpresa(_empresaAtiva.id);
+            }
+          }
+          break;
+      }
+    } catch(e) { console.warn('goScreen render error:', id, e); }
+  }, 0);
+
+  // 6. Fechar sidebar no mobile
   if (window.innerWidth <= 768) {
     document.querySelector('.sidebar')?.classList.remove('mobile-open');
     const ov = document.getElementById('sidebar-overlay');
@@ -5635,23 +5696,30 @@ try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSal
 sbAdmin     = initSupabase();
 isDemoMode  = true;   // força dados de demonstração (sem depender de auth/RLS)
 currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+
+// Inicializar questoes em demo mode para que Distribuição e Laudo funcionem
+try {
+  questoes = JSON.parse(JSON.stringify(QS_OFICIAIS));
+  ativas   = new Set(questoes.map(q => q.id));
+} catch(e) { console.warn('init-questoes:', e); }
+
 try {
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('app-shell').style.display     = 'grid';
   document.getElementById('user-email-display').textContent = '⚙ Modo Demo';
 } catch(e) { console.warn('init-ui:', e); }
-// Carregar dados demo e renderizar (tudo síncrono via isDemoMode=true)
+
+// Carregar dados demo e renderizar
 setTimeout(async () => {
   try { await carregarEmpresas(); }   catch(e) { console.warn(e); }
   try { await carregarLinks(); }      catch(e) { console.warn(e); }
   try { renderDashboard(); }          catch(e) { console.warn(e); }
   try { iniciarRealtimeRespostas(); } catch(e) {}
-  try {
-    buildCombo('combo-setor');  buildCombo('combo-funcao'); buildCombo('combo-nivel');
-    if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
-    if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
-    if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
-  } catch(e) {}
+  // Construir todos os combos agora que comboState está completo
+  ['combo-setor','combo-funcao','combo-nivel',
+   'combo-gf-setor','combo-gf-funcao','combo-ld-setor'].forEach(id => {
+    try { if (document.getElementById(id+'-list')) buildCombo(id); } catch(e) {}
+  });
 }, 0);
 // ── Para reativar login: remova este bloco e descomente: (async()=>{await checkSession();})(); ──
 </script>
