@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1a7a3c"/>
+<title>PSEG — Pesquisa Psicossocial</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --g:#1a7a3c;--gd:#145f2e;--gl:#e8f5ed;--gp:#f0faf3;
+  --w:#fff;--bg:#f4f6f5;--border:#d1e5d9;--bs:#e4efe8;
+  --tx:#1a2e22;--tm:#5a7a65;--tl:#8aab95;
+  --red:#c0392b;--redbg:#fdf2f2;--amber:#b7600a;
+  --r:10px;--rl:16px;--sh:0 1px 4px rgba(26,122,60,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;min-height:100dvh}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--g);padding:0 20px;height:54px;display:flex;align-items:center;gap:12px}
+.brand-icon{width:34px;height:34px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.brand-icon svg{width:18px;height:18px;fill:var(--g)}
+.brand-name{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:white;letter-spacing:1px}
+.brand-sub{font-size:9px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px}
+.topbar-right{margin-left:auto}
+.empresa-badge{background:rgba(255,255,255,.15);color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;display:none}
+
+/* ── LOADING / ERROR SCREENS ── */
+.screen{display:none;min-height:calc(100vh - 54px);flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.screen.active{display:flex}
+.screen-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.screen-title{font-size:20px;font-weight:800;margin-bottom:8px}
+.screen-sub{font-size:14px;color:var(--tm);line-height:1.6;max-width:320px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── FORM WRAPPER ── */
+#form-screen{display:none;padding:20px 16px 80px}
+#form-screen.active{display:block}
+
+.empresa-header{background:white;border:1px solid var(--bs);border-radius:var(--rl);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh)}
+.empresa-av{width:44px;height:44px;background:var(--g);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:white;flex-shrink:0}
+.empresa-nome{font-size:16px;font-weight:800;color:var(--tx)}
+.empresa-setor{font-size:12px;color:var(--tm);margin-top:2px}
+
+.instrucoes{background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--tx);line-height:1.6}
+.instrucoes strong{color:var(--g)}
+
+/* ── CARD / BLOCO ── */
+.card{background:white;border:1px solid var(--bs);border-radius:var(--rl);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.bloco-header{padding:10px 14px;border-radius:var(--r);margin-bottom:16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:8px}
+
+/* ── QUESTÃO ── */
+.q-item{padding:12px 0;border-bottom:1px solid var(--bs)}
+.q-item:last-child{border-bottom:none}
+.q-num-text{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.q-num{font-size:11px;font-weight:700;color:var(--tl);flex-shrink:0;padding-top:2px;min-width:18px}
+.q-text{font-size:13px;line-height:1.5;color:var(--tx)}
+.q-inv{font-size:10px;color:var(--amber);margin-top:2px;font-style:italic}
+.q-scale{display:flex;gap:6px;justify-content:space-between}
+.q-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.q-opt input{display:none}
+.q-dot{width:100%;max-width:52px;height:38px;border-radius:8px;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tm);cursor:pointer;transition:all .15s;user-select:none}
+.q-opt:hover .q-dot{border-color:var(--g);background:var(--gp);color:var(--g)}
+.q-opt input:checked~.q-dot{background:var(--g);border-color:var(--g);color:white}
+.q-opt-lbl{font-size:9px;color:var(--tl);text-align:center;line-height:1.2;max-width:52px}
+.q-item.error .q-text{color:var(--red)}
+.q-item.error .q-dot{border-color:#f5c6c6}
+
+/* ── METADADOS ── */
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:5px}
+.field select{width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
+.field select:focus{border-color:var(--g);background:white;box-shadow:0 0 0 3px rgba(26,122,60,.08)}
+
+/* ── BUTTONS ── */
+.btn-enviar{width:100%;background:var(--g);color:white;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:var(--r);padding:15px;cursor:pointer;box-shadow:0 4px 16px rgba(26,122,60,.3);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:20px}
+.btn-enviar:hover{background:var(--gd);transform:translateY(-1px)}
+.btn-enviar:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-enviar svg{width:18px;height:18px;flex-shrink:0}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{background:var(--bg);border-radius:40px;height:6px;margin:12px 0;overflow:hidden}
+.progress-fill{height:100%;background:var(--g);border-radius:40px;transition:width .3s}
+.progress-label{font-size:11px;color:var(--tm);text-align:right}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--tx);color:white;font-size:13px;font-weight:500;padding:10px 18px;border-radius:40px;box-shadow:0 8px 28px rgba(0,0,0,.2);z-index:9999;transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.green{background:var(--g)}.toast.warn{background:var(--amber)}
+
+@media(max-width:480px){
+  .meta-grid{grid-template-columns:1fr}
+  .q-dot{height:34px;font-size:11px}
+  .q-opt-lbl{font-size:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
+  <div><div class="brand-name">PSEG</div><div class="brand-sub">Segurança do Trabalho</div></div>
+  <div class="topbar-right"><div class="empresa-badge" id="empresa-badge"></div></div>
+</div>
+
+<!-- LOADING -->
+<div class="screen active" id="loading-screen">
+  <div class="spinner"></div>
+  <div class="screen-title">Carregando...</div>
+  <div class="screen-sub">Aguarde enquanto validamos o link da pesquisa.</div>
+</div>
+
+<!-- ERRO: token inválido -->
+<div class="screen" id="error-screen">
+  <div class="screen-icon" style="background:var(--redbg)"><svg viewBox="0 0 24 24" fill="var(--red)" width="28" height="28"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+  <div class="screen-title">Link inválido</div>
+  <div class="screen-sub" id="error-msg">Este link de pesquisa não é válido ou expirou. Solicite um novo link ao responsável pela avaliação.</div>
+</div>
+
+<!-- SUCESSO: já respondeu -->
+<div class="screen" id="success-screen">
+  <div class="screen-icon" style="background:var(--gl)"><svg viewBox="0 0 24 24" fill="var(--g)" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+  <div class="screen-title" style="color:var(--g)">Obrigado!</div>
+  <div class="screen-sub">Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PSEG.</div>
+</div>
+
+<!-- FORMULÁRIO -->
+<div id="form-screen">
+
+  <!-- Cabeçalho empresa -->
+  <div class="empresa-header">
+    <div class="empresa-av" id="emp-av">P</div>
+    <div>
+      <div class="empresa-nome" id="emp-nome">Carregando...</div>
+      <div class="empresa-setor" id="emp-setor">Setor</div>
+    </div>
+  </div>
+
+  <!-- Instruções -->
+  <div class="instrucoes">
+    <strong>Instruções:</strong> Este questionário contém 27 perguntas sobre seus sentimentos em relação ao trabalho nos últimos 6 meses. As respostas são <strong>anônimas</strong> — não há identificação do respondente. Marque apenas uma alternativa por questão:<br><br>
+    <strong>(1) Nunca &nbsp;·&nbsp; (2) Às vezes &nbsp;·&nbsp; (3) Frequente &nbsp;·&nbsp; (4) Sempre</strong>
+  </div>
+
+  <!-- Progresso -->
+  <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="progress-label" id="progress-label">0 de 27 respondidas</div>
+
+  <!-- Questões geradas dinamicamente -->
+  <div id="questoes-wrap"></div>
+
+  <!-- Metadados opcionais -->
+  <div class="card">
+    <div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">Informações opcionais</div>
+    <div class="meta-grid">
+      <div class="field">
+        <label>Função / Cargo</label>
+        <select id="meta-funcao">
+          <option value="">Prefiro não informar</option>
+          <option>Operacional</option><option>Técnico</option><option>Administrativo</option>
+          <option>Supervisor / Coordenador</option><option>Gerente / Diretor</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Escolaridade</label>
+        <select id="meta-escolaridade">
+          <option value="">Prefiro não informar</option>
+          <option>Ensino Fundamental</option><option>Ensino Médio</option>
+          <option>Técnico</option><option>Superior</option><option>Pós-graduação</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-enviar" id="btn-enviar" onclick="enviarResposta()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+    Enviar Respostas
+  </button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIGURAÇÃO SUPABASE
+// ══════════════════════════════════════════════════════════
+// ATENÇÃO: Substitua pelos valores do seu projeto Supabase
+// Encontre em: Supabase Dashboard → Settings → API
+const SUPABASE_URL  = 'https://vftyiildukrpgmnbcnao.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdHlpaWxkdWtycGdtbmJjbmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQ3MTAsImV4cCI6MjA4OTg4MDcxMH0.2t_HSq52rHbNq-IgwyiTSo2lnxJj2KqW8UcDoL9zZ_A';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Mapa de número da questão → UUID do banco
+// Populado uma vez via carregarMapaQuestoes() no boot
+let _mapaQuestoesUUID = {}; // {1: 'uuid...', 2: 'uuid...', ...}
+
+async function carregarMapaQuestoes() {
+  if (SUPABASE_URL.includes('SEU_PROJETO')) return; // modo offline
+  try {
+    const { data } = await sb
+      .from('questoes')
+      .select('id, codigo')
+      .eq('is_oficial', true);
+    (data || []).forEach(q => {
+      const n = parseInt(q.codigo.replace('Q', ''));
+      if (n) _mapaQuestoesUUID[n] = q.id;
+    });
+  } catch(e) { console.warn('carregarMapaQuestoes:', e); }
+}
+
+// ══════════════════════════════════════════════════════════
+// QUESTÕES E BLOCOS
+// ══════════════════════════════════════════════════════════
+const BLOCOS = [
+  {
+    id:'A', nome:'Demandas de Trabalho', cor:'#5b4fcf', bg:'#f0effe',
+    questoes:[
+      {id:1, texto:'Tenho prazos impossíveis de serem cumpridos?', inv:false},
+      {id:2, texto:'Carga de trabalho intensa e excessiva?', inv:false},
+      {id:3, texto:'Excesso de horas extras e falta de pausas?', inv:false},
+      {id:4, texto:'Tarefas com prazos inatingíveis?', inv:false},
+      {id:5, texto:'Na equipe que participo, cada colaborador tem suas tarefas e responsabilidades bem definidas?', inv:true},
+      {id:6, texto:'Meu trabalho e as atividades são repetitivas?', inv:false},
+      {id:7, texto:'Sou pressionado para trabalhar por longos períodos?', inv:false},
+    ]
+  },
+  {
+    id:'B', nome:'Relações Interpessoais', cor:'#185fa5', bg:'#e3f0ff',
+    questoes:[
+      {id:8,  texto:'Sinto que sou tratado(a) de forma justa e respeitosa?', inv:true},
+      {id:9,  texto:'Existem canais seguros para denúncias de constrangimentos ou comportamentos inadequados?', inv:true},
+      {id:10, texto:'Falta de reconhecimento e desenvolvimento profissional?', inv:false},
+      {id:11, texto:'O trabalho e as atividades são reconhecidas?', inv:true},
+      {id:12, texto:'Recebo retorno / feedback sobre os trabalhos que realizo?', inv:true},
+      {id:13, texto:'Constrangimento e situações expostas publicamente que deveriam ser privadas?', inv:false},
+      {id:14, texto:'Tenho oportunidades suficientes para questionar as chefias sobre mudanças no trabalho?', inv:true},
+      {id:15, texto:'Estou ciente quais são os meus deveres e responsabilidades?', inv:true},
+      {id:16, texto:'Recebo a ajuda e o apoio necessário dos meus colegas?', inv:true},
+      {id:17, texto:'Já presenciei conflitos nos locais de trabalho?', inv:false},
+    ]
+  },
+  {
+    id:'C', nome:'Fatores Organizacionais', cor:'#b7600a', bg:'#fff4e6',
+    questoes:[
+      {id:18, texto:'Tenho conflitos frequentes com meu líder, chefia?',                                         inv:false},
+      {id:19, texto:'Estou satisfeito com o meu salário (remuneração)?',                                        inv:true},
+      {id:20, texto:'Mudanças frequentes não planejadas?',                                                      inv:false},
+      {id:21, texto:'Trabalho em ambiente inadequado, desconfortos físicos e emocionais?',                       inv:false},
+      {id:22, texto:'Quando ocorrem mudanças no trabalho, sou esclarecido de como elas funcionarão na prática?', inv:true},
+      {id:23, texto:'No meu setor acontecem mudanças repentinas sem aviso prévio?',                             inv:false},
+      {id:24, texto:'As informações de que preciso para executar minhas tarefas são claras?',                   inv:true},
+      {id:25, texto:'Já presenciei/vivenciei situações de desigualdade no local de trabalho?',                  inv:false},
+      {id:26, texto:'Já presenciei/vivenciei situações de discriminação no local de trabalho?',                 inv:false},
+      {id:27, texto:'Tenho medo de perder meu emprego?',                                                        inv:false},
+    ]
+  }
+];
+
+const LABELS = ['Nunca','Às vezes','Frequente','Sempre'];
+
+// ══════════════════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════════════════
+let empresaId   = null;
+let cicloId     = null;
+let linkToken   = null; // token do link — controle de 1 resposta por dispositivo
+let empresaNome = '';
+let setorNome   = '';
+
+// ══════════════════════════════════════════════════════════
+// INIT — valida token e carrega dados da empresa
+// ══════════════════════════════════════════════════════════
+async function init() {
+  carregarMapaQuestoes(); // não bloqueia — pre-carrega UUIDs
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if (!token) {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      showDevMode();
+      return;
+    }
+    showError('Link sem token de identificação. Solicite um novo link ao responsável.');
+    return;
+  }
+
+  // Salvar token globalmente para uso no envio
+  linkToken = token;
+
+  // Verificar se já respondeu neste dispositivo
+  if (localStorage.getItem('pseg_respondido_' + token)) {
+    hideAll();
+    const sc = document.getElementById('success-screen');
+    sc.classList.add('active');
+    sc.querySelector('.screen-title').textContent = 'Você já participou!';
+    sc.querySelector('.screen-sub').textContent   = 'Sua resposta para esta pesquisa já foi registrada neste dispositivo. Obrigado pela participação!';
+    return;
+  }
+
+  try {
+    // Buscar link pelo token na tabela links_coleta (schema v3)
+    const { data: linkData, error } = await sb
+      .from('links_coleta')
+      .select('empresa_id, setor_sugerido, ciclo_id, ativo, expira_em, empresas(id, nome)')
+      .eq('token', token)
+      .single();
+
+    if (error || !linkData) {
+      showError('Token inválido. Solicite um novo link ao responsável.');
+      return;
+    }
+
+    if (!linkData.ativo) {
+      showError('Este link foi desativado. Solicite um novo link ao responsável.');
+      return;
+    }
+
+    if (linkData.expira_em && new Date(linkData.expira_em) < new Date()) {
+      showError('Este link expirou. Solicite um novo link ao responsável.');
+      return;
+    }
+
+    empresaId   = linkData.empresa_id;
+    cicloId     = linkData.ciclo_id || null;
+    empresaNome = linkData.empresas?.nome || 'Empresa';
+    setorNome   = linkData.setor_sugerido || '';
+
+    showForm();
+
+  } catch (e) {
+    showError('Erro ao carregar a pesquisa: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDERIZAÇÃO
+// ══════════════════════════════════════════════════════════
+function showError(msg) {
+  hideAll();
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-screen').classList.add('active');
+}
+
+function showForm() {
+  hideAll();
+  // Header
+  document.getElementById('emp-av').textContent  = empresaNome.charAt(0).toUpperCase();
+  document.getElementById('emp-nome').textContent = empresaNome;
+  document.getElementById('emp-setor').textContent = `Setor: ${setorNome}`;
+  document.getElementById('empresa-badge').textContent = empresaNome;
+  document.getElementById('empresa-badge').style.display = 'block';
+
+  buildQuestoes();
+  document.getElementById('form-screen').classList.add('active');
+}
+
+function showDevMode() {
+  empresaId   = 'dev-mode';
+  empresaNome = 'Empresa (modo dev)';
+  setorNome   = 'Setor Teste';
+  showForm();
+}
+
+function hideAll() {
+  document.getElementById('loading-screen').classList.remove('active');
+  document.getElementById('error-screen').classList.remove('active');
+  document.getElementById('success-screen').classList.remove('active');
+  document.getElementById('form-screen').classList.remove('active');
+}
+
+function buildQuestoes() {
+  const wrap = document.getElementById('questoes-wrap');
+  let html = '';
+
+  BLOCOS.forEach(bloco => {
+    html += `<div class="card">
+      <div class="bloco-header" style="background:${bloco.bg};color:${bloco.cor}">
+        Bloco ${bloco.id} — ${bloco.nome}
+      </div>`;
+
+    bloco.questoes.forEach(q => {
+      html += `<div class="q-item" id="qi-${q.id}">
+        <div class="q-num-text">
+          <span class="q-num">${q.id}</span>
+          <div>
+            <div class="q-text">${q.texto}</div>
+            ${q.inv ? '<div class="q-inv">↺ Pergunta de verificação</div>' : ''}
+          </div>
+        </div>
+        <div class="q-scale">
+          ${[1,2,3,4].map((n,i) => `
+            <div class="q-opt">
+              <input type="radio" name="q${q.id}" value="${n}" id="q${q.id}_${n}" onchange="onAnswer(${q.id})"/>
+              <label class="q-dot" for="q${q.id}_${n}">${n}</label>
+              <div class="q-opt-lbl">${LABELS[i]}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+// PROGRESSO
+// ══════════════════════════════════════════════════════════
+function onAnswer(qId) {
+  document.getElementById('qi-'+qId)?.classList.remove('error');
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = 27;
+  const done  = BLOCOS.flatMap(b => b.questoes)
+    .filter(q => document.querySelector(`input[name="q${q.id}"]:checked`))
+    .length;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${done} de ${total} respondidas`;
+}
+
+// ══════════════════════════════════════════════════════════
+// COLETA DAS RESPOSTAS
+// ══════════════════════════════════════════════════════════
+function coletarRespostas() {
+  const respostas = {};
+  let invalidas = [];
+
+  BLOCOS.flatMap(b => b.questoes).forEach(q => {
+    const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
+    if (sel) {
+      respostas[q.id] = parseInt(sel.value);
+    } else {
+      invalidas.push(q.id);
+      document.getElementById('qi-'+q.id)?.classList.add('error');
+    }
+  });
+
+  return { respostas, invalidas };
+}
+
+// ══════════════════════════════════════════════════════════
+// ENVIO
+// ══════════════════════════════════════════════════════════
+async function enviarResposta() {
+  const { respostas, invalidas } = coletarRespostas();
+
+  if (invalidas.length > 0) {
+    toast(`Responda ${invalidas.length} questão(ões) pendente(s).`, 'warn');
+    // Scroll até a primeira não respondida
+    document.getElementById('qi-'+invalidas[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const btn = document.getElementById('btn-enviar');
+  btn.disabled = true;
+  btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></div>Enviando...`;
+
+  const funcaoVal = document.getElementById('meta-funcao')?.value || null;
+  const escolarVal = document.getElementById('meta-escolaridade')?.value || null;
+
+  const payload = {
+    empresa_id:  empresaId === 'dev-mode' ? null : empresaId,
+    ciclo_id:    cicloId,
+    link_token:  linkToken,
+    setor:       setorNome  || null,
+    funcao:      funcaoVal,
+    escolaridade:escolarVal,
+    fonte:       'formulario_web',
+    respondido_em: new Date().toISOString(),
+  };
+
+  // Salvar no localStorage sempre (fallback offline)
+  const localKey = 'pseg_offline_' + Date.now();
+  localStorage.setItem(localKey, JSON.stringify({ payload, tentativa: new Date().toISOString() }));
+
+  // Tentar enviar ao Supabase
+  if (empresaId !== 'dev-mode') {
+    try {
+      // 1. Inserir registro na tabela respostas
+      const { data: resposta, error: errResp } = await sb
+        .from('respostas')
+        .insert(payload)
+        .select('id')
+        .single();
+
+      if (errResp) throw errResp;
+
+      // 2. Inserir itens individuais em resposta_itens (1 linha por questão)
+      // questao_id = UUID do banco; valor = 1-4 (escala bruta — sem inversão)
+      const itens = Object.entries(respostas)
+        .map(([qId, valor]) => {
+          const uuid = _mapaQuestoesUUID[parseInt(qId)];
+          if (!uuid) return null; // questão não mapeada: ignorar
+          return { resposta_id: resposta.id, questao_id: uuid, valor: parseInt(valor) };
+        })
+        .filter(Boolean);
+
+      if (itens.length > 0) {
+        const { error: errItens } = await sb.from('resposta_itens').insert(itens);
+        if (errItens) console.warn('Falha ao salvar itens:', errItens.message);
+      }
+
+      // Sucesso: remove do localStorage
+      localStorage.removeItem(localKey);
+    } catch (e) {
+      console.warn('Falha no envio Supabase, guardado offline:', e.message);
+      toast('Sem conexão — resposta salva localmente.', 'warn');
+    }
+  }
+
+  // Marcar este dispositivo como "já respondeu" para este token
+  // Bloqueia nova resposta ao reabrir o link no mesmo dispositivo
+  if (linkToken) {
+    localStorage.setItem('pseg_respondido_' + linkToken, '1');
+  }
+
+  // Mostrar tela de confirmação
+  hideAll();
+  document.getElementById('success-screen').classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+let _tt;
+function toast(msg, type) {
+  clearTimeout(_tt);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type||''} show`;
+  _tt = setTimeout(() => el.classList.remove('show'), 3400);
+}
+
+// ══════════════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
