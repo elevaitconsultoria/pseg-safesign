@@ -4732,11 +4732,10 @@ async function _registrarLaudo() {
     const empresaId = empresaEl?.value || _empresaAtiva.id;
     if (!empresaId) return;
     await sbAdmin.from('laudos').insert({
-      empresa_id:  empresaId,
-      gerado_em:   new Date().toISOString(),
-      gerado_por:  currentUser?.id || null,
-      secoes:      JSON.stringify([...laudoSecoesAtivas]),
-      status:      'gerado'
+      empresa_id:    empresaId,
+      gerado_em:     new Date().toISOString(),
+      gerado_por:    currentUser?.email || currentUser?.id || null,
+      snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome }
     });
     console.log('[PSEG] Laudo registrado no banco.');
   } catch(e) { console.warn('[PSEG] _registrarLaudo:', e.message); }
