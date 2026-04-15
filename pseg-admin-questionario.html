@@ -1931,15 +1931,60 @@ const QS_OFICIAIS = [
 
 // DADOS SIMULADOS para análise
 const RESPOSTAS_DEMO = {
+  // ── Construtora ABC Ltda. — 22 respondentes, 5 setores ─────────────
   abc:[
-    {setor:'Administrativo',funcao:'Assistente',        q:{1:2,2:2,3:1,4:2,5:3,6:1,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:4,15:4,16:1,17:1,18:2,19:2,20:1,21:3,22:4,23:2,24:3,25:1,26:1,27:2}},
-    {setor:'Administrativo',funcao:'Supervisor',        q:{1:3,2:3,3:2,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
-    {setor:'Produção A',    funcao:'Operador',          q:{1:3,2:4,3:3,4:3,5:1,6:4,7:4,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:2,16:3,17:2,18:1,19:3,20:3,21:2,22:2,23:4,24:2,25:2,26:1,27:3}},
-    {setor:'Produção A',    funcao:'Operador',          q:{1:4,2:4,3:4,4:4,5:1,6:4,7:4,8:1,9:4,10:1,11:1,12:2,13:1,14:2,15:2,16:4,17:3,18:1,19:4,20:4,21:1,22:2,23:4,24:2,25:3,26:2,27:4}},
-    {setor:'Produção B',    funcao:'Técnico',           q:{1:2,2:3,3:2,4:2,5:2,6:3,7:3,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:2,17:1,18:2,19:2,20:2,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
-    {setor:'Engenharia',    funcao:'Engenheiro',        q:{1:1,2:2,3:1,4:1,5:4,6:1,7:2,8:4,9:1,10:4,11:4,12:1,13:4,14:4,15:4,16:1,17:1,18:3,19:1,20:1,21:4,22:4,23:1,24:4,25:1,26:1,27:1}},
-    {setor:'Manutenção',    funcao:'Técnico',           q:{1:3,2:3,3:3,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:2,27:3}},
-    {setor:'Manutenção',    funcao:'Assistente',        q:{1:2,2:2,3:2,4:2,5:3,6:2,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:4,15:4,16:1,17:1,18:2,19:2,20:2,21:3,22:3,23:2,24:3,25:1,26:1,27:2}},
+    // Administrativo (5 respondentes — risco MÉDIO a ALTO)
+    {setor:'Administrativo',funcao:'Assistente',   q:{1:2,2:2,3:1,4:2,5:3,6:1,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:4,15:4,16:1,17:1,18:2,19:2,20:1,21:3,22:4,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Administrativo',funcao:'Supervisor',   q:{1:3,2:3,3:2,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Administrativo',funcao:'Analista',     q:{1:3,2:3,3:3,4:2,5:2,6:2,7:3,8:2,9:3,10:3,11:2,12:1,13:3,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Administrativo',funcao:'Assistente',   q:{1:4,2:3,3:3,4:3,5:2,6:3,7:3,8:3,9:3,10:3,11:3,12:2,13:3,14:4,15:4,16:2,17:2,18:3,19:3,20:2,21:3,22:4,23:3,24:3,25:2,26:2,27:3}},
+    {setor:'Administrativo',funcao:'Gerente',      q:{1:2,2:2,3:1,4:2,5:3,6:1,7:2,8:3,9:2,10:3,11:3,12:1,13:2,14:3,15:3,16:1,17:1,18:2,19:2,20:1,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
+    // Produção A (5 respondentes — risco ALTO a CRÍTICO)
+    {setor:'Produção A',    funcao:'Operador',     q:{1:3,2:4,3:3,4:3,5:1,6:4,7:4,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:2,16:3,17:2,18:1,19:3,20:3,21:2,22:2,23:4,24:2,25:2,26:1,27:3}},
+    {setor:'Produção A',    funcao:'Operador',     q:{1:4,2:4,3:4,4:4,5:1,6:4,7:4,8:1,9:4,10:1,11:1,12:2,13:1,14:2,15:2,16:4,17:3,18:1,19:4,20:4,21:1,22:2,23:4,24:2,25:3,26:2,27:4}},
+    {setor:'Produção A',    funcao:'Técnico',      q:{1:4,2:4,3:3,4:4,5:1,6:4,7:4,8:1,9:4,10:2,11:2,12:1,13:2,14:3,15:2,16:3,17:2,18:1,19:4,20:4,21:2,22:2,23:4,24:2,25:3,26:1,27:4}},
+    {setor:'Produção A',    funcao:'Supervisor',   q:{1:3,2:3,3:3,4:3,5:2,6:3,7:3,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Produção A',    funcao:'Operador',     q:{1:4,2:4,3:4,4:3,5:1,6:4,7:4,8:1,9:4,10:1,11:2,12:2,13:2,14:2,15:2,16:4,17:3,18:1,19:4,20:3,21:2,22:2,23:4,24:2,25:3,26:2,27:4}},
+    // Produção B (4 respondentes — risco MÉDIO)
+    {setor:'Produção B',    funcao:'Técnico',      q:{1:2,2:3,3:2,4:2,5:2,6:3,7:3,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:2,17:1,18:2,19:2,20:2,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Produção B',    funcao:'Técnico',      q:{1:3,2:3,3:2,4:3,5:2,6:3,7:3,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Produção B',    funcao:'Operador',     q:{1:3,2:3,3:3,4:3,5:1,6:3,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Produção B',    funcao:'Assistente',   q:{1:2,2:2,3:2,4:2,5:2,6:2,7:2,8:3,9:2,10:3,11:2,12:1,13:2,14:3,15:3,16:2,17:1,18:2,19:2,20:2,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
+    // Engenharia (4 respondentes — risco BAIXO a MÉDIO)
+    {setor:'Engenharia',    funcao:'Engenheiro',   q:{1:1,2:2,3:1,4:1,5:4,6:1,7:2,8:4,9:1,10:4,11:4,12:1,13:4,14:4,15:4,16:1,17:1,18:3,19:1,20:1,21:4,22:4,23:1,24:4,25:1,26:1,27:1}},
+    {setor:'Engenharia',    funcao:'Analista',     q:{1:1,2:2,3:1,4:1,5:4,6:1,7:2,8:4,9:1,10:4,11:3,12:1,13:3,14:3,15:4,16:1,17:1,18:3,19:1,20:1,21:4,22:3,23:1,24:4,25:1,26:1,27:1}},
+    {setor:'Engenharia',    funcao:'Engenheiro',   q:{1:2,2:2,3:1,4:2,5:3,6:1,7:2,8:3,9:1,10:3,11:3,12:1,13:3,14:3,15:3,16:1,17:1,18:2,19:1,20:1,21:3,22:3,23:1,24:3,25:1,26:1,27:2}},
+    {setor:'Engenharia',    funcao:'Técnico',      q:{1:2,2:2,3:2,4:2,5:3,6:2,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:2,17:1,18:2,19:2,20:1,21:3,22:3,23:2,24:3,25:1,26:1,27:2}},
+    // Manutenção (4 respondentes — risco ALTO)
+    {setor:'Manutenção',    funcao:'Técnico',      q:{1:3,2:3,3:3,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Manutenção',    funcao:'Assistente',   q:{1:2,2:2,3:2,4:2,5:3,6:2,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:4,15:4,16:1,17:1,18:2,19:2,20:2,21:3,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Manutenção',    funcao:'Técnico',      q:{1:4,2:3,3:3,4:4,5:2,6:3,7:4,8:2,9:4,10:2,11:2,12:1,13:2,14:4,15:4,16:2,17:2,18:2,19:4,20:3,21:2,22:3,23:4,24:2,25:2,26:2,27:4}},
+    {setor:'Manutenção',    funcao:'Operador',     q:{1:3,2:4,3:3,4:3,5:1,6:3,7:4,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:3,17:2,18:1,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:1,27:3}},
+  ],
+  // ── Indústria XYZ S.A. — 18 respondentes, 4 setores ───────────────
+  xyz:[
+    // RH (4 respondentes — risco BAIXO)
+    {setor:'RH',            funcao:'Analista',     q:{1:1,2:2,3:1,4:1,5:4,6:1,7:1,8:4,9:1,10:4,11:3,12:1,13:3,14:3,15:3,16:1,17:1,18:3,19:1,20:1,21:3,22:3,23:1,24:3,25:1,26:1,27:1}},
+    {setor:'RH',            funcao:'Assistente',   q:{1:1,2:2,3:1,4:1,5:3,6:1,7:2,8:3,9:1,10:3,11:3,12:1,13:3,14:3,15:3,16:1,17:1,18:2,19:1,20:1,21:3,22:3,23:1,24:3,25:1,26:1,27:2}},
+    {setor:'RH',            funcao:'Gerente',      q:{1:2,2:2,3:1,4:2,5:3,6:1,7:2,8:3,9:2,10:3,11:2,12:1,13:2,14:3,15:3,16:1,17:1,18:2,19:2,20:1,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'RH',            funcao:'Analista',     q:{1:1,2:1,3:1,4:1,5:4,6:1,7:1,8:4,9:1,10:4,11:4,12:1,13:4,14:4,15:4,16:1,17:1,18:3,19:1,20:1,21:4,22:4,23:1,24:4,25:1,26:1,27:1}},
+    // Financeiro (5 respondentes — risco MÉDIO)
+    {setor:'Financeiro',    funcao:'Analista',     q:{1:2,2:3,3:2,4:2,5:2,6:2,7:3,8:2,9:2,10:2,11:2,12:1,13:2,14:3,15:3,16:2,17:2,18:2,19:2,20:2,21:2,22:3,23:2,24:3,25:2,26:2,27:2}},
+    {setor:'Financeiro',    funcao:'Assistente',   q:{1:3,2:3,3:2,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Financeiro',    funcao:'Analista',     q:{1:3,2:3,3:3,4:3,5:2,6:3,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Financeiro',    funcao:'Supervisor',   q:{1:2,2:2,3:2,4:2,5:3,6:2,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:2,17:1,18:2,19:2,20:2,21:3,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Financeiro',    funcao:'Assistente',   q:{1:3,2:3,3:2,4:3,5:2,6:2,7:3,8:2,9:3,10:2,11:3,12:2,13:3,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:3,22:3,23:3,24:2,25:2,26:2,27:3}},
+    // Operacional (5 respondentes — risco ALTO a CRÍTICO)
+    {setor:'Operacional',   funcao:'Operador',     q:{1:4,2:4,3:4,4:4,5:1,6:4,7:4,8:1,9:4,10:1,11:1,12:2,13:1,14:2,15:2,16:4,17:3,18:1,19:4,20:4,21:1,22:2,23:4,24:2,25:3,26:2,27:4}},
+    {setor:'Operacional',   funcao:'Técnico',      q:{1:3,2:4,3:3,4:3,5:1,6:4,7:4,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:2,16:3,17:2,18:1,19:3,20:3,21:2,22:2,23:4,24:2,25:2,26:1,27:3}},
+    {setor:'Operacional',   funcao:'Operador',     q:{1:4,2:4,3:3,4:4,5:1,6:4,7:4,8:1,9:4,10:1,11:2,12:1,13:2,14:2,15:2,16:4,17:3,18:1,19:4,20:4,21:1,22:2,23:4,24:2,25:3,26:2,27:4}},
+    {setor:'Operacional',   funcao:'Operador',     q:{1:4,2:3,3:4,4:4,5:1,6:4,7:3,8:1,9:4,10:2,11:2,12:2,13:2,14:2,15:2,16:3,17:3,18:1,19:4,20:3,21:2,22:2,23:3,24:2,25:3,26:2,27:4}},
+    {setor:'Operacional',   funcao:'Supervisor',   q:{1:3,2:3,3:3,4:3,5:2,6:3,7:3,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:3,21:2,22:2,23:3,24:2,25:2,26:2,27:3}},
+    // Logística (4 respondentes — risco MÉDIO)
+    {setor:'Logística',     funcao:'Assistente',   q:{1:2,2:3,3:2,4:2,5:2,6:3,7:3,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:2,17:1,18:2,19:2,20:2,21:2,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Logística',     funcao:'Técnico',      q:{1:3,2:3,3:2,4:3,5:2,6:3,7:3,8:2,9:3,10:2,11:2,12:1,13:2,14:3,15:3,16:2,17:2,18:2,19:3,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
+    {setor:'Logística',     funcao:'Assistente',   q:{1:2,2:2,3:2,4:2,5:3,6:2,7:2,8:3,9:2,10:3,11:3,12:1,13:3,14:3,15:3,16:1,17:1,18:2,19:2,20:2,21:3,22:3,23:2,24:3,25:1,26:1,27:2}},
+    {setor:'Logística',     funcao:'Operador',     q:{1:3,2:3,3:3,4:2,5:2,6:2,7:3,8:2,9:3,10:2,11:2,12:2,13:2,14:3,15:3,16:2,17:2,18:2,19:2,20:2,21:2,22:3,23:3,24:2,25:2,26:2,27:3}},
   ]
 };
 
@@ -2482,7 +2527,7 @@ async function salvarQ() {
 // TELA 2: ANÁLISE COM FILTROS
 // ══════════════════════════════════════════
 // Dados base demo (usados quando isDemoMode = true)
-const SETORES_DEMO  = ['Administrativo','Produção A','Produção B','Engenharia','Manutenção','RH','Financeiro'];
+const SETORES_DEMO  = ['Administrativo','Produção A','Produção B','Engenharia','Manutenção','RH','Financeiro','Operacional','Logística'];
 const FUNCOES_DEMO  = ['Operador','Técnico','Assistente','Supervisor','Engenheiro','Analista','Gerente'];
 
 // Cache de empresas carregadas do Supabase
@@ -2492,13 +2537,13 @@ let _ciclos   = []; // [{id, nome, empresa_id}]
 async function carregarEmpresas() {
   if (isDemoMode) {
     _empresas = [
-      {id:'abc', nome:'Construtora ABC Ltda.', ativo:true},
-      {id:'xyz', nome:'Indústria XYZ S.A.',    ativo:true},
+      {id:'abc', nome:'Construtora ABC Ltda.',  cnpj:'12.345.678/0001-99', ativo:true},
+      {id:'xyz', nome:'Indústria XYZ S.A.',     cnpj:'98.765.432/0001-11', ativo:true},
     ];
     _ciclos = [
-      {id:'c1', nome:'Avaliação 2025-S1', empresa_id:'abc'},
-      {id:'c2', nome:'Avaliação 2025-S2', empresa_id:'abc'},
-      {id:'c3', nome:'Avaliação 2025-S1', empresa_id:'xyz'},
+      {id:'c1', nome:'PGR — Ciclo 2025/1',   empresa_id:'abc'},
+      {id:'c2', nome:'PGR — Ciclo 2025/2',   empresa_id:'abc'},
+      {id:'c3', nome:'Avaliação Inicial 2025',empresa_id:'xyz'},
     ];
     popularSelectsEmpresas();
     return;
@@ -3653,10 +3698,15 @@ let _links = [];
 async function carregarLinks() {
   if (isDemoMode) {
     _links = [
-      {id:'lk1', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Administrativo', ciclo:'Avaliação 2025-S1', token:'a1b2c3d4', ativo:true, respostas:8,  criado:'12/03/2025', expira:'11/04/2025'},
-      {id:'lk2', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Produção',       ciclo:'Avaliação 2025-S1', token:'f6e5d4c3', ativo:true, respostas:12, criado:'12/03/2025', expira:'11/04/2025'},
-      {id:'lk3', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Engenharia',     ciclo:'Avaliação 2025-S1', token:'1a2b3c4d', ativo:false,respostas:5,  criado:'12/03/2025', expira:'11/04/2025'},
-      {id:'lk4', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',   setor_sugerido:'Operacional',    ciclo:'',                  token:'aabbccdd', ativo:true, respostas:3,  criado:'20/03/2025', expira:'—'},
+      {id:'lk1', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Administrativo', ciclo:'PGR — Ciclo 2025/1', token:'a1b2c3d4', ativo:true,  respostas:5,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk2', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Produção A',     ciclo:'PGR — Ciclo 2025/1', token:'f6e5d4c3', ativo:true,  respostas:9,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk3', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Produção B',     ciclo:'PGR — Ciclo 2025/1', token:'b3c4d5e6', ativo:true,  respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk4', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Engenharia',     ciclo:'PGR — Ciclo 2025/1', token:'1a2b3c4d', ativo:false, respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk5', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Manutenção',     ciclo:'PGR — Ciclo 2025/1', token:'e5f6a7b8', ativo:false, respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk6', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'RH',             ciclo:'Avaliação Inicial 2025', token:'aa11bb22', ativo:true,  respostas:4, criado:'20/03/2025', expira:'20/04/2025'},
+      {id:'lk7', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'Financeiro',     ciclo:'Avaliação Inicial 2025', token:'cc33dd44', ativo:true,  respostas:5, criado:'20/03/2025', expira:'20/04/2025'},
+      {id:'lk8', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'Operacional',    ciclo:'Avaliação Inicial 2025', token:'ee55ff66', ativo:true,  respostas:5, criado:'20/03/2025', expira:'20/04/2025'},
+      {id:'lk9', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'Logística',      ciclo:'Avaliação Inicial 2025', token:'aabbccdd', ativo:false, respostas:4, criado:'20/03/2025', expira:'20/04/2025'},
     ];
     renderLinks();
     return;
@@ -5581,32 +5631,29 @@ try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoCheck
 try { buildCombo('combo-ld-setor'); }   catch(e) { console.warn('combo-ld-setor:', e); }
 try { buildLaudoSecoesChecks(); }       catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
-// ── INIT AUTH (login temporariamente desabilitado) ──────────────
-sbAdmin      = initSupabase();
-currentUser  = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+// ── INIT — login desabilitado, modo demo ativo ──────────────────
+sbAdmin     = initSupabase();
+isDemoMode  = true;   // força dados de demonstração (sem depender de auth/RLS)
+currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
 try {
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('app-shell').style.display     = 'grid';
-  document.getElementById('user-email-display').textContent = '⚙ Admin Dev';
+  document.getElementById('user-email-display').textContent = '⚙ Modo Demo';
 } catch(e) { console.warn('init-ui:', e); }
-// Carregar dados em background (não bloqueia a UI)
-setTimeout(() => {
-  try { carregarMapaQuestoesAdmin(); } catch(e) {}
-  try { carregarRiscosDB(); }          catch(e) {}
-  carregarEmpresas().then(() =>
-    carregarLinks().then(() => {
-      try { iniciarRealtimeRespostas(); } catch(e) {}
-      try { renderDashboard(); }          catch(e) {}
-      try { buildCombo('combo-setor');  buildCombo('combo-funcao');
-            buildCombo('combo-nivel');
-            if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
-            if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
-            if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
-      } catch(e) {}
-    })
-  ).catch(()=>{});
+// Carregar dados demo e renderizar (tudo síncrono via isDemoMode=true)
+setTimeout(async () => {
+  try { await carregarEmpresas(); }   catch(e) { console.warn(e); }
+  try { await carregarLinks(); }      catch(e) { console.warn(e); }
+  try { renderDashboard(); }          catch(e) { console.warn(e); }
+  try { iniciarRealtimeRespostas(); } catch(e) {}
+  try {
+    buildCombo('combo-setor');  buildCombo('combo-funcao'); buildCombo('combo-nivel');
+    if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
+    if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
+    if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
+  } catch(e) {}
 }, 0);
-// ── Reativar login: substitua este bloco por: (async()=>{await checkSession();})(); ──
+// ── Para reativar login: remova este bloco e descomente: (async()=>{await checkSession();})(); ──
 </script>
 </body>
 </html>
