@@ -457,7 +457,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <body>
 
 <!-- LOGIN OVERLAY -->
-<div class="login-overlay show" id="login-overlay">
+<div class="login-overlay" id="login-overlay">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
@@ -491,7 +491,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- APP SHELL -->
-<div class="app-shell" id="app-shell" style="display:none">
+<div class="app-shell" id="app-shell" style="display:grid">
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -4988,9 +4988,12 @@ function initSupabase() {
 }
 
 async function checkSession() {
-  // ── Garantia: login sempre visível enquanto verificamos a sessão ────
-  // (Evita tela em branco — o HTML já começa com .show, mas reforçamos aqui)
-  showLogin();
+  // ── LOGIN DESABILITADO TEMPORARIAMENTE — acesso direto ao app ──────
+  sbAdmin = initSupabase();
+  currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+  showApp();
+  return;
+  // ── FIM DO BYPASS (remover as 4 linhas acima para reativar o login) ─
 
   // ── Modo DEV (somente local) ────────────────────────────────
   if (DEV_BYPASS_AUTH) {
