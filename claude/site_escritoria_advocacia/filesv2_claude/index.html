@@ -1,0 +1,2554 @@
+<!DOCTYPE html>
+<html lang="pt-BR" itemscope itemtype="https://schema.org/LegalService">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="theme-color" content="#0B1F3A"/>
+
+  <!-- PRIMARY SEO -->
+  <title>MB Mendanha Sociedade de Advocacia | Civil, Família e Trabalho – Zona Norte SP</title>
+  <meta name="description" content="MB Mendanha Sociedade de Advocacia — Direito Civil, de Família e do Trabalho na Zona Norte de SP. Marcos Aurélio Mendanha, OAB/SP 368.689. Vila Nova Cachoeirinha. WhatsApp (11) 96503-0211."/>
+  <meta name="keywords" content="advogado São Paulo zona norte, advogado Vila Nova Cachoeirinha, direito civil, direito de família, direito do trabalho, advogado trabalhista SP, MB Mendanha"/>
+  <meta name="author" content="Marcos Aurélio Mendanha – OAB/SP 368.689"/>
+  <meta name="robots" content="index,follow"/>
+  <link rel="canonical" href="https://www.mbmendanha.adv.br/"/>
+
+  <!-- OPEN GRAPH -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="MB Mendanha Sociedade de Advocacia | Civil, Família e Trabalho"/>
+  <meta property="og:description" content="Escritório na Zona Norte de SP: Direito Civil, de Família e do Trabalho. OAB/SP 368.689. WhatsApp: (11) 96503-0211."/>
+  <meta property="og:url" content="https://www.mbmendanha.adv.br/"/>
+  <meta property="og:locale" content="pt_BR"/>
+  <meta name="geo.region" content="BR-SP"/>
+  <meta name="geo.placename" content="São Paulo, SP – Vila Nova Cachoeirinha"/>
+
+  <!-- SCHEMA MARKUP -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"LegalService","name":"MB Mendanha Sociedade de Advocacia","description":"Sociedade de advocacia atuante em Direito Civil, de Família e do Trabalho na Zona Norte de São Paulo.","url":"https://www.mbmendanha.adv.br","telephone":"+5511965030211","email":"advocacia.mendanha@gmail.com","founder":{"@type":"Person","name":"Marcos Aurélio Mendanha","jobTitle":"Advogado","identifier":"OAB/SP 368.689"},"address":{"@type":"PostalAddress","streetAddress":"Av. Imirim, 4301 - SALA 03, Vila Nova Cachoeirinha","addressLocality":"São Paulo","addressRegion":"SP","postalCode":"02465-500","addressCountry":"BR"},"areaServed":["Zona Norte de São Paulo","Cachoeirinha","Brasilândia","Taipas","Jaraguá","Vila Souza"],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"18:00"}],"sameAs":["https://www.instagram.com/mbmendanha.advocacia"]}
+  </script>
+
+  <!-- Hero image preload – melhora LCP (Largest Contentful Paint) -->
+  <link rel="preload" as="image" href="./assets/hero-bg.jpg" fetchpriority="high"/>
+
+  <!-- PERFORMANCE: preconnect only what's needed -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <!-- Single optimized font request: 2 families, minimal weights -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ════════════════════════════════════════
+       DESIGN TOKENS – single source of truth
+    ════════════════════════════════════════ */
+    :root {
+      --navy:        #0B1F3A;
+      --navy-d:      #071426;
+      --navy-l:      #163057;
+      --gold:        #C9A14A;
+      --gold-h:      #D9B464;
+      --gold-pale:   #F8F2E3;
+      --gold-border: rgba(201,161,74,.22);
+      --white:       #FFFFFF;
+      --surface:     #F7F6F3;
+      --line:        #E8E6E0;
+      --muted:       #68655E;
+      --text:        #1C1A17;
+
+      --radius-s:  4px;
+      --radius-m:  8px;
+      --radius-l: 14px;
+
+      /* Fluid spacing scale */
+      --sp-2:  clamp(.25rem,.5vw,.5rem);
+      --sp-3:  clamp(.5rem,.8vw,.75rem);
+      --sp-4:  clamp(.75rem,1.5vw,1rem);
+      --sp-6:  clamp(1rem,2vw,1.5rem);
+      --sp-8:  clamp(1.25rem,2.5vw,2rem);
+      --sp-12: clamp(2rem,4vw,3rem);
+      --sp-16: clamp(2.5rem,5vw,4rem);
+      --sp-24: clamp(3.5rem,7vw,6rem);
+
+      /* Touch targets – WCAG 2.5.8 minimum 24px, aim 44px */
+      --tap: 44px;
+
+      --ease:  cubic-bezier(.4,0,.2,1);
+      --ease-o: cubic-bezier(0,.55,.45,1);
+      --dur: 240ms;
+
+      --shadow-s: 0 1px 6px rgba(11,31,58,.06),0 2px 16px rgba(11,31,58,.06);
+      --shadow-m: 0 4px 24px rgba(11,31,58,.1),0 1px 6px rgba(11,31,58,.06);
+      --shadow-l: 0 12px 48px rgba(11,31,58,.14),0 4px 16px rgba(11,31,58,.08);
+      --shadow-gold: 0 8px 28px rgba(201,161,74,.32);
+    }
+
+    .wa-ico-svg { display: block; flex-shrink: 0; }
+
+    /* ════════════════════════════════════════
+       RESET – minimal, purposeful
+    ════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      /* Improve font rendering */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      font-family: 'Lato', system-ui, sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--white);
+      overflow-x: hidden;
+      /* Prevent layout shift from scrollbar */
+      scrollbar-gutter: stable;
+    }
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+    ul, ol { list-style: none; }
+    /* Focus visible – keyboard accessibility */
+    :focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    /* ════════════════════════════════════════
+       TYPOGRAPHY – fluid, scannable
+    ════════════════════════════════════════ */
+    h1,h2,h3,h4 {
+      font-family: 'Playfair Display', Georgia, serif;
+      line-height: 1.2;
+      color: var(--navy);
+      text-wrap: balance; /* modern browsers: avoid orphans */
+    }
+    /* Fluid type scale */
+    h1 { font-size: clamp(1.9rem, 4.5vw + .5rem, 3.4rem); font-weight: 500; letter-spacing: -.01em; }
+    h2 { font-size: clamp(1.55rem, 3vw + .4rem, 2.5rem); font-weight: 500; }
+    h3 { font-size: clamp(1.1rem, 1.8vw + .2rem, 1.45rem); font-weight: 500; }
+    h4 { font-family: 'Lato', sans-serif; font-size: 1rem; font-weight: 700; }
+    p  { color: var(--muted); line-height: 1.8; font-size: clamp(.92rem, 1vw + .5rem, 1rem); }
+    .lead { font-size: clamp(1rem, 1.2vw + .5rem, 1.1rem); line-height: 1.85; color: var(--muted); }
+
+    .overline {
+      font-size: .68rem; font-weight: 700; letter-spacing: .28em;
+      text-transform: uppercase; color: var(--gold);
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: var(--sp-4);
+    }
+    .overline::before {
+      content: ''; flex-shrink: 0; width: 24px; height: 1px; background: var(--gold);
+    }
+    .gold-rule {
+      width: 36px; height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-h));
+      margin: var(--sp-4) 0 var(--sp-8);
+      border-radius: 2px;
+    }
+    .gold-rule.center { margin-left: auto; margin-right: auto; }
+
+    /* ════════════════════════════════════════
+       LAYOUT HELPERS
+    ════════════════════════════════════════ */
+    .wrap   { max-width: 1080px; margin: 0 auto; padding: 0 clamp(1rem,4vw,2rem); }
+    .wrap-s { max-width: 780px;  margin: 0 auto; padding: 0 clamp(1rem,4vw,2rem); }
+    .section  { padding: var(--sp-24) 0; }
+    .section-s{ padding: var(--sp-16) 0; }
+    .text-c { text-align: center; }
+
+    /* ════════════════════════════════════════
+       BUTTONS – large tap targets, clear states
+    ════════════════════════════════════════ */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: var(--tap);
+      padding: 0 clamp(1.2rem,3vw,1.8rem);
+      border-radius: var(--radius-s);
+      border: 2px solid transparent;
+      font-family: 'Lato', sans-serif;
+      font-size: clamp(.8rem, 1vw + .35rem, .88rem);
+      font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      white-space: nowrap;
+      transition: background var(--dur) var(--ease),
+                  color var(--dur) var(--ease),
+                  border-color var(--dur) var(--ease),
+                  transform var(--dur) var(--ease),
+                  box-shadow var(--dur) var(--ease);
+      will-change: transform;
+      /* Prevent double-tap zoom on mobile */
+      touch-action: manipulation;
+    }
+    .btn:active { transform: scale(.97); }
+    @media (hover:hover) {
+      .btn:hover { transform: translateY(-2px); }
+    }
+
+    .btn-gold {
+      background: var(--gold); color: var(--navy); border-color: var(--gold);
+    }
+    @media (hover:hover) {
+      .btn-gold:hover { background: var(--gold-h); border-color: var(--gold-h); box-shadow: var(--shadow-gold); }
+    }
+
+    .btn-navy {
+      background: var(--navy); color: var(--white); border-color: var(--navy);
+    }
+    @media (hover:hover) {
+      .btn-navy:hover { background: var(--navy-l); border-color: var(--navy-l); box-shadow: var(--shadow-m); }
+    }
+
+    .btn-ghost-gold {
+      background: transparent; color: var(--white); border-color: rgba(201,161,74,.55);
+    }
+    @media (hover:hover) {
+      .btn-ghost-gold:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); box-shadow: var(--shadow-gold); }
+    }
+
+    .btn-ghost-navy {
+      background: transparent; color: var(--navy); border-color: var(--navy);
+    }
+    @media (hover:hover) {
+      .btn-ghost-navy:hover { background: var(--navy); color: var(--white); }
+    }
+
+    .btn-wa {
+      background: #25D366; color: var(--white); border-color: #25D366;
+    }
+    @media (hover:hover) {
+      .btn-wa:hover { background: #1ebe5d; border-color: #1ebe5d; box-shadow: 0 8px 24px rgba(37,211,102,.35); }
+    }
+    .btn-lg { min-height: 52px; padding: 0 clamp(1.5rem,3.5vw,2.2rem); font-size: clamp(.82rem,1vw + .38rem,.92rem); }
+
+    /* CTA hero principal – máximo contraste */
+    .btn-cta-hero {
+      background: var(--gold); color: var(--navy); border-color: var(--gold);
+      box-shadow: 0 6px 28px rgba(201,161,74,.45), 0 2px 8px rgba(201,161,74,.25);
+      font-weight: 700; letter-spacing: .06em; font-size: clamp(.78rem,.9vw + .32rem,.88rem);
+    }
+    @media (hover:hover) {
+      .btn-cta-hero:hover {
+        background: var(--gold-h); border-color: var(--gold-h);
+        box-shadow: 0 10px 36px rgba(201,161,74,.55), 0 3px 10px rgba(201,161,74,.3);
+        transform: translateY(-1px);
+      }
+    }
+    /* WA secundário no hero – ghost discreto */
+    .btn-ghost-hero {
+      background: transparent; color: rgba(255,255,255,.82);
+      border-color: rgba(255,255,255,.32);
+    }
+    @media (hover:hover) {
+      .btn-ghost-hero:hover {
+        background: rgba(255,255,255,.08); color: var(--white);
+        border-color: rgba(255,255,255,.6);
+      }
+    }
+
+    /* Button groups */
+    .btn-row { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; }
+    .btn-row.center { justify-content: center; }
+
+    /* ════════════════════════════════════════
+       NAVIGATION
+    ════════════════════════════════════════ */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: clamp(14px,2vw,20px) 0;
+      transition: background var(--dur) var(--ease),
+                  padding var(--dur) var(--ease),
+                  box-shadow var(--dur) var(--ease);
+      /* Safe area for notched phones */
+      padding-top: max(clamp(14px,2vw,20px), env(safe-area-inset-top));
+    }
+    #nav.stuck {
+      background: rgba(11,31,58,.97);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      padding: 7px 0;
+      box-shadow: 0 2px 20px rgba(0,0,0,.2);
+    }
+    .nav-i { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-6); }
+    .nav-logo { display: flex; flex-direction: column; color: var(--white); flex-shrink: 0; }
+    .nav-logo-name {
+      font-family: 'Playfair Display', serif; font-size: clamp(1rem,1.6vw,1.18rem);
+      font-weight: 700; letter-spacing: .02em; line-height: 1;
+    }
+    .nav-logo-sub {
+      font-size: .52rem; font-weight: 400; letter-spacing: .28em;
+      text-transform: uppercase; color: var(--gold); margin-top: 3px;
+    }
+    @media (max-width: 480px) { .nav-logo-sub { display: none; } }
+    .nav-links {
+      display: flex; align-items: center; gap: clamp(16px,2.5vw,28px);
+      /* Hide on mobile */
+    }
+    .nav-links a {
+      color: rgba(255,255,255,.78); font-size: .8rem; font-weight: 400;
+      letter-spacing: .07em; text-transform: uppercase;
+      padding: 6px 0; position: relative;
+      transition: color var(--dur) var(--ease);
+      min-height: var(--tap); display: flex; align-items: center;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px; background: var(--gold);
+      transform: scaleX(0); transform-origin: right;
+      transition: transform .28s var(--ease);
+    }
+    @media (hover:hover) {
+      .nav-links a:hover { color: var(--white); }
+      .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+    }
+    .nav-actions { display: flex; align-items: center; gap: var(--sp-3); }
+    @media (max-width: 820px) {
+      .nav-actions .btn { font-size: .75rem; padding: 0 14px; }
+      .nav-actions .btn span.btn-label { display: none; }
+    }
+
+    /* Hamburger */
+    .ham {
+      display: none; /* shown via media query */
+      background: none; border: none;
+      width: var(--tap); height: var(--tap);
+      align-items: center; justify-content: center;
+      padding: 0; cursor: pointer;
+      color: var(--white);
+    }
+    .ham-icon { display: flex; flex-direction: column; gap: 5px; width: 22px; }
+    .ham-icon span {
+      display: block; height: 1.5px; background: currentColor;
+      transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+      transform-origin: center;
+    }
+    #nav[aria-expanded="true"] .ham-icon span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    #nav[aria-expanded="true"] .ham-icon span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    #nav[aria-expanded="true"] .ham-icon span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    @media (max-width: 820px) {
+      .nav-links { display: none; }
+      .nav-actions .btn { display: none; }
+      .ham { display: flex; }
+    }
+
+    /* Mobile drawer */
+    #mob-drawer {
+      position: fixed; inset: 0; z-index: 99;
+      background: var(--navy);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: clamp(1.5rem,4vw,2rem);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--dur) var(--ease);
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    #mob-drawer.open { opacity: 1; pointer-events: all; }
+    .mob-link {
+      font-family: 'Playfair Display', serif; font-size: clamp(1.6rem,5vw,2.2rem);
+      font-weight: 500; color: rgba(255,255,255,.85); letter-spacing: .02em;
+      min-height: var(--tap); display: flex; align-items: center;
+      transition: color var(--dur) var(--ease);
+    }
+    @media (hover:hover) { .mob-link:hover { color: var(--gold); } }
+    .mob-cta { margin-top: var(--sp-4); }
+
+    /* ════════════════════════════════════════
+       PAGE ROUTING (JS-driven SPA)
+    ════════════════════════════════════════ */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ════════════════════════════════════════
+       HERO
+    ════════════════════════════════════════ */
+    #hero {
+      min-height: 100svh; /* small viewport height – avoids mobile browser chrome issue */
+      background-color: var(--navy-d); /* fallback enquanto a imagem carrega */
+      background-image: url('./assets/hero-bg.jpg');
+      background-size: cover;
+      background-position: center 30%; /* exibe área da mesa/balança – ajuste por imagem */
+      background-repeat: no-repeat;
+      display: flex; align-items: center;
+      padding: max(90px, 15vh) 0 var(--sp-24);
+      position: relative; overflow: hidden;
+    }
+    @media (max-width: 680px) {
+      #hero { background-position: 42% center; }
+    }
+    /* Overlay escuro direcional — preserva legibilidade e mantém identidade institucional */
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(
+          108deg,
+          rgba(7,20,38,.96)  0%,
+          rgba(11,31,58,.90) 38%,
+          rgba(11,31,58,.72) 65%,
+          rgba(11,31,58,.82) 100%
+        ),
+        radial-gradient(ellipse 50% 70% at 82% 52%, rgba(201,161,74,.055) 0%, transparent 58%);
+    }
+    /* Thin decorative rings – reduzidos para não competir com a foto */
+    .hero-rings {
+      position: absolute; right: -8vw; top: 50%; transform: translateY(-50%);
+      width: clamp(280px,45vw,520px); height: clamp(280px,45vw,520px);
+      pointer-events: none; opacity: .28;
+    }
+    .hero-rings circle { fill: none; }
+
+    .hero-body { position: relative; z-index: 2; }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 12px; margin-bottom: var(--sp-6);
+    }
+    .hero-eyebrow-line { width: 24px; height: 1px; background: var(--gold); flex-shrink: 0; }
+    .hero-eyebrow span {
+      font-size: .68rem; font-weight: 700; letter-spacing: .28em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    #hero h1 { color: var(--white); max-width: 16ch; }
+    #hero h1 em { font-style: italic; color: var(--gold-h); }
+    .hero-sub {
+      font-size: clamp(.95rem,1.2vw + .4rem,1.08rem);
+      color: rgba(255,255,255,.65); line-height: 1.85;
+      max-width: 52ch; margin: var(--sp-6) 0 var(--sp-8);
+    }
+    .hero-sep { height: 1px; background: rgba(255,255,255,.08); margin: var(--sp-8) 0 var(--sp-6); }
+    .hero-creds {
+      display: flex; flex-wrap: wrap;
+      gap: clamp(16px,3vw,32px);
+    }
+    .hero-cred { display: flex; align-items: center; gap: 10px; }
+    .hero-cred-ico {
+      width: 34px; height: 34px; flex-shrink: 0;
+      border: 1px solid var(--gold-border); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; color: var(--gold);
+    }
+    .hero-cred-text { font-size: .8rem; color: rgba(255,255,255,.5); line-height: 1.4; }
+    .hero-cred-text strong { display: block; color: rgba(255,255,255,.82); }
+
+    /* ════════════════════════════════════════
+       TRUST BAND
+    ════════════════════════════════════════ */
+    .trust-band { background: var(--gold); padding: clamp(14px,2vw,18px) 0; }
+    .trust-inner {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: clamp(8px,2vw,20px);
+    }
+    .trust-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: clamp(.72rem,.8vw + .3rem,.82rem); font-weight: 700;
+      color: var(--navy); letter-spacing: .04em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .trust-sep { color: rgba(11,31,58,.25); font-size: .6rem; }
+    @media (max-width: 480px) { .trust-sep { display: none; } }
+
+    /* ════════════════════════════════════════
+       ABOUT PREVIEW
+    ════════════════════════════════════════ */
+    #sobre-preview { background: var(--white); }
+    .sobre-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2rem,6vw,5rem);
+      align-items: center;
+    }
+    @media (max-width: 700px) { .sobre-grid { grid-template-columns: 1fr; } }
+
+    .sobre-card {
+      background: var(--navy); border-radius: var(--radius-m);
+      padding: clamp(1.5rem,4vw,2.5rem);
+      position: relative; overflow: hidden;
+    }
+    /* Decorative glow – CSS only */
+    .sobre-card::after {
+      content: ''; position: absolute; bottom: -40px; right: -40px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,161,74,.09), transparent 70%);
+      pointer-events: none;
+    }
+    .sobre-card-line { width: 32px; height: 1px; background: var(--gold); margin-bottom: var(--sp-6); }
+    .sobre-card blockquote {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.1rem,2vw,1.35rem); font-style: italic; font-weight: 500;
+      color: rgba(255,255,255,.9); line-height: 1.55;
+      margin-bottom: var(--sp-6);
+    }
+    .sobre-card-sig {
+      font-size: .72rem; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .sobre-badge {
+      position: absolute; bottom: -14px; right: clamp(1rem,3vw,1.75rem);
+      background: var(--gold); border-radius: var(--radius-m);
+      padding: clamp(.8rem,2vw,1rem) clamp(1rem,2.5vw,1.4rem);
+      box-shadow: var(--shadow-m); z-index: 2;
+    }
+    .sobre-badge-n {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem,3vw,2rem); font-weight: 500; color: var(--navy); line-height: 1;
+    }
+    .sobre-badge-l { font-size: .66rem; font-weight: 700; color: var(--navy); letter-spacing: .05em; margin-top: 2px; }
+    @media (max-width: 700px) { .sobre-badge { position: static; display: inline-block; margin-top: var(--sp-6); } }
+
+    /* ════════════════════════════════════════
+       AREAS CARDS – auto-fill grid
+    ════════════════════════════════════════ */
+    #areas-section { background: var(--surface); }
+    .section-head { text-align: center; margin-bottom: clamp(2rem,5vw,3.5rem); }
+    .section-head p { max-width: 52ch; margin: 0 auto; }
+
+    .areas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+      gap: clamp(12px,2vw,18px);
+    }
+    .area-card {
+      background: var(--white);
+      border: 1px solid var(--line); border-radius: var(--radius-m);
+      padding: clamp(1.25rem,2.5vw,1.75rem);
+      position: relative; overflow: hidden;
+      transition: transform var(--dur) var(--ease),
+                  box-shadow var(--dur) var(--ease),
+                  border-color var(--dur) var(--ease);
+      /* Promote to own layer for smooth compositing */
+      will-change: transform;
+    }
+    .area-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-h));
+      transform: scaleX(0); transform-origin: left; border-radius: 0;
+      transition: transform .32s var(--ease);
+    }
+    @media (hover:hover) {
+      .area-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-m); border-color: transparent; }
+      .area-card:hover::before { transform: scaleX(1); }
+    }
+    .area-ico {
+      width: 42px; height: 42px;
+      background: var(--gold-pale); border: 1px solid var(--gold-border);
+      border-radius: var(--radius-s);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; margin-bottom: clamp(.75rem,2vw,1.1rem);
+    }
+    .area-card h3 { font-size: 1.05rem; color: var(--navy); margin-bottom: .5rem; }
+    .area-card p  { font-size: .88rem; line-height: 1.7; }
+
+    .area-practice-h2 {
+      font-family: 'Playfair Display', serif;
+      color: var(--navy);
+      font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+      margin: 2.5rem 0 1.25rem;
+      padding-top: 1.75rem;
+      border-top: 1px solid var(--line);
+    }
+    .area-practice-h2:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    /* ════════════════════════════════════════
+       HOW IT WORKS
+    ════════════════════════════════════════ */
+    #como { background: var(--navy); position: relative; overflow: hidden; }
+    #como::before {
+      content: ''; position: absolute; top: -100px; right: -100px;
+      width: 380px; height: 380px;
+      border: 1px solid rgba(201,161,74,.07); border-radius: 50%;
+      pointer-events: none;
+    }
+    .como-head { text-align: center; margin-bottom: clamp(2rem,5vw,3.5rem); }
+    .como-head h2 { color: var(--white); }
+    .como-head p  { color: rgba(255,255,255,.58); max-width: 48ch; margin: 0 auto; }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%,200px),1fr));
+      gap: clamp(1rem,2.5vw,1.75rem);
+      position: relative; z-index: 1;
+    }
+    .step {
+      text-align: center; padding: clamp(1.25rem,3vw,2rem) clamp(1rem,2.5vw,1.5rem);
+      border: 1px solid rgba(201,161,74,.1); border-radius: var(--radius-m);
+      transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+    }
+    @media (hover:hover) {
+      .step:hover { border-color: rgba(201,161,74,.28); background: rgba(201,161,74,.04); }
+    }
+    .step-n {
+      width: 50px; height: 50px; margin: 0 auto clamp(.75rem,2vw,1.1rem);
+      border: 1px solid var(--gold); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--gold);
+    }
+    .step h3 { color: var(--white); font-size: 1rem; margin-bottom: .5rem; }
+    .step p  { color: rgba(255,255,255,.56); font-size: .86rem; }
+
+    /* ════════════════════════════════════════
+       LOCAL SEO
+    ════════════════════════════════════════ */
+    #local { background: var(--white); }
+    .local-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(2rem,5vw,4rem); align-items: start;
+    }
+    @media (max-width: 680px) { .local-grid { grid-template-columns: 1fr; } }
+
+    .bairros { display: flex; flex-wrap: wrap; gap: 8px; margin-top: clamp(.75rem,2vw,1.25rem); }
+    .tag {
+      padding: 6px 14px; background: var(--gold-pale);
+      border: 1px solid var(--gold-border); border-radius: 40px;
+      font-size: .78rem; font-weight: 700; color: var(--navy); letter-spacing: .03em;
+      /* Ensure accessible contrast */
+    }
+
+    .info-card {
+      background: var(--navy); border-radius: var(--radius-m);
+      padding: clamp(1.5rem,3.5vw,2.25rem);
+    }
+    .info-card h3 { color: var(--white); font-size: 1.1rem; margin-bottom: clamp(.75rem,2vw,1.25rem); }
+    .info-row { display: flex; gap: clamp(.75rem,2vw,1rem); align-items: flex-start; margin-bottom: clamp(.75rem,2vw,1.25rem); }
+    .info-row:last-child { margin-bottom: 0; }
+    .info-ico {
+      width: 38px; height: 38px; min-width: 38px;
+      background: rgba(201,161,74,.1); border: 1px solid var(--gold-border);
+      border-radius: var(--radius-s);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .95rem; color: var(--gold);
+    }
+    .info-lbl { font-size: .64rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
+    .info-val { font-size: .9rem; color: rgba(255,255,255,.78); line-height: 1.5; }
+    .info-val a { color: rgba(255,255,255,.78); transition: color var(--dur) var(--ease); }
+    @media (hover:hover) { .info-val a:hover { color: var(--gold); } }
+
+    /* ════════════════════════════════════════
+       FORM – optimised for mobile input
+    ════════════════════════════════════════ */
+    #formulario { background: var(--surface); }
+    .form-wrap {
+      display: grid; grid-template-columns: 1fr 1.3fr;
+      gap: clamp(2rem,5vw,4rem); align-items: start;
+    }
+    @media (max-width: 820px) { .form-wrap { grid-template-columns: 1fr; } }
+
+    .trust-list { display: flex; flex-direction: column; gap: clamp(.75rem,2vw,1rem); margin-top: clamp(1rem,2.5vw,1.5rem); }
+    .trust-row { display: flex; gap: 10px; align-items: flex-start; }
+    .trust-dot { width: 6px; height: 6px; min-width: 6px; background: var(--gold); border-radius: 50%; margin-top: 8px; }
+    .trust-row p { font-size: .88rem; }
+
+    .form-box {
+      background: var(--white); border-radius: var(--radius-l);
+      padding: clamp(1.5rem,4vw,2.75rem);
+      box-shadow: var(--shadow-l);
+      border-top: 3px solid var(--gold);
+    }
+    .form-box > h3 { color: var(--navy); font-size: clamp(1.1rem,2vw,1.35rem); margin-bottom: 4px; }
+    .form-box > p.sub { font-size: .84rem; margin-bottom: clamp(1rem,2.5vw,1.5rem); }
+
+    /* Form grid: two cols on wide, one on narrow */
+    .fg-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(.75rem,2vw,1rem);
+    }
+    @media (max-width: 500px) { .fg-grid { grid-template-columns: 1fr; } }
+    .fg-grid .full { grid-column: 1/-1; }
+    @media (max-width: 500px) { .fg-grid .full { grid-column: 1; } }
+
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg label {
+      font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--navy-l);
+    }
+    /* Base input style */
+    .fg input,
+    .fg select,
+    .fg textarea {
+      width: 100%;
+      /* Min height for tap targets */
+      min-height: var(--tap);
+      padding: 0 14px;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif;
+      font-size: 1rem; /* 1rem prevents iOS auto-zoom */
+      color: var(--text); background: var(--white);
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      -webkit-appearance: none; appearance: none;
+    }
+    .fg textarea { min-height: 90px; padding: 12px 14px; resize: vertical; }
+    .fg select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C9A14A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+    .fg input:focus, .fg select:focus, .fg textarea:focus {
+      outline: none; border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,161,74,.15);
+    }
+    /* Error state */
+    .fg input.error, .fg select.error, .fg textarea.error {
+      border-color: #c0392b;
+      box-shadow: 0 0 0 3px rgba(192,57,43,.12);
+    }
+    .fg .err-msg { font-size: .75rem; color: #c0392b; display: none; }
+    .fg.has-error .err-msg { display: block; }
+
+    /* ── Radio toggle cards ── */
+    .radio-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .radio-opt-input { display: none; }
+    .radio-card {
+      flex: 1; min-width: 90px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 52px; padding: 0 16px;
+      border: 2px solid var(--line); border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif;
+      font-size: .92rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all var(--dur) var(--ease);
+      background: var(--white); user-select: none;
+      touch-action: manipulation;
+    }
+    .radio-card::before {
+      content: ''; width: 16px; height: 16px; min-width: 16px;
+      border: 2px solid var(--line); border-radius: 50%;
+      transition: all var(--dur) var(--ease);
+    }
+    .radio-opt-input:checked + .radio-card {
+      border-color: var(--gold); background: var(--gold-pale);
+      color: var(--navy);
+    }
+    .radio-opt-input:checked + .radio-card::before {
+      border-color: var(--gold);
+      background: radial-gradient(circle, var(--gold) 45%, transparent 46%);
+    }
+
+    /* ── Checkbox LGPD – custom styled ── */
+    .check-row {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 16px; border: 2px solid var(--line); border-radius: var(--radius-s);
+      cursor: pointer; transition: border-color var(--dur) var(--ease),
+        background var(--dur) var(--ease);
+      background: var(--surface); user-select: none;
+    }
+    .check-row:has(input:checked) {
+      border-color: var(--gold); background: var(--gold-pale);
+    }
+    /* Hide native checkbox */
+    .check-row input[type=checkbox] {
+      position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;
+    }
+    /* Custom checkbox box */
+    .check-box {
+      width: 22px; height: 22px; min-width: 22px;
+      border: 2px solid var(--line); border-radius: 4px;
+      background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color var(--dur) var(--ease),
+        background var(--dur) var(--ease);
+      margin-top: 1px; flex-shrink: 0;
+    }
+    .check-box svg {
+      width: 13px; height: 13px;
+      stroke: var(--white); stroke-width: 2.5;
+      fill: none; opacity: 0;
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+      transform: scale(0.5);
+    }
+    .check-row:has(input:checked) .check-box {
+      border-color: var(--gold); background: var(--gold);
+    }
+    .check-row:has(input:checked) .check-box svg {
+      opacity: 1; transform: scale(1);
+    }
+    .check-row span {
+      font-size: .82rem; color: var(--muted); line-height: 1.65;
+    }
+    .check-row:has(input:checked) span { color: var(--navy); }
+
+    .form-actions { margin-top: var(--sp-3); }
+    .form-actions .btn { width: 100%; min-height: 52px; font-size: .9rem; }
+
+    /* Success state */
+    #form-ok { display: none; text-align: center; padding: var(--sp-8) 0; }
+    #form-ok.show { display: block; }
+    #form-ok .ok-ico { font-size: 2.6rem; margin-bottom: var(--sp-4); }
+    #form-ok h4 { color: var(--navy); margin-bottom: 8px; font-size: 1.1rem; }
+
+    /* ════════════════════════════════════════
+       FAQ
+    ════════════════════════════════════════ */
+    #faq-home { background: var(--white); }
+    .faq-cols {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0 clamp(2rem,5vw,3.5rem); align-items: start;
+    }
+    @media (max-width: 680px) { .faq-cols { grid-template-columns: 1fr; } }
+
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-q {
+      width: 100%; background: none; border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: clamp(14px,2.5vw,20px) 0; gap: 12px;
+      cursor: pointer; text-align: left;
+      min-height: var(--tap);
+    }
+    .faq-q-text {
+      font-family: 'Lato', sans-serif; font-size: clamp(.88rem,1vw + .4rem,.94rem);
+      font-weight: 700; color: var(--navy); line-height: 1.45;
+      transition: color var(--dur) var(--ease);
+    }
+    @media (hover:hover) { .faq-q:hover .faq-q-text { color: var(--gold); } }
+    .faq-plus {
+      width: 26px; height: 26px; min-width: 26px;
+      border: 1px solid var(--line); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: var(--muted);
+      transition: background var(--dur) var(--ease),
+                  border-color var(--dur) var(--ease),
+                  color var(--dur) var(--ease),
+                  transform var(--dur) var(--ease);
+    }
+    .faq-item.open .faq-plus { background: var(--gold); border-color: var(--gold); color: var(--navy); transform: rotate(45deg); }
+    .faq-body {
+      display: grid; grid-template-rows: 0fr;
+      transition: grid-template-rows .28s var(--ease);
+    }
+    .faq-body-inner { overflow: hidden; }
+    .faq-body-inner p { padding-bottom: clamp(12px,2vw,18px); font-size: .9rem; line-height: 1.78; }
+    .faq-item.open .faq-body { grid-template-rows: 1fr; }
+
+    .faq-note {
+      grid-column: 1/-1; margin-top: clamp(1.5rem,3vw,2.5rem);
+      padding: clamp(1rem,2.5vw,1.25rem) clamp(1.25rem,3vw,1.5rem);
+      background: var(--gold-pale); border-left: 3px solid var(--gold); border-radius: var(--radius-s);
+    }
+    .faq-note p { font-size: .86rem; color: var(--navy); }
+    .faq-note a { font-weight: 700; text-decoration: underline; color: var(--navy-l); }
+
+    /* ════════════════════════════════════════
+       CTA FINAL
+    ════════════════════════════════════════ */
+    #cta-final {
+      background: var(--navy); padding: var(--sp-24) 0;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    #cta-final::before {
+      content: ''; position: absolute; left: 50%; top: -120px; transform: translateX(-50%);
+      width: 480px; height: 480px;
+      border: 1px solid rgba(201,161,74,.07); border-radius: 50%;
+      pointer-events: none;
+    }
+    .cta-body { position: relative; z-index: 1; }
+    .cta-body h2 { color: var(--white); max-width: 20ch; margin: 0 auto var(--sp-4); }
+    .cta-body p { color: rgba(255,255,255,.6); max-width: 48ch; margin: 0 auto var(--sp-8); font-size: clamp(.95rem,1.1vw + .4rem,1.05rem); }
+
+    /* ════════════════════════════════════════
+       INTERNAL PAGE HERO (shared)
+    ════════════════════════════════════════ */
+    .page-hero {
+      background: var(--navy); padding: max(96px,14vh) 0 clamp(2rem,5vw,3rem);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .page-hero::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .page-hero h1 { color: var(--white); }
+    .page-hero p { color: rgba(255,255,255,.6); max-width: 54ch; margin: var(--sp-4) auto 0; }
+    .page-hero .overline { justify-content: center; color: var(--gold); }
+    .page-hero .overline::before { background: var(--gold); }
+
+    /* ════════════════════════════════════════
+       SOBRE PAGE
+    ════════════════════════════════════════ */
+    .sobre-long p { margin-bottom: var(--sp-4); }
+    .adv-card {
+      background: var(--navy); border-radius: var(--radius-m);
+      padding: clamp(1.5rem,3.5vw,2.25rem);
+      display: flex; gap: clamp(1rem,3vw,1.75rem); align-items: flex-start;
+    }
+    @media (max-width: 560px) { .adv-card { flex-direction: column; } }
+    .adv-av {
+      width: 80px; height: 80px; min-width: 80px;
+      background: rgba(201,161,74,.12); border: 2px solid var(--gold-border); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--gold);
+    }
+    .adv-name { color: var(--white); font-size: clamp(1.1rem,2vw,1.35rem); margin-bottom: 4px; }
+    .adv-oab  { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: clamp(.75rem,2vw,1rem); }
+    .adv-bio  { color: rgba(255,255,255,.65); font-size: .9rem; line-height: 1.78; }
+
+    .values-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%,210px),1fr));
+      gap: clamp(.75rem,2vw,1.25rem);
+    }
+    .value-card {
+      background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-m);
+      padding: clamp(1.25rem,2.5vw,1.75rem);
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    }
+    @media (hover:hover) {
+      .value-card:hover { border-color: var(--gold-border); box-shadow: var(--shadow-s); }
+    }
+    .value-ico { font-size: 1.7rem; margin-bottom: clamp(.5rem,1.5vw,.875rem); }
+    .value-card h4 { color: var(--navy); margin-bottom: 8px; }
+    .value-card p { font-size: .87rem; }
+
+    /* ════════════════════════════════════════
+       ÁREAS PAGE
+    ════════════════════════════════════════ */
+    .area-full {
+      background: var(--white); border-radius: var(--radius-m);
+      padding: clamp(1.25rem,3.5vw,2.25rem);
+      border-left: 3px solid var(--gold);
+      box-shadow: var(--shadow-s); margin-bottom: clamp(.75rem,2vw,1.25rem);
+      transition: box-shadow var(--dur) var(--ease);
+    }
+    @media (hover:hover) { .area-full:hover { box-shadow: var(--shadow-m); } }
+    .area-full h3 { color: var(--navy); font-size: clamp(1.05rem,1.8vw,1.25rem); margin-bottom: clamp(.5rem,1.5vw,.875rem); display: flex; align-items: center; gap: 10px; }
+    .area-full p { font-size: .92rem; line-height: 1.8; }
+    .area-full ul { margin-top: clamp(.5rem,1.5vw,.875rem); display: flex; flex-direction: column; gap: 5px; }
+    .area-full li { font-size: .88rem; color: var(--muted); display: flex; gap: 8px; }
+    .area-full li::before { content: '–'; color: var(--gold); flex-shrink: 0; }
+
+    /* ════════════════════════════════════════
+       FAQ PAGE
+    ════════════════════════════════════════ */
+    .faq-full .faq-cols { grid-template-columns: 1fr; }
+
+    /* ════════════════════════════════════════
+       CONTATO PAGE
+    ════════════════════════════════════════ */
+    .contato-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem,5vw,4rem); align-items: start; }
+    @media (max-width: 680px) { .contato-grid { grid-template-columns: 1fr; } }
+    .contato-items { display: flex; flex-direction: column; gap: clamp(1rem,2.5vw,1.5rem); margin-top: clamp(1rem,2.5vw,1.75rem); }
+    .ci { display: flex; gap: clamp(.75rem,2vw,1rem); align-items: flex-start; }
+    .ci-ico {
+      width: 40px; height: 40px; min-width: 40px;
+      background: var(--gold-pale); border: 1px solid var(--gold-border);
+      border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .ci-lbl { font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
+    .ci-val { font-size: .92rem; color: var(--navy); }
+    .ci-val a { transition: color var(--dur) var(--ease); }
+    @media (hover:hover) { .ci-val a:hover { color: var(--gold); } }
+    .map-card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m);
+      padding: clamp(1.5rem,4vw,2.5rem); text-align: center;
+    }
+    .map-pin { font-size: 2.5rem; margin-bottom: var(--sp-4); }
+    .map-card h4 { color: var(--navy); margin-bottom: 8px; }
+    .map-card p  { font-size: .88rem; margin-bottom: var(--sp-6); }
+    .online-box {
+      background: var(--navy); border-radius: var(--radius-m);
+      padding: clamp(1.25rem,3vw,1.75rem); margin-top: clamp(.75rem,2vw,1.25rem);
+    }
+    .online-box h4 { color: var(--white); margin-bottom: 8px; }
+    .online-box p  { color: rgba(255,255,255,.58); font-size: .88rem; margin-bottom: var(--sp-6); }
+
+    /* ════════════════════════════════════════
+       FOOTER
+    ════════════════════════════════════════ */
+    footer { background: #060F1C; color: rgba(255,255,255,.52); padding: clamp(2.5rem,6vw,4rem) 0 clamp(1.25rem,3vw,2rem); }
+    .foot-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: clamp(1.5rem,4vw,3rem); margin-bottom: clamp(2rem,4vw,3rem);
+    }
+    @media (max-width: 860px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .foot-grid { grid-template-columns: 1fr; } }
+
+    .foot-brand p { font-size: .84rem; line-height: 1.75; max-width: 26ch; margin-top: clamp(.75rem,2vw,1rem); }
+    .foot-col h5 {
+      font-size: .66rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: clamp(.75rem,2vw,1rem);
+    }
+    .foot-links { display: flex; flex-direction: column; gap: 8px; }
+    .foot-links a { font-size: .84rem; color: rgba(255,255,255,.48); transition: color var(--dur) var(--ease); }
+    @media (hover:hover) { .foot-links a:hover { color: var(--gold); } }
+
+    .foot-bot {
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding-top: clamp(1rem,2.5vw,1.5rem);
+      display: flex; justify-content: space-between; align-items: flex-start;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .foot-bot p { font-size: .78rem; }
+    .foot-legal { font-size: .72rem; color: rgba(255,255,255,.28); max-width: 480px; text-align: right; }
+    @media (max-width: 640px) { .foot-legal { text-align: left; max-width: 100%; } }
+
+    /* ════════════════════════════════════════
+       WHATSAPP FLOAT
+    ════════════════════════════════════════ */
+    .wa-btn {
+      position: fixed;
+      bottom: max(24px, env(safe-area-inset-bottom, 24px));
+      right: max(20px, env(safe-area-inset-right, 20px));
+      z-index: 98;
+      display: flex; align-items: center; gap: 10px;
+      background: #25D366; border-radius: 40px;
+      padding: 0 20px 0 16px; height: 56px;
+      box-shadow: 0 4px 20px rgba(37,211,102,.42);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      animation: wa-pulse 3s ease-in-out infinite;
+      touch-action: manipulation; white-space: nowrap;
+    }
+    .wa-btn svg.wa-ico-svg { width: 26px; height: 26px; color: #fff; flex-shrink: 0; }
+    .wa-btn-label {
+      font-family: 'Lato', sans-serif; font-size: .88rem; font-weight: 700;
+      color: white; letter-spacing: .02em;
+    }
+    @media (max-width: 480px) {
+      .wa-btn { border-radius: 50%; width: 58px; height: 58px; padding: 0; justify-content: center; }
+      .wa-btn-label { display: none; }
+    }
+    @media (hover:hover) {
+      .wa-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(37,211,102,.55); }
+    }
+    .wa-btn:active { transform: scale(.96); }
+
+    @keyframes wa-pulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(37,211,102,.38); }
+      50%      { box-shadow: 0 4px 24px rgba(37,211,102,.6), 0 0 0 8px rgba(37,211,102,.1); }
+    }
+
+    /* ════════════════════════════════════════
+       SCROLL REVEAL – CSS transition, JS triggers class
+    ════════════════════════════════════════ */
+    .reveal {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity .55s var(--ease), transform .55s var(--ease);
+    }
+    .reveal.d1 { transition-delay: .08s; }
+    .reveal.d2 { transition-delay: .16s; }
+    .reveal.d3 { transition-delay: .24s; }
+    .reveal.vis { opacity: 1; transform: none; }
+
+    /* Skip link for keyboard users */
+    .skip-link {
+      position: absolute; top: -100px; left: 1rem; z-index: 200;
+      background: var(--gold); color: var(--navy); padding: 8px 16px;
+      border-radius: var(--radius-s); font-weight: 700;
+      transition: top .2s;
+    }
+    .skip-link:focus { top: 1rem; }
+  
+    /* ════════════════════════════════════════
+       CONVERSION — area card WA buttons
+    ════════════════════════════════════════ */
+    .area-card .area-wa-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: clamp(.875rem,2vw,1.25rem);
+      min-height: 44px; padding: 0 14px;
+      background: #25D366; border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif; font-size: .82rem; font-weight: 700;
+      color: white; letter-spacing: .05em; text-transform: uppercase;
+      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+      touch-action: manipulation; text-decoration: none;
+    }
+    .area-card .area-wa-btn svg.wa-ico-svg {
+      width: 15px !important; height: 15px !important;
+      min-width: 15px; max-width: 15px;
+      color: #fff; flex-shrink: 0; display: block;
+    }
+    @media (hover:hover) {
+      .area-card .area-wa-btn:hover { background: #1ebe5d; transform: translateY(-1px); }
+    }
+    .area-card .area-wa-btn:active { transform: scale(.97); }
+
+    /* WA panel */
+    .wa-panel {
+      background: var(--white); border-radius: var(--radius-l);
+      padding: clamp(1.5rem,4vw,2.5rem);
+      box-shadow: var(--shadow-l); border-top: 3px solid #25D366;
+    }
+    .wa-panel-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: var(--sp-6);
+    }
+    .wa-panel-icon {
+      width: 48px; height: 48px; min-width: 48px;
+      background: #E9FAF1; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wa-panel-icon svg.wa-ico-svg { width: 26px; height: 26px; color: #25D366; }
+    .wa-panel-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.1rem,2vw,1.4rem); color: var(--navy);
+    }
+    .wa-panel-sub { font-size: .84rem; color: var(--muted); margin-top: 2px; }
+
+    /* Textarea */
+    .wa-desc {
+      width: 100%; min-height: 90px; padding: 12px 14px;
+      border: 2px solid var(--line); border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif; font-size: 1rem; color: var(--text);
+      resize: vertical;
+      transition: border-color var(--dur) var(--ease);
+      -webkit-appearance: none; appearance: none;
+      margin-bottom: var(--sp-4);
+    }
+    .wa-desc:focus { outline: none; border-color: #25D366; box-shadow: 0 0 0 3px rgba(37,211,102,.13); }
+
+    /* Send button */
+    .wa-send-btn {
+      width: 100%; min-height: 54px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #25D366; border: none; border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif; font-size: .95rem; font-weight: 700;
+      color: white; letter-spacing: .04em; cursor: pointer;
+      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease),
+        box-shadow var(--dur) var(--ease);
+      touch-action: manipulation;
+    }
+    .wa-send-btn svg.wa-ico-svg { width: 22px; height: 22px; color: #fff; flex-shrink: 0; }
+    @media (hover:hover) {
+      .wa-send-btn:hover { background: #1ebe5d; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,.38); }
+    }
+    .wa-send-btn:active { transform: scale(.97); }
+    .wa-privacy {
+      font-size: .76rem; color: var(--muted); text-align: center;
+      margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .wa-flow-hint { font-size: .78rem; color: #c0392b; display: none; margin-bottom: 8px; }
+    .wa-flow-hint.show { display: block; }
+
+    /* Step WA link */
+    .step-wa {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 16px; min-height: 40px;
+      background: rgba(37,211,102,.12); border-radius: var(--radius-s);
+      border: 1px solid rgba(37,211,102,.25);
+      font-family: 'Lato', sans-serif; font-size: .8rem; font-weight: 700;
+      color: #1ebe5d; letter-spacing: .04em; text-transform: uppercase;
+      text-decoration: none; transition: background var(--dur) var(--ease);
+      touch-action: manipulation;
+    }
+    .step-wa svg.wa-ico-svg { width: 14px; height: 14px; color: #1ebe5d; }
+    @media (hover:hover) { .step-wa:hover { background: rgba(37,211,102,.2); } }
+
+    /* FAQ WA link */
+    .faq-wa {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 10px; padding: 8px 14px; min-height: 36px;
+      background: #25D366; border-radius: var(--radius-s);
+      font-family: 'Lato', sans-serif; font-size: .78rem; font-weight: 700;
+      color: white; letter-spacing: .04em; text-transform: uppercase;
+      text-decoration: none;
+      transition: background var(--dur) var(--ease); touch-action: manipulation;
+    }
+    .faq-wa svg.wa-ico-svg { width: 13px; height: 13px; color: #fff; }
+    @media (hover:hover) { .faq-wa:hover { background: #1ebe5d; } }
+
+    /* WA flow: área → subtema */
+    .wa-area-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: var(--sp-4);
+    }
+    .wa-area {
+      flex: 1 1 min(140px, 100%);
+      min-height: 48px; padding: 0 16px;
+      border: 2px solid var(--line); border-radius: var(--radius-s);
+      background: var(--white);
+      font-family: inherit; font-size: .88rem; font-weight: 700;
+      color: var(--navy); cursor: pointer;
+      transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+      touch-action: manipulation;
+    }
+    .wa-area.active {
+      border-color: #25D366; background: #E9FAF1; color: #145E38;
+    }
+    .wa-subtopic-select {
+      width: 100%; min-height: 48px; margin-bottom: var(--sp-6);
+      padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-s);
+      font-family: inherit; font-size: .92rem; color: var(--text);
+      background: var(--white); cursor: pointer;
+    }
+    .wa-subtopic-select:disabled {
+      opacity: .55; cursor: not-allowed;
+    }
+    #wa-sub-hint.wa-flow-hint { margin: -8px 0 12px; }
+
+  /* ════════════════════════════════════════
+     V2 – PROFESSIONAL SVG ICONS
+  ════════════════════════════════════════ */
+  .ico {
+    display: block; flex-shrink: 0;
+    stroke: currentColor; stroke-width: 1.5; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* ════════════════════════════════════════
+     V2 – LOGO IMG
+  ════════════════════════════════════════ */
+  .nav-logo { flex-direction: row; align-items: center; gap: 8px; }
+  .nav-logo-img {
+    height: clamp(30px, 3.5vw, 38px);
+    width: auto;
+    display: block;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  /* Texto em 2 linhas, altura combinada alinhada ao logo */
+  .nav-logo-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  @media (max-width: 820px) { .nav-logo-img { height: 30px; } }
+  @media (max-width: 480px) { .nav-logo-img { height: 28px; } }
+
+  /* ════════════════════════════════════════
+     V2 – AVALIAÇÕES GOOGLE
+  ════════════════════════════════════════ */
+  #reviews { background: var(--surface); }
+  .reviews-head { text-align: center; margin-bottom: clamp(1.5rem,4vw,2.5rem); }
+  .reviews-score-wrap {
+    display: flex; justify-content: center;
+    margin-top: clamp(1rem,2.5vw,1.5rem);
+  }
+  .reviews-score {
+    display: inline-flex; align-items: center; gap: clamp(10px,2vw,14px);
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--radius-m); box-shadow: var(--shadow-s);
+    padding: clamp(.875rem,2vw,1.1rem) clamp(1.5rem,3vw,2rem);
+  }
+  .reviews-score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem,3.5vw,2.6rem); font-weight: 700;
+    color: var(--navy); line-height: 1;
+  }
+  .reviews-stars-row { color: #F59E0B; font-size: 1.05rem; letter-spacing: 2px; line-height: 1; }
+  .reviews-source { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem,2.5vw,1.5rem);
+    margin-top: clamp(1.5rem,4vw,2.5rem);
+  }
+  @media (max-width: 740px) { .reviews-grid { grid-template-columns: 1fr; } }
+  .review-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--radius-m); padding: clamp(1.25rem,3vw,1.75rem);
+    box-shadow: var(--shadow-s);
+    transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    display: flex; flex-direction: column; gap: clamp(.75rem,2vw,1rem);
+  }
+  @media (hover:hover) { .review-card:hover { box-shadow: var(--shadow-m); border-color: var(--gold-border); } }
+  .review-header { display: flex; align-items: center; gap: 12px; }
+  .review-av {
+    width: 46px; height: 46px; min-width: 46px;
+    border-radius: 50%; background: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 1.25rem;
+    color: var(--gold); font-weight: 700; flex-shrink: 0;
+  }
+  .review-name { font-size: .9rem; font-weight: 700; color: var(--navy); line-height: 1.3; }
+  .review-card-stars { color: #F59E0B; font-size: .82rem; letter-spacing: 1.5px; margin-top: 3px; }
+  .review-text {
+    font-size: clamp(.86rem,1vw + .3rem,.9rem); line-height: 1.78;
+    color: var(--muted); font-style: italic;
+    flex: 1; /* stretch cards to equal height in each row */
+  }
+  .reviews-cta { text-align: center; margin-top: clamp(1.75rem,4vw,2.5rem); }
+
+  /* ════════════════════════════════════════
+     V2 – IMAGEM INSTITUCIONAL
+  ════════════════════════════════════════ */
+  .inst-img-box {
+    position: relative;
+    border-radius: var(--radius-l);
+    overflow: hidden;
+    min-height: 380px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .inst-img-box::before {
+    content: ''; position: absolute; inset: -12px;
+    background-image: url('./assets/hero-bg.jpg');
+    background-size: cover; background-position: center 20%;
+    filter: blur(5px) brightness(.82) saturate(1.15);
+    z-index: 0;
+  }
+  .inst-img-box::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(11,31,58,.12) 0%, rgba(7,20,38,.9) 100%);
+    z-index: 1;
+  }
+  .inst-img-pattern {
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: .06;
+  }
+  .inst-img-pattern svg { width: 220px; height: 220px; }
+  .inst-img-badge {
+    position: absolute; top: clamp(1rem,2.5vw,1.5rem); right: clamp(1rem,2.5vw,1.5rem);
+    background: var(--gold); border-radius: var(--radius-m);
+    padding: clamp(.75rem,1.5vw,1rem) clamp(1rem,2vw,1.25rem);
+    box-shadow: var(--shadow-gold); z-index: 3; text-align: center;
+  }
+  .inst-img-badge-n {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem,2.5vw,2rem); font-weight: 700; color: var(--navy); line-height: 1;
+  }
+  .inst-img-badge-l { font-size: .63rem; font-weight: 700; color: var(--navy-l); letter-spacing: .06em; margin-top: 3px; }
+  .inst-img-quote {
+    position: relative; z-index: 2;
+    padding: clamp(1.5rem,3.5vw,2rem);
+    background: linear-gradient(0deg, rgba(7,20,38,.97) 0%, rgba(7,20,38,.55) 100%);
+  }
+  .inst-img-quote blockquote {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem,1.5vw,1.15rem);
+    font-style: italic; color: rgba(255,255,255,.9);
+    line-height: 1.6; margin-bottom: var(--sp-4);
+  }
+  .inst-img-quote cite {
+    font-style: normal;
+    font-size: .67rem; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--gold);
+  }
+
+  /* ════════════════════════════════════════
+     V2 – MAPA EMBED
+  ════════════════════════════════════════ */
+  .map-embed-wrap {
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-s);
+    margin-bottom: var(--sp-4);
+  }
+  .map-embed-wrap iframe { display: block; width: 100%; height: 300px; border: 0; }
+  .map-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+
+  /* ════════════════════════════════════════
+     V2 – EQUIPE (skeleton pronto p/ crescer)
+  ════════════════════════════════════════ */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: clamp(1rem,2.5vw,1.5rem);
+    margin-top: clamp(1.5rem,3vw,2.5rem);
+  }
+  .team-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--radius-m); padding: clamp(1.25rem,2.5vw,1.75rem);
+    text-align: center;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  @media (hover:hover) { .team-card:hover { border-color: var(--gold-border); box-shadow: var(--shadow-s); } }
+  .team-av {
+    width: 80px; height: 80px; margin: 0 auto clamp(.75rem,2vw,1rem);
+    background: rgba(201,161,74,.1); border: 2px solid var(--gold-border);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--gold);
+    overflow: hidden;
+  }
+  .team-av img { width: 100%; height: 100%; object-fit: cover; }
+  .team-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--navy); margin-bottom: 4px; }
+  .team-role { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: clamp(.5rem,1.5vw,.75rem); }
+  .team-bio { font-size: .86rem; line-height: 1.72; color: var(--muted); }
+</style>
+
+<!-- ══════════════════════════════════
+     GOOGLE ANALYTICS 4
+══════════════════════════════════ -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-06Y26K26KZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-06Y26K26KZ');
+</script>
+</head>
+<body>
+<!-- Sprite: ícones (uma definição, várias instâncias via <use>) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+  <symbol id="icon-wa" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+  </symbol>
+  <!-- Balança da justiça -->
+  <symbol id="icon-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16"/>
+  </symbol>
+  <!-- Localização -->
+  <symbol id="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+  </symbol>
+  <!-- Telefone -->
+  <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+  </symbol>
+  <!-- E-mail -->
+  <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+  </symbol>
+  <!-- Instagram -->
+  <symbol id="icon-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/>
+  </symbol>
+  <!-- Documento -->
+  <symbol id="icon-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+  </symbol>
+  <!-- Família / Pessoas -->
+  <symbol id="icon-family" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+  </symbol>
+  <!-- Escudo -->
+  <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+  </symbol>
+  <!-- Coração / Acolhimento -->
+  <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+  </symbol>
+  <!-- Diálogo / Balão -->
+  <symbol id="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+  </symbol>
+  <!-- Livro / Técnica -->
+  <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+  </symbol>
+  <!-- Relógio -->
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </symbol>
+  <!-- Timer / Prazo -->
+  <symbol id="icon-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 6v6l4 2m-4-14v2M8 2.698l1 1.732M16 2.698l-1 1.732M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </symbol>
+  <!-- Saúde / Acidente -->
+  <symbol id="icon-health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/>
+  </symbol>
+  <!-- Aperto de mão / Ética -->
+  <symbol id="icon-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+  </symbol>
+  <!-- Globo -->
+  <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3.284 14.253A8.959 8.959 0 013 12c0-1.268.26-2.476.726-3.577"/>
+  </symbol>
+  <!-- Alerta -->
+  <symbol id="icon-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+  </symbol>
+  <!-- Cobrança / Cartão -->
+  <symbol id="icon-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+  </symbol>
+</svg>
+
+<!-- Skip to content – keyboard accessibility -->
+<a class="skip-link" href="#main-content">Ir para o conteúdo</a>
+
+<!-- ══════════ NAVBAR ══════════ -->
+<nav id="nav" role="navigation" aria-label="Navegação principal" aria-expanded="false">
+  <div class="wrap">
+    <div class="nav-i">
+      <a href="#" class="nav-logo" onclick="goto('home')" aria-label="MB Mendanha Sociedade de Advocacia – página inicial">
+        <img src="./assets/logo_mbmendanha.png"
+             alt="MB Mendanha Sociedade de Advocacia"
+             class="nav-logo-img"
+             width="48" height="48"
+             loading="eager"
+             decoding="async"/>
+        <div class="nav-logo-text">
+          <span class="nav-logo-name">MB Mendanha</span>
+          <span class="nav-logo-sub">Sociedade de Advocacia</span>
+        </div>
+      </a>
+      <ul class="nav-links" role="list">
+        <li><a href="#" onclick="goto('home')">Home</a></li>
+        <li><a href="#" onclick="goto('sobre')">Sobre</a></li>
+        <li><a href="#" onclick="goto('areas')">Áreas</a></li>
+        <li><a href="#" onclick="goto('home');defer(()=>scrollToId('formulario'))">Análise</a></li>
+        <li><a href="#" onclick="goto('faq')">FAQ</a></li>
+        <li><a href="#" onclick="goto('contato')">Contato</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
+           class="btn btn-gold" target="_blank" rel="noopener" aria-label="Falar com MB Mendanha no WhatsApp">
+          <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="15" height="15" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+          WhatsApp
+        </a>
+      </div>
+      <button class="ham" id="ham-btn" onclick="toggleDraw()" aria-label="Abrir menu de navegação" aria-expanded="false" aria-controls="mob-drawer">
+        <div class="ham-icon" aria-hidden="true"><span></span><span></span><span></span></div>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile drawer -->
+<div id="mob-drawer" role="dialog" aria-modal="true" aria-label="Menu de navegação">
+  <a href="#" class="mob-link" onclick="goto('home');closeDraw()">Home</a>
+  <a href="#" class="mob-link" onclick="goto('sobre');closeDraw()">Sobre</a>
+  <a href="#" class="mob-link" onclick="goto('areas');closeDraw()">Áreas de Atuação</a>
+  <a href="#" class="mob-link" onclick="goto('home');defer(()=>scrollToId('formulario'));closeDraw()">Análise Inicial</a>
+  <a href="#" class="mob-link" onclick="goto('faq');closeDraw()">FAQ</a>
+  <a href="#" class="mob-link" onclick="goto('contato');closeDraw()">Contato</a>
+  <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
+     class="btn btn-wa btn-lg mob-cta" target="_blank" rel="noopener" onclick="closeDraw()">
+    Falar no WhatsApp
+  </a>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div id="page-home" class="page active">
+
+  <main id="main-content">
+
+    <!-- HERO -->
+    <section id="hero" aria-label="MB Mendanha Sociedade de Advocacia na Zona Norte de São Paulo">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <svg class="hero-rings" aria-hidden="true" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="260" cy="260" r="258" stroke="rgba(201,161,74,.1)" stroke-width="1"/>
+        <circle cx="260" cy="260" r="200" stroke="rgba(201,161,74,.08)" stroke-width="1"/>
+        <circle cx="260" cy="260" r="140" stroke="rgba(201,161,74,.06)" stroke-width="1"/>
+      </svg>
+      <div class="wrap">
+        <div class="hero-body">
+          <div class="hero-eyebrow">
+            <div class="hero-eyebrow-line" aria-hidden="true"></div>
+            <span>MB Mendanha Sociedade de Advocacia – São Paulo</span>
+          </div>
+          <h1>Advocacia em <em>Direito Civil, Família e Trabalhista</em></h1>
+          <p class="hero-sub">Atendimento presencial na Zona Norte de São Paulo e online para todo o Brasil. Orientação jurídica clara, ética e sem burocracia.</p>
+          <div class="btn-row">
+            <a href="#" class="btn btn-cta-hero btn-lg" onclick="scrollToId('formulario')" aria-label="Iniciar atendimento prioritário">Iniciar Atendimento Prioritário</a>
+            <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
+               class="btn btn-ghost-hero btn-lg" target="_blank" rel="noopener" aria-label="Falar com o escritório no WhatsApp">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+              WhatsApp
+            </a>
+          </div>
+          <div class="hero-sep" aria-hidden="true"></div>
+          <div class="hero-creds" aria-label="Credenciais do escritório">
+            <div class="hero-cred">
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-scale"/></svg></div>
+              <div class="hero-cred-text"><strong>Marcos Aurélio Mendanha</strong>OAB/SP 368.689</div>
+            </div>
+            <div class="hero-cred">
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-pin"/></svg></div>
+              <div class="hero-cred-text"><strong>Vila Nova Cachoeirinha</strong>São Paulo – SP</div>
+            </div>
+            <div class="hero-cred">
+              <div class="hero-cred-ico" aria-hidden="true"><svg class="ico" width="22" height="22"><use href="#icon-phone"/></svg></div>
+              <div class="hero-cred-text"><strong>(11) 96503-0211</strong>WhatsApp disponível</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST BAND -->
+    <div class="trust-band" aria-label="Destaques do escritório">
+      <div class="wrap">
+        <div class="trust-inner">
+          <span class="trust-pill"><span aria-hidden="true">✓</span> Consulta pelo WhatsApp</span>
+          <span class="trust-sep" aria-hidden="true">|</span>
+          <span class="trust-pill"><span aria-hidden="true">✓</span> Presencial e online</span>
+          <span class="trust-sep" aria-hidden="true">|</span>
+          <span class="trust-pill"><span aria-hidden="true">✓</span> Zona Norte de SP</span>
+          <span class="trust-sep" aria-hidden="true">|</span>
+          <span class="trust-pill"><span aria-hidden="true">✓</span> OAB/SP 368.689</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AVALIAÇÕES GOOGLE -->
+    <section id="reviews" class="section" aria-labelledby="rev-ttl">
+      <div class="wrap">
+        <div class="reviews-head reveal">
+          <span class="overline" style="justify-content:center">Prova social</span>
+          <h2 id="rev-ttl">Clientes que confiaram no nosso trabalho</h2>
+          <div class="gold-rule center"></div>
+          <p>Veja o que dizem sobre nosso atendimento</p>
+          <div class="reviews-score-wrap">
+            <div class="reviews-score">
+              <div class="reviews-score-num" aria-label="Nota 5.0">5.0</div>
+              <div>
+                <div class="reviews-stars-row" aria-hidden="true">★★★★★</div>
+                <div class="reviews-source">Baseado em avaliações do Google</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="reviews-grid">
+
+          <article class="review-card reveal" itemscope itemtype="https://schema.org/Review">
+            <div class="review-header">
+              <div class="review-av" aria-hidden="true">K</div>
+              <div>
+                <div class="review-name" itemprop="author">Katia Marin</div>
+                <div class="review-card-stars" aria-label="5 estrelas">★★★★★</div>
+              </div>
+            </div>
+            <p class="review-text" itemprop="reviewBody">"Profissionais excelentes, são prestativos e pacientes tirando todas as dúvidas, deixando tudo muito claro, e te acompanham em todas as etapas do processo sempre com presteza e dedicação. Super recomendo!!!"</p>
+          </article>
+
+          <article class="review-card reveal d1" itemscope itemtype="https://schema.org/Review">
+            <div class="review-header">
+              <div class="review-av" aria-hidden="true">E</div>
+              <div>
+                <div class="review-name" itemprop="author">Edijana Maria</div>
+                <div class="review-card-stars" aria-label="5 estrelas">★★★★★</div>
+              </div>
+            </div>
+            <p class="review-text" itemprop="reviewBody">"Ótimo profissional, atencioso e competente em suas ações. Já me prestou serviço algumas vezes e sempre que preciso sei para quem recorrer. Super indico, preço justo e seriedade no trabalho prestado."</p>
+          </article>
+
+          <article class="review-card reveal d2" itemscope itemtype="https://schema.org/Review">
+            <div class="review-header">
+              <div class="review-av" aria-hidden="true">J</div>
+              <div>
+                <div class="review-name" itemprop="author">Josivan Lima</div>
+                <div class="review-card-stars" aria-label="5 estrelas">★★★★★</div>
+              </div>
+            </div>
+            <p class="review-text" itemprop="reviewBody">"Super competente e atencioso! Sempre lutando pelo que é correto e garantindo que os direitos de todos sejam protegidos."</p>
+          </article>
+
+        </div>
+
+        <div class="reviews-cta reveal">
+          <a href="https://www.google.com/search?sca_esv=80887af1545f3579&sxsrf=ANbL-n5dAavp6kylBl72HIcRcku5ZRPzlQ:1775494209652&kgmid=/g/11jyf46t5l&q=MB+Mendanha+Sociedade+de+Advocacia&shem=epsd1&shndl=30&source=sh/x/loc/uni/m1/1&kgs=32214575b8af91c1&utm_source=epsd1,sh/x/loc/uni/m1/1#lrd=0x94cef9d703e9e16b:0x678350bddb0bd2d0,1,,,,"
+             target="_blank" rel="noopener"
+             class="btn btn-ghost-navy">
+            Ver mais avaliações no Google
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOBRE PREVIEW -->
+    <section id="sobre-preview" class="section" aria-labelledby="sobre-ttl">
+      <div class="wrap">
+        <div class="sobre-grid">
+          <div class="reveal">
+            <span class="overline">Sobre o escritório</span>
+            <h2 id="sobre-ttl">Sociedade de Advocacia com <em>compromisso real</em></h2>
+            <div class="gold-rule"></div>
+            <p class="lead">A <strong>MB Mendanha Sociedade de Advocacia</strong> atua em Direito Civil, de Família e do Trabalho, na Vila Nova Cachoeirinha, Zona Norte de São Paulo — com ética, clareza e atenção a cada cliente.</p>
+            <p style="margin-top:1rem">Cada caso é acompanhado com explicações claras, sem juridiquês e sem promessas vazias.</p>
+            <div style="margin-top:2rem">
+              <a href="#" class="btn btn-ghost-navy" onclick="goto('sobre')">Conheça o escritório</a>
+            </div>
+          </div>
+          <div class="reveal d1">
+            <figure class="inst-img-box" aria-label="Escritório MB Mendanha Sociedade de Advocacia">
+              <!-- Padrão decorativo: substitua o background do .inst-img-box por uma foto real do escritório quando disponível -->
+              <div class="inst-img-pattern" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3v18M12 3L5 7.5M12 3l7 4.5M5 7.5L2 15h6L5 7.5zM19 7.5L16 15h6l-3-7.5zM4 19h16" stroke="white" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="inst-img-badge" aria-hidden="true">
+                <div class="inst-img-badge-n">+10</div>
+                <div class="inst-img-badge-l">Anos de<br/>experiência</div>
+              </div>
+              <figcaption class="inst-img-quote">
+                <blockquote>"Cada pessoa merece atenção individualizada, informações claras e defesa técnica qualificada."</blockquote>
+                <cite>Marcos Aurélio Mendanha — OAB/SP 368.689</cite>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- WA CTA inline — after about -->
+    <div style="background:var(--surface);padding:clamp(1.25rem,3vw,1.75rem) 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+      <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <p style="color:var(--navy);font-weight:700;font-size:clamp(.9rem,1vw+.4rem,1rem);margin:0">
+          Precisa de orientação jurídica? Fale agora pelo WhatsApp, sem compromisso.
+        </p>
+        <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener"
+           class="btn btn-wa btn-lg" style="flex-shrink:0">
+          <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+          Falar no WhatsApp
+        </a>
+      </div>
+    </div>
+
+    <!-- AREAS -->
+    <section id="areas-section" class="section" aria-labelledby="areas-ttl">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="overline" style="justify-content:center">Serviços</span>
+          <h2 id="areas-ttl">Áreas de atuação</h2>
+          <div class="gold-rule center"></div>
+          <p>Direito Civil, de Família e do Trabalho — atendimento na Zona Norte de SP e online em todo o Brasil.</p>
+        </div>
+        <div class="areas-grid">
+          <article class="area-card reveal">
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-doc"/></svg></div>
+            <h3>Direito Civil</h3>
+            <p>Contratos, indenizações, cobranças e conflitos patrimoniais. Orientação objetiva para proteger seus interesses.</p>
+            <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20Civil." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito Civil no WhatsApp">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre Civil
+            </a>
+          </article>
+          <article class="area-card reveal d1">
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-family"/></svg></div>
+            <h3>Direito de Família</h3>
+            <p>Divórcio, pensão alimentícia, guarda e convivência. Atendimento respeitoso e estratégico.</p>
+            <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20de%20Fam%C3%ADlia." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito de Família no WhatsApp">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre Família
+            </a>
+          </article>
+          <article class="area-card reveal d2">
+            <div class="area-ico" aria-hidden="true"><svg class="ico" width="28" height="28"><use href="#icon-scale"/></svg></div>
+            <h3>Direito do Trabalho</h3>
+            <p>Demissões, jornada, FGTS, assédio, vínculo e acidentes. Defesa dos direitos do trabalhador.</p>
+            <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia.%20Tenho%20uma%20quest%C3%A3o%20sobre%3A%20Direito%20do%20Trabalho." class="area-wa-btn" target="_blank" rel="noopener" aria-label="Falar sobre Direito do Trabalho no WhatsApp">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre Trabalhista
+            </a>
+          </article>
+        </div>
+        <div class="text-c" style="margin-top:2.5rem">
+          <a href="#" class="btn btn-navy btn-lg" onclick="goto('areas')">Ver detalhes por área</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMO FUNCIONA -->
+    <section id="como" class="section" aria-labelledby="como-ttl">
+      <div class="wrap">
+        <div class="como-head reveal">
+          <span class="overline" style="color:var(--gold);justify-content:center">Nosso processo</span>
+          <h2 id="como-ttl" style="color:var(--white)">Como funciona o atendimento</h2>
+          <div class="gold-rule center"></div>
+          <p>Simples, transparente e focado em você.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal"><div class="step-n" aria-hidden="true">01</div><h3>Primeiro contato</h3><p>Fale pelo WhatsApp ou preencha o formulário. Escuta sem julgamentos.</p></div>
+          <div class="step reveal d1"><div class="step-n" aria-hidden="true">02</div><h3>Análise do caso</h3><p>Avaliamos sua situação e explicamos seus direitos de forma clara.</p></div>
+          <div class="step reveal d2"><div class="step-n" aria-hidden="true">03</div><h3>Estratégia jurídica</h3><p>Definimos juntos: negociação, mediação, conciliação ou medida judicial adequada ao seu caso.</p></div>
+          <div class="step reveal d3"><div class="step-n" aria-hidden="true">04</div><h3>Acompanhamento</h3><p>Você é informado em cada etapa, com comunicação clara e acessível.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOCAL SEO -->
+    <section id="local" class="section" aria-labelledby="local-ttl">
+      <div class="wrap">
+        <div class="local-grid">
+          <div class="reveal">
+            <span class="overline">Onde atendemos</span>
+            <h2 id="local-ttl">Presença em São Paulo e em todo o Brasil</h2>
+            <div class="gold-rule"></div>
+            <p class="lead">Com sede na <strong>Vila Nova Cachoeirinha, Zona Norte de SP</strong>, atendemos clientes em toda a cidade de São Paulo e online para qualquer região do país.</p>
+            <div class="bairros" role="list" aria-label="Regiões atendidas">
+              <span class="tag" role="listitem">Cachoeirinha</span>
+              <span class="tag" role="listitem">Brasilândia</span>
+              <span class="tag" role="listitem">Taipas</span>
+              <span class="tag" role="listitem">Jaraguá</span>
+              <span class="tag" role="listitem">Vila Souza</span>
+              <span class="tag" role="listitem">Zona Norte</span>
+              <span class="tag" role="listitem">Grande São Paulo</span>
+              <span class="tag" role="listitem">Todo o Brasil</span>
+            </div>
+            <p style="margin-top:1.25rem">Além do atendimento presencial, realizamos consultas por <strong>videoconferência e WhatsApp</strong> — sem deslocamento, sem burocracia.</p>
+          </div>
+          <div class="reveal d1">
+            <div class="map-embed-wrap">
+              <iframe
+                src="https://maps.google.com/maps?q=Av.+Imirim,+4301,+Vila+Nova+Cachoeirinha,+S%C3%A3o+Paulo,+SP&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Localização do escritório MB Mendanha – Av. Imirim 4301, Vila Nova Cachoeirinha"
+                aria-label="Mapa do escritório MB Mendanha na Av. Imirim 4301"
+              ></iframe>
+            </div>
+            <div class="map-actions" style="margin-bottom:clamp(1rem,2.5vw,1.5rem)">
+              <a href="https://www.google.com/maps/search/?api=1&query=Av.+Imirim+4301+Sala+03+Vila+Nova+Cachoeirinha+S%C3%A3o+Paulo+SP" target="_blank" rel="noopener" class="btn btn-navy">Abrir no Google Maps</a>
+            </div>
+            <div class="info-card" itemscope itemtype="https://schema.org/PostalAddress">
+              <h3>Contato direto</h3>
+              <div class="info-row">
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-phone"/></svg></div>
+                <div><div class="info-lbl">WhatsApp</div><div class="info-val"><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener">(11) 96503-0211</a></div></div>
+              </div>
+              <div class="info-row">
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-mail"/></svg></div>
+                <div><div class="info-lbl">E-mail</div><div class="info-val"><a href="mailto:advocacia.mendanha@gmail.com">advocacia.mendanha@gmail.com</a></div></div>
+              </div>
+              <div class="info-row">
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-pin"/></svg></div>
+                <div><div class="info-lbl">Endereço</div><div class="info-val" itemprop="streetAddress">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</div></div>
+              </div>
+              <div class="info-row" style="margin-bottom:0">
+                <div class="info-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-instagram"/></svg></div>
+                <div><div class="info-lbl">Instagram</div><div class="info-val"><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTATO RÁPIDO VIA WHATSAPP -->
+    <section id="formulario" class="section" aria-labelledby="form-ttl">
+      <div class="wrap">
+        <div class="form-wrap">
+          <div class="reveal">
+            <span class="overline">Contato rápido</span>
+            <h2 id="form-ttl">Fale diretamente com o escritório</h2>
+            <div class="gold-rule"></div>
+            <p class="lead">Escolha a área, o tema e descreva brevemente seu caso. Sua mensagem será enviada ao WhatsApp do escritório MB Mendanha (OAB/SP 368.689).</p>
+            <div class="trust-list">
+              <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Resposta rápida</strong> — atendimento ágil pelo WhatsApp.</p></div>
+              <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Sem compromisso</strong> — a orientação inicial é gratuita.</p></div>
+              <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Sigilo absoluto</strong> — suas informações são confidenciais.</p></div>
+              <div class="trust-row"><div class="trust-dot" aria-hidden="true"></div><p><strong>Atendimento humano</strong> — você fala diretamente com o advogado.</p></div>
+            </div>
+          </div>
+          <div class="reveal d1">
+            <div class="wa-panel">
+              <div class="wa-panel-header">
+                <div class="wa-panel-icon" aria-hidden="true"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg></div>
+                <div>
+                  <div class="wa-panel-title">Fale com o advogado agora</div>
+                  <div class="wa-panel-sub">Selecione o tema e descreva sua situação</div>
+                </div>
+              </div>
+
+              <label style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-l);display:block;margin-bottom:8px">
+                1. Área jurídica *
+              </label>
+              <div class="wa-area-row" role="radiogroup" aria-label="Área jurídica">
+                <button type="button" class="wa-area" data-area="civil" onclick="selectArea(this)">Civil</button>
+                <button type="button" class="wa-area" data-area="familia" onclick="selectArea(this)">Família</button>
+                <button type="button" class="wa-area" data-area="trabalhista" onclick="selectArea(this)">Trabalhista</button>
+              </div>
+              <p class="wa-flow-hint" id="wa-area-hint">Selecione Civil, Família ou Trabalhista.</p>
+
+              <label for="wa-subtopic" style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-l);display:block;margin-bottom:8px">
+                2. Tema *
+              </label>
+              <select id="wa-subtopic" class="wa-subtopic-select" disabled aria-label="Subtema conforme a área escolhida">
+                <option value="">Primeiro selecione a área acima</option>
+              </select>
+              <p class="wa-flow-hint" id="wa-sub-hint">Selecione um subtema na lista.</p>
+
+              <label for="wa-desc-input" style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-l);display:block;margin-bottom:8px">
+                3. Contexto do caso <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span>
+              </label>
+              <textarea
+                id="wa-desc-input"
+                class="wa-desc"
+                placeholder="Ex.: fui demitido ontem e não recebi as verbas rescisórias. Trabalho há 3 anos na empresa."
+                aria-label="Breve descrição do caso"
+                maxlength="500"
+              ></textarea>
+
+              <!-- Send -->
+              <button type="button" class="wa-send-btn" onclick="sendToWA()" aria-label="Abrir WhatsApp com sua mensagem">
+              <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+                Iniciar conversa no WhatsApp
+              </button>
+              <p class="wa-privacy">🔒 Seus dados são sigilosos e protegidos.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ PREVIEW -->
+    <section id="faq-home" class="section" aria-labelledby="faq-ttl">
+      <div class="wrap">
+        <div class="reveal">
+          <span class="overline">Dúvidas frequentes</span>
+          <h2 id="faq-ttl">Perguntas frequentes — Direito do Trabalho</h2>
+          <div class="gold-rule"></div>
+        </div>
+        <div class="faq-cols reveal" itemscope itemtype="https://schema.org/FAQPage">
+          <div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Quais são meus direitos ao ser demitido?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Na demissão sem justa causa: saldo de salário, aviso prévio, férias proporcionais com 1/3, 13º proporcional, multa de 40% sobre o FGTS, liberação do saldo do FGTS e habilitação ao seguro-desemprego. Revise todos os cálculos antes de assinar.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Demiss%C3%A3o%20e%20verbas%20rescis%C3%B3rias." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Preciso de advogado trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">A lei permite representação própria, mas atuar sem advogado pode comprometer seus direitos: prazos perdidos, provas mal produzidas e valores subestimados. Um advogado trabalhista experiente faz diferença no resultado.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Orientação%20sobre%20ação%20trabalhista." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Tenho prazo para entrar com ação trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Sim. Após o fim do contrato, você tem 2 anos para ajuizar ação, podendo cobrar direitos dos últimos 5 anos. Não perca o prazo — consulte um advogado assim que possível.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Prazo%20para%20ação%20trabalhista." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+          </div>
+          <div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">O que fazer se não recebi minhas verbas?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Guarde holerites, contrato, TRCT e extrato do FGTS. Não assine quitação sem entender o que está sendo quitado. Entre em contato com um advogado trabalhista para revisar os valores e orientação sobre próximos passos.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Verbas%20rescis%C3%B3rias%20não%20pagas." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Como entrar com ação trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">O advogado analisa o caso, reúne as provas, calcula os valores devidos e ajuíza a reclamação trabalhista. A MB Mendanha Sociedade de Advocacia acompanha o processo — da consulta inicial ao encerramento.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Como%20entrar%20com%20ação%20trabalhista." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+            <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+              <button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Atende em Cachoeirinha e Zona Norte?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+              <div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Sim. O escritório está na Vila Nova Cachoeirinha e atende Cachoeirinha, Brasilândia, Taipas, Jaraguá, Vila Souza e toda a Zona Norte, presencialmente ou online. WhatsApp: (11) 96503-0211.</p><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%3A%20Atendimento%20na%20Zona%20Norte." class="faq-wa" target="_blank" rel="noopener"><svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg> Falar sobre isso</a>
+            </div></div>
+            </div>
+          </div>
+          <div class="faq-note">
+            <p><strong><svg class="ico" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px"><use href="#icon-warn"/></svg> Aviso:</strong> As respostas têm caráter informativo. Cada caso exige análise jurídica individualizada.
+            <a href="#" onclick="goto('faq')">Ver todas as perguntas →</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section id="cta-final" aria-label="Chamada para contato">
+      <div class="wrap">
+        <div class="cta-body reveal">
+          <span class="overline" style="color:var(--gold);justify-content:center">Não adie sua decisão</span>
+          <h2>Entenda seus direitos. Tome uma decisão informada.</h2>
+          <p>A MB Mendanha Sociedade de Advocacia está pronta para ouvir você. Sem compromisso, sem burocracia. Entre em contato agora.</p>
+          <div class="btn-row center">
+            <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
+               class="btn btn-gold btn-lg" target="_blank" rel="noopener">Falar no WhatsApp</a>
+            <a href="#" class="btn btn-ghost-gold btn-lg" onclick="scrollToId('formulario')">Solicitar análise inicial</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /page-home -->
+
+<!-- ══════════════════════════════════
+     SOBRE
+══════════════════════════════════ -->
+<div id="page-sobre" class="page">
+  <header class="page-hero" aria-label="Sobre o escritório">
+    <div class="wrap-s">
+      <span class="overline">Quem somos</span>
+      <h1>MB Mendanha Sociedade de Advocacia</h1>
+      <p>Direito Civil, de Família e do Trabalho — responsabilidade, ética e foco no ser humano na Zona Norte de São Paulo.</p>
+    </div>
+  </header>
+  <main>
+    <section class="section" style="background:var(--white)">
+      <div class="wrap-s">
+        <span class="overline">Nossa história</span>
+        <h2>Justiça acessível e informação clara</h2>
+        <div class="gold-rule"></div>
+        <div class="sobre-long lead">
+          <p>A <strong>MB Mendanha Sociedade de Advocacia</strong> foi constituída para oferecer orientação jurídica de qualidade em <strong>Direito Civil, de Família e do Trabalho</strong>, com destaque para a Zona Norte de São Paulo.</p>
+          <p>Com sede na Vila Nova Cachoeirinha, atendemos Cachoeirinha, Brasilândia, Taipas, Jaraguá, Vila Souza e demais bairros da região, além de clientes de todo o Brasil via atendimento online.</p>
+          <p>Acreditamos que o acesso à justiça começa com informação clara e honesta. Antes de qualquer decisão, explicamos o que está em jogo, as perspectivas reais e como podemos ajudar — sem promessas vagas e sem sensacionalismo.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section" style="background:var(--surface)">
+      <div class="wrap">
+        <span class="overline">Quem nos representa</span>
+        <h2>Nosso fundador</h2>
+        <div class="gold-rule"></div>
+        <div class="adv-card" itemscope itemtype="https://schema.org/Person">
+          <!-- Substitua o elemento abaixo por <img src="foto-marcos.jpg" alt="Marcos Aurélio Mendanha" class="adv-av" style="object-fit:cover"> quando a foto estiver disponível -->
+          <div class="adv-av" role="img" aria-label="Iniciais: MA">MA</div>
+          <div>
+            <h3 class="adv-name" itemprop="name">Marcos Aurélio Mendanha</h3>
+            <p class="adv-oab" itemprop="identifier">OAB/SP 368.689 — Advogado e Fundador</p>
+            <p class="adv-bio" itemprop="description">Fundador da MB Mendanha Sociedade de Advocacia, o Dr. Marcos Aurélio Mendanha atua nas áreas de Direito Civil, de Família e do Trabalho, com mais de 10 anos de experiência e presença consolidada na Zona Norte de São Paulo. Conduz cada caso com ética, transparência e atenção individualizada — explicando os caminhos possíveis sem juridiquês e sem promessas vazias. Atende presencialmente em Vila Nova Cachoeirinha e online para clientes de todo o Brasil.</p>
+          </div>
+        </div>
+        <!-- Equipe – estrutura pronta para crescer -->
+        <div style="margin-top:clamp(1.5rem,3vw,2.5rem);padding-top:clamp(1.5rem,3vw,2.5rem);border-top:1px solid var(--line)">
+          <span class="overline">A equipe</span>
+          <p style="margin-top:var(--sp-3);font-size:.9rem;color:var(--muted);max-width:52ch">O escritório está estruturado para crescer. Novos profissionais integrarão a equipe para ampliar o alcance e a qualidade do atendimento.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section" style="background:var(--white)">
+      <div class="wrap">
+        <span class="overline">Nossos valores</span>
+        <h2>O que nos orienta</h2>
+        <div class="gold-rule"></div>
+        <div class="values-grid">
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-handshake"/></svg></div><h4>Ética</h4><p>Integridade em todas as etapas, respeitando a confiança de cada cliente e os princípios da profissão.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-chat"/></svg></div><h4>Transparência</h4><p>Comunicamos riscos e expectativas com honestidade, sem promessas vagas ou linguagem confusa.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-heart"/></svg></div><h4>Acolhimento</h4><p>Ouvimos com empatia e tratamos cada situação com atenção e respeito que ela merece.</p></div>
+          <div class="value-card"><div class="value-ico"><svg class="ico" width="28" height="28"><use href="#icon-book"/></svg></div><h4>Técnica</h4><p>Atualização constante para argumentação sólida e estratégias jurídicas bem fundamentadas.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section-s text-c" style="background:var(--navy)">
+      <div class="wrap">
+        <h2 style="color:var(--white);margin-bottom:.875rem">Pronto para conversar?</h2>
+        <p style="color:rgba(255,255,255,.6);max-width:44ch;margin:0 auto 2rem">Fale com o advogado Marcos Aurélio Mendanha pelo WhatsApp ou preencha o formulário.</p>
+        <div class="btn-row center">
+          <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." class="btn btn-gold btn-lg" target="_blank" rel="noopener">Falar no WhatsApp</a>
+          <a href="#" class="btn btn-ghost-gold btn-lg" onclick="goto('home');defer(()=>scrollToId('formulario'))">Formulário de análise</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     ÁREAS
+══════════════════════════════════ -->
+<div id="page-areas" class="page">
+  <header class="page-hero">
+    <div class="wrap-s">
+      <span class="overline">Especialização</span>
+      <h1>Áreas de atuação</h1>
+      <p>Direito Civil, de Família e do Trabalho — principais frentes da MB Mendanha Sociedade de Advocacia.</p>
+    </div>
+  </header>
+  <main>
+    <section class="section" style="background:var(--surface)">
+      <div class="wrap">
+        <h2 class="area-practice-h2">Direito Civil</h2>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-doc"/></svg></span>Contratos e obrigações</h3><p>Análise e revisão de contratos, inadimplemento e medidas para proteção patrimonial.</p><ul><li>Contratos civis e comerciais</li><li>Rescisão e negociação</li><li>Indenização por danos</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-card"/></svg></span>Cobrança e responsabilidade civil</h3><p>Atuação em cobranças, acordos e execuções, sempre com transparência de custos e prazos.</p><ul><li>Cobrança extrajudicial e judicial</li><li>Execuções e acordos</li></ul></article>
+
+        <h2 class="area-practice-h2">Direito de Família</h2>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-family"/></svg></span>Família e convivência</h3><p>Orientação em divórcio, pensão alimentícia, guarda e convivência, com abordagem respeitosa.</p><ul><li>Divórcio e separação</li><li>Pensão e guarda</li><li>Mediação de conflitos familiares</li></ul></article>
+
+        <h2 class="area-practice-h2">Direito do Trabalho</h2>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-doc"/></svg></span>Demissão e verbas rescisórias</h3><p>Revisão de rescisões, verbas, FGTS, férias e 13º para trabalhadores na Zona Norte e em todo o Brasil.</p><ul><li>Demissão sem justa causa e rescisão indireta</li><li>Revisão de cálculos e TRCT</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-timer"/></svg></span>Jornada e direitos trabalhistas</h3><p>Horas extras, adicional noturno, banco de horas e intervalos.</p><ul><li>Horas extras não pagas</li><li>Sobreaviso e adicional noturno</li></ul></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-shield"/></svg></span>Assédio e vínculo empregatício</h3><p>Assédio moral e sexual; reconhecimento de vínculo sem registro em carteira.</p></article>
+        <article class="area-full"><h3><span aria-hidden="true"><svg class="ico" width="20" height="20" style="display:inline;vertical-align:middle;margin-right:6px"><use href="#icon-health"/></svg></span>Acidente e estabilidade</h3><p>Acidente de trabalho, benefícios, estabilidade e reintegração quando cabível.</p></article>
+      </div>
+    </section>
+    <section class="section-s text-c" style="background:var(--navy)">
+      <div class="wrap">
+        <h2 style="color:var(--white);margin-bottom:.875rem">Sua situação se encaixa?</h2>
+        <p style="color:rgba(255,255,255,.6);max-width:44ch;margin:0 auto 2rem">Entre em contato e entenda seus direitos com o advogado Marcos Aurélio Mendanha.</p>
+        <div class="btn-row center">
+          <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." class="btn btn-gold btn-lg" target="_blank" rel="noopener">Falar no WhatsApp</a>
+          <a href="#" class="btn btn-ghost-gold btn-lg" onclick="goto('home');defer(()=>scrollToId('formulario'))">Formulário de análise</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     FAQ
+══════════════════════════════════ -->
+<div id="page-faq" class="page">
+  <header class="page-hero">
+    <div class="wrap-s">
+      <span class="overline">Esclarecimentos</span>
+      <h1>Perguntas frequentes — Direito do Trabalho</h1>
+      <p>Respostas objetivas sobre direitos trabalhistas. Para Civil ou Família, fale conosco pelo WhatsApp.</p>
+    </div>
+  </header>
+  <main>
+    <section class="section" style="background:var(--white)">
+      <div class="wrap-s">
+        <div style="background:var(--gold-pale);border-left:3px solid var(--gold);border-radius:var(--radius-s);padding:1rem 1.25rem;margin-bottom:2.5rem">
+          <p style="color:var(--navy);font-size:.86rem"><strong><svg class="ico" width="15" height="15" style="display:inline;vertical-align:middle;margin-right:4px"><use href="#icon-warn"/></svg> Aviso importante:</strong> As respostas têm caráter informativo. Cada caso possui particularidades e exige análise jurídica individual. Para orientação sobre sua situação, entre em contato com a MB Mendanha Sociedade de Advocacia.</p>
+        </div>
+        <div class="faq-full" itemscope itemtype="https://schema.org/FAQPage">
+          <div class="faq-cols">
+            <div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Quais são meus direitos ao ser demitido sem justa causa?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Você tem direito ao saldo de salário, aviso prévio (indenizado ou trabalhado), férias proporcionais com 1/3, 13º proporcional, multa de 40% sobre o saldo do FGTS, liberação do FGTS e habilitação ao seguro-desemprego. Os valores devem ser pagos no prazo legal. Revise todos os cálculos antes de assinar a rescisão.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Preciso de advogado trabalhista para entrar com ação?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">A lei permite representação própria (jus postulandi), mas atuar sem advogado pode comprometer seus direitos: prazos perdidos, provas mal produzidas e valores subestimados são riscos reais. Um advogado trabalhista experiente faz diferença no resultado final.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Tenho prazo para entrar com ação trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Sim. Após o término do contrato, você tem 2 anos para ajuizar ação, podendo cobrar direitos dos últimos 5 anos. Durante o vínculo ativo, o prazo é de 5 anos. Não deixe o prazo passar.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Como entrar com uma ação trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">O advogado analisa o caso, reúne provas (holerites, contrato, registros de ponto, mensagens), calcula os valores devidos e ajuíza a reclamação trabalhista. A MB Mendanha Sociedade de Advocacia acompanha todas as etapas com você.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">O que fazer se não recebi minhas verbas rescisórias?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Guarde holerites, contrato, TRCT e extrato do FGTS. Não assine quitação sem entender o que está sendo quitado. O não pagamento no prazo legal gera multa adicional ao empregador. Consulte um advogado imediatamente.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Posso reclamar direitos sem carteira assinada?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Sim. O vínculo pode ser reconhecido judicialmente. Mensagens, fotos, testemunhos e comprovantes de pagamento são provas válidas. Uma vez reconhecido o vínculo, todos os direitos são devidos retroativamente.</p></div></div></div>
+            </div>
+            <div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">O que é assédio moral e como provar?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Assédio moral é a exposição repetida do trabalhador a situações humilhantes: cobranças abusivas, isolamento, ridicularização. Salve mensagens, e-mails e identifique testemunhas. Cada episódio documentado fortalece o pedido de indenização.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Meu FGTS não foi depositado. O que fazer?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Verifique o saldo no app FGTS da Caixa Econômica Federal. Se houver irregularidades, é possível requerer judicialmente o pagamento com correção. Os depósitos faltantes também compõem a base da multa de 40% na rescisão.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Tenho direito à estabilidade no emprego?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">As hipóteses mais comuns: gestante (da confirmação até 5 meses após o parto), trabalhador acidentado (12 meses pós-alta), membros de CIPA (mandato + 1 ano). Se demitido durante estabilidade, pode buscar reintegração ou indenização.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">O que é rescisão indireta?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">É a demissão sem justa causa iniciada pelo trabalhador quando o empregador descumpre obrigações legais — atraso de salário, condições degradantes ou exigência de atividades ilícitas. O trabalhador recebe todas as verbas rescisórias.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">Quanto custa contratar um advogado trabalhista?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Em muitas ações trabalhistas, o advogado atua por honorários de êxito — recebe apenas se o cliente obtiver resultado favorável. A MB Mendanha Sociedade de Advocacia apresenta todas as condições com transparência antes de qualquer contratação.</p></div></div></div>
+              <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"><button class="faq-q" onclick="faq(this)" aria-expanded="false"><span class="faq-q-text" itemprop="name">O escritório atende em Cachoeirinha e Zona Norte?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-body" role="region"><div class="faq-body-inner" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><p itemprop="text">Sim. Estamos na Av. Imirim, 4301 - SALA 03, Vila Nova Cachoeirinha, São Paulo – SP (CEP 02465-500). Atendemos Cachoeirinha, Brasilândia, Taipas, Jaraguá, Vila Souza e toda a Zona Norte — presencialmente ou online. WhatsApp: (11) 96503-0211.</p></div></div></div>
+            </div>
+            <div class="faq-note">
+              <p><strong>Não encontrou sua dúvida?</strong> Fale diretamente com o advogado Marcos Aurélio Mendanha pelo WhatsApp ou formulário.</p>
+              <div class="btn-row" style="margin-top:1rem">
+                <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." class="btn btn-wa" target="_blank" rel="noopener">Falar no WhatsApp</a>
+                <a href="#" class="btn btn-ghost-navy" onclick="goto('home');defer(()=>scrollToId('formulario'))">Formulário de análise</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     CONTATO
+══════════════════════════════════ -->
+<div id="page-contato" class="page">
+  <header class="page-hero">
+    <div class="wrap-s">
+      <span class="overline">Fale conosco</span>
+      <h1>Contato – MB Mendanha Sociedade de Advocacia</h1>
+      <p>Estamos prontos para ouvir você. Escolha o canal de sua preferência.</p>
+    </div>
+  </header>
+  <main>
+    <section class="section" style="background:var(--white)">
+      <div class="wrap">
+        <div class="contato-grid">
+          <div>
+            <span class="overline">Informações</span>
+            <h2>Entre em contato</h2>
+            <div class="gold-rule"></div>
+            <p class="lead">Atendemos presencialmente na Zona Norte de São Paulo e online para clientes de todo o Brasil.</p>
+            <div class="contato-items" itemscope itemtype="https://schema.org/LegalService">
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-phone"/></svg></div><div><div class="ci-lbl">WhatsApp</div><div class="ci-val"><a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica." target="_blank" rel="noopener" itemprop="telephone">(11) 96503-0211</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-mail"/></svg></div><div><div class="ci-lbl">E-mail</div><div class="ci-val"><a href="mailto:advocacia.mendanha@gmail.com" itemprop="email">advocacia.mendanha@gmail.com</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-pin"/></svg></div><div><div class="ci-lbl">Endereço</div><div class="ci-val" itemprop="address">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-instagram"/></svg></div><div><div class="ci-lbl">Instagram</div><div class="ci-val"><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-scale"/></svg></div><div><div class="ci-lbl">Registro OAB</div><div class="ci-val">Marcos Aurélio Mendanha<br/>OAB/SP 368.689</div></div></div>
+              <div class="ci"><div class="ci-ico" aria-hidden="true"><svg class="ico" width="20" height="20"><use href="#icon-clock"/></svg></div><div><div class="ci-lbl">Horário</div><div class="ci-val">Seg a sex: 9h às 18h<br/>Sábados: mediante agendamento</div></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="map-card" style="padding:0;overflow:hidden">
+              <iframe
+                src="https://maps.google.com/maps?q=Av.+Imirim,+4301,+Vila+Nova+Cachoeirinha,+S%C3%A3o+Paulo,+SP&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Localização MB Mendanha – Av. Imirim 4301, Vila Nova Cachoeirinha, SP"
+                aria-label="Mapa do escritório MB Mendanha"
+                style="display:block;width:100%;height:260px;border:0"
+              ></iframe>
+              <div style="padding:clamp(1.25rem,3vw,1.75rem);text-align:center">
+                <p style="font-size:.88rem;margin-bottom:var(--sp-4);color:var(--muted)">
+                  Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha · São Paulo – SP<br/>CEP 02465-500
+                </p>
+                <a href="https://www.google.com/maps/search/?api=1&query=Av.+Imirim+4301+Sala+03+Vila+Nova+Cachoeirinha+S%C3%A3o+Paulo+SP+02465-500" target="_blank" rel="noopener" class="btn btn-navy">Abrir no Google Maps</a>
+              </div>
+            </div>
+            <div class="online-box">
+              <h4>Atendimento Online Disponível</h4>
+              <p>Videoconferência para clientes de qualquer região do Brasil. Sem deslocamento.</p>
+              <a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20um%20atendimento%20online." class="btn btn-gold" target="_blank" rel="noopener">Agendar atendimento online</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer role="contentinfo">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div style="margin-bottom:clamp(.75rem,2vw,1rem)">
+          <img src="./assets/logo_mbmendanha.png"
+               alt="MB Mendanha Sociedade de Advocacia"
+               width="56" height="56"
+               loading="lazy"
+               decoding="async"
+               style="display:block;height:56px;width:auto;opacity:.92"/>
+        </div>
+        <p>Direito Civil, de Família e do Trabalho na Zona Norte de São Paulo. Atendimento presencial e online.</p>
+        <div style="margin-top:1rem">
+          <a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener" style="font-size:.82rem;color:rgba(255,255,255,.45);transition:color .24s" onmouseover="this.style.color='#C9A14A'" onmouseout="this.style.color='rgba(255,255,255,.45)'">@mbmendanha.advocacia</a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h5>Áreas</h5>
+        <ul class="foot-links">
+          <li><a href="#" onclick="goto('areas')">Direito Civil</a></li>
+          <li><a href="#" onclick="goto('areas')">Direito de Família</a></li>
+          <li><a href="#" onclick="goto('areas')">Direito do Trabalho</a></li>
+          <li><a href="#" onclick="goto('home');defer(()=>scrollToId('formulario'))">Contato pelo WhatsApp</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Páginas</h5>
+        <ul class="foot-links">
+          <li><a href="#" onclick="goto('home')">Home</a></li>
+          <li><a href="#" onclick="goto('sobre')">Sobre</a></li>
+          <li><a href="#" onclick="goto('areas')">Áreas de Atuação</a></li>
+          <li><a href="#" onclick="goto('home');defer(()=>scrollToId('formulario'))">Análise Inicial</a></li>
+          <li><a href="#" onclick="goto('faq')">FAQ</a></li>
+          <li><a href="#" onclick="goto('contato')">Contato</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Contato</h5>
+        <ul class="foot-links">
+          <li><a href="https://wa.me/5511965030211" target="_blank" rel="noopener">(11) 96503-0211</a></li>
+          <li><a href="mailto:advocacia.mendanha@gmail.com">advocacia.mendanha@gmail.com</a></li>
+          <li><a href="https://www.instagram.com/mbmendanha.advocacia" target="_blank" rel="noopener">@mbmendanha.advocacia</a></li>
+          <li style="color:rgba(255,255,255,.3);font-size:.8rem;margin-top:.5rem;line-height:1.5">Av. Imirim, 4301 - SALA 03<br/>Vila Nova Cachoeirinha<br/>São Paulo – SP<br/>CEP 02465-500</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <p>© 2026 MB Mendanha Sociedade de Advocacia. Todos os direitos reservados.</p>
+      <p class="foot-legal">Marcos Aurélio Mendanha – OAB/SP 368.689 | Site informativo. Não constitui consultoria jurídica. Cada caso exige análise individualizada.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp float -->
+<a href="https://wa.me/5511965030211?text=Ol%C3%A1%2C%20acessei%20o%20site%20da%20MB%20Mendanha%20Sociedade%20de%20Advocacia%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o%20jur%C3%ADdica."
+   class="wa-btn" target="_blank" rel="noopener" aria-label="Falar com a MB Mendanha Sociedade de Advocacia no WhatsApp">
+  <svg class="wa-ico-svg" xmlns="http://www.w3.org/2000/svg" width="17" height="17" aria-hidden="true" focusable="false"><use href="#icon-wa"/></svg>
+  <span class="wa-btn-label">Falar no WhatsApp</span>
+</a>
+
+<!-- ══════════════════════════════════
+     JAVASCRIPT – minimal, focused
+══════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── Helpers ── */
+const $ = id => document.getElementById(id);
+const defer = fn => setTimeout(fn, 160);
+
+/* ── Page routing ── */
+function goto(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = $('page-' + id);
+  if (pg) { pg.classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+  initReveal();
+}
+
+function scrollToId(id) {
+  const el = $(id);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ── Navbar ── */
+(function() {
+  const navEl = document.getElementById('nav');
+  if (!navEl) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(() => {
+        navEl.classList.toggle('stuck', window.scrollY > 36);
+        ticking = false;
+      });
+    }
+  }, {passive:true});
+})();
+
+/* ── Mobile drawer ── */
+function toggleDraw() {
+  const nav = document.getElementById('nav');
+  const draw = document.getElementById('mob-drawer');
+  const btn  = document.getElementById('ham-btn');
+  const isOpen = draw.classList.toggle('open');
+  nav.setAttribute('aria-expanded', isOpen);
+  btn.setAttribute('aria-expanded', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+function closeDraw() {
+  document.getElementById('mob-drawer').classList.remove('open');
+  document.getElementById('nav').setAttribute('aria-expanded','false');
+  document.getElementById('ham-btn').setAttribute('aria-expanded','false');
+  document.body.style.overflow = '';
+}
+/* Close drawer on Escape */
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDraw(); });
+
+/* ── FAQ accordion (CSS grid-template-rows technique – no layout thrash) ── */
+function faq(btn) {
+  const item = btn.closest('.faq-item');
+  if (!item) return;
+  const wasOpen = item.classList.contains('open');
+  // Close all in same container
+  const list = item.closest('.faq-cols, .faq-list');
+  if (list) list.querySelectorAll('.faq-item.open').forEach(i => {
+    i.classList.remove('open');
+    i.querySelector('.faq-q').setAttribute('aria-expanded','false');
+  });
+  if (!wasOpen) {
+    item.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+  }
+}
+
+/* ── Form validation + submit ── */
+function submitForm(e) {
+  e.preventDefault();
+  let valid = true;
+
+  function check(id) {
+    const el  = $(id);
+    if (!el) return;
+    const grp = el.closest('.fg');
+    const isEmpty = el.value.trim() === '' || (el.tagName === 'SELECT' && el.value === '');
+    el.classList.toggle('error', isEmpty);
+    if (grp) grp.classList.toggle('has-error', isEmpty);
+    if (isEmpty) valid = false;
+  }
+
+  check('f-nome');
+  check('f-wa');
+  check('f-cidade');
+  check('f-cat');
+
+  // Checkbox LGPD
+  const lgpd = $('f-lgpd');
+  if (lgpd && !lgpd.checked) {
+    const grp = lgpd.closest('.fg');
+    if (grp) grp.classList.add('has-error');
+    valid = false;
+  } else if (lgpd) {
+    const grp = lgpd.closest('.fg');
+    if (grp) grp.classList.remove('has-error');
+  }
+
+  if (!valid) {
+    const firstErr = document.querySelector('.fg.has-error input, .fg.has-error select, .fg.has-error textarea');
+    if (firstErr) {
+      firstErr.scrollIntoView({behavior:'smooth', block:'center'});
+      setTimeout(() => firstErr.focus(), 400);
+    }
+    return;
+  }
+
+  // Show loading state
+  const btn = $('form-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+
+  // Simulate send (replace with Netlify Forms / Formspree fetch in production)
+  setTimeout(() => {
+    $('form-body').style.display = 'none';
+    const ok = $('form-ok');
+    ok.classList.add('show');
+    ok.scrollIntoView({behavior:'smooth', block:'center'});
+    ok.focus();
+  }, 600);
+}
+
+/* Phone mask – format as (11) 00000-0000 */
+const waInput = document.getElementById('f-wa');
+if (waInput) {
+  waInput.addEventListener('input', function() {
+    let v = this.value.replace(/\D/g,'').slice(0,11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d*)$/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d*)$/, '($1) $2');
+    this.value = v;
+  });
+}
+
+/* Clear error on input/change */
+document.addEventListener('input', e => {
+  const fg = e.target.closest('.fg');
+  if (fg) { e.target.classList.remove('error'); fg.classList.remove('has-error'); }
+}, {passive:true});
+document.addEventListener('change', e => {
+  const fg = e.target.closest('.fg');
+  if (fg) { e.target.classList.remove('error'); fg.classList.remove('has-error'); }
+}, {passive:true});
+
+
+/* ── WhatsApp Quick Panel (área → subtema → descrição) ── */
+const WA_SUBTOPICS = {
+  civil: ['Contratos', 'Indenização', 'Cobrança', 'Outro'],
+  familia: ['Divórcio', 'Pensão', 'Guarda', 'Outro'],
+  trabalhista: ['Demissão', 'Horas extras', 'FGTS', 'Assédio', 'Outro']
+};
+const WA_AREA_LABEL = {
+  civil: 'Direito Civil',
+  familia: 'Direito de Família',
+  trabalhista: 'Direito do Trabalho'
+};
+let selectedAreaKey = '';
+
+function selectArea(btn) {
+  document.querySelectorAll('.wa-area').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedAreaKey = btn.getAttribute('data-area') || '';
+  const hintA = document.getElementById('wa-area-hint');
+  if (hintA) hintA.classList.remove('show');
+  const sel = document.getElementById('wa-subtopic');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione o subtema</option>';
+  (WA_SUBTOPICS[selectedAreaKey] || []).forEach(t => {
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+  sel.disabled = false;
+  sel.selectedIndex = 0;
+  const hintS = document.getElementById('wa-sub-hint');
+  if (hintS) hintS.classList.remove('show');
+}
+
+function sendToWA() {
+  if (!selectedAreaKey) {
+    const hintA = document.getElementById('wa-area-hint');
+    if (hintA) hintA.classList.add('show');
+    document.querySelector('.wa-area-row')?.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const sel = document.getElementById('wa-subtopic');
+  const sub = sel && sel.value;
+  const hintS = document.getElementById('wa-sub-hint');
+  if (!sub) {
+    if (hintS) hintS.classList.add('show');
+    if (sel) sel.focus();
+    return;
+  }
+  if (hintS) hintS.classList.remove('show');
+
+  const descEl = document.getElementById('wa-desc-input');
+  const descText = descEl ? descEl.value.trim() : '';
+  const areaLabel = WA_AREA_LABEL[selectedAreaKey] || selectedAreaKey;
+
+  let msg = 'Olá! Vim pelo site da MB Mendanha e gostaria de falar sobre um caso de ' + areaLabel + '.';
+  msg += ' Tema: ' + sub + '.';
+  if (descText) msg += ' Contexto: ' + descText;
+
+  const url = 'https://wa.me/5511965030211?text=' + encodeURIComponent(msg);
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.click();
+}
+
+/* ── Scroll reveal (IntersectionObserver – no layout cost) ── */
+let observer;
+function initReveal() {
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        en.target.classList.add('vis');
+        observer.unobserve(en.target);
+      }
+    });
+  }, {rootMargin:'0px 0px -48px 0px', threshold:.08});
+
+  document.querySelectorAll('.reveal:not(.vis)').forEach(el => observer.observe(el));
+}
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', () => {
+  initReveal();
+  const subEl = document.getElementById('wa-subtopic');
+  if (subEl) {
+    subEl.addEventListener('change', () => {
+      const h = document.getElementById('wa-sub-hint');
+      if (h) h.classList.remove('show');
+    });
+  }
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.reveal').forEach(el => {
+      if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('vis');
+    });
+  });
+});
+</script>
+
+<!-- ══════════════════════════════════
+     GOOGLE ANALYTICS 4 – EVENTOS
+══════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ── Utilitário: dispara gtag só se disponível ── */
+  function gaEvent(name, params) {
+    if (typeof gtag === 'function') gtag('event', name, params || {});
+  }
+
+  /* ── 1. Cliques no WhatsApp (delegação de eventos) ── */
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[href*="wa.me"]');
+    if (!link) return;
+    var label = (link.textContent || '').trim().replace(/\s+/g, ' ') || 'whatsapp';
+    gaEvent('click_whatsapp', { event_category: 'whatsapp', event_label: label });
+  });
+
+  /* ── 1b. Envio pelo painel de formulário WhatsApp ── */
+  var _origSendToWA = window.sendToWA;
+  if (typeof _origSendToWA === 'function') {
+    window.sendToWA = function() {
+      gaEvent('click_whatsapp', { event_category: 'whatsapp', event_label: 'formulario_contato' });
+      _origSendToWA.apply(this, arguments);
+    };
+  }
+
+  /* ── 2. Cliques em CTAs (delegação – exclui botões WhatsApp) ── */
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn');
+    if (!btn) return;
+    if (btn.href && btn.href.indexOf('wa.me') !== -1) return; /* já rastreado acima */
+    if (btn.classList.contains('btn-wa')) return;
+    var label = (btn.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80) || 'cta';
+    gaEvent('click_cta', { event_category: 'cta', event_label: label });
+  });
+
+  /* ── 3. Cliques em links externos (não-WhatsApp) ── */
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[target="_blank"]');
+    if (!link) return;
+    if (link.href && link.href.indexOf('wa.me') !== -1) return; /* já rastreado acima */
+    var dest = link.href || link.getAttribute('href') || 'desconhecido';
+    gaEvent('click_link_externo', { event_category: 'link_externo', event_label: dest });
+  });
+
+  /* ── 4. Scroll 50% e 90% ── */
+  var scrollFired = { 50: false, 90: false };
+  function onScroll() {
+    var scrolled = window.scrollY + window.innerHeight;
+    var total = document.documentElement.scrollHeight;
+    var pct = (scrolled / total) * 100;
+    if (!scrollFired[50] && pct >= 50) {
+      scrollFired[50] = true;
+      gaEvent('scroll_50', { event_category: 'engajamento', event_label: '50_percent' });
+    }
+    if (!scrollFired[90] && pct >= 90) {
+      scrollFired[90] = true;
+      gaEvent('scroll_90', { event_category: 'engajamento', event_label: '90_percent' });
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* ── 5. Tempo na página: 30 segundos ── */
+  setTimeout(function() {
+    gaEvent('time_on_page_30s', { event_category: 'engajamento', event_label: '30_segundos' });
+  }, 30000);
+
+})();
+</script>
+</body>
+</html>
