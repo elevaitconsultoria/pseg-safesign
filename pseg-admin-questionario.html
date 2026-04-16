@@ -920,24 +920,50 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <div style="flex:1;min-width:180px">
         <div class="filter-label">SETOR / GHE</div>
-        <div class="combo" id="combo-audit-setor" tabindex="0"
-          onclick="toggleCombo('combo-audit-setor')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCombo('combo-audit-setor')">
-          <div class="combo-preview" id="combo-audit-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
-          <svg class="combo-arrow" viewBox="0 0 12 12"><polyline points="2 4 6 8 10 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <div class="combo-dropdown" id="combo-audit-setor-list"></div>
+        <div class="combo" id="combo-audit-setor">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-setor')">
+            <div class="combo-preview" id="combo-audit-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar setor..." oninput="filterCombo('combo-audit-setor',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-setor-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-setor-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-audit-setor')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-audit-setor')">Limpar</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="combo-count-label" id="combo-audit-setor-count"></div>
       </div>
 
       <div style="flex:1;min-width:180px">
         <div class="filter-label">FUNÇÃO</div>
-        <div class="combo" id="combo-audit-funcao" tabindex="0"
-          onclick="toggleCombo('combo-audit-funcao')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCombo('combo-audit-funcao')">
-          <div class="combo-preview" id="combo-audit-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
-          <svg class="combo-arrow" viewBox="0 0 12 12"><polyline points="2 4 6 8 10 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-          <div class="combo-dropdown" id="combo-audit-funcao-list"></div>
+        <div class="combo" id="combo-audit-funcao">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-funcao')">
+            <div class="combo-preview" id="combo-audit-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar função..." oninput="filterCombo('combo-audit-funcao',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-funcao-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-funcao-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-audit-funcao')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-audit-funcao')">Limpar</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="combo-count-label" id="combo-audit-funcao-count"></div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;padding-bottom:2px">
@@ -2828,6 +2854,7 @@ function toggleComboItem(id, item) {
   if (comboState[id].has(item)) comboState[id].delete(item);
   else comboState[id].add(item);
   buildCombo(id);
+  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
 }
 
 function filterCombo(id, q) { buildCombo(id, q); }
@@ -2835,11 +2862,13 @@ function filterCombo(id, q) { buildCombo(id, q); }
 function selectAllCombo(id) {
   comboItems[id]().forEach(i => comboState[id].add(i));
   buildCombo(id);
+  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
 }
 
 function clearCombo(id) {
   comboState[id].clear();
   buildCombo(id);
+  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
 }
 
 function setComboNivel(arr) {
