@@ -159,12 +159,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   <div class="card">
     <div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">Informações opcionais</div>
     <div class="meta-grid">
+      <div class="field" id="meta-setor-field" style="display:none">
+        <label>Setor / GHE</label>
+        <select id="meta-setor">
+          <option value="">Prefiro não informar</option>
+        </select>
+      </div>
       <div class="field">
         <label>Função / Cargo</label>
         <select id="meta-funcao">
           <option value="">Prefiro não informar</option>
-          <option>Operacional</option><option>Técnico</option><option>Administrativo</option>
-          <option>Supervisor / Coordenador</option><option>Gerente / Diretor</option><option>Outro</option>
         </select>
       </div>
       <div class="field">
@@ -269,11 +273,13 @@ const LABELS = ['Nunca','Às vezes','Frequente','Sempre'];
 // ══════════════════════════════════════════════════════════
 // ESTADO
 // ══════════════════════════════════════════════════════════
-let empresaId   = null;
-let cicloId     = null;
-let linkToken   = null; // token do link — controle de 1 resposta por dispositivo
-let empresaNome = '';
-let setorNome   = '';
+let empresaId     = null;
+let cicloId       = null;
+let linkToken     = null; // token do link — controle de 1 resposta por dispositivo
+let empresaNome   = '';
+let setorNome     = '';
+let empresaSetores = []; // Setores cadastrados pela empresa no GHE
+let empresaFuncoes = []; // Funções cadastradas pela empresa no GHE
 
 // ══════════════════════════════════════════════════════════
 // INIT — valida token e carrega dados da empresa
@@ -333,11 +339,62 @@ async function init() {
     empresaNome = linkData.empresas?.nome || 'Empresa';
     setorNome   = linkData.setor_sugerido || '';
 
+    // Carregar setores e funções cadastrados para esta empresa
+    await carregarGHEEmpresa(empresaId);
+
     showForm();
 
   } catch (e) {
     showError('Erro ao carregar a pesquisa: ' + e.message);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// GHE — CARREGAR SETORES & FUNÇÕES DA EMPRESA
+// ══════════════════════════════════════════════════════════
+async function carregarGHEEmpresa(empId) {
+  if (!empId || empId === 'dev-mode') return;
+  try {
+    const [{ data: setData }, { data: funData }] = await Promise.all([
+      sb.from('empresa_setores').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
+      sb.from('empresa_funcoes').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
+    ]);
+    empresaSetores = (setData || []).map(r => r.nome);
+    empresaFuncoes = (funData || []).map(r => r.nome);
+  } catch(e) {
+    console.warn('carregarGHEEmpresa:', e.message);
+    empresaSetores = [];
+    empresaFuncoes = [];
+  }
+}
+
+function popularMetaFuncao() {
+  const sel = document.getElementById('meta-funcao');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Prefiro não informar</option>';
+  const funcoes = empresaFuncoes.length
+    ? empresaFuncoes
+    : ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)','Outro'];
+  funcoes.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f; opt.textContent = f;
+    sel.appendChild(opt);
+  });
+}
+
+function popularMetaSetor() {
+  const field = document.getElementById('meta-setor-field');
+  const sel   = document.getElementById('meta-setor');
+  if (!field || !sel) return;
+  sel.innerHTML = '<option value="">Prefiro não informar</option>';
+  const setores = empresaSetores.length ? empresaSetores : [];
+  setores.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+  // Mostrar campo somente se não há setor pré-definido no link
+  field.style.display = setores.length ? 'block' : 'none';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -354,18 +411,27 @@ function showForm() {
   // Header
   document.getElementById('emp-av').textContent  = empresaNome.charAt(0).toUpperCase();
   document.getElementById('emp-nome').textContent = empresaNome;
-  document.getElementById('emp-setor').textContent = `Setor: ${setorNome}`;
+  document.getElementById('emp-setor').textContent = setorNome
+    ? `Setor: ${setorNome}`
+    : 'Setor: a definir no formulário';
   document.getElementById('empresa-badge').textContent = empresaNome;
   document.getElementById('empresa-badge').style.display = 'block';
 
   buildQuestoes();
+
+  // Popula metadados dinâmicos
+  popularMetaFuncao();
+  if (!setorNome) popularMetaSetor();
+
   document.getElementById('form-screen').classList.add('active');
 }
 
 function showDevMode() {
-  empresaId   = 'dev-mode';
-  empresaNome = 'Empresa (modo dev)';
-  setorNome   = 'Setor Teste';
+  empresaId      = 'dev-mode';
+  empresaNome    = 'Empresa (modo dev)';
+  setorNome      = 'Setor Teste';
+  empresaSetores = ['Administrativo','Produção','Engenharia','Manutenção'];
+  empresaFuncoes = ['Analista','Operador(a)','Técnico(a)','Supervisor(a)','Gerente'];
   showForm();
 }
 
@@ -467,14 +533,16 @@ async function enviarResposta() {
   btn.disabled = true;
   btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></div>Enviando...`;
 
-  const funcaoVal = document.getElementById('meta-funcao')?.value || null;
+  const funcaoVal  = document.getElementById('meta-funcao')?.value || null;
   const escolarVal = document.getElementById('meta-escolaridade')?.value || null;
+  // Setor: usa setor pré-definido do link; se não houver, usa o que o funcionário escolheu
+  const setorVal   = setorNome || document.getElementById('meta-setor')?.value || null;
 
   const payload = {
     empresa_id:  empresaId === 'dev-mode' ? null : empresaId,
     ciclo_id:    cicloId,
     link_token:  linkToken,
-    setor:       setorNome  || null,
+    setor:       setorVal,
     funcao:      funcaoVal,
     escolaridade:escolarVal,
     fonte:       'formulario_web',

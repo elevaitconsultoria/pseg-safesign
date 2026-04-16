@@ -578,6 +578,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       Metodologia
     </button>
 
+    <div class="sidebar-section">Planejamento</div>
+
+    <button class="nav-item" id="nb-backlog" onclick="goScreen('backlog',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Backlog
+    </button>
+
     <div class="sidebar-footer">
       SafeSign v1.0<br>NR-17 · NR-01 · BS 8800
     </div>
@@ -1674,6 +1681,94 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- ══════════════════════════════════════
+     TELA BACKLOG
+══════════════════════════════════════ -->
+<div class="screen" id="sc-backlog">
+  <div class="page-header">
+    <div class="page-title">Backlog de Melhorias</div>
+    <div class="page-sub">Ideias e funcionalidades planejadas para versões futuras do SafeSign</div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Portal do Cliente (Dashboard de Resultados)</div>
+        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
+      </div>
+      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <p style="margin-bottom:8px">Área dedicada onde cada empresa cliente pode visualizar seus próprios resultados — sem precisar da intermediação da consultoria para cada análise.</p>
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Login separado (role <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">cliente_viewer</code>) por empresa</li>
+        <li>Dashboard resumido: score médio, top riscos, evolução temporal</li>
+        <li>Gráficos de distribuição por setor e função (somente leitura)</li>
+        <li>Download de relatório PDF sem marca da consultoria</li>
+        <li>Comparativo entre ciclos (quando houver ≥ 2 ciclos de coleta)</li>
+      </ul>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
+      ℹ️ Exportação pelo consultor continua sendo a forma primária até implementação desta feature.
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Personalização do Questionário por Empresa</div>
+        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
+      </div>
+      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <p style="margin-bottom:8px">Permitir que o consultor desative ou adicione questões específicas por empresa, mantendo o núcleo NR-17 obrigatório.</p>
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Tabela <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_questoes_config</code> com overrides por empresa</li>
+        <li>Questões NR-17 obrigatórias não podem ser desativadas</li>
+        <li>Questões complementares podem ser acrescentadas pelo consultor</li>
+        <li>Formulário de coleta carrega configuração via token do link</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Notificações &amp; Alertas Automáticos</div>
+        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
+      </div>
+      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>E-mail automático ao consultor quando nova resposta é recebida</li>
+        <li>Alerta quando link está próximo de expirar (≤ 48 horas)</li>
+        <li>Resumo semanal de novas respostas por empresa</li>
+        <li>Webhook configurável para integração com sistemas externos</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Plano de Ação (5W2H)</div>
+        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
+      </div>
+      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Geração automática de plano 5W2H a partir dos riscos identificados</li>
+        <li>Atribuição de responsável, prazo e status por ação</li>
+        <li>Acompanhamento de progresso (% concluído por empresa)</li>
+        <li>Inclusão no relatório PDF como seção de "Plano de Intervenção"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      TELA RISCOS & SEVERIDADE
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-riscos">
@@ -1789,6 +1884,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo link
       </button>
+      <button class="btn btn-ghost" onclick="abrirModalGHE('')" title="Configurar setores e funções por empresa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Setores &amp; Funções
+      </button>
     </div>
   </div>
 
@@ -1838,7 +1937,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="g2" style="margin-bottom:12px">
       <div class="field">
         <label>Empresa <span style="color:var(--red)">*</span></label>
-        <select id="nl-empresa">
+        <select id="nl-empresa" onchange="popularSetoresModal()">
           <option value="">Selecione...</option>
         </select>
       </div>
@@ -1852,8 +1951,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
     </div>
     <div class="field" style="margin-bottom:12px">
-      <label>Setor sugerido <span style="font-size:10px;color:var(--tl);font-weight:400;text-transform:none;letter-spacing:0">(opcional — aparece pré-preenchido no formulário)</span></label>
-      <input type="text" id="nl-setor" placeholder="Ex: Produção, Administrativo, RH..."/>
+      <label>Setor / GHE <span style="font-size:10px;color:var(--tl);font-weight:400;text-transform:none;letter-spacing:0">(opcional — pré-seleciona o setor no formulário)</span></label>
+      <select id="nl-setor">
+        <option value="">— Sem setor definido (funcionário escolhe) —</option>
+      </select>
+      <div style="font-size:10px;color:var(--tl);margin-top:4px">
+        💡 Selecione a empresa primeiro para ver os setores cadastrados.
+        <span style="color:var(--g);cursor:pointer" onclick="abrirModalGHE(document.getElementById('nl-empresa').value)"> Configurar setores &amp; funções</span>
+      </div>
     </div>
     <div class="field" style="margin-bottom:4px">
       <label>Validade do link</label>
@@ -1870,6 +1975,67 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <button class="btn btn-g" style="flex:2" onclick="gerarLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         Gerar link
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
+<div class="modal-bg" id="modal-ghe">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-title">Setores &amp; Funções</div>
+    <div class="modal-sub" id="ghe-empresa-sub">Configure os grupos homogêneos de exposição da empresa.</div>
+
+    <div class="field" id="ghe-empresa-row" style="margin-bottom:14px">
+      <label>Empresa</label>
+      <select id="ghe-empresa-sel" onchange="mudarEmpresaGHE(this.value)">
+        <option value="">Selecione uma empresa...</option>
+      </select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+
+      <!-- SETORES -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
+          Setores / GHEs
+        </div>
+        <div id="ghe-setores-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="ghe-novo-setor" type="text" placeholder="+ Novo setor..."
+            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
+            onkeydown="if(event.key==='Enter')adicionarGHESetor()"
+            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"/>
+          <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHESetor()">+</button>
+        </div>
+      </div>
+
+      <!-- FUNÇÕES -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
+          Funções / Cargos
+        </div>
+        <div id="ghe-funcoes-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="ghe-nova-funcao" type="text" placeholder="+ Nova função..."
+            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
+            onkeydown="if(event.key==='Enter')adicionarGHEFuncao()"
+            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"/>
+          <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHEFuncao()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-top:14px;font-size:11px;color:var(--tm)">
+      💡 Os setores cadastrados aparecem como <strong>opções fixas</strong> no formulário do funcionário (sem texto livre),
+      eliminando variações de digitação nos relatórios.
+    </div>
+
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="fecharModalGHE()">Fechar</button>
+      <button class="btn btn-g" onclick="salvarGHE()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+        Salvar
       </button>
     </div>
   </div>
@@ -2637,8 +2803,12 @@ let _ciclos   = []; // [{id, nome, empresa_id}]
 async function carregarEmpresas() {
   if (isDemoMode) {
     _empresas = [
-      {id:'abc', nome:'Construtora ABC Ltda.',  cnpj:'12.345.678/0001-99', ativo:true},
-      {id:'xyz', nome:'Indústria XYZ S.A.',     cnpj:'98.765.432/0001-11', ativo:true},
+      {id:'abc', nome:'Construtora ABC Ltda.',  cnpj:'12.345.678/0001-99', ativo:true,
+       setores: ['Administrativo','Produção A','Produção B','Engenharia','Manutenção'],
+       funcoes: ['Assistente Administrativo','Analista','Gerente','Engenheiro(a)','Técnico(a)','Operador(a) de Máquinas','Supervisor(a)']},
+      {id:'xyz', nome:'Indústria XYZ S.A.',     cnpj:'98.765.432/0001-11', ativo:true,
+       setores: ['Recursos Humanos','Financeiro','Operacional','Logística'],
+       funcoes: ['Analista Jr','Analista Pl','Analista Sr','Assistente','Gerente','Técnico(a)','Operador(a)','Supervisor(a)']},
     ];
     _ciclos = [
       {id:'c1', nome:'PGR — Ciclo 2025/1',   empresa_id:'abc'},
@@ -5903,6 +6073,206 @@ function exportarAuditoriaCSV() {
 }
 
 // ══════════════════════════════════════════
+// GHE — GESTÃO DE SETORES & FUNÇÕES
+// ══════════════════════════════════════════
+
+let _gheEmpresaId   = null;
+let _gheTempSetores = [];
+let _gheTempFuncoes = [];
+
+function _gheGetEmpresa(id) {
+  return _empresas.find(e => e.id === id) || null;
+}
+
+/** Chamado ao trocar empresa no select do modal de Novo Link */
+function popularSetoresModal() {
+  const empresaId = document.getElementById('nl-empresa').value;
+  const sel = document.getElementById('nl-setor');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Sem setor definido (funcionário escolhe) —</option>';
+  if (!empresaId) return;
+  const emp = _gheGetEmpresa(empresaId);
+  (emp?.setores || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+/** Muda empresa dentro do modal GHE sem fechar */
+function mudarEmpresaGHE(empresaId) {
+  if (!empresaId) return;
+  _gheEmpresaId = empresaId;
+  const emp = _gheGetEmpresa(empresaId);
+  const sub = document.getElementById('ghe-empresa-sub');
+  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : '';
+  _gheTempSetores = emp ? [...(emp.setores || [])] : [];
+  _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+  renderGHEModal();
+}
+
+/** Abre o modal GHE, opcionalmente pré-selecionando uma empresa */
+function abrirModalGHE(empresaId) {
+  // Popular select de empresa no modal
+  const empSel = document.getElementById('ghe-empresa-sel');
+  if (empSel) {
+    empSel.innerHTML = '<option value="">Selecione uma empresa...</option>';
+    _empresas.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id; opt.textContent = e.nome;
+      if (e.id === empresaId) opt.selected = true;
+      empSel.appendChild(opt);
+    });
+  }
+
+  const row = document.getElementById('ghe-empresa-row');
+  const sub = document.getElementById('ghe-empresa-sub');
+
+  _gheEmpresaId = empresaId || null;
+  const emp = empresaId ? _gheGetEmpresa(empresaId) : null;
+
+  if (sub) sub.textContent = emp
+    ? `Empresa: ${emp.nome}`
+    : 'Selecione a empresa acima para configurar seus GHEs.';
+
+  _gheTempSetores = emp ? [...(emp.setores || [])] : [];
+  _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+
+  renderGHEModal();
+  document.getElementById('modal-ghe').classList.add('open');
+}
+
+function fecharModalGHE() {
+  document.getElementById('modal-ghe').classList.remove('open');
+  _gheEmpresaId = null;
+}
+
+/** Renderiza chips de setores e funções no modal */
+function renderGHEModal() {
+  const setList = document.getElementById('ghe-setores-list');
+  const funList = document.getElementById('ghe-funcoes-list');
+  if (!setList || !funList) return;
+
+  const makeChip = (item, type, idx) =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;` +
+    `background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:12px;gap:8px">` +
+    `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.replace(/</g,'&lt;')}</span>` +
+    `<button onclick="removerGHE('${type}',${idx})" ` +
+    `style="background:none;border:none;cursor:pointer;color:var(--tl);padding:0;line-height:1;` +
+    `flex-shrink:0;font-size:16px;width:18px;height:18px" title="Remover">&times;</button></div>`;
+
+  setList.innerHTML = _gheTempSetores.length
+    ? _gheTempSetores.map((s, i) => makeChip(s, 'setor', i)).join('')
+    : '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhum setor cadastrado ainda.</div>';
+
+  funList.innerHTML = _gheTempFuncoes.length
+    ? _gheTempFuncoes.map((f, i) => makeChip(f, 'funcao', i)).join('')
+    : '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhuma função cadastrada ainda.</div>';
+}
+
+function removerGHE(type, idx) {
+  if (type === 'setor') _gheTempSetores.splice(idx, 1);
+  else                  _gheTempFuncoes.splice(idx, 1);
+  renderGHEModal();
+}
+
+function adicionarGHESetor() {
+  const inp = document.getElementById('ghe-novo-setor');
+  const val = (inp.value || '').trim();
+  if (!val) return;
+  if (_gheTempSetores.some(s => s.toLowerCase() === val.toLowerCase())) {
+    toast('Setor já cadastrado.', 'w'); return;
+  }
+  _gheTempSetores.push(val);
+  inp.value = '';
+  renderGHEModal();
+  inp.focus();
+}
+
+function adicionarGHEFuncao() {
+  const inp = document.getElementById('ghe-nova-funcao');
+  const val = (inp.value || '').trim();
+  if (!val) return;
+  if (_gheTempFuncoes.some(f => f.toLowerCase() === val.toLowerCase())) {
+    toast('Função já cadastrada.', 'w'); return;
+  }
+  _gheTempFuncoes.push(val);
+  inp.value = '';
+  renderGHEModal();
+  inp.focus();
+}
+
+/** Persiste setores/funções (demo: atualiza _empresas; prod: upserta tabelas) */
+async function salvarGHE() {
+  if (!_gheEmpresaId) {
+    toast('Selecione uma empresa antes de salvar.', 'w'); return;
+  }
+  const emp = _gheGetEmpresa(_gheEmpresaId);
+  if (!emp) { toast('Empresa não encontrada.', 'w'); return; }
+
+  if (isDemoMode) {
+    emp.setores = [..._gheTempSetores];
+    emp.funcoes = [..._gheTempFuncoes];
+
+    // Atualizar comboItems para refletir novos valores
+    const setores = emp.setores;
+    const funcoes = emp.funcoes;
+    comboItems['combo-setor']        = () => setores;
+    comboItems['combo-gf-setor']     = () => setores;
+    comboItems['combo-ld-setor']     = () => setores;
+    comboItems['combo-audit-setor']  = () => setores;
+    comboItems['combo-funcao']       = () => funcoes;
+    comboItems['combo-gf-funcao']    = () => funcoes;
+    comboItems['combo-audit-funcao'] = () => funcoes;
+    comboState['combo-setor']        = new Set(setores);
+    comboState['combo-gf-setor']     = new Set(setores);
+    comboState['combo-ld-setor']     = new Set(setores);
+    comboState['combo-audit-setor']  = new Set(setores);
+    comboState['combo-funcao']       = new Set(funcoes);
+    comboState['combo-gf-funcao']    = new Set(funcoes);
+    comboState['combo-audit-funcao'] = new Set(funcoes);
+
+    toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} função(ões).`, 'g');
+  } else {
+    try {
+      const setRows = _gheTempSetores.map((nome, i) =>
+        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true }));
+      const funRows = _gheTempFuncoes.map((nome, i) =>
+        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true }));
+
+      const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
+      const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
+      if (e1 || e2) throw e1 || e2;
+      if (setRows.length) {
+        const { error } = await sbAdmin.from('empresa_setores').insert(setRows);
+        if (error) throw error;
+      }
+      if (funRows.length) {
+        const { error } = await sbAdmin.from('empresa_funcoes').insert(funRows);
+        if (error) throw error;
+      }
+      emp.setores = [..._gheTempSetores];
+      emp.funcoes = [..._gheTempFuncoes];
+      toast('GHE salvo com sucesso!', 'g');
+    } catch(e) {
+      toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
+    }
+  }
+
+  fecharModalGHE();
+
+  // Atualizar nl-setor se a empresa afetada estiver no modal de Novo Link
+  const nlEmp = document.getElementById('nl-empresa');
+  if (nlEmp && nlEmp.value === emp.id) popularSetoresModal();
+
+  // Rebuild todos os combos
+  ['combo-setor','combo-funcao','combo-gf-setor','combo-gf-funcao',
+   'combo-ld-setor','combo-audit-setor','combo-audit-funcao'].forEach(id => {
+    try { if (document.getElementById(id+'-list')) buildCombo(id); } catch(e) {}
+  });
+}
+
+// ══════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function goScreen(id, btn) {
@@ -5919,7 +6289,8 @@ function goScreen(id, btn) {
   const map = {
     dashboard:'nb-dashboard', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
-    laudo:'nb-laudo', metodologia:'nb-metodologia', riscos:'nb-riscos', usuarios:'nb-usuarios'
+    laudo:'nb-laudo', metodologia:'nb-metodologia', riscos:'nb-riscos',
+    usuarios:'nb-usuarios', backlog:'nb-backlog'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
 
@@ -5972,6 +6343,9 @@ function goScreen(id, btn) {
           break;
         case 'usuarios':
           carregarUsuarios();
+          break;
+        case 'backlog':
+          // Tela estática — nada a renderizar
           break;
         case 'q':
           // Se empresa ativa está definida, carregar questionário dela
