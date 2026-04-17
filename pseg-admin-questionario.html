@@ -470,6 +470,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <label class="login-label" for="login-senha">Senha</label>
     <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
     <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div style="text-align:center;margin-top:10px">
+      <span onclick="recuperarSenha()" style="font-size:11px;color:var(--tm);cursor:pointer;text-decoration:underline">Esqueci minha senha</span>
+    </div>
 
     <!-- Separador -->
     <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
@@ -536,6 +539,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <button class="nav-item" id="nb-empresas" onclick="goScreen('empresas',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Empresas
+      <span class="nav-badge" id="nb-empresas-badge" style="display:none"></span>
     </button>
 
     <button class="nav-item" id="nb-links" onclick="goScreen('links',this)">
@@ -805,6 +809,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </select>
       </div>
 
+      <!-- Filtro Ciclo -->
+      <div class="card" style="padding:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Ciclo</div>
+        <select id="f-ciclo" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:8px 11px;outline:none;color:var(--tx);cursor:pointer">
+          <option value="">Todos os ciclos</option>
+        </select>
+      </div>
+
       <!-- Filtro Setores — combo -->
       <div class="card" style="padding:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -931,9 +943,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <div style="flex:1;min-width:180px">
         <div class="filter-label">EMPRESA</div>
-        <select id="audit-empresa" onchange="renderTelaAuditoria()"
+        <select id="audit-empresa" onchange="onAuditEmpresaChange()"
           style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:Inter,sans-serif;font-size:13px;color:var(--tx);background:white;outline:none">
           <option value="">Todas as empresas</option>
+        </select>
+      </div>
+
+      <div style="flex:1;min-width:140px">
+        <div class="filter-label">CICLO</div>
+        <select id="audit-ciclo" onchange="renderTelaAuditoria()"
+          style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:Inter,sans-serif;font-size:13px;color:var(--tx);background:white;outline:none">
+          <option value="">Todos os ciclos</option>
         </select>
       </div>
 
@@ -1041,6 +1061,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Empresa</div>
         <select id="gf-empresa" onchange="onGrafFiltroChange()" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer">
           <option value="">Todas as empresas</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Ciclo</div>
+        <select id="gf-ciclo" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer">
+          <option value="">Todos os ciclos</option>
         </select>
       </div>
 
@@ -2000,14 +2027,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div id="ciclos-list" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Novo ciclo</div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Nome do ciclo <span style="color:var(--red)">*</span></label>
+        <input type="text" id="nc-nome" placeholder="Ex: PGR 2025/1" onkeydown="if(event.key==='Enter')salvarCiclo()"/>
+      </div>
       <div class="g2" style="margin-bottom:10px">
         <div class="field">
-          <label>Nome do ciclo <span style="color:var(--red)">*</span></label>
-          <input type="text" id="nc-nome" placeholder="Ex: PGR 2025/1" onkeydown="if(event.key==='Enter')salvarCiclo()"/>
+          <label>Data início</label>
+          <input type="date" id="nc-data-inicio"/>
         </div>
         <div class="field">
-          <label>Período</label>
-          <input type="text" id="nc-periodo" placeholder="Ex: Jan–Jun 2025"/>
+          <label>Data fim</label>
+          <input type="date" id="nc-data-fim"/>
         </div>
       </div>
     </div>
@@ -2037,8 +2068,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <label>Ciclo de avaliação</label>
         <select id="nl-ciclo">
           <option value="">Sem ciclo específico</option>
-          <option value="c1">Avaliação 2025-S1</option>
-          <option value="c2">Avaliação 2025-S2</option>
         </select>
       </div>
     </div>
@@ -2951,6 +2980,14 @@ function popularSelectsEmpresas() {
       _empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
   }
   popularSelectCiclos('');
+  // Atualizar badge de empresas no sidebar
+  const empBadge = document.getElementById('nb-empresas-badge');
+  if (empBadge && _empresas.length) {
+    empBadge.textContent = _empresas.length;
+    empBadge.style.display = '';
+  } else if (empBadge) {
+    empBadge.style.display = 'none';
+  }
 }
 
 function popularSelectCiclos(empresaId) {
@@ -3209,6 +3246,10 @@ async function onEmpresaChange() {
   }
   const emp = document.getElementById('f-empresa').value;
   limparCacheRespostas();
+
+  // Popular filtro de ciclos baseado na empresa selecionada
+  _popularFiltroCiclo(emp);
+
   if (!emp || isDemoMode) {
     // Manter valores demo
     buildCombo('combo-setor');
@@ -3234,15 +3275,26 @@ async function onEmpresaChange() {
   buildCombo('combo-funcao');
 }
 
+function _popularFiltroCiclo(empresaId) {
+  const el = document.getElementById('f-ciclo');
+  if (!el) return;
+  const ciclosEmp = empresaId ? _ciclos.filter(c => c.empresa_id === empresaId) : [];
+  const cur = el.value;
+  el.innerHTML = '<option value="">Todos os ciclos</option>' +
+    ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
+}
+
 async function rodarAnalise() {
   const panel = document.getElementById('resultado-panel');
   panel.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--tl)">Carregando respostas...</div>';
   const emp      = document.getElementById('f-empresa').value;
+  const cicloId  = document.getElementById('f-ciclo')?.value || '';
   const setores  = [...comboState['combo-setor']];
   const funcoes  = [...comboState['combo-funcao']];
   const niveis   = [...comboState['combo-nivel']];
   const todosDosBancos = await getLinhasParaAnalise(emp);
-  const dados    = todosDosBancos;
+  // Aplicar filtro de ciclo se selecionado
+  const dados    = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
   const filtrado = dados.filter(r => setores.includes(r.setor) && funcoes.includes(r.funcao));
 
   if (!filtrado.length) {
@@ -4394,17 +4446,18 @@ async function loadRespostasParaEmpresa(empresaId) {
     // Buscar respostas com itens
     const { data, error } = await sbAdmin
       .from('respostas')
-      .select(`id, setor, funcao, respondido_em,
+      .select(`id, setor, funcao, ciclo_id, respondido_em,
         resposta_itens ( questao_id, valor )`)
       .eq('empresa_id', empresaId)
       .order('respondido_em', { ascending: false });
 
     if (error) throw error;
 
-    // Converter para o formato que a engine espera: [{setor, funcao, q:{1:v,2:v,...}}]
+    // Converter para o formato que a engine espera: [{setor, funcao, ciclo_id, q:{1:v,2:v,...}}]
     const linhas = (data || []).map(r => ({
-      setor:  r.setor || 'Geral',
-      funcao: r.funcao || '—',
+      setor:    r.setor || 'Geral',
+      funcao:   r.funcao || '—',
+      ciclo_id: r.ciclo_id || null,
       q: Object.fromEntries(
         (r.resposta_itens || [])
           .map(i => [codigoParaId[i.questao_id], i.valor])
@@ -4488,7 +4541,16 @@ function toggleBlocoGraf(k) {
   buildBlocoChecks();
 }
 
-function onGrafFiltroChange() { /* não auto-roda */ }
+function onGrafFiltroChange() {
+  const empId = document.getElementById('gf-empresa')?.value || '';
+  const el = document.getElementById('gf-ciclo');
+  if (el) {
+    const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
+    const cur = el.value;
+    el.innerHTML = '<option value="">Todos os ciclos</option>' +
+      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
+  }
+}
 
 // ── CÁLCULO DA DISTRIBUIÇÃO POR QUESTÃO ──
 function calcDistribuicaoQuestoes(linhas) {
@@ -4525,11 +4587,13 @@ function calcDistribuicaoQuestoes(linhas) {
 
 // ── RENDER PRINCIPAL ──
 async function renderGraficos() {
-  const emp    = document.getElementById('gf-empresa').value;
-  const setores = [...comboState['combo-gf-setor']];
-  const funcoes = [...comboState['combo-gf-funcao']];
-  const dados   = await getLinhasParaAnalise(emp);
-  const linhas  = dados.filter(r => setores.includes(r.setor) && funcoes.includes(r.funcao));
+  const emp      = document.getElementById('gf-empresa').value;
+  const cicloId  = document.getElementById('gf-ciclo')?.value || '';
+  const setores  = [...comboState['combo-gf-setor']];
+  const funcoes  = [...comboState['combo-gf-funcao']];
+  const todosDados = await getLinhasParaAnalise(emp);
+  const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
+  const linhas   = dados.filter(r => setores.includes(r.setor) && funcoes.includes(r.funcao));
 
   const panel = document.getElementById('graficos-panel');
 
@@ -5991,7 +6055,8 @@ function abrirModalCiclo(empresaId) {
   }
   _cicloEmpresaId = empresaId || null;
   document.getElementById('nc-nome').value = '';
-  document.getElementById('nc-periodo').value = '';
+  document.getElementById('nc-data-inicio').value = '';
+  document.getElementById('nc-data-fim').value = '';
   const sub = document.getElementById('ciclo-empresa-sub');
   const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
   if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
@@ -6020,32 +6085,37 @@ function renderCiclosModal(empresaId) {
     list.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhum ciclo cadastrado ainda.</div>';
     return;
   }
-  list.innerHTML = ciclosEmp.map(c => `
+  list.innerHTML = ciclosEmp.map(c => {
+    const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : null;
+    const dts = [fmt(c.data_inicio), fmt(c.data_fim)].filter(Boolean).join(' – ');
+    return `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)">
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--tx)">${c.nome}</div>
-        ${c.descricao ? `<div style="font-size:10px;color:var(--tl)">${c.descricao}</div>` : ''}
+        ${dts ? `<div style="font-size:10px;color:var(--tl);margin-top:1px">📅 ${dts}</div>` : ''}
       </div>
       <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px" title="Remover">&times;</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function salvarCiclo() {
   if (!_cicloEmpresaId) { toast('Selecione uma empresa.', 'w'); return; }
-  const nome     = document.getElementById('nc-nome').value.trim();
-  const periodo  = document.getElementById('nc-periodo').value.trim();
+  const nome       = document.getElementById('nc-nome').value.trim();
+  const dataInicio = document.getElementById('nc-data-inicio').value || null;
+  const dataFim    = document.getElementById('nc-data-fim').value || null;
   if (!nome) { toast('Informe o nome do ciclo.', 'w'); return; }
 
   if (isDemoMode) {
-    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, descricao: periodo };
+    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim };
     _ciclos.unshift(novo);
     popularSelectsEmpresas();
     toast('Ciclo criado!', 'g');
   } else {
     try {
       const { data, error } = await sbAdmin.from('ciclos')
-        .insert({ empresa_id: _cicloEmpresaId, nome, descricao: periodo || null })
-        .select('id,nome,empresa_id,descricao').single();
+        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim })
+        .select('id,nome,empresa_id,data_inicio,data_fim').single();
       if (error) throw error;
       _ciclos.unshift(data);
       popularSelectsEmpresas();
@@ -6053,7 +6123,8 @@ async function salvarCiclo() {
     } catch(e) { toast('Erro: ' + e.message, 'w'); return; }
   }
   document.getElementById('nc-nome').value = '';
-  document.getElementById('nc-periodo').value = '';
+  document.getElementById('nc-data-inicio').value = '';
+  document.getElementById('nc-data-fim').value = '';
   renderCiclosModal(_cicloEmpresaId);
   renderTelaEmpresas();
 }
@@ -6203,6 +6274,32 @@ async function fazerLogout() {
   showLogin();
 }
 
+async function recuperarSenha() {
+  const emailEl = document.getElementById('login-email');
+  const email = (emailEl?.value || '').trim();
+  if (!email) {
+    _loginErro('Informe o e-mail antes de solicitar a recuperação de senha.');
+    return;
+  }
+  if (!sbAdmin) sbAdmin = initSupabase();
+  const errEl = document.getElementById('login-err');
+  try {
+    const { error } = await sbAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href,
+    });
+    if (error) throw error;
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.style.background = '#f0fdf4';
+      errEl.style.borderColor = '#86efac';
+      errEl.style.color = '#14532d';
+      errEl.textContent = `✅ E-mail de recuperação enviado para ${email}. Verifique sua caixa de entrada.`;
+    }
+  } catch(e) {
+    _loginErro('Erro ao enviar e-mail: ' + (e?.message || e));
+  }
+}
+
 // ══════════════════════════════════════════
 // TELA AUDITORIA — DADOS BRUTOS
 // ══════════════════════════════════════════
@@ -6226,10 +6323,23 @@ function _popularSelectAudit() {
   if (!cur && _empresaAtiva?.id) sel.value = _empresaAtiva.id;
 }
 
+function onAuditEmpresaChange() {
+  const empId = document.getElementById('audit-empresa')?.value || '';
+  const el = document.getElementById('audit-ciclo');
+  if (el) {
+    const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
+    const cur = el.value;
+    el.innerHTML = '<option value="">Todos os ciclos</option>' +
+      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
+  }
+  renderTelaAuditoria();
+}
+
 async function renderTelaAuditoria() {
   _popularSelectAudit();
 
-  const empId  = document.getElementById('audit-empresa')?.value || '';
+  const empId   = document.getElementById('audit-empresa')?.value || '';
+  const cicloId = document.getElementById('audit-ciclo')?.value || '';
   const setores = [...comboState['combo-audit-setor']];
   const funcoes = [...comboState['combo-audit-funcao']];
 
@@ -6237,7 +6347,9 @@ async function renderTelaAuditoria() {
   if (!panel) return;
 
   // Buscar dados
-  let linhas = await getLinhasParaAnalise(empId || null);
+  let todosLinhas = await getLinhasParaAnalise(empId || null);
+  // Aplicar filtro de ciclo
+  let linhas = cicloId ? todosLinhas.filter(r => r.ciclo_id === cicloId) : todosLinhas;
 
   // Se não há empId definido e não há dados, mostrar estado vazio
   if (!linhas.length) {
@@ -6378,6 +6490,8 @@ function resetarFiltrosAuditoria() {
   buildCombo('combo-audit-funcao');
   const sel = document.getElementById('audit-empresa');
   if (sel) sel.value = _empresaAtiva?.id || '';
+  const selCiclo = document.getElementById('audit-ciclo');
+  if (selCiclo) selCiclo.value = '';
   renderTelaAuditoria();
 }
 
