@@ -457,7 +457,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <body>
 
 <!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="login-overlay" style="display:none!important">
+<div class="login-overlay" id="login-overlay">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
@@ -478,11 +478,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div style="flex:1;height:1px;background:#e5e7eb"></div>
     </div>
 
-    <!-- Botão bypass admin — para testes e configuração inicial -->
-    <button
-      onclick="entrarModoAdmin()"
-      style="width:100%;background:#f0fdf4;color:#16532d;border:1px solid #bbf7d0;border-radius:6px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit"
-    >⚙ Entrar como Admin (modo configuração)</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <!-- Bypass admin — usa Supabase real sem login (para configuração inicial) -->
+      <button
+        onclick="entrarModoAdmin()"
+        style="background:#f0fdf4;color:#16532d;border:1px solid #bbf7d0;border-radius:6px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
+      >⚙ Admin sem login</button>
+      <!-- Modo demo — dados simulados, sem Supabase -->
+      <button
+        onclick="entrarModoDemo()"
+        style="background:#f8f9fa;color:#6b7280;border:1px solid #e5e7eb;border-radius:6px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
+      >👁 Ver demonstração</button>
+    </div>
 
     <div id="login-err" style="display:none;margin-top:10px;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b"></div>
     <!-- Diagnóstico de conexão -->
@@ -491,7 +498,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- APP SHELL -->
-<div class="app-shell" id="app-shell" style="display:grid!important">
+<div class="app-shell" id="app-shell" style="display:none">
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -526,9 +533,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <div class="sidebar-section">Coleta</div>
 
+    <button class="nav-item" id="nb-empresas" onclick="goScreen('empresas',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Empresas
+    </button>
+
     <button class="nav-item" id="nb-links" onclick="goScreen('links',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Empresas & Links
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Links de Coleta
       <span class="nav-badge" id="nb-links-badge" style="display:none"></span>
     </button>
 
@@ -1926,8 +1938,88 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div id="links-list"></div>
 </div><!-- /sc-links -->
 
+<!-- ══════════════════════════════════════
+     TELA EMPRESAS
+══════════════════════════════════════ -->
+<div class="screen" id="sc-empresas">
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="page-title">Empresas</div>
+      <div class="page-sub">Gestão de clientes, GHEs e ciclos de avaliação</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="abrirModalGHE('')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        GHE
+      </button>
+      <button class="btn btn-g" onclick="abrirModalEmpresa()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova empresa
+      </button>
+    </div>
+  </div>
+  <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+</div>
+
   </main>
 </div><!-- /app-shell -->
+
+<!-- ══ MODAL QR CODE ══ -->
+<div class="modal-bg" id="modal-qr">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div class="modal-title">QR Code</div>
+    <div id="qr-empresa-nome" style="font-size:12px;color:var(--tm);margin-bottom:12px"></div>
+    <img id="qr-img" src="" alt="QR Code"
+      style="width:240px;height:240px;margin:0 auto 12px;display:block;border:1px solid var(--border);border-radius:var(--r);background:white"/>
+    <div id="qr-url-display" style="font-size:10px;color:var(--tl);word-break:break-all;margin-bottom:4px;padding:0 8px"></div>
+    <div class="modal-footer" style="margin-top:12px">
+      <button class="btn btn-ghost" onclick="fecharModalQR()">Fechar</button>
+      <button class="btn btn-ghost" onclick="copiarLink(document.getElementById('qr-url-display').textContent.trim())">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copiar
+      </button>
+      <a id="qr-download-link" download="qrcode.png" class="btn btn-g" style="text-decoration:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CICLOS ══ -->
+<div class="modal-bg" id="modal-ciclo">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title">Ciclos de Avaliação</div>
+    <div class="modal-sub" id="ciclo-empresa-sub">Gerencie os ciclos de coleta desta empresa.</div>
+    <div id="ciclo-empresa-row" class="field" style="margin-bottom:14px">
+      <label>Empresa</label>
+      <select id="ciclo-empresa-sel" onchange="mudarEmpresaCiclo(this.value)">
+        <option value="">Selecione...</option>
+      </select>
+    </div>
+    <div id="ciclos-list" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Novo ciclo</div>
+      <div class="g2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Nome do ciclo <span style="color:var(--red)">*</span></label>
+          <input type="text" id="nc-nome" placeholder="Ex: PGR 2025/1" onkeydown="if(event.key==='Enter')salvarCiclo()"/>
+        </div>
+        <div class="field">
+          <label>Período</label>
+          <input type="text" id="nc-periodo" placeholder="Ex: Jan–Jun 2025"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModalCiclo()">Fechar</button>
+      <button class="btn btn-g" onclick="salvarCiclo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar ciclo
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL NOVO LINK -->
 <div class="modal-bg" id="modal-link">
@@ -1937,7 +2029,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="g2" style="margin-bottom:12px">
       <div class="field">
         <label>Empresa <span style="color:var(--red)">*</span></label>
-        <select id="nl-empresa" onchange="popularSetoresModal()">
+        <select id="nl-empresa" onchange="popularSetoresModal(); popularSelectCiclos(this.value)">
           <option value="">Selecione...</option>
         </select>
       </div>
@@ -2819,12 +2911,18 @@ async function carregarEmpresas() {
     return;
   }
   try {
-    const [{ data: emps }, { data: cics }] = await Promise.all([
+    const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
       sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true).order('nome'),
-      sbAdmin.from('ciclos').select('id,nome,empresa_id').order('nome'),
+      sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').order('criado_em', { ascending: false }),
+      sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true).order('empresa_id').order('ordem'),
+      sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true).order('empresa_id').order('ordem'),
     ]);
-    _empresas = emps || [];
-    _ciclos   = cics || [];
+    _empresas = (emps || []).map(emp => ({
+      ...emp,
+      setores: (setData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
+      funcoes: (funData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
+    }));
+    _ciclos = cics || [];
     popularSelectsEmpresas();
   } catch(e) {
     console.warn('carregarEmpresas:', e);
@@ -4100,8 +4198,12 @@ function renderLinks() {
     }
   }
 
+  // URL correta para GitHub Pages: preserva o caminho base (ex: /pseg-safesign/)
+  const _basePath = window.location.pathname.replace(/\/[^/]*$/, '');
   list.innerHTML = links.map(l => {
-    const url = `${window.location.origin}/pseg-forms.html?token=${l.token}`;
+    const url = `${window.location.origin}${_basePath}/pseg-forms.html?token=${l.token}`;
+    const urlEnc = encodeURIComponent(url);
+    const waMsg  = encodeURIComponent(`Pesquisa Psicossocial PSEG — responda clicando:\n${url}`);
     return `
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${l.ativo?'white':'var(--bg)'}">
@@ -4109,7 +4211,7 @@ function renderLinks() {
           <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--tx)">${l.nomeEmpresa}</div>
-            <div style="font-size:11px;color:var(--tm);margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido}`:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
+            <div style="font-size:11px;color:var(--tm);margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
@@ -4117,11 +4219,19 @@ function renderLinks() {
           <span class="tag tb" style="font-size:10px">${l.respostas} resp.</span>
         </div>
       </div>
-      <div style="padding:10px 16px;background:var(--bg);border-top:1px solid var(--bs);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <code style="font-size:11px;color:var(--tm);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</code>
-        <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick="copiarLink('${url}')">Copiar</button>
-        <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick="gerarQR('${url}')">QR Code</button>
-        <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 10px;flex-shrink:0" onclick="toggleLink('${l.id}')">
+      <div style="padding:10px 16px;background:var(--bg);border-top:1px solid var(--bs);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <code style="font-size:11px;color:var(--tm);flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</code>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="copiarLink('${url}')">
+          📋 Copiar
+        </button>
+        <a href="https://wa.me/?text=${waMsg}" target="_blank" rel="noopener"
+           class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:#25d366;text-decoration:none">
+          💬 WhatsApp
+        </a>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="abrirModalQR('${url}','${l.nomeEmpresa}')">
+          📷 QR Code
+        </button>
+        <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="toggleLink('${l.id}')">
           ${l.ativo?'Desativar':'Ativar'}
         </button>
       </div>
@@ -4138,9 +4248,18 @@ function copiarLink(url) {
   navigator.clipboard.writeText(url).then(() => toast('Link copiado!', 'g'));
 }
 
-function gerarQR(url) {
-  // Em produção: usar qrcode library. Por ora abre em nova aba via API pública
-  window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`, '_blank');
+function abrirModalQR(url, nomeEmpresa) {
+  const enc = encodeURIComponent(url);
+  const src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=${enc}`;
+  document.getElementById('qr-img').src = src;
+  document.getElementById('qr-url-display').textContent = url;
+  document.getElementById('qr-empresa-nome').textContent = nomeEmpresa || '';
+  const dl = document.getElementById('qr-download-link');
+  if (dl) { dl.href = src; dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+  document.getElementById('modal-qr').classList.add('open');
+}
+function fecharModalQR() {
+  document.getElementById('modal-qr').classList.remove('open');
 }
 
 async function toggleLink(id) {
@@ -5308,7 +5427,7 @@ let isDemoMode = false;
 // DEV: bypass de autenticação
 // true  = entra direto (uso local/dev apenas)
 // false = login real via Supabase Auth (produção)
-const DEV_BYPASS_AUTH = true; // temporário — voltar para false quando auth estiver OK
+const DEV_BYPASS_AUTH = false; // false = login real via Supabase (produção)
 const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
 // ─────────────────────────────────────────────────────────────
 
@@ -5326,13 +5445,6 @@ function initSupabase() {
 }
 
 async function checkSession() {
-  // ── LOGIN DESABILITADO TEMPORARIAMENTE — acesso direto ao app ──────
-  sbAdmin = initSupabase();
-  currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
-  showApp();
-  return;
-  // ── FIM DO BYPASS (remover as 4 linhas acima para reativar o login) ─
-
   // ── Modo DEV (somente local) ────────────────────────────────
   if (DEV_BYPASS_AUTH) {
     sbAdmin = initSupabase();
@@ -5474,17 +5586,18 @@ function showApp() {
   document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('app-shell').style.display = 'grid';
   const email = currentUser?.email || 'admin';
-  const labelEmail = DEV_BYPASS_AUTH ? '⚙ DEV · ' + email
-                   : isDemoMode      ? 'Modo demonstração'
+  const labelEmail = isDemoMode              ? '👁 Demonstração'
+                   : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
                    : email;
   document.getElementById('user-email-display').textContent = labelEmail;
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
-  carregarRiscosDB(); // carregar riscos do banco (sobrescreve defaults se existirem)
+  carregarRiscosDB();
   carregarEmpresas().then(() => {
     carregarLinks().then(() => {
       iniciarRealtimeRespostas();
       renderDashboard();
+      renderTelaEmpresas();
       // Restaurar empresa ativa da sessão se válida
       if (_empresaAtiva?.id) {
         const existe = _empresas.find(e => e.id === _empresaAtiva.id);
@@ -5731,14 +5844,198 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Acesso admin sem autenticação — para configuração inicial e testes
-// Remove este botão da tela quando o sistema estiver em produção definitiva
 function entrarModoAdmin() {
   currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'local-admin' };
-  // Inicializar cliente Supabase mesmo no modo bypass para que as queries funcionem
   if (!sbAdmin) sbAdmin = initSupabase();
   const el = document.getElementById('login-err');
   if (el) el.style.display = 'none';
   showApp();
+}
+
+// Modo demonstração — dados simulados, sem Supabase
+function entrarModoDemo() {
+  isDemoMode = true;
+  currentUser = { email: 'demo@pseg.com.br', role: 'admin', id: 'demo' };
+  if (!sbAdmin) sbAdmin = initSupabase();
+  const el = document.getElementById('login-err');
+  if (el) el.style.display = 'none';
+  showApp();
+}
+
+// ══════════════════════════════════════════
+// TELA EMPRESAS
+// ══════════════════════════════════════════
+function renderTelaEmpresas() {
+  const grid = document.getElementById('empresas-grid');
+  if (!grid) return;
+
+  if (!_empresas.length) {
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 12px;display:block"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhuma empresa cadastrada</div>
+      <div style="font-size:12px;margin-bottom:16px">Cadastre a primeira empresa cliente para iniciar.</div>
+      <button class="btn btn-g" onclick="abrirModalEmpresa()">Nova empresa</button>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = _empresas.map(emp => {
+    const linksEmp  = _links.filter(l => l.empresa_id === emp.id);
+    const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
+    const linksAtiv = linksEmp.filter(l => l.ativo).length;
+    const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
+    const nSetores  = (emp.setores || []).length;
+    const nFuncoes  = (emp.funcoes || []).length;
+    const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
+
+    let status, statusBg, statusColor;
+    if (!linksAtiv)       { status='Sem links'; statusBg='var(--bg)'; statusColor='var(--tl)'; }
+    else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
+    else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
+
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 16px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3">${emp.nome}</div>
+            <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}</div>
+          </div>
+          <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0;margin-left:8px">${status}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
+          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
+            <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
+            <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
+          </div>
+          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
+            <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
+            <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
+          </div>
+          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
+            <div style="font-size:16px;font-weight:700;color:var(--tx)">${nSetores}</div>
+            <div style="font-size:9px;color:var(--tl);margin-top:1px">Setores</div>
+          </div>
+          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
+            <div style="font-size:16px;font-weight:700;color:var(--tx)">${ciclosEmp.length}</div>
+            <div style="font-size:9px;color:var(--tl);margin-top:1px">Ciclos</div>
+          </div>
+        </div>
+        ${nSetores ? `<div style="font-size:10px;color:var(--tl);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
+      </div>
+      <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalGHE('${emp.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          GHE
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalCiclo('${emp.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Ciclos
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          Links
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="setEmpresaAtiva('${emp.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultados
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// CICLOS — MODAL
+// ══════════════════════════════════════════
+let _cicloEmpresaId = null;
+
+function abrirModalCiclo(empresaId) {
+  // Popular select de empresa
+  const sel = document.getElementById('ciclo-empresa-sel');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      _empresas.map(e => `<option value="${e.id}"${e.id===empresaId?' selected':''}>${e.nome}</option>`).join('');
+  }
+  _cicloEmpresaId = empresaId || null;
+  document.getElementById('nc-nome').value = '';
+  document.getElementById('nc-periodo').value = '';
+  const sub = document.getElementById('ciclo-empresa-sub');
+  const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
+  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
+  renderCiclosModal(empresaId);
+  document.getElementById('modal-ciclo').classList.add('open');
+}
+
+function fecharModalCiclo() {
+  document.getElementById('modal-ciclo').classList.remove('open');
+  _cicloEmpresaId = null;
+}
+
+function mudarEmpresaCiclo(empresaId) {
+  _cicloEmpresaId = empresaId || null;
+  const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
+  const sub = document.getElementById('ciclo-empresa-sub');
+  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
+  renderCiclosModal(empresaId);
+}
+
+function renderCiclosModal(empresaId) {
+  const list = document.getElementById('ciclos-list');
+  if (!list) return;
+  const ciclosEmp = empresaId ? _ciclos.filter(c => c.empresa_id === empresaId) : [];
+  if (!ciclosEmp.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhum ciclo cadastrado ainda.</div>';
+    return;
+  }
+  list.innerHTML = ciclosEmp.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">${c.nome}</div>
+        ${c.descricao ? `<div style="font-size:10px;color:var(--tl)">${c.descricao}</div>` : ''}
+      </div>
+      <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px" title="Remover">&times;</button>
+    </div>`).join('');
+}
+
+async function salvarCiclo() {
+  if (!_cicloEmpresaId) { toast('Selecione uma empresa.', 'w'); return; }
+  const nome     = document.getElementById('nc-nome').value.trim();
+  const periodo  = document.getElementById('nc-periodo').value.trim();
+  if (!nome) { toast('Informe o nome do ciclo.', 'w'); return; }
+
+  if (isDemoMode) {
+    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, descricao: periodo };
+    _ciclos.unshift(novo);
+    popularSelectsEmpresas();
+    toast('Ciclo criado!', 'g');
+  } else {
+    try {
+      const { data, error } = await sbAdmin.from('ciclos')
+        .insert({ empresa_id: _cicloEmpresaId, nome, descricao: periodo || null })
+        .select('id,nome,empresa_id,descricao').single();
+      if (error) throw error;
+      _ciclos.unshift(data);
+      popularSelectsEmpresas();
+      toast('Ciclo criado!', 'g');
+    } catch(e) { toast('Erro: ' + e.message, 'w'); return; }
+  }
+  document.getElementById('nc-nome').value = '';
+  document.getElementById('nc-periodo').value = '';
+  renderCiclosModal(_cicloEmpresaId);
+  renderTelaEmpresas();
+}
+
+async function removerCiclo(id) {
+  if (!confirm('Remover este ciclo?')) return;
+  if (!isDemoMode && sbAdmin) {
+    const { error } = await sbAdmin.from('ciclos').delete().eq('id', id);
+    if (error) { toast('Erro: ' + error.message, 'w'); return; }
+  }
+  _ciclos = _ciclos.filter(c => c.id !== id);
+  popularSelectsEmpresas();
+  renderCiclosModal(_cicloEmpresaId);
+  renderTelaEmpresas();
+  toast('Ciclo removido.', 'g');
 }
 
 function _loginErro(msg) {
@@ -6287,7 +6584,7 @@ function goScreen(id, btn) {
   // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
   const map = {
-    dashboard:'nb-dashboard', links:'nb-links', q:'nb-q',
+    dashboard:'nb-dashboard', empresas:'nb-empresas', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', metodologia:'nb-metodologia', riscos:'nb-riscos',
     usuarios:'nb-usuarios', backlog:'nb-backlog'
@@ -6309,6 +6606,9 @@ function goScreen(id, btn) {
       switch(id) {
         case 'dashboard':
           renderDashboard();
+          break;
+        case 'empresas':
+          renderTelaEmpresas();
           break;
         case 'links':
           renderLinks();
@@ -6383,36 +6683,20 @@ try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSec
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
 try { buildCombo('combo-audit-funcao'); } catch(e) { console.warn('combo-audit-funcao:', e); }
 try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
-// ── INIT — login desabilitado, modo demo ativo ──────────────────
-sbAdmin     = initSupabase();
-isDemoMode  = true;   // força dados de demonstração (sem depender de auth/RLS)
-currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
-
-// Inicializar questoes em demo mode para que Distribuição e Laudo funcionem
+// ── INIT — inicializa app com login real via Supabase ──────────────────
+// Questões sempre inicializadas (necessário para Distribuição e Laudo)
 try {
   questoes = JSON.parse(JSON.stringify(QS_OFICIAIS));
   ativas   = new Set(questoes.map(q => q.id));
 } catch(e) { console.warn('init-questoes:', e); }
 
+// Mostrar overlay de login e iniciar fluxo de autenticação
 try {
-  document.getElementById('login-overlay').style.display = 'none';
-  document.getElementById('app-shell').style.display     = 'grid';
-  document.getElementById('user-email-display').textContent = '⚙ Modo Demo';
+  document.getElementById('login-overlay').classList.add('show');
+  document.getElementById('app-shell').style.display = 'none';
 } catch(e) { console.warn('init-ui:', e); }
 
-// Carregar dados demo e renderizar
-setTimeout(async () => {
-  try { await carregarEmpresas(); }   catch(e) { console.warn(e); }
-  try { await carregarLinks(); }      catch(e) { console.warn(e); }
-  try { renderDashboard(); }          catch(e) { console.warn(e); }
-  try { iniciarRealtimeRespostas(); } catch(e) {}
-  // Construir todos os combos agora que comboState está completo
-  ['combo-setor','combo-funcao','combo-nivel',
-   'combo-gf-setor','combo-gf-funcao','combo-ld-setor'].forEach(id => {
-    try { if (document.getElementById(id+'-list')) buildCombo(id); } catch(e) {}
-  });
-}, 0);
-// ── Para reativar login: remova este bloco e descomente: (async()=>{await checkSession();})(); ──
+(async () => { await checkSession(); })();
 </script>
 </body>
 </html>
