@@ -554,6 +554,7 @@ async function enviarResposta() {
   localStorage.setItem(localKey, JSON.stringify({ payload, tentativa: new Date().toISOString() }));
 
   // Tentar enviar ao Supabase
+  let salvoComSucesso = false;
   if (empresaId !== 'dev-mode') {
     try {
       // 1. Inserir registro na tabela respostas
@@ -566,11 +567,10 @@ async function enviarResposta() {
       if (errResp) throw errResp;
 
       // 2. Inserir itens individuais em resposta_itens (1 linha por questão)
-      // questao_id = UUID do banco; valor = 1-4 (escala bruta — sem inversão)
       const itens = Object.entries(respostas)
         .map(([qId, valor]) => {
           const uuid = _mapaQuestoesUUID[parseInt(qId)];
-          if (!uuid) return null; // questão não mapeada: ignorar
+          if (!uuid) return null;
           return { resposta_id: resposta.id, questao_id: uuid, valor: parseInt(valor) };
         })
         .filter(Boolean);
@@ -580,17 +580,23 @@ async function enviarResposta() {
         if (errItens) console.warn('Falha ao salvar itens:', errItens.message);
       }
 
-      // Sucesso: remove do localStorage
+      // Sucesso: limpar localStorage e marcar dispositivo
       localStorage.removeItem(localKey);
+      salvoComSucesso = true;
     } catch (e) {
-      console.warn('Falha no envio Supabase, guardado offline:', e.message);
-      toast('Sem conexão — resposta salva localmente.', 'warn');
+      console.warn('Falha no envio Supabase:', e.message);
+      // NÃO marcar como "já respondeu" — permite nova tentativa
+      btn.disabled = false;
+      btn.innerHTML = 'Tentar novamente';
+      toast('Erro ao salvar: ' + (e.message || 'verifique sua conexão e tente novamente.'), 'warn');
+      return; // sai sem mostrar tela de sucesso
     }
+  } else {
+    salvoComSucesso = true;
   }
 
-  // Marcar este dispositivo como "já respondeu" para este token
-  // Bloqueia nova resposta ao reabrir o link no mesmo dispositivo
-  if (linkToken) {
+  // Só marcar dispositivo como "já respondeu" após sucesso confirmado
+  if (salvoComSucesso && linkToken) {
     localStorage.setItem('pseg_respondido_' + linkToken, '1');
   }
 
