@@ -2166,7 +2166,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
 <div class="modal-bg" id="modal-ghe">
-  <div class="modal" style="max-width:540px">
+  <div class="modal" style="max-width:600px">
     <div class="modal-title">Setores &amp; Funções</div>
     <div class="modal-sub" id="ghe-empresa-sub">Configure os grupos homogêneos de exposição da empresa.</div>
 
@@ -2177,40 +2177,100 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </select>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+    <!-- ⚡ PREENCHER AUTOMATICAMENTE -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">⚡ Preencher automaticamente</div>
 
-      <!-- SETORES -->
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
-          Setores / GHEs
-        </div>
-        <div id="ghe-setores-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+      <!-- Seção A: Templates -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:var(--tl);margin-bottom:6px">Template por segmento</div>
+        <div id="ghe-template-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
+      <!-- Seção B: Copiar de empresa -->
+      <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--tl);margin-bottom:6px">Copiar de outra empresa</div>
         <div style="display:flex;gap:6px">
-          <input id="ghe-novo-setor" type="text" placeholder="+ Novo setor..."
-            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
-            onkeydown="if(event.key==='Enter')adicionarGHESetor()"
-            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"/>
-          <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHESetor()">+</button>
+          <select id="ghe-copiar-sel" style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:var(--bg);color:var(--tx)">
+            <option value="">Selecione uma empresa...</option>
+          </select>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="copiarDeEmpresaGHE()">Copiar</button>
         </div>
       </div>
 
-      <!-- FUNÇÕES -->
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
-          Funções / Cargos
+      <!-- Seção C: Colar lista -->
+      <div style="border-top:1px solid var(--border);padding-top:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;color:var(--tl)">Colar lista</div>
+          <button id="ghe-cola-toggle" class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="toggleColaLista()">Expandir</button>
         </div>
-        <div id="ghe-funcoes-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
-        <div style="display:flex;gap:6px">
-          <input id="ghe-nova-funcao" type="text" placeholder="+ Nova função..."
-            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
-            onkeydown="if(event.key==='Enter')adicionarGHEFuncao()"
-            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"/>
-          <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHEFuncao()">+</button>
+        <div id="ghe-cola-area" style="display:none">
+          <textarea id="ghe-cola-txt" rows="4" placeholder="Cole aqui — um item por linha&#10;Ex:&#10;Produção&#10;Manutenção"
+            style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:var(--bg);color:var(--tx);resize:vertical;margin-bottom:8px"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:14px;font-size:12px;color:var(--tx)">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="radio" name="cola-tipo" value="setor" checked style="accent-color:var(--g)"/> Setores
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+                <input type="radio" name="cola-tipo" value="funcao" style="accent-color:var(--g)"/> Funções
+              </label>
+            </div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="processarColaLista()">Adicionar à lista</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-top:14px;font-size:11px;color:var(--tm)">
+    <!-- ✏️ AJUSTAR MANUALMENTE -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">✏️ Ajustar manualmente</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <!-- SETORES -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
+            Setores / GHEs <span id="ghe-set-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+          </div>
+          <div id="ghe-setores-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:8px"></div>
+          <div style="position:relative">
+            <div style="display:flex;gap:6px">
+              <input id="ghe-novo-setor" type="text" placeholder="+ Novo setor..."
+                style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
+                oninput="renderSugestoesGHE('setor',this.value)"
+                onfocus="this.style.borderColor='var(--g)';renderSugestoesGHE('setor',this.value)"
+                onblur="setTimeout(()=>{fecharSugestoesGHE('setor');this.style.borderColor='var(--border)'},150)"
+                onkeydown="gheInputKeydown(event,'setor')"/>
+              <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHESetor()">+</button>
+            </div>
+            <div id="ghe-sug-setor" style="display:none;position:absolute;left:0;right:36px;top:100%;background:var(--bg);border:1.5px solid var(--g);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+
+        <!-- FUNÇÕES -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
+            Funções / Cargos <span id="ghe-fun-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+          </div>
+          <div id="ghe-funcoes-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:8px"></div>
+          <div style="position:relative">
+            <div style="display:flex;gap:6px">
+              <input id="ghe-nova-funcao" type="text" placeholder="+ Nova função..."
+                style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
+                oninput="renderSugestoesGHE('funcao',this.value)"
+                onfocus="this.style.borderColor='var(--g)';renderSugestoesGHE('funcao',this.value)"
+                onblur="setTimeout(()=>{fecharSugestoesGHE('funcao');this.style.borderColor='var(--border)'},150)"
+                onkeydown="gheInputKeydown(event,'funcao')"/>
+              <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHEFuncao()">+</button>
+            </div>
+            <div id="ghe-sug-funcao" style="display:none;position:absolute;left:0;right:36px;top:100%;background:var(--bg);border:1.5px solid var(--g);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-top:0;font-size:11px;color:var(--tm)">
       💡 Os setores cadastrados aparecem como <strong>opções fixas</strong> no formulário do funcionário (sem texto livre),
       eliminando variações de digitação nos relatórios.
     </div>
@@ -2258,6 +2318,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <div class="toast" id="toast"></div>
 
 <script>
+// ══════════════════════════════════════════
+// GHE TEMPLATES POR SEGMENTO
+// ══════════════════════════════════════════
+const GHE_TEMPLATES = {
+  industria:   { label:'🏭 Indústria',           setores:['Produção','Manutenção','Qualidade','Logística / Expedição','Almoxarifado','Administrativo','P&D'],                                                    funcoes:['Operador(a) de máquina','Técnico(a) de manutenção','Analista de qualidade','Auxiliar de produção','Supervisor(a)','Engenheiro(a)','Assistente administrativo','Almoxarife'] },
+  saude:       { label:'🏥 Saúde',               setores:['Recepção','Enfermagem','UTI / Centro Cirúrgico','Ambulatório','Farmácia','Administrativo','Limpeza e Higienização'],                                   funcoes:['Médico(a)','Enfermeiro(a)','Técnico(a) de enfermagem','Recepcionista','Farmacêutico(a)','Auxiliar de limpeza','Auxiliar administrativo','Técnico(a) de radiologia'] },
+  comercio:    { label:'🛒 Comércio / Varejo',   setores:['Vendas / Atendimento','Caixa','Estoque / Almoxarifado','Administrativo','Gerência'],                                                                   funcoes:['Vendedor(a)','Operador(a) de caixa','Auxiliar de estoque','Gerente de loja','Supervisor(a) de vendas','Assistente administrativo'] },
+  escritorio:  { label:'🏢 Escritório',          setores:['Recursos Humanos','Financeiro / Contábil','Comercial / Vendas','Tecnologia da Informação','Jurídico','Operações','Diretoria'],                         funcoes:['Analista Jr','Analista Pl','Analista Sr','Assistente','Coordenador(a)','Gerente','Diretor(a)','Técnico(a) de TI','Advogado(a)'] },
+  construcao:  { label:'🏗 Construção Civil',    setores:['Obra / Campo','Estrutura','Acabamento','Instalações Elétricas','Instalações Hidráulicas','Segurança do Trabalho','Administrativo'],                    funcoes:['Pedreiro(a)','Servente','Eletricista','Encanador(a)','Engenheiro(a) civil','Mestre de obras','Técnico(a) de segurança','Auxiliar administrativo'] },
+  educacao:    { label:'🎓 Educação',            setores:['Educação Infantil','Ensino Fundamental','Ensino Médio','Coordenação Pedagógica','Secretaria','Administrativo','Apoio / Limpeza'],                      funcoes:['Professor(a)','Coordenador(a) pedagógico(a)','Diretor(a)','Auxiliar de classe','Secretário(a) escolar','Auxiliar de limpeza','Inspetor(a)'] },
+  logistica:   { label:'🚚 Logística',           setores:['Armazém / Galpão','Expedição','Transporte / Frotas','Roteirização','Administrativo'],                                                                  funcoes:['Motorista','Auxiliar de carga e descarga','Operador(a) de empilhadeira','Conferente','Supervisor(a) de logística','Analista de logística'] },
+  alimenticio: { label:'🍽 Alimentício',         setores:['Produção / Manipulação','Controle de Qualidade','Cozinha','Expedição','Limpeza','Administrativo'],                                                     funcoes:['Manipulador(a) de alimentos','Cozinheiro(a)','Auxiliar de cozinha','Técnico(a) de alimentos','Supervisor(a) de produção','Auxiliar de limpeza'] },
+};
+
 // ══════════════════════════════════════════
 // DADOS BASE
 // ══════════════════════════════════════════
@@ -6822,6 +6896,7 @@ function mudarEmpresaGHE(empresaId) {
   if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : '';
   _gheTempSetores = emp ? [...(emp.setores || [])] : [];
   _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+  _ghePopularCopiarSel();
   renderGHEModal();
 }
 
@@ -6851,6 +6926,13 @@ function abrirModalGHE(empresaId) {
 
   _gheTempSetores = emp ? [...(emp.setores || [])] : [];
   _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+
+  _gheRenderTemplateBtns();
+  _ghePopularCopiarSel();
+  // Resetar cola
+  const ct = document.getElementById('ghe-cola-txt'); if (ct) ct.value = '';
+  const ca = document.getElementById('ghe-cola-area'); if (ca) ca.style.display = 'none';
+  const ctg = document.getElementById('ghe-cola-toggle'); if (ctg) ctg.textContent = 'Expandir';
 
   renderGHEModal();
   document.getElementById('modal-ghe').classList.add('open');
@@ -6882,6 +6964,11 @@ function renderGHEModal() {
   funList.innerHTML = _gheTempFuncoes.length
     ? _gheTempFuncoes.map((f, i) => makeChip(f, 'funcao', i)).join('')
     : '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhuma função cadastrada ainda.</div>';
+
+  const sc = document.getElementById('ghe-set-count');
+  if (sc) sc.textContent = _gheTempSetores.length ? `(${_gheTempSetores.length})` : '';
+  const fc = document.getElementById('ghe-fun-count');
+  if (fc) fc.textContent = _gheTempFuncoes.length ? `(${_gheTempFuncoes.length})` : '';
 }
 
 function removerGHE(type, idx) {
@@ -6901,6 +6988,7 @@ function adicionarGHESetor() {
   inp.value = '';
   renderGHEModal();
   inp.focus();
+  fecharSugestoesGHE('setor');
 }
 
 function adicionarGHEFuncao() {
@@ -6914,6 +7002,7 @@ function adicionarGHEFuncao() {
   inp.value = '';
   renderGHEModal();
   inp.focus();
+  fecharSugestoesGHE('funcao');
 }
 
 /** Persiste setores/funções (demo: atualiza _empresas; prod: upserta tabelas) */
@@ -6987,6 +7076,173 @@ async function salvarGHE() {
 
   // Atualizar tela Empresas para refletir novos setores
   renderTelaEmpresas();
+}
+
+// ══════════════════════════════════════════
+// GHE: Templates por segmento
+// ══════════════════════════════════════════
+function _gheRenderTemplateBtns() {
+  const cont = document.getElementById('ghe-template-btns');
+  if (!cont) return;
+  cont.innerHTML = Object.entries(GHE_TEMPLATES).map(([key, t]) =>
+    `<button class="btn btn-ghost" id="ghe-tpl-${key}" style="font-size:11px;padding:4px 10px" onclick="aplicarTemplateGHE('${key}')">${t.label}</button>`
+  ).join('');
+}
+
+function aplicarTemplateGHE(key) {
+  const tpl = GHE_TEMPLATES[key];
+  if (!tpl) return;
+  let addedS = 0, addedF = 0;
+  tpl.setores.forEach(s => {
+    if (!_gheTempSetores.some(x => x.toLowerCase() === s.toLowerCase())) {
+      _gheTempSetores.push(s); addedS++;
+    }
+  });
+  tpl.funcoes.forEach(f => {
+    if (!_gheTempFuncoes.some(x => x.toLowerCase() === f.toLowerCase())) {
+      _gheTempFuncoes.push(f); addedF++;
+    }
+  });
+  // Destacar botão ativo
+  document.querySelectorAll('[id^=ghe-tpl-]').forEach(b => b.style.borderColor = '');
+  const btn = document.getElementById('ghe-tpl-' + key);
+  if (btn) btn.style.borderColor = 'var(--g)';
+  renderGHEModal();
+  toast(`Template aplicado: +${addedS} setor(es), +${addedF} função(ões).`, 'g');
+}
+
+// ── GHE: Copiar de empresa ──
+function _ghePopularCopiarSel() {
+  const sel = document.getElementById('ghe-copiar-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione uma empresa...</option>' +
+    _empresas.filter(e => e.id !== _gheEmpresaId && ((e.setores||[]).length || (e.funcoes||[]).length))
+             .map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+}
+
+function copiarDeEmpresaGHE() {
+  const srcId = document.getElementById('ghe-copiar-sel')?.value;
+  if (!srcId) { toast('Selecione uma empresa de origem.', 'w'); return; }
+  const src = _empresas.find(e => e.id === srcId);
+  if (!src) return;
+  let addedS = 0, addedF = 0;
+  (src.setores || []).forEach(s => {
+    if (!_gheTempSetores.some(x => x.toLowerCase() === s.toLowerCase())) {
+      _gheTempSetores.push(s); addedS++;
+    }
+  });
+  (src.funcoes || []).forEach(f => {
+    if (!_gheTempFuncoes.some(x => x.toLowerCase() === f.toLowerCase())) {
+      _gheTempFuncoes.push(f); addedF++;
+    }
+  });
+  renderGHEModal();
+  toast(`Copiado de "${src.nome}": +${addedS} setor(es), +${addedF} função(ões).`, 'g');
+}
+
+// ── GHE: Colar lista ──
+function toggleColaLista() {
+  const area = document.getElementById('ghe-cola-area');
+  const btn  = document.getElementById('ghe-cola-toggle');
+  if (!area || !btn) return;
+  const open = area.style.display !== 'none';
+  area.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'Expandir' : 'Recolher';
+}
+
+function processarColaLista() {
+  const txt  = (document.getElementById('ghe-cola-txt')?.value || '').trim();
+  const tipo = document.querySelector('input[name="cola-tipo"]:checked')?.value || 'setor';
+  if (!txt) { toast('Cole algum conteúdo antes de adicionar.', 'w'); return; }
+  const itens = txt.split('\n').map(s => s.trim()).filter(Boolean);
+  let added = 0;
+  itens.forEach(item => {
+    const arr = tipo === 'setor' ? _gheTempSetores : _gheTempFuncoes;
+    if (!arr.some(x => x.toLowerCase() === item.toLowerCase())) {
+      arr.push(item); added++;
+    }
+  });
+  renderGHEModal();
+  document.getElementById('ghe-cola-txt').value = '';
+  toast(`${added} item(ns) adicionado(s) como ${tipo === 'setor' ? 'setor(es)' : 'função(ões)'}.`, 'g');
+}
+
+// ── GHE: Autocomplete ──
+function _gheTodasSugestoes(tipo) {
+  // Agrega sugestões dos templates + das outras empresas
+  const set = new Set();
+  Object.values(GHE_TEMPLATES).forEach(t => {
+    (tipo === 'setor' ? t.setores : t.funcoes).forEach(x => set.add(x));
+  });
+  _empresas.forEach(e => {
+    (tipo === 'setor' ? (e.setores||[]) : (e.funcoes||[])).forEach(x => set.add(x));
+  });
+  return [...set];
+}
+
+function renderSugestoesGHE(tipo, val) {
+  const id  = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
+  const div = document.getElementById(id);
+  if (!div) return;
+  const q   = (val || '').trim().toLowerCase();
+  const arr = tipo === 'setor' ? _gheTempSetores : _gheTempFuncoes;
+  if (!q) { div.style.display = 'none'; return; }
+  const sugs = _gheTodasSugestoes(tipo)
+    .filter(s => s.toLowerCase().includes(q) && !arr.some(x => x.toLowerCase() === s.toLowerCase()))
+    .slice(0, 8);
+  if (!sugs.length) { div.style.display = 'none'; return; }
+  div.style.display = 'block';
+  div.innerHTML = sugs.map(s =>
+    `<div style="padding:7px 12px;font-size:12px;cursor:pointer;color:var(--tx)"
+      onmouseover="this.style.background='var(--gl)'" onmouseout="this.style.background=''"
+      onmousedown="adicionarGHESugestao('${tipo}','${s.replace(/'/g,"\\'")}')">
+      ${s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>')}
+    </div>`
+  ).join('');
+  // Sincronizar border do input
+  const inp = document.getElementById(tipo === 'setor' ? 'ghe-novo-setor' : 'ghe-nova-funcao');
+  if (inp) inp.style.borderRadius = 'var(--r) var(--r) 0 0';
+}
+
+function fecharSugestoesGHE(tipo) {
+  const id  = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
+  const div = document.getElementById(id);
+  if (div) div.style.display = 'none';
+  const inp = document.getElementById(tipo === 'setor' ? 'ghe-novo-setor' : 'ghe-nova-funcao');
+  if (inp) inp.style.borderRadius = 'var(--r)';
+}
+
+function adicionarGHESugestao(tipo, val) {
+  if (tipo === 'setor') {
+    if (!_gheTempSetores.some(x => x.toLowerCase() === val.toLowerCase())) _gheTempSetores.push(val);
+    const inp = document.getElementById('ghe-novo-setor');
+    if (inp) { inp.value = ''; inp.style.borderRadius = 'var(--r)'; }
+  } else {
+    if (!_gheTempFuncoes.some(x => x.toLowerCase() === val.toLowerCase())) _gheTempFuncoes.push(val);
+    const inp = document.getElementById('ghe-nova-funcao');
+    if (inp) { inp.value = ''; inp.style.borderRadius = 'var(--r)'; }
+  }
+  fecharSugestoesGHE(tipo);
+  renderGHEModal();
+}
+
+function gheInputKeydown(e, tipo) {
+  const sugId = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
+  const sug   = document.getElementById(sugId);
+  if (e.key === 'Escape') { fecharSugestoesGHE(tipo); return; }
+  if (e.key === 'ArrowDown' && sug?.style.display !== 'none') {
+    e.preventDefault();
+    sug.querySelector('div')?.focus();
+    return;
+  }
+  if (e.key === 'Enter') {
+    if (sug?.style.display !== 'none') {
+      const first = sug.querySelector('div');
+      if (first) { first.dispatchEvent(new MouseEvent('mousedown')); return; }
+    }
+    if (tipo === 'setor') adicionarGHESetor();
+    else adicionarGHEFuncao();
+  }
 }
 
 // ══════════════════════════════════════════
