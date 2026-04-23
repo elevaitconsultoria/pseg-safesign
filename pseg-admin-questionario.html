@@ -2288,8 +2288,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- MODAL NOVA EMPRESA -->
 <div class="modal-bg" id="modal-empresa">
   <div class="modal">
-    <div class="modal-title">Nova empresa</div>
-    <div class="modal-sub">Cadastre uma empresa para poder gerar links de coleta vinculados a ela.</div>
+    <div class="modal-title" id="ne-title">Nova empresa</div>
+    <div class="modal-sub" id="ne-sub">Cadastre uma empresa para poder gerar links de coleta vinculados a ela.</div>
     <div class="field" style="margin-bottom:12px">
       <label>Razão social / Nome <span style="color:var(--red)">*</span></label>
       <input type="text" id="ne-nome" placeholder="Ex: Construtora ABC Ltda."/>
@@ -3141,7 +3141,12 @@ function popularSelectCiclos(empresaId) {
 // CADASTRO DE EMPRESAS
 // ══════════════════════════════════════════
 
+let _neEditId = null; // null = criar; string = editar
+
 function abrirModalEmpresa() {
+  _neEditId = null;
+  document.getElementById('ne-title').textContent = 'Nova empresa';
+  document.getElementById('ne-sub').textContent = 'Cadastre uma empresa para poder gerar links de coleta vinculados a ela.';
   document.getElementById('ne-nome').value = '';
   document.getElementById('ne-cnpj').value = '';
   document.getElementById('ne-contato').value = '';
@@ -3153,8 +3158,45 @@ function abrirModalEmpresa() {
   setTimeout(() => document.getElementById('ne-nome').focus(), 50);
 }
 
+function abrirEditarEmpresa(empresaId) {
+  const emp = _empresas.find(e => e.id === empresaId);
+  if (!emp) return;
+  _neEditId = empresaId;
+  document.getElementById('ne-title').textContent = 'Editar empresa';
+  document.getElementById('ne-sub').textContent = `Atualize os dados de "${emp.nome}".`;
+  document.getElementById('ne-nome').value    = emp.nome    || '';
+  document.getElementById('ne-cnpj').value    = emp.cnpj    || '';
+  document.getElementById('ne-contato').value = emp.contato || '';
+  document.getElementById('ne-erro').style.display = 'none';
+  const btn = document.getElementById('ne-btn');
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg> Salvar alterações`;
+  document.getElementById('modal-empresa').classList.add('open');
+  setTimeout(() => document.getElementById('ne-nome').focus(), 50);
+}
+
 function fecharModalEmpresa() {
   document.getElementById('modal-empresa').classList.remove('open');
+  _neEditId = null;
+}
+
+async function excluirEmpresa(empresaId, nomeEsc, nLinks) {
+  if (nLinks > 0) {
+    toast(`"${nomeEsc}" possui ${nLinks} link(s) vinculado(s) e não pode ser excluída. Exclua os links primeiro.`, 'w');
+    return;
+  }
+  if (!confirm(`Excluir a empresa "${nomeEsc}" permanentemente?\n\nEsta ação também remove os setores e funções cadastrados e não pode ser desfeita.`)) return;
+
+  if (!isDemoMode) {
+    try {
+      const { error } = await sbAdmin.from('empresas').delete().eq('id', empresaId);
+      if (error) throw error;
+    } catch(e) { toast('Erro ao excluir: ' + e.message, 'w'); return; }
+  }
+  _empresas = _empresas.filter(e => e.id !== empresaId);
+  popularSelectsEmpresas();
+  renderTelaEmpresas();
+  toast(`Empresa "${nomeEsc}" excluída.`, 'g');
 }
 
 function mascaraCNPJ(input) {
@@ -3180,15 +3222,47 @@ async function salvarNovaEmpresa() {
     return;
   }
 
+  // ── MODO EDIÇÃO ──
+  if (_neEditId) {
+    const emp = _empresas.find(e => e.id === _neEditId);
+    if (!emp) return;
+    if (isDemoMode) {
+      emp.nome = nome; emp.cnpj = cnpj; emp.contato = contato;
+      _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+      popularSelectsEmpresas(); renderTelaEmpresas();
+      fecharModalEmpresa();
+      toast('Empresa atualizada (modo demo).', 'g');
+      return;
+    }
+    btn.disabled = true; btn.innerHTML = 'Salvando...';
+    try {
+      const { error } = await sbAdmin.from('empresas')
+        .update({ nome, cnpj: cnpj || null, contato: contato || null })
+        .eq('id', _neEditId);
+      if (error) throw error;
+      emp.nome = nome; emp.cnpj = cnpj; emp.contato = contato;
+      _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+      popularSelectsEmpresas(); renderTelaEmpresas();
+      fecharModalEmpresa();
+      toast('Empresa atualizada com sucesso!', 'g');
+    } catch(e) {
+      erroEl.textContent = 'Erro ao salvar: ' + e.message;
+      erroEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><polyline points="20 6 9 17 4 12"/></svg> Salvar alterações`;
+    }
+    return;
+  }
+
+  // ── MODO CRIAÇÃO ──
   if (isDemoMode) {
-    const novaEmp = { id: 'emp_' + Date.now(), nome, cnpj, ativo: true, setores: [], funcoes: [] };
+    const novaEmp = { id: 'emp_' + Date.now(), nome, cnpj, contato, ativo: true, setores: [], funcoes: [] };
     _empresas.push(novaEmp);
     _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
     popularSelectsEmpresas();
     renderTelaEmpresas();
     fecharModalEmpresa();
     toast('Empresa cadastrada (modo demo).', 'g');
-    // Sugerir configuração de GHE
     setTimeout(() => abrirModalGHE(novaEmp.id), 400);
     return;
   }
@@ -3199,13 +3273,7 @@ async function salvarNovaEmpresa() {
     const userId = currentUser?.id || null;
     const { data, error } = await sbAdmin
       .from('empresas')
-      .insert({
-        nome,
-        cnpj:      cnpj    || null,
-        contato:   contato || null,
-        ativo:     true,
-        criado_por: userId,
-      })
+      .insert({ nome, cnpj: cnpj || null, contato: contato || null, ativo: true, criado_por: userId })
       .select('id,nome,cnpj,ativo,criado_por')
       .single();
     if (error) throw error;
@@ -3216,7 +3284,6 @@ async function salvarNovaEmpresa() {
     renderTelaEmpresas();
     fecharModalEmpresa();
     toast('Empresa cadastrada! Configure os setores e funções.', 'g');
-    // Abrir GHE imediatamente para o consultor configurar
     setTimeout(() => abrirModalGHE(novaEmp.id), 400);
   } catch(e) {
     erroEl.textContent = 'Erro ao salvar: ' + e.message;
@@ -6380,6 +6447,14 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           Links por GHE
         </button>` : ''}
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirEditarEmpresa('${emp.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--red);border-color:transparent" onclick="excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Excluir
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -6950,12 +7025,18 @@ function renderGHEModal() {
   if (!setList || !funList) return;
 
   const makeChip = (item, type, idx) =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;` +
-    `background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:12px;gap:8px">` +
+    `<div id="ghe-chip-${type}-${idx}" style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;` +
+    `background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:12px;gap:6px">` +
     `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.replace(/</g,'&lt;')}</span>` +
+    `<div style="display:flex;gap:2px;flex-shrink:0">` +
+    `<button onclick="editarGHEInline('${type}',${idx})" ` +
+    `style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;line-height:1;font-size:12px;width:20px;height:20px;border-radius:3px" ` +
+    `onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Editar">✏️</button>` +
     `<button onclick="removerGHE('${type}',${idx})" ` +
     `style="background:none;border:none;cursor:pointer;color:var(--tl);padding:0;line-height:1;` +
-    `flex-shrink:0;font-size:16px;width:18px;height:18px" title="Remover">&times;</button></div>`;
+    `font-size:16px;width:20px;height:20px;border-radius:3px" ` +
+    `onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Remover">&times;</button>` +
+    `</div></div>`;
 
   setList.innerHTML = _gheTempSetores.length
     ? _gheTempSetores.map((s, i) => makeChip(s, 'setor', i)).join('')
@@ -6974,6 +7055,44 @@ function renderGHEModal() {
 function removerGHE(type, idx) {
   if (type === 'setor') _gheTempSetores.splice(idx, 1);
   else                  _gheTempFuncoes.splice(idx, 1);
+  renderGHEModal();
+}
+
+function editarGHEInline(type, idx) {
+  const chipId = `ghe-chip-${type}-${idx}`;
+  const chip = document.getElementById(chipId);
+  if (!chip) return;
+  const arr = type === 'setor' ? _gheTempSetores : _gheTempFuncoes;
+  const valAtual = arr[idx] || '';
+
+  chip.style.background = 'white';
+  chip.style.borderColor = 'var(--g)';
+  chip.innerHTML =
+    `<input id="ghe-edit-inp-${type}-${idx}" type="text" value="${valAtual.replace(/"/g,'&quot;')}"
+      style="flex:1;border:none;outline:none;font-size:12px;font-family:Inter,sans-serif;background:transparent;color:var(--tx);min-width:0"
+      onkeydown="if(event.key==='Enter')confirmarEditGHE('${type}',${idx});else if(event.key==='Escape')renderGHEModal()"/>` +
+    `<div style="display:flex;gap:2px;flex-shrink:0">` +
+    `<button onclick="confirmarEditGHE('${type}',${idx})"
+      style="background:var(--g);border:none;cursor:pointer;color:white;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600" title="Confirmar">✓</button>` +
+    `<button onclick="renderGHEModal()"
+      style="background:none;border:none;cursor:pointer;color:var(--tl);padding:0;font-size:16px;width:20px;height:20px;border-radius:3px"
+      onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Cancelar">&times;</button>` +
+    `</div>`;
+  setTimeout(() => {
+    const inp = document.getElementById(`ghe-edit-inp-${type}-${idx}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }, 10);
+}
+
+function confirmarEditGHE(type, idx) {
+  const inp = document.getElementById(`ghe-edit-inp-${type}-${idx}`);
+  const novoVal = (inp?.value || '').trim();
+  if (!novoVal) { toast('O nome não pode ficar em branco.', 'w'); return; }
+  const arr = type === 'setor' ? _gheTempSetores : _gheTempFuncoes;
+  if (arr.some((x, i) => i !== idx && x.toLowerCase() === novoVal.toLowerCase())) {
+    toast('Já existe um item com esse nome.', 'w'); return;
+  }
+  arr[idx] = novoVal;
   renderGHEModal();
 }
 
