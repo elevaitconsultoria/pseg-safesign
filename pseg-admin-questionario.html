@@ -4377,6 +4377,9 @@ function renderLinks() {
         <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="toggleLink('${l.id}')">
           ${l.ativo?'Desativar':'Ativar'}
         </button>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);opacity:.7" onclick="excluirLink('${l.id}',${l.respostas})" title="${l.respostas>0?'Link com respostas — não pode ser excluído':'Excluir link'}">
+          🗑 Excluir
+        </button>
       </div>
       <div style="padding:6px 16px 8px;font-size:10px;color:var(--tl);display:flex;gap:16px;flex-wrap:wrap">
         <span>Criado: ${l.criado}</span>
@@ -4419,6 +4422,23 @@ async function toggleLink(id) {
   l.ativo = novoAtivo;
   renderLinks();
   toast(novoAtivo ? 'Link ativado.' : 'Link desativado.', novoAtivo?'g':'w');
+}
+
+async function excluirLink(id, nRespostas) {
+  if (nRespostas > 0) {
+    toast(`Este link possui ${nRespostas} resposta(s) e não pode ser excluído.`, 'w');
+    return;
+  }
+  if (!confirm('Excluir este link permanentemente? Esta ação não pode ser desfeita.')) return;
+
+  if (!isDemoMode) {
+    const { error } = await sbAdmin.from('links_coleta').delete().eq('id', id);
+    if (error) { toast('Erro ao excluir link: ' + error.message, 'w'); return; }
+  }
+  _links = _links.filter(l => l.id !== id);
+  renderLinks();
+  renderTelaEmpresas();
+  toast('Link excluído.', 'g');
 }
 
 function abrirModalLink() { document.getElementById('modal-link').classList.add('open'); }
