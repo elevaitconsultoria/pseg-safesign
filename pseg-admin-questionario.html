@@ -1923,6 +1923,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo link
       </button>
+      <button class="btn btn-ghost" onclick="abrirModalGheBatch(null)" title="Gerar um link para cada GHE da empresa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Gerar por GHE
+      </button>
       <button class="btn btn-ghost" onclick="abrirModalGHE('')" title="Configurar setores e funções por empresa">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Setores &amp; Funções
@@ -2096,6 +2100,65 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <button class="btn btn-g" style="flex:2" onclick="gerarLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         Gerar link
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GERAR LINKS EM LOTE POR GHE -->
+<div class="modal-bg" id="modal-ghe-batch">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">Gerar links por GHE</div>
+    <div class="modal-sub">Cria automaticamente um link de coleta para cada GHE (setor) selecionado. Cada link virá pré-configurado com o setor correspondente.</div>
+
+    <div class="g2" style="margin-bottom:14px">
+      <div class="field">
+        <label>Empresa <span style="color:var(--red)">*</span></label>
+        <select id="gb-empresa" onchange="onGheBatchEmpresaChange()">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ciclo de avaliação</label>
+        <select id="gb-ciclo">
+          <option value="">Sem ciclo específico</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px">
+      <label>Validade dos links</label>
+      <select id="gb-validade">
+        <option value="0">Sem expiração</option>
+        <option value="7">7 dias</option>
+        <option value="15">15 dias</option>
+        <option value="30" selected>30 dias</option>
+        <option value="60">60 dias</option>
+      </select>
+    </div>
+
+    <div id="gb-ghe-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">GHEs / Setores</div>
+        <div style="display:flex;gap:10px">
+          <span style="font-size:11px;color:var(--g);cursor:pointer;text-decoration:underline" onclick="gheBatchSelectAll(true)">Todos</span>
+          <span style="font-size:11px;color:var(--tl);cursor:pointer;text-decoration:underline" onclick="gheBatchSelectAll(false)">Nenhum</span>
+        </div>
+      </div>
+      <div id="gb-ghe-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px;margin-bottom:8px"></div>
+      <div id="gb-ghe-count" style="font-size:11px;color:var(--tl);text-align:right"></div>
+    </div>
+
+    <div id="gb-no-ghe" style="display:none;background:var(--amberbg);border:1px solid var(--amber);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:8px">
+      ⚠️ Esta empresa não tem setores/GHEs cadastrados.
+      <span style="cursor:pointer;text-decoration:underline;font-weight:600" onclick="fecharModalGheBatch();abrirModalGHE(document.getElementById('gb-empresa').value)">Configurar agora</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalGheBatch()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" id="gb-btn-gerar" onclick="gerarLinksBatch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Gerar links
       </button>
     </div>
   </div>
@@ -4418,6 +4481,188 @@ async function gerarLink() {
 }
 
 // ══════════════════════════════════════════
+// MODAL GERAR LINKS EM LOTE POR GHE
+// ══════════════════════════════════════════
+function abrirModalGheBatch(empresaId) {
+  const modal = document.getElementById('modal-ghe-batch');
+  if (!modal) return;
+
+  // Popular select empresa
+  const sel = document.getElementById('gb-empresa');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      _empresas.map(e => `<option value="${e.id}"${e.id === empresaId ? ' selected' : ''}>${e.nome}</option>`).join('');
+  }
+  modal.classList.add('open');
+
+  // Preencher dependentes
+  onGheBatchEmpresaChange();
+}
+
+function fecharModalGheBatch() {
+  document.getElementById('modal-ghe-batch')?.classList.remove('open');
+}
+
+function onGheBatchEmpresaChange() {
+  const empresaId = document.getElementById('gb-empresa')?.value || '';
+  const emp = _empresas.find(e => e.id === empresaId);
+  const setores = emp?.setores || [];
+
+  // Popular ciclos
+  const cicloSel = document.getElementById('gb-ciclo');
+  if (cicloSel) {
+    const ciclosEmp = empresaId ? _ciclos.filter(c => c.empresa_id === empresaId) : [];
+    cicloSel.innerHTML = '<option value="">Sem ciclo específico</option>' +
+      ciclosEmp.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+
+  const gheSection = document.getElementById('gb-ghe-section');
+  const noGhe = document.getElementById('gb-no-ghe');
+  const gheList = document.getElementById('gb-ghe-list');
+  const btn = document.getElementById('gb-btn-gerar');
+
+  if (!empresaId) {
+    if (gheSection) gheSection.style.display = 'none';
+    if (noGhe) noGhe.style.display = 'none';
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  if (!setores.length) {
+    if (gheSection) gheSection.style.display = 'none';
+    if (noGhe) noGhe.style.display = 'block';
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  if (noGhe) noGhe.style.display = 'none';
+  if (gheSection) gheSection.style.display = 'block';
+  if (btn) btn.disabled = false;
+
+  if (gheList) {
+    gheList.innerHTML = setores.map((s, i) => `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--tx);background:white;user-select:none"
+        onmouseover="this.style.borderColor='var(--g)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--g)':'var(--border)'" onclick="atualizarContadorGheBatch()">
+        <input type="checkbox" id="gb-chk-${i}" value="${s.replace(/"/g,'&quot;')}" checked
+          style="width:14px;height:14px;accent-color:var(--g);cursor:pointer;flex-shrink:0"
+          onchange="this.closest('label').style.borderColor=this.checked?'var(--g)':'var(--border)';atualizarContadorGheBatch()"/>
+        <span>${s}</span>
+      </label>`).join('');
+    gheList.querySelectorAll('label').forEach(l => {
+      l.style.borderColor = 'var(--g)';
+    });
+  }
+  atualizarContadorGheBatch();
+}
+
+function atualizarContadorGheBatch() {
+  const list = document.getElementById('gb-ghe-list');
+  const count = document.getElementById('gb-ghe-count');
+  const btn = document.getElementById('gb-btn-gerar');
+  if (!list || !count) return;
+  const checkboxes = list.querySelectorAll('input[type=checkbox]');
+  const selecionados = [...checkboxes].filter(c => c.checked).length;
+  const total = checkboxes.length;
+  count.textContent = `${selecionados} de ${total} GHEs selecionados`;
+  if (btn) {
+    btn.disabled = selecionados === 0;
+    btn.setAttribute('data-label', ` Gerar ${selecionados} link${selecionados !== 1 ? 's' : ''}`);
+    // Update only the text node (last child) keeping the SVG
+    const nodes = [...btn.childNodes];
+    const textNode = nodes.find(n => n.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+      textNode.nodeValue = ` Gerar ${selecionados} link${selecionados !== 1 ? 's' : ''}`;
+    }
+  }
+}
+
+function gheBatchSelectAll(sel) {
+  const list = document.getElementById('gb-ghe-list');
+  if (!list) return;
+  list.querySelectorAll('input[type=checkbox]').forEach(c => {
+    c.checked = sel;
+    c.closest('label').style.borderColor = sel ? 'var(--g)' : 'var(--border)';
+  });
+  atualizarContadorGheBatch();
+}
+
+async function gerarLinksBatch() {
+  const empresaId = document.getElementById('gb-empresa')?.value;
+  if (!empresaId) { toast('Selecione uma empresa.', 'w'); return; }
+
+  const cicloId = document.getElementById('gb-ciclo')?.value || null;
+  const val     = parseInt(document.getElementById('gb-validade')?.value) || 0;
+  const expira_em = val > 0 ? new Date(Date.now() + val * 86400000).toISOString() : null;
+
+  const list = document.getElementById('gb-ghe-list');
+  const selecionados = list
+    ? [...list.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value)
+    : [];
+
+  if (!selecionados.length) { toast('Selecione ao menos um GHE.', 'w'); return; }
+
+  const btn = document.getElementById('gb-btn-gerar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
+
+  let criados = 0;
+  const emp = _empresas.find(e => e.id === empresaId);
+  const cic = _ciclos.find(c => c.id === cicloId);
+
+  for (const setor of selecionados) {
+    const token = Math.random().toString(36).slice(2, 14);
+    if (!isDemoMode) {
+      try {
+        const { data, error } = await sbAdmin
+          .from('links_coleta')
+          .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
+                    setor_sugerido: setor, token, ativo: true, expira_em })
+          .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
+          .single();
+        if (error) throw error;
+        _links.unshift({
+          id: data.id, empresa_id: data.empresa_id,
+          nomeEmpresa: data.empresas?.nome || '—',
+          setor_sugerido: data.setor_sugerido || '',
+          ciclo: data.ciclos?.nome || '',
+          token: data.token, ativo: true, respostas: 0,
+          criado: new Date(data.criado_em).toLocaleDateString('pt-BR'),
+          expira: data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
+        });
+        criados++;
+      } catch(e) {
+        toast(`Erro ao criar link para "${setor}": ${e.message}`, 'w');
+      }
+    } else {
+      _links.unshift({
+        id: 'lk' + Date.now() + criados, empresa_id: empresaId,
+        nomeEmpresa: emp?.nome || empresaId,
+        setor_sugerido: setor, ciclo: cic?.nome || '',
+        token, ativo: true, respostas: 0,
+        criado: new Date().toLocaleDateString('pt-BR'),
+        expira: expira_em ? new Date(expira_em).toLocaleDateString('pt-BR') : '—',
+      });
+      criados++;
+    }
+  }
+
+  fecharModalGheBatch();
+
+  if (criados > 0) {
+    // Navegar para tela de links filtrada pela empresa
+    goScreen('links', document.getElementById('nb-links'));
+    setTimeout(() => {
+      const el = document.getElementById('link-f-empresa');
+      if (el) { el.value = empresaId; renderLinks(); }
+      renderTelaEmpresas();
+      toast(`✅ ${criados} link${criados !== 1 ? 's' : ''} gerado${criados !== 1 ? 's' : ''} com sucesso!`, 'g');
+      setTimeout(() => {
+        document.getElementById('links-list')?.firstElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 80);
+    }, 100);
+  }
+}
+
+// ══════════════════════════════════════════
 // INTEGRAÇÃO SUPABASE — Respostas reais
 // ══════════════════════════════════════════
 
@@ -5932,6 +6177,7 @@ document.addEventListener('keydown', function(e) {
     'modal-nova':          typeof fecharNovaQ            !== 'undefined' ? fecharNovaQ            : null,
     'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
     'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
+    'modal-ghe-batch':    typeof fecharModalGheBatch    !== 'undefined' ? fecharModalGheBatch    : null,
     'modal-empresa':       typeof fecharModalEmpresa     !== 'undefined' ? fecharModalEmpresa     : null,
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
@@ -6036,6 +6282,10 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Resultados
         </button>
+        ${nSetores ? `<button class="btn btn-g" style="font-size:11px;padding:5px 10px" onclick="abrirModalGheBatch('${emp.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Links por GHE
+        </button>` : ''}
       </div>
     </div>`;
   }).join('');
