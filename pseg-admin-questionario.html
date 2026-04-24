@@ -3660,7 +3660,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
           '<div>'+
           '<div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:1px">'+f.nome+'</div>'+
           '<div style="font-size:10px;color:var(--tl);margin-bottom:6px">'+
-          'cd'+f.cd+' · '+f.n_questoes+' questão(ões) · peso 1/'+f.n_questoes+' cada · '+
+          f.n_questoes+' questão(ões) · peso 1/'+f.n_questoes+' cada · '+
           '<span style="'+S_BADGE[f.s]+'">S'+f.s+' '+S_LABELS[f.s]+'</span>'+
           '</div>'+
           barra+
@@ -3730,11 +3730,11 @@ function renderViewQuestao({grupos, filtrado}) {
         '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+ci.cor+';background:'+ci.bg+';padding:4px 8px;border-radius:4px;margin-bottom:10px;display:inline-block">'+cat+'</div>'+
         qs.map(d => {
           const rd  = d.q.cd ? RISCOS_DETALHES[d.q.cd] : null;
-          const barra = renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false);
+          const barra = renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false, d.q.inv);
           return '<div style="margin-bottom:14px">'+
             '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">'+
             '<span style="font-size:10px;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:3px;color:var(--tl);white-space:nowrap">'+d.q.c+'</span>'+
-            (d.q.cd ? '<span style="font-size:9px;color:'+ci.cor+';font-weight:600;background:'+ci.bg+';padding:1px 6px;border-radius:3px;white-space:nowrap">cd'+d.q.cd+(rd?' · '+rd.nome.slice(0,22):'')+'</span>' : '')+
+            (d.q.cd && rd ? '<span style="font-size:9px;color:'+ci.cor+';font-weight:600;background:'+ci.bg+';padding:1px 6px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
             '<span style="font-size:12px;color:var(--tx);line-height:1.4;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
@@ -3777,7 +3777,7 @@ function resolverEmpate(dist) {
 }
 
 // ─── Barra de distribuição reutilizável ───
-function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda) {
+function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
   const CORES_BG  = {1:'#22c55e', 2:'#60a5fa', 3:'#f59e0b', 4:'#ef4444'};
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
   const NIVEL_NM  = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
@@ -3796,7 +3796,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda) {
       label+'</div>';
   }).join('');
 
-  const metaLabel = ve === 1 ? 'Nunca' : NIVEL_NM[ve] || '?';
+  const metaLabel = inv ? 'Sempre' : (ve === 1 ? 'Nunca' : NIVEL_NM[ve] || '?');
   const modaLabel = NIVEL_NM[moda] || '?';
   const naIdeal   = moda === (ve || 1);
   const cor_status = naIdeal ? '#166534' : (moda >= 3 ? '#991b1b' : '#854d0e');
@@ -3819,17 +3819,18 @@ function renderDistQuestoes(distQuestoes, gid) {
   const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
   const CORES_BG = {1:'#22c55e',2:'#60a5fa',3:'#f59e0b',4:'#ef4444'};
 
-  const legenda = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:10px;color:var(--tm)">'+
+  const legenda = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:10px;color:var(--tm)">'+
     [1,2,3,4].map(n =>
       '<span style="display:flex;align-items:center;gap:4px">'+
       '<span style="width:10px;height:10px;border-radius:2px;background:'+CORES_BG[n]+';display:inline-block"></span>'+
-      '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta (ideal)':'')+'</span>'
+      '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta (diretas)':n===4?' ← meta (↺ inv)':'')+'</span>'
     ).join('')+
     '<span style="display:flex;align-items:center;gap:4px;margin-left:8px;color:var(--tl)">'+
-    '<span style="width:3px;height:10px;background:white;border:1px solid #22c55e;display:inline-block"></span> Marcador de meta</span></div>';
+    '<span style="width:3px;height:10px;background:white;border:1px solid #22c55e;display:inline-block"></span> Meta</span></div>'+
+    '<div style="font-size:9px;color:var(--tl);margin-bottom:8px">↺ <em>Questões inversas</em>: score ajustado (5−v); meta = resposta "Sempre" do respondente.</div>';
 
   const itens = distQuestoes.map(q => {
-    const barra = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false);
+    const barra = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false, q.inv);
     return '<div style="margin-bottom:12px">'+
       '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;flex-wrap:wrap">'+
       '<span style="font-size:10px;font-weight:700;color:var(--tl);background:var(--bg);padding:1px 6px;border-radius:3px;white-space:nowrap">'+q.codigo+'</span>'+
@@ -5631,7 +5632,7 @@ async function renderLaudo() {
             return `<tr style="background:${i%2?'#fafcfb':'white'}">
               <td style="padding:10px 10px;border-bottom:.5px solid var(--bs)">
                 <div style="font-weight:600;color:var(--tx);margin-bottom:2px">${f.nome}</div>
-                <div style="font-size:10px;color:var(--tl);margin-bottom:6px">cd${f.cd||f.id} · ${f.n_questoes||1} questão(ões) · peso igual · ${f.pLabel}</div>
+                <div style="font-size:10px;color:var(--tl);margin-bottom:6px">${f.n_questoes||1} questão(ões) · peso igual · ${f.pLabel}</div>
                 <div style="height:16px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${barSegs}</div>
                 <div style="font-size:9px;color:var(--tm);margin-top:3px;font-style:italic">${f.cons}</div>
               </td>
@@ -5673,12 +5674,11 @@ async function renderLaudo() {
         '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+cor+';padding:5px 10px;background:'+bg+';border-radius:6px;margin-bottom:8px">'+cat+'</div>'+
         qs.map(d => {
           const rd = d.q.cd ? RISCOS_DETALHES[d.q.cd] : null;
-          const cdLabel = d.q.cd ? 'cd'+d.q.cd : '';
-          const barra = renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false);
+          const barra = renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false, d.q.inv);
           return '<div style="margin-bottom:12px">'+
             '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">'+
             '<span style="font-size:9px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--tl);white-space:nowrap">'+d.q.c+'</span>'+
-            (cdLabel ? '<span style="font-size:9px;color:'+cor+';font-weight:600;background:'+bg+';padding:1px 5px;border-radius:3px;white-space:nowrap">'+cdLabel+(rd?' · '+rd.nome.slice(0,20):'')+'</span>' : '')+
+            (rd ? '<span style="font-size:9px;color:'+cor+';font-weight:600;background:'+bg+';padding:1px 5px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
             '<span style="font-size:11px;color:var(--tx);line-height:1.4;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
@@ -5709,7 +5709,7 @@ async function renderLaudo() {
     const acoesKey = f.cd ? String(f.cd) : f.id;
     const acoes = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
             return `<tr>
-              <td>${f.nome}<br><span style="font-size:10px;color:var(--tl)">cd${f.cd||f.id} · ${f.n_questoes||1} questão(ões)</span></td>
+              <td>${f.nome}<br><span style="font-size:10px;color:var(--tl)">${f.n_questoes||1} questão(ões)</span></td>
               <td><span style="background:${NivelCores[f.nivel]};color:${NivelTxt[f.nivel]};font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;white-space:nowrap">${f.nivel}</span></td>
               <td><ul style="padding-left:16px;margin:0">${acoes.map(a=>`<li style="margin-bottom:3px">${a}</li>`).join('')}</ul></td>
             </tr>`;
@@ -5853,7 +5853,7 @@ async function gerarLaudoPDF() {
         const cv=doc.splitTextToSize(f.cons,cols[1]-2);
         doc.text(cv.slice(0,2),x0[1]+1,y+3.5);
         const nc=NivelPDF[f.nivel]; const nt=NivelTxtPDF[f.nivel];
-        doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(nc[0],nc[1],nc[2]);
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(nc[0],nc[1],nc[2]);
         doc.text('P'+f.p,x0[2]+2,y+6,{align:'center'});
         doc.text('S'+f.s,x0[3]+2,y+6,{align:'center'});
         doc.setFillColor(...nc); doc.roundedRect(x0[4],y+2,cols[4]-2,5.5,1.5,1.5,'F');
@@ -5881,7 +5881,7 @@ async function gerarLaudoPDF() {
       if (!chart||!q) continue;
       checkY(18);
       doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
-      const cdStr = q.cd ? 'cd'+q.cd : (q.f||''); const qLabel=doc.splitTextToSize(`${q.c} (${cdStr}${q.inv?' ↺':''}) — ${q.t}`,CW-2);
+      const rdLabel = q.cd && RISCOS_DETALHES[q.cd] ? RISCOS_DETALHES[q.cd].nome.slice(0,20) : (q.f||''); const qLabel=doc.splitTextToSize(`${q.c} (${rdLabel}${q.inv?' ↺':''}) — ${q.t}`,CW-2);
       doc.text(qLabel[0],M,y); y+=qLabel[0]?4.5:0;
       if(qLabel[1]){doc.setFont('helvetica','normal');doc.text(qLabel[1],M,y);y+=4.5;}
       const tmp=document.createElement('canvas');
@@ -6131,6 +6131,8 @@ function showApp() {
                    : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
                    : email;
   document.getElementById('user-email-display').textContent = labelEmail;
+  aplicarRestricoesPorRole();
+  sincronizarQuestoes();
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
   carregarRiscosDB();
@@ -6153,6 +6155,60 @@ function showApp() {
       if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
     });
   });
+}
+
+function aplicarRestricoesPorRole() {
+  const role = currentUser?.role || 'consultor';
+  // admin e consultor veem tudo
+  if (role === 'admin' || role === 'consultor') {
+    document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+    return;
+  }
+  // cliente_viewer: apenas dashboard, links e relatório
+  const permitidos = new Set(['nb-dashboard','nb-links','nb-laudo']);
+  const secoesPermitidas = new Set(['Início','Exportar']); // seções visíveis
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.style.display = permitidos.has(btn.id) ? '' : 'none';
+  });
+  // Ajustar visibilidade das seções do sidebar
+  const sidebarSections = document.querySelectorAll('.sidebar-section');
+  sidebarSections.forEach(sec => {
+    const texto = sec.textContent.trim();
+    sec.style.display = secoesPermitidas.has(texto) ? '' : 'none';
+  });
+  // Garantir que a tela ativa seja o dashboard
+  if (role === 'cliente_viewer') {
+    goScreen('dashboard', document.getElementById('nb-dashboard'));
+  }
+}
+
+async function sincronizarQuestoes() {
+  if (isDemoMode || !sbAdmin) return;
+  try {
+    // Verificar se há questões no banco
+    const { data: existentes, error } = await sbAdmin
+      .from('questoes')
+      .select('id')
+      .eq('is_oficial', true)
+      .limit(1);
+    if (error) return; // tabela pode não existir ainda
+    if (existentes && existentes.length > 0) return; // já populado
+
+    // Inserir todas as 27 questões oficiais
+    const upserts = QS_OFICIAIS.map(q => ({
+      codigo:     q.c,
+      texto:      q.t,
+      bloco:      q.b,
+      cd_risco:   q.cd,
+      invertida:  q.inv,
+      is_oficial: true,
+      ativo:      true,
+    }));
+    await sbAdmin.from('questoes').upsert(upserts, { onConflict: 'codigo' });
+    // Recarregar mapa após inserção
+    await carregarMapaQuestoesAdmin();
+    console.log('[PSEG] Questões sincronizadas com o banco.');
+  } catch(e) { console.warn('sincronizarQuestoes:', e.message); }
 }
 
 // ══════════════════════════════════════════
@@ -6611,7 +6667,23 @@ function _loginOk(user) {
   const el = document.getElementById('login-err');
   if (el) el.style.display = 'none';
   currentUser = user;
-  showApp();
+  carregarPerfilUsuario().then(() => showApp());
+}
+
+async function carregarPerfilUsuario() {
+  if (isDemoMode || !sbAdmin || !currentUser?.id) return;
+  try {
+    const { data } = await sbAdmin
+      .from('perfis')
+      .select('role, nome, empresa_id')
+      .eq('id', currentUser.id)
+      .single();
+    if (data) {
+      currentUser.role      = data.role      || 'consultor';
+      currentUser.nome      = data.nome      || currentUser.email;
+      currentUser.empresa_id = data.empresa_id || null;
+    }
+  } catch(e) { console.warn('carregarPerfilUsuario:', e.message); }
 }
 
 async function fazerLogin() {
