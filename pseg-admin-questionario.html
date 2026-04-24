@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- QR Code (offline, local) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
@@ -2001,8 +2003,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div class="modal" style="max-width:360px;text-align:center">
     <div class="modal-title">QR Code</div>
     <div id="qr-empresa-nome" style="font-size:12px;color:var(--tm);margin-bottom:12px"></div>
-    <img id="qr-img" src="" alt="QR Code"
-      style="width:240px;height:240px;margin:0 auto 12px;display:block;border:1px solid var(--border);border-radius:var(--r);background:white"/>
+    <div id="qr-img" style="display:flex;align-items:center;justify-content:center;width:240px;height:240px;margin:0 auto"></div>
     <div id="qr-url-display" style="font-size:10px;color:var(--tl);word-break:break-all;margin-bottom:4px;padding:0 8px"></div>
     <div class="modal-footer" style="margin-top:12px">
       <button class="btn btn-ghost" onclick="fecharModalQR()">Fechar</button>
@@ -4537,13 +4538,37 @@ function copiarLink(url) {
 }
 
 function abrirModalQR(url, nomeEmpresa) {
-  const enc = encodeURIComponent(url);
-  const src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=${enc}`;
-  document.getElementById('qr-img').src = src;
   document.getElementById('qr-url-display').textContent = url;
   document.getElementById('qr-empresa-nome').textContent = nomeEmpresa || '';
-  const dl = document.getElementById('qr-download-link');
-  if (dl) { dl.href = src; dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+
+  // Gerar QR Code offline com qrcodejs
+  const container = document.getElementById('qr-img');
+  container.innerHTML = '';
+  if (window.QRCode) {
+    new QRCode(container, {
+      text: url,
+      width: 240,
+      height: 240,
+      colorDark: '#1a2e22',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+    // Habilitar download após render
+    setTimeout(() => {
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        const dl = document.getElementById('qr-download-link');
+        if (dl) { dl.href = canvas.toDataURL('image/png'); dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+      }
+    }, 100);
+  } else {
+    // Fallback: API externa
+    const src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(url)}`;
+    container.innerHTML = `<img src="${src}" width="240" height="240" alt="QR Code"/>`;
+    const dl = document.getElementById('qr-download-link');
+    if (dl) { dl.href = src; dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+  }
+
   document.getElementById('modal-qr').classList.add('open');
 }
 function fecharModalQR() {
@@ -5476,7 +5501,16 @@ function toggleLaudoSecao(id) {
   buildLaudoSecoesChecks();
 }
 
-function onLaudoFiltro() {}
+function onLaudoFiltro() {
+  const emp = document.getElementById('ld-empresa')?.value || '';
+  const emp_obj = _empresas.find(e => e.id === emp);
+  // Popular setores do combo com os setores da empresa selecionada
+  const setoresDaEmp = emp_obj?.setores || [];
+  const allSetores = setoresDaEmp.length ? setoresDaEmp : [...new Set((_respostasCache[emp] || []).map(r => r.setor).filter(Boolean))];
+  comboItems['combo-ld-setor'] = () => allSetores;
+  comboState['combo-ld-setor'] = new Set(allSetores);
+  renderCombo('combo-ld-setor');
+}
 
 // ── RENDER PREVIEW ──
 async function renderLaudo() {
@@ -5718,22 +5752,25 @@ async function gerarLaudoPDF() {
   _registrarLaudo();
 
   if (!document.getElementById('laudo-doc')) {
-    renderLaudo();
-    await new Promise(r=>setTimeout(r,800));
+    await renderLaudo();
+    await new Promise(r => setTimeout(r, 800));
   }
 
   const { jsPDF } = window.jspdf;
-  const doc  = new jsPDF({ unit:'mm', format:'a4' });
+  const doc  = new jsPDF({ unit: 'mm', format: 'a4' });
   const PW=210, M=14, CW=PW-M*2;
   let y=M;
-  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-  const emp  = document.getElementById('ld-empresa').value;
-  const nomeEmp = emp==='abc'?'Construtora ABC Ltda.':emp==='xyz'?'Indústria XYZ S.A.':'Todas as empresas';
-  const setores = [...comboState['combo-ld-setor']];
-  const dados   = emp?(RESPOSTAS_DEMO[emp]||[]):Object.values(RESPOSTAS_DEMO).flat();
-  const linhas  = dados.filter(r=>setores.includes(r.setor));
+  const hoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+  const emp     = document.getElementById('ld-empresa')?.value || '';
+  // ← CORREÇÃO: usar _empresas em vez de IDs hardcoded
+  const nomeEmp = emp ? (_empresas.find(e => e.id === emp)?.nome || emp) : 'Todas as empresas';
+  const setores = [...(comboState['combo-ld-setor'] || new Set())];
+  // ← CORREÇÃO: usar getLinhasParaAnalise em vez de RESPOSTAS_DEMO
+  const todosLinhas = await getLinhasParaAnalise(emp);
+  const linhas = setores.length ? todosLinhas.filter(r => setores.includes(r.setor)) : todosLinhas;
+  if (!linhas.length) { toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
   const fatores = calcFatores(linhas);
-  const grupos  = agruparPorGrupos([...new Set(linhas.map(r=>r.setor))], gruposSetor);
+  const grupos  = agruparPorGrupos([...new Set(linhas.map(r => r.setor))], gruposSetor);
   const NivelPDF= {IRRELEVANTE:[134,239,172],BAIXO:[163,230,53],MÉDIO:[252,211,77],ALTO:[251,146,60],CRÍTICO:[248,113,113]};
   const NivelTxtPDF={IRRELEVANTE:[20,83,45],BAIXO:[54,83,20],MÉDIO:[120,53,15],ALTO:[124,45,18],CRÍTICO:[127,29,29]};
 
