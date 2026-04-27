@@ -599,64 +599,44 @@ async function enviarResposta() {
   const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
   const setorVal    = setorNome || setorSelect || setorInput || 'Não informado';
 
-  const payload = {
-    empresa_id:  empresaId === 'dev-mode' ? null : empresaId,
-    ciclo_id:    cicloId,
-    link_token:  linkToken,
-    setor:       setorVal,
-    funcao:      funcaoVal,
-    escolaridade:escolarVal,
-    fonte:       'formulario_web',
-    respondido_em: new Date().toISOString(),
-  };
-
-  // Salvar no localStorage sempre (fallback offline)
-  const localKey = 'pseg_offline_' + Date.now();
-  // Montar itens para fallback offline
-  const itensFallback = Object.entries(respostas)
+  // Montar itens com UUIDs das questões
+  const itens = Object.entries(respostas)
     .map(([qId, valor]) => {
       const uuid = _mapaQuestoesUUID[parseInt(qId)];
       return uuid ? { questao_id: uuid, valor: parseInt(valor) } : null;
     }).filter(Boolean);
-  localStorage.setItem(localKey, JSON.stringify({ payload, itens: itensFallback, tentativa: new Date().toISOString() }));
 
-  // Tentar enviar ao Supabase
+  const rpcParams = {
+    p_empresa_id:   empresaId,
+    p_ciclo_id:     cicloId   || null,
+    p_link_token:   linkToken,
+    p_setor:        setorVal,
+    p_funcao:       funcaoVal || null,
+    p_escolaridade: escolarVal || null,
+    p_itens:        itens,
+  };
+
+  // Salvar no localStorage sempre (fallback offline)
+  const localKey = 'pseg_offline_' + Date.now();
+  localStorage.setItem(localKey, JSON.stringify({ rpcParams, tentativa: new Date().toISOString() }));
+
+  // Tentar enviar ao Supabase via função SECURITY DEFINER (bypassa RLS)
   let salvoComSucesso = false;
   if (empresaId !== 'dev-mode') {
     try {
-      // 1. Inserir registro na tabela respostas
-      const { data: resposta, error: errResp } = await sb
-        .from('respostas')
-        .insert(payload)
-        .select('id')
-        .single();
-
-      if (errResp) throw errResp;
-
-      // 2. Inserir itens individuais em resposta_itens (1 linha por questão)
-      const itens = Object.entries(respostas)
-        .map(([qId, valor]) => {
-          const uuid = _mapaQuestoesUUID[parseInt(qId)];
-          if (!uuid) return null;
-          return { resposta_id: resposta.id, questao_id: uuid, valor: parseInt(valor) };
-        })
-        .filter(Boolean);
-
-      if (itens.length > 0) {
-        const { error: errItens } = await sb.from('resposta_itens').insert(itens);
-        if (errItens) console.warn('Falha ao salvar itens:', errItens.message);
-      }
+      const { data, error } = await sb.rpc('salvar_resposta', rpcParams);
+      if (error) throw new Error(error.message || JSON.stringify(error));
+      if (!data) throw new Error('Função não retornou ID da resposta');
 
       // Sucesso: limpar localStorage e marcar dispositivo
       localStorage.removeItem(localKey);
       salvoComSucesso = true;
     } catch (e) {
       console.warn('Falha no envio Supabase:', e.message);
-      // NÃO marcar como "já respondeu" — permite nova tentativa
       btn.disabled = false;
-      btn.innerHTML = 'Tentar novamente';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>Tentar novamente`;
       toast('Erro ao salvar: ' + (e.message || 'verifique sua conexão e tente novamente.'), 'warn');
-      return; // sai sem mostrar tela de sucesso
+      return;
     }
   } else {
     // Dev mode: remover da fila offline (não tenta enviar ao banco)
@@ -703,30 +683,31 @@ async function reenviarPendentes() {
 
       let parsed;
       try { parsed = JSON.parse(raw); } catch { localStorage.removeItem(chave); descartados++; continue; }
-      const { payload, itens } = parsed;
 
-      // Descartar payloads inválidos (modo dev ou empresa_id ausente)
-      if (!payload?.empresa_id) {
-        console.warn('Reenvio: payload sem empresa_id descartado', chave);
-        localStorage.removeItem(chave);
-        descartados++;
-        continue;
+      // Suporte a formato novo (rpcParams) e legado (payload + itens)
+      let rpcParams = parsed.rpcParams;
+      if (!rpcParams && parsed.payload) {
+        const { payload, itens } = parsed;
+        if (!payload?.empresa_id) {
+          localStorage.removeItem(chave); descartados++; continue;
+        }
+        rpcParams = {
+          p_empresa_id:   payload.empresa_id,
+          p_ciclo_id:     payload.ciclo_id   || null,
+          p_link_token:   payload.link_token || '',
+          p_setor:        payload.setor      || 'Não informado',
+          p_funcao:       payload.funcao     || null,
+          p_escolaridade: payload.escolaridade || null,
+          p_itens:        itens || [],
+        };
       }
 
-      // Sanitizar campos opcionais
-      payload.setor = payload.setor || 'Não informado';
-      payload.ciclo_id = payload.ciclo_id || null;
-      payload.questionario_id = payload.questionario_id || null;
-
-      const { data: resposta, error: errResp } = await sb
-        .from('respostas').insert(payload).select('id').single();
-      if (errResp) throw new Error(errResp.message || JSON.stringify(errResp));
-
-      if (itens?.length) {
-        const rows = itens.map(it => ({ ...it, resposta_id: resposta.id }));
-        const { error: errIt } = await sb.from('resposta_itens').insert(rows);
-        if (errIt) console.warn('Itens (reenvio):', errIt.message);
+      if (!rpcParams?.p_empresa_id) {
+        localStorage.removeItem(chave); descartados++; continue;
       }
+
+      const { data, error } = await sb.rpc('salvar_resposta', rpcParams);
+      if (error) throw new Error(error.message || JSON.stringify(error));
 
       localStorage.removeItem(chave);
       ok++;
