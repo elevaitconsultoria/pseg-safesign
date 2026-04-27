@@ -3468,14 +3468,18 @@ async function onEmpresaChange() {
       .from('respostas')
       .select('setor, funcao')
       .eq('empresa_id', emp);
-    if (data?.length) {
-      const setores = [...new Set(data.map(r=>r.setor).filter(Boolean))].sort();
-      const funcoes = [...new Set(data.map(r=>r.funcao).filter(Boolean))].sort();
-      comboItems['combo-setor']  = () => setores;
-      comboItems['combo-funcao'] = () => funcoes;
-      comboState['combo-setor']  = new Set(setores);
-      comboState['combo-funcao'] = new Set(funcoes);
-    }
+    // Se há respostas, usar setores/funções das respostas; caso contrário usar GHE configurado
+    const empresaObj = _empresas.find(e => e.id === emp);
+    const setores = data?.length
+      ? [...new Set(data.map(r=>r.setor).filter(Boolean))].sort()
+      : (empresaObj?.setores || []);
+    const funcoes = data?.length
+      ? [...new Set(data.map(r=>r.funcao).filter(Boolean))].sort()
+      : (empresaObj?.funcoes || []);
+    comboItems['combo-setor']  = () => setores;
+    comboItems['combo-funcao'] = () => funcoes;
+    comboState['combo-setor']  = new Set(setores);
+    comboState['combo-funcao'] = new Set(funcoes);
   } catch(e) { console.warn('onEmpresaChange:', e); }
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
@@ -4909,15 +4913,14 @@ async function loadRespostasParaEmpresa(empresaId) {
 
 // Retorna as linhas para análise: real se conectado, demo se não
 async function getLinhasParaAnalise(empresaId) {
-  if (isDemoMode || !empresaId) {
+  // Modo demo: usar dados simulados
+  if (isDemoMode) {
     return empresaId ? (RESPOSTAS_DEMO[empresaId]||[]) : Object.values(RESPOSTAS_DEMO).flat();
   }
+  // Modo real: nunca usar dados demo — retornar array vazio se sem empresa ou erro
+  if (!empresaId) return [];
   const real = await loadRespostasParaEmpresa(empresaId);
-  if (real === null) {
-    // Fallback para demo em caso de erro
-    return empresaId ? (RESPOSTAS_DEMO[empresaId]||[]) : Object.values(RESPOSTAS_DEMO).flat();
-  }
-  return real;
+  return real ?? []; // null/undefined → [] (sem fallback para demo)
 }
 
 // Limpar cache ao trocar empresa
@@ -4982,6 +4985,18 @@ function onGrafFiltroChange() {
     const cur = el.value;
     el.innerHTML = '<option value="">Todos os ciclos</option>' +
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
+  }
+  // Em modo real, atualizar combos de setor/função com dados da empresa
+  if (!isDemoMode && empId) {
+    const empresaObj = _empresas.find(e => e.id === empId);
+    const setores = empresaObj?.setores || [];
+    const funcoes = empresaObj?.funcoes || [];
+    comboItems['combo-gf-setor']  = () => setores;
+    comboItems['combo-gf-funcao'] = () => funcoes;
+    comboState['combo-gf-setor']  = new Set(setores);
+    comboState['combo-gf-funcao'] = new Set(funcoes);
+    buildCombo('combo-gf-setor');
+    buildCombo('combo-gf-funcao');
   }
 }
 
@@ -5520,7 +5535,7 @@ async function renderLaudo() {
   const dados   = await getLinhasParaAnalise(emp);
   const linhas  = dados.filter(r => setores.includes(r.setor));
   const panel   = document.getElementById('laudo-preview-panel');
-  const nomeEmp = emp === 'abc' ? 'Construtora ABC Ltda.' : emp === 'xyz' ? 'Indústria XYZ S.A.' : 'Todas as empresas';
+  const nomeEmp = emp ? (_empresas.find(e => e.id === emp)?.nome || emp) : 'Todas as empresas';
   const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
   if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
@@ -6133,6 +6148,14 @@ function showApp() {
   document.getElementById('user-email-display').textContent = labelEmail;
   aplicarRestricoesPorRole();
   sincronizarQuestoes();
+  // Em modo real, limpar combos inicializados com dados demo
+  if (!isDemoMode) {
+    ['combo-setor','combo-funcao','combo-gf-setor','combo-gf-funcao',
+     'combo-ld-setor','combo-audit-setor','combo-audit-funcao'].forEach(id => {
+      comboItems[id] = () => [];
+      comboState[id] = new Set();
+    });
+  }
   // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
   carregarRiscosDB();
@@ -6861,6 +6884,18 @@ function onAuditEmpresaChange() {
     el.innerHTML = '<option value="">Todos os ciclos</option>' +
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
+  // Em modo real, atualizar combos de setor/função com dados do GHE da empresa
+  if (!isDemoMode && empId) {
+    const empresaObj = _empresas.find(e => e.id === empId);
+    const setores = empresaObj?.setores || [];
+    const funcoes = empresaObj?.funcoes || [];
+    comboItems['combo-audit-setor']  = () => setores;
+    comboItems['combo-audit-funcao'] = () => funcoes;
+    comboState['combo-audit-setor']  = new Set(setores);
+    comboState['combo-audit-funcao'] = new Set(funcoes);
+    buildCombo('combo-audit-setor');
+    buildCombo('combo-audit-funcao');
+  }
   renderTelaAuditoria();
 }
 
@@ -7013,12 +7048,26 @@ async function renderTelaAuditoria() {
 }
 
 function resetarFiltrosAuditoria() {
-  comboState['combo-audit-setor']  = new Set(SETORES_DEMO);
-  comboState['combo-audit-funcao'] = new Set(FUNCOES_DEMO);
+  const empId = _empresaAtiva?.id || '';
+  if (isDemoMode) {
+    comboState['combo-audit-setor']  = new Set(SETORES_DEMO);
+    comboState['combo-audit-funcao'] = new Set(FUNCOES_DEMO);
+  } else if (empId) {
+    const empresaObj = _empresas.find(e => e.id === empId);
+    const setores = empresaObj?.setores || [];
+    const funcoes = empresaObj?.funcoes || [];
+    comboItems['combo-audit-setor']  = () => setores;
+    comboItems['combo-audit-funcao'] = () => funcoes;
+    comboState['combo-audit-setor']  = new Set(setores);
+    comboState['combo-audit-funcao'] = new Set(funcoes);
+  } else {
+    comboState['combo-audit-setor']  = new Set();
+    comboState['combo-audit-funcao'] = new Set();
+  }
   buildCombo('combo-audit-setor');
   buildCombo('combo-audit-funcao');
   const sel = document.getElementById('audit-empresa');
-  if (sel) sel.value = _empresaAtiva?.id || '';
+  if (sel) sel.value = empId;
   const selCiclo = document.getElementById('audit-ciclo');
   if (selCiclo) selCiclo.value = '';
   renderTelaAuditoria();
