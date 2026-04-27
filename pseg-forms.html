@@ -161,9 +161,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="meta-grid">
       <div class="field" id="meta-setor-field" style="display:none">
         <label>Setor / GHE</label>
+        <!-- preenchido por popularMetaSetor() — pode ser <select> ou <input> livre -->
         <select id="meta-setor">
           <option value="">Prefiro não informar</option>
         </select>
+        <input id="meta-setor-input" type="text" placeholder="Digite seu setor"
+          style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
+          background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;
+          font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--g)';this.style.background='white'"
+          onblur="this.style.borderColor='var(--border)';this.style.background='#f7f9f8'"/>
       </div>
       <div class="field">
         <label>Função / Cargo</label>
@@ -191,14 +198,22 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <!-- Banner de respostas pendentes offline -->
 <div id="offline-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
-  background:#1a7a3c;color:white;padding:12px 16px;align-items:center;justify-content:space-between;gap:12px;
+  background:#1a7a3c;color:white;padding:12px 16px;align-items:center;justify-content:space-between;gap:8px;
   font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;box-shadow:0 -2px 12px rgba(0,0,0,.15)">
-  <span>📤 Você tem <strong id="offline-count"></strong> pendente(s) não enviada(s).</span>
-  <button id="btn-reenviar" onclick="reenviarPendentes()"
-    style="background:white;color:#1a7a3c;border:none;border-radius:6px;padding:6px 14px;
-    font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
-    Reenviar agora
-  </button>
+  <span>📤 <strong id="offline-count"></strong> resposta(s) pendente(s).</span>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="btn-reenviar" onclick="reenviarPendentes()"
+      style="background:white;color:#1a7a3c;border:none;border-radius:6px;padding:6px 14px;
+      font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+      Reenviar agora
+    </button>
+    <button onclick="descartarPendentes()"
+      style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.4);
+      border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;white-space:nowrap"
+      title="Descartar respostas que não conseguem ser enviadas">
+      Descartar
+    </button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -212,7 +227,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 const SUPABASE_URL  = 'https://vftyiildukrpgmnbcnao.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdHlpaWxkdWtycGdtbmJjbmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQ3MTAsImV4cCI6MjA4OTg4MDcxMH0.2t_HSq52rHbNq-IgwyiTSo2lnxJj2KqW8UcDoL9zZ_A';
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// persistSession: false → formulário nunca herda sessão do admin (mesmo browser/origin)
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
 
 // Mapa de número da questão → UUID do banco
 // Populado uma vez via carregarMapaQuestoes() no boot
@@ -297,7 +315,7 @@ let empresaFuncoes = []; // Funções cadastradas pela empresa no GHE
 // INIT — valida token e carrega dados da empresa
 // ══════════════════════════════════════════════════════════
 async function init() {
-  carregarMapaQuestoes(); // não bloqueia — pre-carrega UUIDs
+  await carregarMapaQuestoes(); // aguarda UUIDs antes de continuar
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('token');
 
@@ -367,15 +385,17 @@ async function init() {
 // ══════════════════════════════════════════════════════════
 async function carregarGHEEmpresa(empId) {
   if (!empId || empId === 'dev-mode') return;
+  // Tenta carregar GHE de empresa_setores/empresa_funcoes se existirem
+  // Caso contrário, form usa campo livre (setores=[]) e lista padrão de funções
   try {
-    const [{ data: setData }, { data: funData }] = await Promise.all([
+    const [resSet, resFun] = await Promise.all([
       sb.from('empresa_setores').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
       sb.from('empresa_funcoes').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
     ]);
-    empresaSetores = (setData || []).map(r => r.nome);
-    empresaFuncoes = (funData || []).map(r => r.nome);
+    empresaSetores = (resSet.data || []).map(r => r.nome);
+    empresaFuncoes = (resFun.data || []).map(r => r.nome);
   } catch(e) {
-    console.warn('carregarGHEEmpresa:', e.message);
+    // Tabelas GHE não existem ainda → usa defaults
     empresaSetores = [];
     empresaFuncoes = [];
   }
@@ -398,16 +418,29 @@ function popularMetaFuncao() {
 function popularMetaSetor() {
   const field = document.getElementById('meta-setor-field');
   const sel   = document.getElementById('meta-setor');
-  if (!field || !sel) return;
-  sel.innerHTML = '<option value="">Prefiro não informar</option>';
-  const setores = empresaSetores.length ? empresaSetores : [];
-  setores.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    sel.appendChild(opt);
-  });
-  // Mostrar campo somente se não há setor pré-definido no link
-  field.style.display = setores.length ? 'block' : 'none';
+  const inp   = document.getElementById('meta-setor-input');
+  if (!field) return;
+
+  // Sempre mostrar campo setor quando não há setor pré-definido no link
+  field.style.display = 'block';
+
+  if (empresaSetores.length) {
+    // Empresa tem setores cadastrados → dropdown
+    if (sel) {
+      sel.style.display = '';
+      sel.innerHTML = '<option value="">Prefiro não informar</option>';
+      empresaSetores.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        sel.appendChild(opt);
+      });
+    }
+    if (inp) inp.style.display = 'none';
+  } else {
+    // Sem setores cadastrados → campo livre
+    if (sel) sel.style.display = 'none';
+    if (inp) inp.style.display = '';
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -434,6 +467,7 @@ function showForm() {
 
   // Popula metadados dinâmicos
   popularMetaFuncao();
+  // Mostrar campo setor apenas se não há setor pré-definido no link
   if (!setorNome) popularMetaSetor();
 
   document.getElementById('form-screen').classList.add('active');
@@ -546,10 +580,24 @@ async function enviarResposta() {
   btn.disabled = true;
   btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></div>Enviando...`;
 
+  // Garantir que o mapa de UUIDs está carregado (proteção extra contra race condition)
+  if (Object.keys(_mapaQuestoesUUID).length === 0) {
+    await carregarMapaQuestoes();
+  }
+  if (Object.keys(_mapaQuestoesUUID).length === 0) {
+    btn.disabled = false;
+    btn.innerHTML = 'Tentar novamente';
+    toast('Não foi possível carregar as questões. Verifique sua conexão.', 'warn');
+    return;
+  }
+
   const funcaoVal  = document.getElementById('meta-funcao')?.value || null;
   const escolarVal = document.getElementById('meta-escolaridade')?.value || null;
   // Setor: usa setor pré-definido do link; se não houver, usa o que o funcionário escolheu
-  const setorVal   = setorNome || document.getElementById('meta-setor')?.value || null;
+  // Verifica dropdown e campo livre; fallback para 'Não informado' — coluna setor é NOT NULL
+  const setorSelect = document.getElementById('meta-setor')?.value;
+  const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
+  const setorVal    = setorNome || setorSelect || setorInput || 'Não informado';
 
   const payload = {
     empresa_id:  empresaId === 'dev-mode' ? null : empresaId,
@@ -611,6 +659,8 @@ async function enviarResposta() {
       return; // sai sem mostrar tela de sucesso
     }
   } else {
+    // Dev mode: remover da fila offline (não tenta enviar ao banco)
+    localStorage.removeItem(localKey);
     salvoComSucesso = true;
   }
 
@@ -645,21 +695,37 @@ async function reenviarPendentes() {
   const btn = document.getElementById('btn-reenviar');
   if (btn) { btn.disabled = true; btn.textContent = 'Reenviando…'; }
 
-  let ok = 0, fail = 0;
+  let ok = 0, fail = 0, descartados = 0;
   for (const chave of chaves) {
     try {
       const raw = localStorage.getItem(chave);
       if (!raw) { localStorage.removeItem(chave); continue; }
-      const { payload, itens } = JSON.parse(raw);
+
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { localStorage.removeItem(chave); descartados++; continue; }
+      const { payload, itens } = parsed;
+
+      // Descartar payloads inválidos (modo dev ou empresa_id ausente)
+      if (!payload?.empresa_id) {
+        console.warn('Reenvio: payload sem empresa_id descartado', chave);
+        localStorage.removeItem(chave);
+        descartados++;
+        continue;
+      }
+
+      // Sanitizar campos opcionais
+      payload.setor = payload.setor || 'Não informado';
+      payload.ciclo_id = payload.ciclo_id || null;
+      payload.questionario_id = payload.questionario_id || null;
 
       const { data: resposta, error: errResp } = await sb
         .from('respostas').insert(payload).select('id').single();
-      if (errResp) throw errResp;
+      if (errResp) throw new Error(errResp.message || JSON.stringify(errResp));
 
       if (itens?.length) {
         const rows = itens.map(it => ({ ...it, resposta_id: resposta.id }));
         const { error: errIt } = await sb.from('resposta_itens').insert(rows);
-        if (errIt) console.warn('Itens:', errIt.message);
+        if (errIt) console.warn('Itens (reenvio):', errIt.message);
       }
 
       localStorage.removeItem(chave);
@@ -671,13 +737,33 @@ async function reenviarPendentes() {
   }
 
   const banner = document.getElementById('offline-banner');
-  if (ok > 0 && !fail) {
+  if (fail === 0) {
     if (banner) banner.style.display = 'none';
-    toast(`✅ ${ok} resposta(s) reenviada(s) com sucesso!`, 'success');
-  } else if (fail > 0) {
-    toast(`${ok} enviadas, ${fail} falharam. Tente novamente mais tarde.`, 'warn');
+    if (ok > 0) toast(`✅ ${ok} resposta(s) reenviada(s) com sucesso!`, 'green');
+    else toast('Nenhuma resposta pendente válida.', '');
+  } else {
+    toast(`${ok} enviadas, ${fail} falharam. Tente mais tarde.`, 'warn');
     if (btn) { btn.disabled = false; btn.textContent = 'Tentar novamente'; }
   }
+  if (descartados > 0) console.info(`${descartados} payload(s) inválido(s) descartado(s).`);
+
+  // Atualizar contador do banner
+  const restantes = Object.keys(localStorage).filter(k => k.startsWith('pseg_offline_')).length;
+  if (restantes === 0 && banner) banner.style.display = 'none';
+  else if (restantes > 0 && banner) {
+    banner.querySelector('#offline-count').textContent =
+      restantes === 1 ? '1 resposta' : `${restantes} respostas`;
+  }
+}
+
+function descartarPendentes() {
+  if (!confirm('Descartar todas as respostas pendentes? Esta ação não pode ser desfeita.')) return;
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('pseg_offline_'))
+    .forEach(k => localStorage.removeItem(k));
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.style.display = 'none';
+  toast('Respostas pendentes descartadas.', '');
 }
 
 // ══════════════════════════════════════════════════════════

@@ -6217,15 +6217,15 @@ async function sincronizarQuestoes() {
     if (error) return; // tabela pode não existir ainda
     if (existentes && existentes.length > 0) return; // já populado
 
-    // Inserir todas as 27 questões oficiais
+    // Inserir todas as 27 questões oficiais — colunas alinhadas ao schema v3
     const upserts = QS_OFICIAIS.map(q => ({
       codigo:     q.c,
       texto:      q.t,
       bloco:      q.b,
-      cd_risco:   q.cd,
-      invertida:  q.inv,
+      fator_id:   'R' + String(q.cd).padStart(2, '0'),  // R01…R11
+      inversa:    q.inv,    // boolean — coluna é 'inversa', não 'invertida'
+      is_ancora:  q.anc,
       is_oficial: true,
-      ativo:      true,
     }));
     await sbAdmin.from('questoes').upsert(upserts, { onConflict: 'codigo' });
     // Recarregar mapa após inserção
