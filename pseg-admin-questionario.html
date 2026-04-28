@@ -3468,13 +3468,19 @@ async function onEmpresaChange() {
       .from('respostas')
       .select('setor, funcao')
       .eq('empresa_id', emp);
-    // Se há respostas, usar setores/funções das respostas; caso contrário usar GHE configurado
+
     const empresaObj = _empresas.find(e => e.id === emp);
-    const setores = data?.length
-      ? [...new Set(data.map(r=>r.setor).filter(Boolean))].sort()
+    // CRÍTICO: normalizar null igual ao loadRespostasParaEmpresa
+    // r.setor||'Geral' e r.funcao||'—' garantem que os combos reflitam exatamente
+    // os valores que a engine de análise produz — sem esse alinhamento o filtro
+    // retorna 0 resultados mesmo havendo dados no banco.
+    const normSetores = (data || []).map(r => r.setor || 'Geral');
+    const normFuncoes = (data || []).map(r => r.funcao || '—');
+    const setores = normSetores.length
+      ? [...new Set(normSetores)].sort()
       : (empresaObj?.setores || []);
-    const funcoes = data?.length
-      ? [...new Set(data.map(r=>r.funcao).filter(Boolean))].sort()
+    const funcoes = normFuncoes.length
+      ? [...new Set(normFuncoes)].sort()
       : (empresaObj?.funcoes || []);
     comboItems['combo-setor']  = () => setores;
     comboItems['combo-funcao'] = () => funcoes;
@@ -3504,8 +3510,12 @@ async function rodarAnalise() {
   const niveis   = [...comboState['combo-nivel']];
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // Aplicar filtro de ciclo se selecionado
-  const dados    = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
-  const filtrado = dados.filter(r => setores.includes(r.setor) && funcoes.includes(r.funcao));
+  const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
+  // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
+  const filtrado = dados.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+  );
 
   if (!filtrado.length) {
     document.getElementById('resultado-panel').innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
@@ -4977,8 +4987,13 @@ function toggleBlocoGraf(k) {
   buildBlocoChecks();
 }
 
-function onGrafFiltroChange() {
+async function onGrafFiltroChange() {
   const empId = document.getElementById('gf-empresa')?.value || '';
+  if (empId) {
+    const nome = _empresas.find(e => e.id === empId)?.nome || '';
+    setEmpresaAtiva(empId, nome);
+    limparCacheRespostas();
+  }
   const el = document.getElementById('gf-ciclo');
   if (el) {
     const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
@@ -4986,18 +5001,28 @@ function onGrafFiltroChange() {
     el.innerHTML = '<option value="">Todos os ciclos</option>' +
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
-  // Em modo real, atualizar combos de setor/função com dados da empresa
-  if (!isDemoMode && empId) {
-    const empresaObj = _empresas.find(e => e.id === empId);
-    const setores = empresaObj?.setores || [];
-    const funcoes = empresaObj?.funcoes || [];
-    comboItems['combo-gf-setor']  = () => setores;
-    comboItems['combo-gf-funcao'] = () => funcoes;
-    comboState['combo-gf-setor']  = new Set(setores);
-    comboState['combo-gf-funcao'] = new Set(funcoes);
-    buildCombo('combo-gf-setor');
-    buildCombo('combo-gf-funcao');
+  // Carregar setores/funções das respostas reais (igual ao onEmpresaChange)
+  if (!isDemoMode && empId && sbAdmin) {
+    try {
+      const { data } = await sbAdmin
+        .from('respostas').select('setor, funcao').eq('empresa_id', empId);
+      const empresaObj = _empresas.find(e => e.id === empId);
+      const normSetores = (data || []).map(r => r.setor || 'Geral');
+      const normFuncoes = (data || []).map(r => r.funcao || '—');
+      const setores = normSetores.length
+        ? [...new Set(normSetores)].sort()
+        : (empresaObj?.setores || []);
+      const funcoes = normFuncoes.length
+        ? [...new Set(normFuncoes)].sort()
+        : (empresaObj?.funcoes || []);
+      comboItems['combo-gf-setor']  = () => setores;
+      comboItems['combo-gf-funcao'] = () => funcoes;
+      comboState['combo-gf-setor']  = new Set(setores);
+      comboState['combo-gf-funcao'] = new Set(funcoes);
+    } catch(e) { console.warn('onGrafFiltroChange:', e); }
   }
+  buildCombo('combo-gf-setor');
+  buildCombo('combo-gf-funcao');
 }
 
 // ── CÁLCULO DA DISTRIBUIÇÃO POR QUESTÃO ──
@@ -5041,7 +5066,11 @@ async function renderGraficos() {
   const funcoes  = [...comboState['combo-gf-funcao']];
   const todosDados = await getLinhasParaAnalise(emp);
   const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
-  const linhas   = dados.filter(r => setores.includes(r.setor) && funcoes.includes(r.funcao));
+  // Filtro defensivo: set vazio = todos incluídos
+  const linhas   = dados.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+  );
 
   const panel = document.getElementById('graficos-panel');
 
@@ -5517,12 +5546,33 @@ function toggleLaudoSecao(id) {
   buildLaudoSecoesChecks();
 }
 
-function onLaudoFiltro() {
-  const emp = document.getElementById('ld-empresa')?.value || '';
+async function onLaudoFiltro() {
+  const emp     = document.getElementById('ld-empresa')?.value || '';
+  if (emp) {
+    const nome = _empresas.find(e => e.id === emp)?.nome || '';
+    setEmpresaAtiva(emp, nome);
+    limparCacheRespostas();
+  }
   const emp_obj = _empresas.find(e => e.id === emp);
-  // Popular setores do combo com os setores da empresa selecionada
-  const setoresDaEmp = emp_obj?.setores || [];
-  const allSetores = setoresDaEmp.length ? setoresDaEmp : [...new Set((_respostasCache[emp] || []).map(r => r.setor).filter(Boolean))];
+
+  let allSetores = [];
+  if (!isDemoMode && emp && sbAdmin) {
+    // Carregar setores das respostas reais, normalizando null → 'Geral'
+    try {
+      const { data } = await sbAdmin
+        .from('respostas').select('setor').eq('empresa_id', emp);
+      allSetores = [...new Set((data || []).map(r => r.setor || 'Geral'))].sort();
+    } catch(e) {
+      // Fallback para cache se disponível
+      allSetores = [...new Set((_respostasCache[emp] || []).map(r => r.setor || 'Geral'))].sort();
+    }
+  } else if (isDemoMode) {
+    allSetores = emp_obj?.setores || SETORES_DEMO;
+  }
+
+  // Se ainda vazio, usar GHE da empresa
+  if (!allSetores.length) allSetores = emp_obj?.setores || [];
+
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   renderCombo('combo-ld-setor');
@@ -5530,10 +5580,11 @@ function onLaudoFiltro() {
 
 // ── RENDER PREVIEW ──
 async function renderLaudo() {
-  const emp    = document.getElementById('ld-empresa').value;
+  const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
   const dados   = await getLinhasParaAnalise(emp);
-  const linhas  = dados.filter(r => setores.includes(r.setor));
+  // Filtro defensivo: set vazio = todos incluídos
+  const linhas  = dados.filter(r => setores.length === 0 || setores.includes(r.setor));
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = emp ? (_empresas.find(e => e.id === emp)?.nome || emp) : 'Todas as empresas';
   const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
@@ -6418,10 +6469,10 @@ function renderDashboard() {
         <button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">
           Links
         </button>
-        ${respTotal >= 1
-          ? `<button class="btn btn-g" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">Analisar</button>`
-          : `<button class="btn btn-ghost" style="font-size:11px;opacity:.45" disabled>Sem dados</button>`
-        }
+        <button class="btn btn-g" style="font-size:11px"
+          onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
+          Analisar
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -6875,8 +6926,9 @@ function _popularSelectAudit() {
   if (!cur && _empresaAtiva?.id) sel.value = _empresaAtiva.id;
 }
 
-function onAuditEmpresaChange() {
+async function onAuditEmpresaChange() {
   const empId = document.getElementById('audit-empresa')?.value || '';
+  limparCacheRespostas();
   const el = document.getElementById('audit-ciclo');
   if (el) {
     const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
@@ -6884,18 +6936,28 @@ function onAuditEmpresaChange() {
     el.innerHTML = '<option value="">Todos os ciclos</option>' +
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
-  // Em modo real, atualizar combos de setor/função com dados do GHE da empresa
-  if (!isDemoMode && empId) {
-    const empresaObj = _empresas.find(e => e.id === empId);
-    const setores = empresaObj?.setores || [];
-    const funcoes = empresaObj?.funcoes || [];
-    comboItems['combo-audit-setor']  = () => setores;
-    comboItems['combo-audit-funcao'] = () => funcoes;
-    comboState['combo-audit-setor']  = new Set(setores);
-    comboState['combo-audit-funcao'] = new Set(funcoes);
-    buildCombo('combo-audit-setor');
-    buildCombo('combo-audit-funcao');
+  // Carregar setores/funções das respostas reais
+  if (!isDemoMode && empId && sbAdmin) {
+    try {
+      const { data } = await sbAdmin
+        .from('respostas').select('setor, funcao').eq('empresa_id', empId);
+      const normSetores = (data || []).map(r => r.setor || 'Geral');
+      const normFuncoes = (data || []).map(r => r.funcao || '—');
+      const empresaObj  = _empresas.find(e => e.id === empId);
+      const setores = normSetores.length
+        ? [...new Set(normSetores)].sort()
+        : (empresaObj?.setores || []);
+      const funcoes = normFuncoes.length
+        ? [...new Set(normFuncoes)].sort()
+        : (empresaObj?.funcoes || []);
+      comboItems['combo-audit-setor']  = () => setores;
+      comboItems['combo-audit-funcao'] = () => funcoes;
+      comboState['combo-audit-setor']  = new Set(setores);
+      comboState['combo-audit-funcao'] = new Set(funcoes);
+    } catch(e) { console.warn('onAuditEmpresaChange:', e); }
   }
+  buildCombo('combo-audit-setor');
+  buildCombo('combo-audit-funcao');
   renderTelaAuditoria();
 }
 
@@ -6946,9 +7008,10 @@ async function renderTelaAuditoria() {
     return { ...r, _empNome: empNome, _idx: i };
   });
 
-  // Aplicar filtros
+  // Aplicar filtros — set vazio = todos incluídos
   const filtrado = linhas.filter(r =>
-    setores.includes(r.setor) && funcoes.includes(r.funcao)
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (funcoes.length  === 0 || funcoes.includes(r.funcao))
   );
 
   if (!filtrado.length) {
@@ -7559,7 +7622,8 @@ function goScreen(id, btn) {
     try {
       switch(id) {
         case 'dashboard':
-          renderDashboard();
+          // Atualizar contagem de respostas antes de renderizar o dashboard
+          carregarContagemRespostas().then(() => renderDashboard());
           break;
         case 'empresas':
           renderTelaEmpresas();
@@ -7568,17 +7632,19 @@ function goScreen(id, btn) {
           renderLinks();
           break;
         case 'analise':
-          // Sincronizar empresa e rodar análise automaticamente se há dados
+          // Aguardar onEmpresaChange() async antes de rodar análise
           if (temEmpresa || _links.length) {
-            onEmpresaChange();
-            setTimeout(rodarAnalise, 50);
+            onEmpresaChange().then(() => rodarAnalise());
           }
           break;
         case 'graficos':
           // Reconstruir combos de setores/funções e gerar gráficos
-          buildCombo('combo-gf-setor');
-          buildCombo('combo-gf-funcao');
-          if (temEmpresa || _links.length) setTimeout(renderGraficos, 50);
+          if (temEmpresa || _links.length) {
+            onGrafFiltroChange().then(() => renderGraficos());
+          } else {
+            buildCombo('combo-gf-setor');
+            buildCombo('combo-gf-funcao');
+          }
           break;
         case 'auditoria':
           buildCombo('combo-audit-setor');
@@ -7586,8 +7652,11 @@ function goScreen(id, btn) {
           setTimeout(renderTelaAuditoria, 50);
           break;
         case 'laudo':
-          buildCombo('combo-ld-setor');
-          if (temEmpresa || _links.length) setTimeout(renderLaudo, 50);
+          if (temEmpresa || _links.length) {
+            onLaudoFiltro().then(() => renderLaudo());
+          } else {
+            buildCombo('combo-ld-setor');
+          }
           break;
         case 'riscos':
           renderTelaRiscos();
