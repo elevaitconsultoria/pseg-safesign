@@ -3661,9 +3661,11 @@ function renderViewRisco({grupos, filtrado, niveis}) {
       [1,2,3,4].map(n =>
         '<span style="display:flex;align-items:center;gap:4px">'+
         '<span style="width:10px;height:10px;border-radius:2px;background:'+CORES_BG[n]+';display:inline-block"></span>'+
-        '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta':'')+
+        '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta (escore ajustado)':'')+
         '</span>'
-      ).join('')+'</div>'+
+      ).join('')+
+      '<span style="font-size:9px;color:var(--tl);margin-left:4px">· ↺ inv já aplicado</span>'+
+      '</div>'+
 
       resultado.sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel)-NIVEIS_ORDEM.indexOf(a.nivel)).map(f => {
         const nc  = NIVEIS_CORES[f.nivel];
@@ -3732,9 +3734,11 @@ function renderViewQuestao({grupos, filtrado}) {
       [1,2,3,4].map(n =>
         '<span style="display:flex;align-items:center;gap:4px">'+
         '<span style="width:10px;height:10px;border-radius:2px;background:'+CORES_BG[n]+';display:inline-block"></span>'+
-        '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta':'')+
+        '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta (diretas)':'')+
         '</span>'
-      ).join('')+'</div>';
+      ).join('')+
+      '<span style="font-size:9px;color:var(--tl);margin-left:4px">· ↺ inv: meta = Sempre (ajustado → escore 1)</span>'+
+      '</div>';
 
     ['DEMANDAS DE TRABALHO','RELAÇÕES INTERPESSOAIS','FATORES ORGANIZACIONAIS'].forEach(cat => {
       const qs = porCat[cat] || [];
@@ -5162,7 +5166,7 @@ async function renderGraficos() {
                     ${GF_CORES[d.moda].label} — ${d.pcts[d.moda]}%
                     ${d.moda === (d.q.ve||1) ? ' ✓' : ''}
                   </span>
-                  ${d.moda !== (d.q.ve||1) ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pctMeta}% no Nunca</span>` : ''}
+                  ${d.moda !== (d.q.ve||1) ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pctMeta}% no ${d.q.inv ? 'Sempre' : 'Nunca'}</span>` : ''}
                   <span style="font-size:10px;color:var(--tl)">n=${d.n}</span>
                 </div>
               </div>
@@ -5730,7 +5734,8 @@ async function renderLaudo() {
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Distribuição de respostas por questão</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:10px;color:var(--tm)">
-        ${[1,2,3,4].map(n=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${GF_CORES[n].fill};border:1px solid ${GF_CORES[n].border};display:inline-block"></span>${GF_CORES[n].label}${n===1?' ← meta':''}</span>`).join('')}
+        ${[1,2,3,4].map(n=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${GF_CORES[n].fill};border:1px solid ${GF_CORES[n].border};display:inline-block"></span>${GF_CORES[n].label}${n===1?' ← meta (diretas)':''}</span>`).join('')}
+        <span style="font-size:9px;color:var(--tl);margin-left:4px">· ↺ inv: meta = Sempre (ajustado para escore 1)</span>
       </div>`;
 
     CATS_LAUDO.forEach(({cat, bloco, cor, bg}) => {
@@ -5938,7 +5943,7 @@ async function gerarLaudoPDF() {
     doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
     doc.text('3. Distribuição de Respostas por Questão',M+4,y+4.5); y+=11;
     doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(90,122,101);
-    doc.text('Verde=Nunca(meta) · Azul=Às vezes · Âmbar=Frequente · Rosa=Sempre · Barra destacada = nível predominante', M, y); y+=5;
+    doc.text('Escore: Verde=1-Mín.(meta diretas) · Azul=2 · Âmbar=3 · Rosa=4-Máx. · ↺ inv: meta=Sempre(escore 1) · Barra destacada=predominante', M, y); y+=5;
 
     const codigos = Object.keys(laudoChartInstances);
     for (const cod of codigos) {
