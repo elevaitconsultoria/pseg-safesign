@@ -3834,13 +3834,19 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
   const CORES_BG  = {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
   const NIVEL_NM  = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
-  const isEmpate  = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
+  // Empate: há outro nível com o mesmo % que a moda?
+  const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
+  // Empate com nível mais grave que a meta? (princípio da precaução)
+  const metaNivel = ve || 1;
+  const isEmpateComPior = Object.entries(pcts).some(
+    ([k,v]) => parseInt(k) > metaNivel && v > 0 && v === pcts[metaNivel]
+  );
 
   const segs = [1,2,3,4].map(nv => {
     const p = pcts[nv] || 0;
     if (!p) return '';
     const isMax  = nv === moda;
-    const isMeta = nv === (ve || 1);
+    const isMeta = nv === metaNivel;
     const label  = p >= 10 ? p + '%' : '';
     return '<div style="height:100%;width:'+p+'%;background:'+CORES_BG[nv]+
       ';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.9);position:relative;overflow:hidden;transition:width .4s'+
@@ -3849,16 +3855,17 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
       label+'</div>';
   }).join('');
 
-  const metaLabel = inv ? 'Sempre' : (ve === 1 ? 'Nunca' : NIVEL_NM[ve] || '?');
+  const metaLabel = inv ? 'Sempre' : (metaNivel === 1 ? 'Nunca' : NIVEL_NM[metaNivel] || '?');
   const modaLabel = NIVEL_NM[moda] || '?';
-  const naIdeal   = moda === (ve || 1);
+  // naIdeal: moda na meta E sem empate com nível mais grave (princípio da precaução)
+  const naIdeal   = moda === metaNivel && !isEmpateComPior;
   const cor_status = naIdeal ? '#166534' : (moda >= 3 ? '#991b1b' : '#854d0e');
   const bg_status  = naIdeal ? '#f0fdf4' : (moda >= 3 ? '#fef2f2' : '#fefce8');
   const txt_status = naIdeal
     ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
-    : (isEmpate
-        ? '⚑ Empate resolvido → '+modaLabel+' (regra: nível mais grave) · Meta '+metaLabel+': '+(pcts[ve||1]||0)+'%'
-        : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[ve||1]||0)+'%');
+    : ((isEmpate || isEmpateComPior)
+        ? '⚑ Empate → '+modaLabel+' (nível mais grave prevalece) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'
+        : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%');
 
   return '<div style="height:20px;border-radius:4px;overflow:hidden;display:flex;background:#e5e7eb;position:relative">'+segs+'</div>'+
     '<div style="margin-top:4px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:'+bg_status+';color:'+cor_status+';display:inline-block">'+
@@ -3962,7 +3969,8 @@ function calcFatores(linhas) {
       }
       // Acumular na distribuição média do risco
       [1,2,3,4].forEach(k => acc[k] += pcts[k]);
-      const moda = parseInt(Object.entries(pcts).sort((a,b) => b[1]-a[1])[0][0]);
+      // Empate → nível mais grave prevalece (princípio da precaução)
+      const moda = parseInt(Object.entries(pcts).sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
       return { id:q.id, codigo:q.c, texto:q.t, inv:q.inv, ve:q.ve ?? 1, pcts, moda, n };
     }).filter(Boolean);
 
@@ -3978,8 +3986,8 @@ function calcFatores(linhas) {
       avgDist[maxK] += (100 - somaAvg);
     }
 
-    // P = nível com maior % médio
-    const p = parseInt(Object.entries(avgDist).sort((a,b) => b[1]-a[1])[0][0]);
+    // P = nível com maior % médio; empate → nível mais grave prevalece (princípio da precaução)
+    const p = parseInt(Object.entries(avgDist).sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
 
     // S e metadados do risco — de RISCOS_DETALHES (editável) ou fallback do campo q.s
     const cdNum = parseInt(key);
@@ -5090,7 +5098,8 @@ function calcDistribuicaoQuestoes(linhas) {
       const maxK = [1,2,3,4].reduce((a,b)=>pcts[a]>=pcts[b]?a:b);
       pcts[maxK] += (100-soma);
     }
-    const moda = parseInt(Object.entries(pcts).sort((a,b)=>b[1]-a[1])[0][0]);
+    // Empate → nível mais grave prevalece (princípio da precaução)
+    const moda = parseInt(Object.entries(pcts).sort((a,b)=>b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
     const pctMeta = pcts[q.ve||1];
 
     return { q, n, pcts, moda, pctMeta };
