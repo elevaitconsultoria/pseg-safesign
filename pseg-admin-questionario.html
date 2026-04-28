@@ -141,8 +141,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* ══════════════════════════════
    TELA 1 — QUESTIONÁRIO
 ══════════════════════════════ */
-.layout-q{display:grid;grid-template-columns:1fr 280px;gap:16px}
-@media(max-width:820px){.layout-q{grid-template-columns:1fr}}
+.layout-q{display:grid;grid-template-columns:1fr;gap:16px}
 
 .emp-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .emp-bar label{font-size:12px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.6px}
@@ -185,10 +184,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .s-btns{display:flex;gap:5px}
 .s-btn{flex:1;height:34px;border-radius:7px;border:2px solid var(--border);background:white;font-size:11px;font-weight:800;cursor:pointer;transition:all .15s;color:var(--tm)}
 .s-btn:hover{transform:scale(1.05)}
-.s-btn.sel-1{background:#4caf50;border-color:#4caf50;color:white}
-.s-btn.sel-2{background:#2196f3;border-color:#2196f3;color:white}
-.s-btn.sel-3{background:#ff9800;border-color:#ff9800;color:white}
-.s-btn.sel-4{background:#f44336;border-color:#f44336;color:white}
+.s-btn.sel-1{background:#059669;border-color:#059669;color:white}
+.s-btn.sel-2{background:#2563eb;border-color:#2563eb;color:white}
+.s-btn.sel-3{background:#d97706;border-color:#d97706;color:white}
+.s-btn.sel-4{background:#dc2626;border-color:#dc2626;color:white}
 .s-label{font-size:10px;color:var(--tl);margin-top:4px;text-align:center}
 .inv-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);transition:all .15s;background:#f7f9f8}
 .inv-toggle:hover{border-color:var(--amber);background:var(--amberbg)}
@@ -268,7 +267,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 /* report table */
 .rtbl{width:100%;border-collapse:collapse;font-size:12px}
-.rtbl thead tr{background:#1a5e2a}
+.rtbl thead tr{background:#374151}
 .rtbl th{color:white;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;white-space:nowrap}
 .rtbl td{padding:8px 12px;border-bottom:1px solid var(--bs);vertical-align:middle}
 .rtbl tr:hover td{background:var(--gp)}
@@ -296,8 +295,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .fator-toggle-row:hover td{background:var(--gp)!important}
 .fator-expand-icon{transition:transform .2s;display:inline-block;font-size:10px;margin-right:4px;color:var(--tl)}
 .fator-expand-icon.open{transform:rotate(90deg)}
-.risk-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:800;color:white;white-space:nowrap}
-.rb-IRR{background:#4caf50}.rb-BAX{background:#8bc34a}.rb-MED{background:#e6a817}.rb-ALT{background:#e53935}.rb-CRI{background:#7b1fa2}
+.risk-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+.rb-IRR{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.rb-BAX{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.rb-MED{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+.rb-ALT{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+.rb-CRI{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
 
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--tx);color:white;font-size:13px;font-weight:500;padding:10px 18px;border-radius:40px;box-shadow:0 8px 28px rgba(0,0,0,.2);z-index:9999;transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap}
@@ -386,11 +389,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .mx-hdr{background:var(--bg);padding:4px 6px;text-align:center;font-weight:700;color:var(--tm);border-radius:3px}
 .mx-row-lbl{background:var(--bg);padding:4px 6px;font-weight:700;color:var(--tm);border-radius:3px;writing-mode:horizontal-tb;text-align:right;font-size:8px}
 .mx-cell{padding:4px 2px;text-align:center;border-radius:3px;font-weight:700;font-size:8px;color:white}
-.mx-IRR{background:#86efac;color:#14532d}
-.mx-BAX{background:#a3e635;color:#365314}
-.mx-MED{background:#fcd34d;color:#78350f}
-.mx-ALT{background:#fb923c;color:#7c2d12}
-.mx-CRI{background:#f87171;color:#7f1d1d}
+.mx-IRR{background:#f1f5f9;color:#475569}
+.mx-BAX{background:#dcfce7;color:#166534}
+.mx-MED{background:#fef9c3;color:#854d0e}
+.mx-ALT{background:#ffedd5;color:#9a3412}
+.mx-CRI{background:#fee2e2;color:#991b1b}
 .risk-summary-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--bs)}
 .risk-summary-row:last-child{border-bottom:none}
 .acoes-table{width:100%;border-collapse:collapse;font-size:11px}
@@ -455,6 +458,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .empty-state-title{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px}
 .empty-state-sub{font-size:12px;color:var(--tl);margin-bottom:16px;line-height:1.7}
 .empty-steps{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center}
+/* MODAL PARÂMETROS */
+.mp-info-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bs)}
+.mp-q-text{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:14px;padding:10px 12px;background:var(--bg);border-radius:6px;border-left:3px solid var(--border)}
+.mp-section{margin-bottom:14px}
+.mp-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px;display:block}
+.mp-readonly{padding:8px 12px;background:var(--bs);border-radius:var(--r);font-size:12px;color:var(--tm);display:flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -763,34 +772,46 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <p style="font-size:13px">Selecione uma empresa para configurar o questionário.</p>
   </div>
 
+  <!-- COBERTURA COMPACTA (acima do questionário) -->
+  <div id="cov-section" style="display:none;margin-bottom:12px">
+    <div class="card" style="padding:12px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">Cobertura de fatores de risco</span>
+      </div>
+      <div id="cov-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px"></div>
+    </div>
+  </div>
+
   <div class="layout-q" id="layout-q" style="display:none">
 
     <!-- COLUNA QUESTÕES -->
     <div id="col-questoes"></div>
 
-    <!-- PAINEL PARÂMETROS -->
-    <div class="params-panel">
-      <div class="card" style="min-height:300px">
-        <div class="card-hdr" style="margin-bottom:10px">
-          <div>
-            <div class="card-title">Parâmetros da questão</div>
-            <div class="card-sub" id="params-subtitle">Clique em uma questão para configurar</div>
-          </div>
-        </div>
-        <div id="params-body">
-          <div class="params-empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <p style="font-size:12px">Selecione uma questão à esquerda para editar seus parâmetros.</p>
-          </div>
-        </div>
-        <!-- Cobertura compacta -->
-        <div id="cov-section" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bs);display:none">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">Cobertura de fatores</div>
-          <div id="cov-list"></div>
-        </div>
+  </div>
+
+<!-- MODAL PARÂMETROS DA QUESTÃO -->
+<div class="modal-bg" id="modal-params">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">
+      <div style="flex:1;min-width:0">
+        <div class="modal-title" id="mp-title">Parâmetros da questão</div>
+        <div class="mp-info-bar" id="mp-meta"></div>
       </div>
+      <button onclick="fecharModalParams()" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--tl);flex-shrink:0;margin-top:2px">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="mp-q-text" id="mp-texto"></div>
+    <div id="mp-body"></div>
+    <div class="modal-footer" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="fecharModalParams()">Cancelar</button>
+      <button class="btn btn-g" onclick="salvarParamsQModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar e fechar
+      </button>
     </div>
   </div>
+</div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -2417,10 +2438,10 @@ const FATORES = Object.fromEntries(
 );
 
 const BLOCOS_INFO = {
-  A:{nome:'Bloco A — Demandas de Trabalho',     cor:'#5b4fcf',bg:'#f0effe'},
-  B:{nome:'Bloco B — Relações Interpessoais',    cor:'#185fa5',bg:'#e3f0ff'},
-  C:{nome:'Bloco C — Fatores Organizacionais',   cor:'#b7600a',bg:'#fff4e6'},
-  EXTRA:{nome:'Questões Extras',                 cor:'#374151',bg:'#f3f4f6'},
+  A:{nome:'Bloco A — Demandas de Trabalho',     cor:'#4b5ea8',bg:'#f0f2fb'},
+  B:{nome:'Bloco B — Relações Interpessoais',    cor:'#2d6e9e',bg:'#f0f6fb'},
+  C:{nome:'Bloco C — Fatores Organizacionais',   cor:'#8b5e2e',bg:'#faf5ec'},
+  EXTRA:{nome:'Questões Extras',                 cor:'#4b5563',bg:'#f3f4f6'},
 };
 
 const QS_OFICIAIS = [
@@ -2716,9 +2737,22 @@ function selecionarQ(id) {
   const q = questoes.find(x=>x.id===id);
   // marcar selecionada visualmente
   document.querySelectorAll('.q-row').forEach(r=>r.style.outline='');
-  document.getElementById('qrow-'+id).style.outline = '2px solid var(--g)';
-  document.getElementById('qrow-'+id).style.outlineOffset = '1px';
+  const row = document.getElementById('qrow-'+id);
+  if (row) { row.style.outline = '2px solid var(--tx)'; row.style.outlineOffset = '1px'; }
+  abrirModalParams(id);
+}
+
+function abrirModalParams(id) {
+  selectedQ = id;
+  const q = questoes.find(x=>x.id===id);
+  if (!q) return;
   renderParams(q);
+  document.getElementById('modal-params').classList.add('open');
+}
+
+function fecharModalParams() {
+  document.getElementById('modal-params').classList.remove('open');
+  document.querySelectorAll('.q-row').forEach(r=>r.style.outline='');
 }
 
 function ancoraMsgQ() { toast('Questão âncora — garante cobertura mínima. Não pode ser desativada.','w'); }
@@ -2740,35 +2774,39 @@ function apenasAncoras(){ questoes.forEach(q=>{ if(!q.anc) ativas.delete(q.id); 
 
 // ── PAINEL PARÂMETROS ──
 function renderParams(q) {
-  const title = document.getElementById('params-subtitle');
-  const body  = document.getElementById('params-body');
+  if (!q) return;
 
-  if (!q) {
-    title.textContent = 'Clique em uma questão para ver/editar';
-    body.innerHTML = `<div class="params-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" width="32" height="32" style="margin:0 auto 8px;display:block;opacity:.3"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><p style="font-size:11px">Clique em qualquer questão ou no botão "Params" / "Editar".</p></div>`;
-    return;
-  }
+  // Populate modal header
+  const titleEl = document.getElementById('mp-title');
+  const metaEl  = document.getElementById('mp-meta');
+  const textoEl = document.getElementById('mp-texto');
+  const bodyEl  = document.getElementById('mp-body');
+  if (!titleEl) return;
 
-  // Admin PSEG pode editar cd_risco e inversão mesmo em questões oficiais
-  // Texto e âncora são os únicos campos realmente bloqueados
-  const textoBloqueado = q.oficial && q.anc; // âncoras: texto não muda
-  title.textContent = q.c + (q.oficial ? ' · Oficial' : ' · Extra') + (q.anc ? ' 🔒' : '');
+  const bi = BLOCOS_INFO[q.b] || BLOCOS_INFO['EXTRA'];
+  titleEl.textContent = q.c + ' — ' + (q.oficial ? 'Questão Padrão PSEG' : 'Questão Extra');
 
-  // S vem do RISCOS_DETALHES pelo cd_risco da questão (não mais da questão em si)
+  metaEl.innerHTML =
+    `<span class="tag" style="background:${bi.bg};color:${bi.cor}">${bi.nome.split(' — ')[0]}</span>` +
+    (q.oficial ? `<span class="tag tgr">Oficial</span>` : `<span class="tag tp">Extra</span>`) +
+    (q.anc ? `<span class="tag ty">🔒 Âncora</span>` : '') +
+    (q.inv ? `<span class="tag ty">↺ Inversa</span>` : '');
+
+  textoEl.textContent = q.t;
+
   const rdAtual = q.cd ? RISCOS_DETALHES[q.cd] : null;
   const sAtual  = rdAtual ? rdAtual.s : (q.s || '—');
   const sLabel  = S_LABELS[sAtual] || sAtual;
 
-  // Opções do select de cd_risco
   const optsCd = Object.entries(RISCOS_DETALHES).map(([k,v]) =>
     `<option value="${k}" ${String(q.cd)===k?'selected':''}>${k} — ${v.nome}</option>`
   ).join('');
 
-  body.innerHTML = `
+  bodyEl.innerHTML = `
   <div class="params-form">
 
     <div class="param-field field">
-      <label>Risco associado (cd_risco) <span class="param-req">*</span></label>
+      <label>Fator de risco associado <span class="param-req">*</span></label>
       <select id="pp-fator" onchange="updateParamCd(this.value)">
         <option value="">Selecione...</option>
         ${optsCd}
@@ -2778,17 +2816,13 @@ function renderParams(q) {
       </div>
     </div>
 
-    <div class="param-field" style="background:var(--bg);padding:8px 10px;border-radius:6px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);margin-bottom:4px">
-        Severidade (S) — herdada do cd_risco
+    <div class="mp-readonly">
+      <div>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl)">Severidade (S)</span>
+        <span style="font-size:10px;color:var(--tl)"> — herdada do fator de risco</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px;font-weight:700;color:var(--tx)" id="pp-s-val">${sAtual}</span>
-        <span style="font-size:12px;color:var(--tm)" id="pp-s-lbl">${sLabel}${rdAtual ? ' · ' + rdAtual.cons : ''}</span>
-      </div>
-      <div style="font-size:10px;color:var(--amber);margin-top:5px">
-        Para ajustar a Severidade, edite diretamente em <strong>Configurar Riscos</strong> (botão no topo desta aba).
-      </div>
+      <span style="font-size:18px;font-weight:700;color:var(--tx);margin-left:auto" id="pp-s-val">${sAtual}</span>
+      <span style="font-size:11px;color:var(--tm)" id="pp-s-lbl">${sLabel}${rdAtual ? ' · ' + rdAtual.cons : ''}</span>
     </div>
 
     <div class="param-field">
@@ -2807,11 +2841,7 @@ function renderParams(q) {
       <span class="inv-toggle-sub">Score ajustado = 5 − valor bruto</span>
     </label>
 
-    <button class="btn btn-g" onclick="salvarParamsQ()" style="width:100%;justify-content:center">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      Salvar parâmetros
-    </button>
-    ${q.oficial ? `<div style="font-size:10px;color:var(--tl);text-align:center;margin-top:6px">Questão oficial — ajustes ficam apenas nesta sessão até integração com banco.</div>` : ''}
+    ${q.oficial ? `<div class="alert alert-b" style="font-size:11px">Questão padrão PSEG — ajustes ficam apenas nesta sessão até sincronização com o banco de dados.</div>` : ''}
   </div>`;
 }
 
@@ -2876,10 +2906,15 @@ function salvarParamsQ() {
     q.incompleta = true;
   } else {
     q.incompleta = false;
-    toast('Parâmetros completos salvos! A questão já pode entrar na análise.', 'g');
+    toast('Parâmetros completos salvos!', 'g');
   }
   renderQuestoes();
   renderCoberturaCompacta();
+}
+
+function salvarParamsQModal() {
+  salvarParamsQ();
+  fecharModalParams();
 }
 
 function renderCoberturaCompacta() {
@@ -2897,7 +2932,7 @@ function renderCoberturaCompacta() {
     if (ativas.has(q.id)) cov[key].a++;
   });
   list.innerHTML = Object.entries(cov).map(([f,v])=>{
-    const cor = v.a===0?'#e53935':v.a===1?'#e6a817':'#1a7a3c';
+    const cor = v.a===0?'#dc2626':v.a===1?'#d97706':'#166634';
     return `<div class="cov-mini">
       <div class="cov-dot" style="background:${cor}"></div>
       <span class="cov-name">${f}</span>
@@ -3297,11 +3332,11 @@ async function salvarNovaEmpresa() {
 
 const NIVEIS_ORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
 const NIVEIS_CORES = {
-  IRRELEVANTE:{bg:'#e8f5e9',cor:'#1a5e2a',badge:'rb-IRR'},
-  BAIXO:      {bg:'#f1f8e9',cor:'#33691e',badge:'rb-BAX'},
-  MÉDIO:      {bg:'#fffde7',cor:'#f57f17',badge:'rb-MED'},
-  ALTO:       {bg:'#ffebee',cor:'#c62828',badge:'rb-ALT'},
-  CRÍTICO:    {bg:'#f3e5f5',cor:'#6a1b9a',badge:'rb-CRI'},
+  IRRELEVANTE:{bg:'#f8fafc',cor:'#475569',badge:'rb-IRR'},
+  BAIXO:      {bg:'#f0fdf4',cor:'#166534',badge:'rb-BAX'},
+  MÉDIO:      {bg:'#fefce8',cor:'#854d0e',badge:'rb-MED'},
+  ALTO:       {bg:'#fff7ed',cor:'#9a3412',badge:'rb-ALT'},
+  CRÍTICO:    {bg:'#fef2f2',cor:'#991b1b',badge:'rb-CRI'},
 };
 
 // ══════════════════════════════════════════
@@ -3626,7 +3661,7 @@ function exportarCSV() {
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
 function renderViewRisco({grupos, filtrado, niveis}) {
-  const CORES_BG = {1:'#22c55e',2:'#60a5fa',3:'#f59e0b',4:'#ef4444'};
+  const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
   const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
   const S_BADGE  = {1:'background:#f0fdf4;color:#166534',2:'background:#eff6ff;color:#1e40af',3:'background:#fefce8;color:#92400e',4:'background:#fef2f2;color:#991b1b'};
 
@@ -3703,12 +3738,12 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
 function renderViewQuestao({grupos, filtrado}) {
   const catCores = {
-    'DEMANDAS DE TRABALHO':    {cor:'#5b4fcf',bg:'#f0effe'},
-    'RELAÇÕES INTERPESSOAIS':  {cor:'#185fa5',bg:'#e3f0ff'},
-    'FATORES ORGANIZACIONAIS': {cor:'#b7600a',bg:'#fff4e6'},
+    'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
+    'RELAÇÕES INTERPESSOAIS':  {cor:'#2d6e9e',bg:'#f0f6fb'},
+    'FATORES ORGANIZACIONAIS': {cor:'#8b5e2e',bg:'#faf5ec'},
   };
   const blocoParaCat = {A:'DEMANDAS DE TRABALHO',B:'RELAÇÕES INTERPESSOAIS',C:'FATORES ORGANIZACIONAIS'};
-  const CORES_BG = {1:'#22c55e',2:'#60a5fa',3:'#f59e0b',4:'#ef4444'};
+  const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
   const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
 
   let html = '';
@@ -3796,7 +3831,7 @@ function resolverEmpate(dist) {
 
 // ─── Barra de distribuição reutilizável ───
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
-  const CORES_BG  = {1:'#22c55e', 2:'#60a5fa', 3:'#f59e0b', 4:'#ef4444'};
+  const CORES_BG  = {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
   const NIVEL_NM  = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
   const isEmpate  = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
@@ -3835,7 +3870,7 @@ function renderDistQuestoes(distQuestoes, gid) {
     return '<div style="font-size:11px;color:var(--tl);padding:8px 0">Sem dados de distribuição.</div>';
   }
   const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
-  const CORES_BG = {1:'#22c55e',2:'#60a5fa',3:'#f59e0b',4:'#ef4444'};
+  const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
 
   const legenda = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:10px;color:var(--tm)">'+
     [1,2,3,4].map(n =>
@@ -4171,9 +4206,9 @@ function renderMapaQuestoes() {
   const el = document.getElementById('met-q-mapa');
   if (!el) return;
   const catCores = {
-    'DEMANDAS DE TRABALHO':    {cor:'#5b4fcf',bg:'#f0effe'},
-    'RELAÇÕES INTERPESSOAIS':  {cor:'#185fa5',bg:'#e3f0ff'},
-    'FATORES ORGANIZACIONAIS': {cor:'#b7600a',bg:'#fff4e6'},
+    'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
+    'RELAÇÕES INTERPESSOAIS':  {cor:'#2d6e9e',bg:'#f0f6fb'},
+    'FATORES ORGANIZACIONAIS': {cor:'#8b5e2e',bg:'#faf5ec'},
   };
   const grupos = {};
   questoes.filter(q => q.cd).forEach(q => {
@@ -4213,8 +4248,8 @@ function renderMatrizMetodologia() {
     {p:'P2 — Improvável', vals:['BAIXO','BAIXO','MÉDIO','ALTO']},
     {p:'P1 — Raro',       vals:['IRRELEVANTE','BAIXO','BAIXO','MÉDIO']},
   ];
-  const NivelBg  = {IRRELEVANTE:'#86efac',BAIXO:'#a3e635',MÉDIO:'#fcd34d',ALTO:'#fb923c',CRÍTICO:'#f87171'};
-  const NivelTxt = {IRRELEVANTE:'#14532d',BAIXO:'#365314',MÉDIO:'#78350f',ALTO:'#7c2d12',CRÍTICO:'#7f1d1d'};
+  const NivelBg  = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
+  const NivelTxt = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
   el.innerHTML = mxData.map((row, ri) =>
     '<tr style="background:' + (ri%2?'#fafcfb':'white') + '">'+
     '<td style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--tm);white-space:nowrap">'+row.p+'</td>'+
@@ -4240,9 +4275,9 @@ function renderTelaRiscos() {
     cats[v.cat].push({cd: parseInt(k), ...v});
   });
   const catCores = {
-    'DEMANDAS DE TRABALHO':    {cor:'#5b4fcf',bg:'#f0effe'},
-    'RELAÇÕES INTERPESSOAIS':  {cor:'#185fa5',bg:'#e3f0ff'},
-    'FATORES ORGANIZACIONAIS': {cor:'#b7600a',bg:'#fff4e6'},
+    'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
+    'RELAÇÕES INTERPESSOAIS':  {cor:'#2d6e9e',bg:'#f0f6fb'},
+    'FATORES ORGANIZACIONAIS': {cor:'#8b5e2e',bg:'#faf5ec'},
   };
   const sBadge = {
     1:'background:#f0fdf4;color:#166534;border:1px solid #bbf7d0',
@@ -4311,8 +4346,8 @@ function resetNrS(n) {
 }
 
 function selectNrS(n) {
-  const sBg = {1:'#f0fdf4',2:'#eff6ff',3:'#fefce8',4:'#fef2f2'};
-  const sBd = {1:'#22c55e',2:'#3b82f6',3:'#f59e0b',4:'#ef4444'};
+  const sBg = {1:'#ecfdf5',2:'#eff6ff',3:'#fefce8',4:'#fff7ed'};
+  const sBd = {1:'#34d399',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
   [1,2,3,4].forEach(i => resetNrS(i));
   const el = document.getElementById('nr-s-'+n);
   if (el) el.style.cssText = 'border:2px solid '+sBd[n]+';border-radius:6px;padding:8px;text-align:center;cursor:pointer;background:'+sBg[n]+';transition:all .15s';
@@ -4946,17 +4981,17 @@ function limparCacheRespostas() { _respostasCache = {}; }
 
 // Cores das barras (nível ajustado 1→4)
 const GF_CORES = {
-  // Paleta suave: fills pastéis, texto escuro da mesma família
-  1: {fill:'#86efac', border:'#22c55e', text:'#14532d', label:'Nunca'},       // verde suave
-  2: {fill:'#93c5fd', border:'#3b82f6', text:'#1e3a5f', label:'Às vezes'},    // azul suave
-  3: {fill:'#fcd34d', border:'#f59e0b', text:'#78350f', label:'Frequente'},   // âmbar suave
-  4: {fill:'#fca5a5', border:'#ef4444', text:'#7f1d1d', label:'Sempre'},      // vermelho suave
+  // Paleta muted: fills pastéis, fronteiras discretas
+  1: {fill:'#a7f3d0', border:'#34d399', text:'#065f46', label:'Nunca'},       // esmeralda suave
+  2: {fill:'#bfdbfe', border:'#60a5fa', text:'#1e3a8a', label:'Às vezes'},    // azul suave
+  3: {fill:'#fde68a', border:'#fbbf24', text:'#78350f', label:'Frequente'},   // âmbar suave
+  4: {fill:'#fed7aa', border:'#fb923c', text:'#9a3412', label:'Sempre'},      // laranja suave (não vermelho)
 };
 
 const GF_BLOCOS = {
-  A:{nome:'Bloco A — Demandas de Trabalho', cor:'#5b4fcf', bg:'#f0effe'},
-  B:{nome:'Bloco B — Relações Interpessoais', cor:'#185fa5', bg:'#e3f0ff'},
-  C:{nome:'Bloco C — Fatores Organizacionais', cor:'#b7600a', bg:'#fff4e6'},
+  A:{nome:'Bloco A — Demandas de Trabalho', cor:'#4b5ea8', bg:'#f0f2fb'},
+  B:{nome:'Bloco B — Relações Interpessoais', cor:'#2d6e9e', bg:'#f0f6fb'},
+  C:{nome:'Bloco C — Fatores Organizacionais', cor:'#8b5e2e', bg:'#faf5ec'},
 };
 
 // Mapa questão id → dados, para reutilizar a engine já existente
@@ -5121,9 +5156,9 @@ async function renderGraficos() {
 
   // Cards por categoria (DEMANDAS / RELAÇÕES / ORGANIZACIONAIS) filtradas pelos blocos selecionados
   const BLOCOS_CAT = {
-    'DEMANDAS DE TRABALHO':    {cor:'#5b4fcf',bg:'#f0effe'},
-    'RELAÇÕES INTERPESSOAIS':  {cor:'#185fa5',bg:'#e3f0ff'},
-    'FATORES ORGANIZACIONAIS': {cor:'#b7600a',bg:'#fff4e6'},
+    'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
+    'RELAÇÕES INTERPESSOAIS':  {cor:'#2d6e9e',bg:'#f0f6fb'},
+    'FATORES ORGANIZACIONAIS': {cor:'#8b5e2e',bg:'#faf5ec'},
   };
   const distPorCat = {};
   dist.forEach(d => {
@@ -5602,8 +5637,8 @@ async function renderLaudo() {
   const fatores  = calcFatores(linhas);
   const grupos   = agruparPorGrupos([...new Set(linhas.map(r=>r.setor))], gruposSetor);
   const NIVEIS_ORDER = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
-  const NivelCores   = {IRRELEVANTE:'#86efac',BAIXO:'#a3e635',MÉDIO:'#fcd34d',ALTO:'#fb923c',CRÍTICO:'#f87171'};
-  const NivelTxt     = {IRRELEVANTE:'#14532d',BAIXO:'#365314',MÉDIO:'#78350f',ALTO:'#7c2d12',CRÍTICO:'#7f1d1d'};
+  const NivelCores   = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
+  const NivelTxt     = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
 
   let html = `<div class="laudo-preview" id="laudo-doc">`;
 
@@ -5690,7 +5725,7 @@ async function renderLaudo() {
           <tbody>
           ${fGrupo.map((f,i)=>{
             const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
-            const CBGS = {1:'#22c55e',2:'#60a5fa',3:'#f59e0b',4:'#ef4444'};
+            const CBGS = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
             const barSegs = [1,2,3,4].map(nv => {
               const p = (f.avgDist||{})[nv] || 0; if(!p) return '';
               const isMax = nv === f.p;
@@ -5727,9 +5762,9 @@ async function renderLaudo() {
   if (laudoSecoesAtivas.has('graficos')) {
     const distAll = calcDistribuicaoQuestoes(linhas.map(r=>({...r, q: Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))})));
     const CATS_LAUDO = [
-      {cat:'DEMANDAS DE TRABALHO',    bloco:'A', cor:'#5b4fcf',bg:'#f0effe'},
-      {cat:'RELAÇÕES INTERPESSOAIS',  bloco:'B', cor:'#185fa5',bg:'#e3f0ff'},
-      {cat:'FATORES ORGANIZACIONAIS', bloco:'C', cor:'#b7600a',bg:'#fff4e6'},
+      {cat:'DEMANDAS DE TRABALHO',    bloco:'A', cor:'#4b5ea8',bg:'#f0f2fb'},
+      {cat:'RELAÇÕES INTERPESSOAIS',  bloco:'B', cor:'#2d6e9e',bg:'#f0f6fb'},
+      {cat:'FATORES ORGANIZACIONAIS', bloco:'C', cor:'#8b5e2e',bg:'#faf5ec'},
     ];
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Distribuição de respostas por questão</div>
