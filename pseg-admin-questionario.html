@@ -3917,14 +3917,13 @@ function renderViewQuestao({grupos, filtrado}) {
 // DISTRIBUIÇÃO POR QUESTÃO — visual
 // ══════════════════════════════════════════
 
-const NIVEL_LABELS_CURTO = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
-// Cores dos segmentos: nível ajustado 1→verde(meta), 2→azul, 3→amarelo, 4→vermelho
-const DIST_CORES = {
-  1: {bg:'#4caf50', label:'#1b5e20'},   // Nunca   = ideal = verde
-  2: {bg:'#2196f3', label:'#0d47a1'},   // Às vezes
-  3: {bg:'#ff9800', label:'#e65100'},   // Frequente
-  4: {bg:'#f44336', label:'#b71c1c'},   // Sempre (risco alto em questão direta)
-};
+// Rótulos para nível ajustado (1–4) com consciência de inversão.
+// Questões inversas: score ajustado = 5−v, logo adj 1 = respondeu "Sempre" (ideal),
+// adj 4 = respondeu "Nunca" (pior). Os rótulos refletem o que o respondente escolheu.
+function getNivelLabels(inv) {
+  if (inv) return {1:'Sempre ↺', 2:'Freq. ↺', 3:'AV ↺', 4:'Nunca ↺'};
+  return {1:'Nunca', 2:'Às vezes', 3:'Frequente', 4:'Sempre'};
+}
 
 // ═══════════════════════════════════════════
 // REGRA DE EMPATE:
@@ -3947,7 +3946,7 @@ function resolverEmpate(dist) {
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
   const CORES_BG  = {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
-  const NIVEL_NM  = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
+  const NIVEL_NM  = getNivelLabels(inv);
   // Empate: há outro nível com o mesmo % que a moda?
   const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
   // Empate com nível mais grave que a meta? (princípio da precaução)
@@ -3969,7 +3968,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
       label+'</div>';
   }).join('');
 
-  const metaLabel = inv ? 'Sempre' : (metaNivel === 1 ? 'Nunca' : NIVEL_NM[metaNivel] || '?');
+  const metaLabel = NIVEL_NM[metaNivel] || '?';   // já usa rótulos inv-cientes
   const modaLabel = NIVEL_NM[moda] || '?';
   // naIdeal: moda na meta E sem empate com nível mais grave (princípio da precaução)
   const naIdeal   = moda === metaNivel && !isEmpateComPior;
@@ -5322,10 +5321,10 @@ async function renderGraficos() {
                 <div class="chart-card-text">${d.q.t}</div>
                 <div class="chart-card-badges">
                   <span class="moda-badge" style="background:${GF_CORES[d.moda].fill};border-color:${GF_CORES[d.moda].border};color:${GF_CORES[d.moda].text}">
-                    ${GF_CORES[d.moda].label} — ${d.pcts[d.moda]}%
+                    ${getNivelLabels(d.q.inv)[d.moda]} — ${d.pcts[d.moda]}%
                     ${d.moda === (d.q.ve||1) ? ' ✓' : ''}
                   </span>
-                  ${d.moda !== (d.q.ve||1) ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pctMeta}% no ${d.q.inv ? 'Sempre' : 'Nunca'}</span>` : ''}
+                  ${d.moda !== (d.q.ve||1) ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pctMeta}% em ${getNivelLabels(d.q.inv)[d.q.ve||1]}</span>` : ''}
                   <span style="font-size:10px;color:var(--tl)">n=${d.n}</span>
                 </div>
               </div>
@@ -5426,7 +5425,7 @@ function renderBarChart(d) {
     data: {
       labels: [''],
       datasets: [1,2,3,4].map(n => ({
-        label: `${GF_CORES[n].label} — ${d.pcts[n]}%`,
+        label: `${getNivelLabels(d.q.inv)[n]} — ${d.pcts[n]}%`,
         data: [d.pcts[n]],
         backgroundColor: GF_CORES[n].fill,
         borderColor: n === moda ? GF_CORES[n].border : 'transparent',
@@ -7229,11 +7228,12 @@ async function renderTelaAuditoria() {
   <div class="card" style="padding:0;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bs);background:var(--bg)">
       <div style="font-size:13px;font-weight:700;color:var(--tx)">${total} respondente${total!==1?'s':''} encontrado${total!==1?'s':''}</div>
-      <div style="display:flex;gap:8px;font-size:10px;color:var(--tm);align-items:center">
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e8f5e9;border:1px solid #1b5e20"></span>1 Nunca</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e3f2fd;border:1px solid #0d47a1"></span>2 Às vezes</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fff8e1;border:1px solid #e65100"></span>3 Frequente</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ffebee;border:1px solid #b71c1c"></span>4 Sempre</span>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--tm);align-items:center;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e8f5e9;border:1px solid #1b5e20"></span><strong>Verde</strong> = Risco baixo (adj 1)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e3f2fd;border:1px solid #0d47a1"></span><strong>Azul</strong> = Risco leve (adj 2)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fff8e1;border:1px solid #e65100"></span><strong>Âmbar</strong> = Risco moderado (adj 3)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ffebee;border:1px solid #b71c1c"></span><strong>Vermelho</strong> = Risco alto (adj 4)</span>
+        <span style="font-size:9px;color:var(--tl);margin-left:4px">↺ Questões inversas: rótulo raw + ↺, cor por risco ajustado (5−v)</span>
       </div>
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -7263,9 +7263,12 @@ async function renderTelaAuditoria() {
               <td style="padding:7px 10px;color:var(--tm);white-space:nowrap">${data}</td>
               <td style="padding:7px 10px;color:var(--tl);font-family:monospace;font-size:10px">${idResp}</td>
               ${qs.map(q => {
-                const v = r.q?.[q.id];
-                const st = v != null ? SCORE_STYLE[v] || '' : 'color:var(--tl)';
-                return `<td style="padding:5px 3px;text-align:center;border-left:1px solid var(--bs);${st}">${v != null ? SCORE_LABEL[v]||v : '—'}</td>`;
+                const v   = r.q?.[q.id];
+                const adj = (v != null && q.inv) ? 5 - v : v;   // cor reflete risco ajustado
+                const st  = v != null ? SCORE_STYLE[adj] || '' : 'color:var(--tl)';
+                // label mostra o que o respondente escolheu (raw); ↺ sinaliza inversão
+                const lbl = v != null ? (SCORE_LABEL[v]||v) + (q.inv ? '↺' : '') : '—';
+                return `<td style="padding:5px 3px;text-align:center;border-left:1px solid var(--bs);${st}" title="${q.inv?'Questão inversa — cor por risco ajustado (5−v)':''}">${lbl}</td>`;
               }).join('')}
             </tr>`;
           }).join('')}
@@ -7274,9 +7277,10 @@ async function renderTelaAuditoria() {
           <tr style="background:#f3f4f6;border-top:2px solid var(--border)">
             <td colspan="6" style="padding:7px 10px;font-size:10px;font-weight:700;color:var(--tm);text-align:right">MÉDIA POR QUESTÃO →</td>
             ${qs.map(q => {
-              const avg = parseFloat(avgQ[q.id]);
-              const cl  = isNaN(avg) ? '' : avg >= 3.5 ? 'color:#b71c1c;font-weight:700' : avg >= 2.5 ? 'color:#e65100;font-weight:600' : avg >= 1.5 ? 'color:#0d47a1' : 'color:#1b5e20';
-              return `<td style="padding:6px 3px;text-align:center;border-left:1px solid var(--border);font-size:10px;font-weight:700;${cl}">${avgQ[q.id]}</td>`;
+              const avg    = parseFloat(avgQ[q.id]);
+              const adjAvg = (!isNaN(avg) && q.inv) ? 5 - avg : avg;   // risco ajustado
+              const cl     = isNaN(avg) ? '' : adjAvg >= 3.5 ? 'color:#b71c1c;font-weight:700' : adjAvg >= 2.5 ? 'color:#e65100;font-weight:600' : adjAvg >= 1.5 ? 'color:#0d47a1' : 'color:#1b5e20';
+              return `<td style="padding:6px 3px;text-align:center;border-left:1px solid var(--border);font-size:10px;font-weight:700;${cl}" title="${q.inv?'Média raw; cor por risco ajustado (5−média)':''}">${avgQ[q.id]}</td>`;
             }).join('')}
           </tr>
         </tfoot>
