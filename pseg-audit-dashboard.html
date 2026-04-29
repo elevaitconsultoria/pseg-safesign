@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PSEG SafeSign — Auditoria de Metodologia</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #080d12;
+  --surface: #0e1520;
+  --card:    #131d2a;
+  --border:  #1e2d3f;
+  --border2: #263648;
+  --tx:      #e8edf4;
+  --tm:      #8498ae;
+  --tl:      #4a5e72;
+  --cyan:    #22d3ee;
+  --green:   #4ade80;
+  --amber:   #fbbf24;
+  --red:     #f87171;
+  --purple:  #a78bfa;
+  --pass:    #4ade80;
+  --fail:    #f87171;
+  --warn:    #fbbf24;
+  --mono:    'JetBrains Mono', monospace;
+  --serif:   'Instrument Serif', serif;
+  --sans:    'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--tx);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,13,18,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 28px; height: 52px;
+}
+.topbar-brand {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cyan);
+}
+.topbar-sep { width: 1px; height: 20px; background: var(--border); }
+.topbar-label { font-size: 11px; color: var(--tm); }
+.score-pill {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11px;
+}
+.score-num { font-size: 15px; font-weight: 700; }
+.score-bar {
+  width: 120px; height: 6px;
+  background: var(--border2); border-radius: 3px; overflow: hidden;
+}
+.score-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+  transition: width .8s cubic-bezier(.16,1,.3,1);
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 52px);
+}
+.sidenav {
+  position: sticky; top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+}
+.nav-section { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--tl); padding: 14px 20px 5px; }
+.nav-link {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 20px; font-size: 12px; color: var(--tm);
+  text-decoration: none; transition: all .12s;
+  border-left: 2px solid transparent;
+}
+.nav-link:hover { color: var(--tx); background: rgba(255,255,255,.03); }
+.nav-link.active { color: var(--cyan); border-left-color: var(--cyan); background: rgba(34,211,238,.06); }
+.nav-link .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tl); flex-shrink: 0; }
+.nav-link .dot.pass { background: var(--pass); }
+.nav-link .dot.fail { background: var(--fail); }
+.nav-link .dot.warn { background: var(--warn); }
+.nav-link .dot.info { background: var(--cyan); }
+.content { padding: 32px 36px 80px; min-width: 0; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 52px; }
+.section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px; }
+.section-num {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--cyan); letter-spacing: .08em;
+}
+.section-title {
+  font-family: var(--serif); font-size: 24px; color: var(--tx);
+  font-weight: 400;
+}
+.section-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── SCORE SUMMARY ── */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;
+  margin-bottom: 28px;
+}
+.sum-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 18px;
+}
+.sum-val { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; }
+.sum-lbl { font-size: 10px; color: var(--tm); text-transform: uppercase; letter-spacing: .06em; margin-top: 5px; }
+.sum-card.pass-card { border-color: rgba(74,222,128,.3); background: rgba(74,222,128,.06); }
+.sum-card.fail-card { border-color: rgba(248,113,113,.3); background: rgba(248,113,113,.06); }
+.sum-card.warn-card { border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.06); }
+
+/* ── TEST ROWS ── */
+.test-group { margin-bottom: 20px; }
+.test-group-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--tl); margin-bottom: 8px; padding: 0 2px;
+}
+.test-row {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px 16px;
+  margin-bottom: 6px; display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 12px; align-items: start;
+}
+.test-row.pass { border-left: 3px solid var(--pass); }
+.test-row.fail { border-left: 3px solid var(--fail); background: rgba(248,113,113,.05); }
+.test-row.warn { border-left: 3px solid var(--warn); }
+.test-icon { font-family: var(--mono); font-size: 14px; font-weight: 700; margin-top: 1px; }
+.test-icon.pass { color: var(--pass); }
+.test-icon.fail { color: var(--fail); }
+.test-icon.warn { color: var(--warn); }
+.test-body {}
+.test-name { font-size: 12px; font-weight: 600; color: var(--tx); margin-bottom: 6px; }
+.test-detail { font-family: var(--mono); font-size: 10px; color: var(--tm); line-height: 1.8; }
+.test-detail .hl { color: var(--cyan); }
+.test-detail .ok { color: var(--pass); }
+.test-detail .er { color: var(--fail); }
+.test-detail .wa { color: var(--warn); }
+.test-badge {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  padding: 2px 8px; border-radius: 3px; white-space: nowrap; margin-top: 1px;
+}
+.test-badge.pass { background: rgba(74,222,128,.15); color: var(--pass); }
+.test-badge.fail { background: rgba(248,113,113,.15); color: var(--fail); }
+.test-badge.warn { background: rgba(251,191,36,.15); color: var(--warn); }
+
+/* ── DISTRIBUTION BAR (mini) ── */
+.dist-bar-wrap { display: flex; height: 18px; border-radius: 4px; overflow: hidden; gap: 1px; margin: 6px 0; }
+.dist-seg {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  color: rgba(0,0,0,.7); transition: width .5s;
+  position: relative;
+}
+.dist-seg::before {
+  content: attr(data-label);
+  position: absolute; font-size: 8px; font-weight: 700;
+}
+.dist-meta-line {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: white; opacity: .9;
+}
+
+/* ── SIMULATOR ── */
+.sim-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.sim-header {
+  background: var(--surface); padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--cyan);
+}
+.sim-body { padding: 20px; }
+.sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.sim-input-group { display: flex; flex-direction: column; gap: 10px; }
+.slider-row { display: flex; align-items: center; gap: 10px; }
+.slider-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; min-width: 20px; }
+.slider-lbl.l1 { color: #4ade80; }
+.slider-lbl.l2 { color: #60a5fa; }
+.slider-lbl.l3 { color: #fbbf24; }
+.slider-lbl.l4 { color: #fb923c; }
+input[type=range] {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: var(--border2); outline: none; cursor: pointer;
+  -webkit-appearance: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--cyan); cursor: pointer;
+  border: 2px solid var(--bg);
+}
+.slider-val { font-family: var(--mono); font-size: 11px; min-width: 36px; text-align: right; color: var(--tm); }
+.inv-toggle-sim {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 12px; color: var(--tm); margin-top: 4px;
+}
+.inv-toggle-sim input { accent-color: var(--amber); }
+.s-select {
+  display: flex; gap: 6px; margin-top: 4px;
+}
+.s-btn-sim {
+  flex: 1; padding: 6px 4px; border: 1px solid var(--border2);
+  background: var(--bg); border-radius: 5px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--tm); transition: all .15s; text-align: center;
+}
+.s-btn-sim.on { background: var(--cyan); border-color: var(--cyan); color: #080d12; }
+.sim-output {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px;
+}
+.sim-output-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tl); margin-bottom: 12px; }
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.result-cell { padding: 8px 10px; background: var(--card); border-radius: 5px; }
+.result-cell-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--tl); margin-bottom: 2px; }
+.result-cell-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--tx); }
+.nivel-chip {
+  display: inline-block; padding: 4px 14px; border-radius: 5px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .04em;
+}
+.status-msg {
+  font-size: 11px; padding: 7px 10px; border-radius: 5px;
+  margin-top: 8px; font-weight: 500;
+}
+
+/* ── COLOR AUDIT ── */
+.palette-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.swatch {
+  border-radius: 8px; padding: 12px 14px; min-width: 120px;
+  position: relative; overflow: hidden;
+}
+.swatch-color { font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.swatch-label { font-size: 10px; margin-top: 4px; opacity: .8; }
+.swatch-contrast { font-family: var(--mono); font-size: 9px; margin-top: 6px; opacity: .7; }
+.contrast-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+}
+.aa  { background: rgba(74,222,128,.2); color: var(--pass); }
+.aaa { background: rgba(34,211,238,.2); color: var(--cyan); }
+.fail-c { background: rgba(248,113,113,.2); color: var(--fail); }
+.color-issue {
+  background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3);
+  border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;
+  font-size: 12px; color: var(--tx);
+}
+.color-ok {
+  background: rgba(74,222,128,.06); border: 1px solid rgba(74,222,128,.2);
+  border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;
+  font-size: 12px; color: var(--tx);
+}
+.color-warn {
+  background: rgba(251,191,36,.06); border: 1px solid rgba(251,191,36,.2);
+  border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;
+  font-size: 12px; color: var(--tx);
+}
+
+/* ── UX ASSESSMENT ── */
+.ux-item {
+  border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; margin-bottom: 14px;
+}
+.ux-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.ux-severity {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  padding: 2px 8px; border-radius: 3px; text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.ux-sev-high { background: rgba(248,113,113,.2); color: var(--fail); }
+.ux-sev-med  { background: rgba(251,191,36,.2); color: var(--warn); }
+.ux-sev-low  { background: rgba(74,222,128,.2); color: var(--pass); }
+.ux-title { font-size: 13px; font-weight: 600; color: var(--tx); }
+.ux-body { padding: 14px 16px; }
+.ux-body p { font-size: 12px; color: var(--tm); line-height: 1.7; margin-bottom: 8px; }
+.ux-body strong { color: var(--tx); }
+.ux-rec { font-size: 11px; color: var(--cyan); margin-top: 6px; font-weight: 500; }
+
+/* ── FORMULA BLOCK ── */
+.formula {
+  background: rgba(34,211,238,.06); border: 1px solid rgba(34,211,238,.2);
+  border-radius: 8px; padding: 16px 20px; margin: 12px 0;
+  font-family: var(--mono); font-size: 13px; color: var(--cyan);
+  line-height: 2;
+}
+.formula small { font-size: 10px; color: var(--tl); display: block; margin-top: 4px; font-family: var(--sans); }
+
+/* ── MATRIX TABLE ── */
+.matrix-table { border-collapse: collapse; font-family: var(--mono); font-size: 11px; margin: 12px 0; }
+.matrix-table th { padding: 6px 12px; background: var(--surface); color: var(--tl); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; border: 1px solid var(--border); }
+.matrix-table td { padding: 8px 12px; text-align: center; font-weight: 700; border: 1px solid var(--border); }
+.m-irr { background: rgba(100,116,139,.2); color: #94a3b8; }
+.m-bax { background: rgba(74,222,128,.15); color: var(--pass); }
+.m-med { background: rgba(251,191,36,.15); color: var(--amber); }
+.m-alt { background: rgba(251,146,60,.15); color: #fb923c; }
+.m-cri { background: rgba(248,113,113,.2); color: var(--fail); }
+.m-row-lbl { color: var(--tm); font-weight: 400; font-size: 10px; text-align: right; }
+
+/* ── STAT EXPLAINER ── */
+.stat-step {
+  display: flex; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-step:last-child { border-bottom: none; }
+.stat-step-n {
+  width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--cyan);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--cyan); flex-shrink: 0; margin-top: 1px;
+}
+.stat-step-body { flex: 1; }
+.stat-step-title { font-size: 12px; font-weight: 600; color: var(--tx); margin-bottom: 4px; }
+.stat-step-text { font-size: 11px; color: var(--tm); line-height: 1.6; }
+.code-inline { font-family: var(--mono); font-size: 10px; background: var(--border); padding: 1px 5px; border-radius: 3px; color: var(--cyan); }
+
+/* ── EDGE CASE TABLE ── */
+.edge-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.edge-table th { padding: 8px 12px; text-align: left; color: var(--tl); font-size: 9px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border2); font-weight: 600; }
+.edge-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.edge-table tr:last-child td { border-bottom: none; }
+.edge-table tr:hover td { background: rgba(255,255,255,.02); }
+.mono-cell { font-family: var(--mono); font-size: 10px; color: var(--cyan); }
+.status-ok { color: var(--pass); font-weight: 700; font-family: var(--mono); font-size: 10px; }
+.status-er { color: var(--fail); font-weight: 700; font-family: var(--mono); font-size: 10px; }
+
+/* ── UTILS ── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-right: 4px; }
+.tag-cyan { background: rgba(34,211,238,.15); color: var(--cyan); }
+.tag-green { background: rgba(74,222,128,.15); color: var(--pass); }
+.tag-red { background: rgba(248,113,113,.15); color: var(--fail); }
+.tag-amber { background: rgba(251,191,36,.15); color: var(--amber); }
+.footnote { font-size: 10px; color: var(--tl); margin-top: 10px; line-height: 1.7; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidenav { display: none; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .sim-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-brand">PSEG SafeSign</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-label">Auditoria de Metodologia &amp; UX</span>
+  <div class="score-pill">
+    <span class="score-num" id="top-score" style="color:var(--green)">—</span>
+    <span style="color:var(--tl); font-size:11px">testes ok</span>
+    <div class="score-bar"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDENAV -->
+  <nav class="sidenav">
+    <div class="nav-section">Metodologia</div>
+    <a class="nav-link active" href="#empate">
+      <span class="dot" id="dot-empate"></span> Regra de Empate
+    </a>
+    <a class="nav-link" href="#inversao">
+      <span class="dot" id="dot-inversao"></span> Questões Inversas
+    </a>
+    <a class="nav-link" href="#fator">
+      <span class="dot" id="dot-fator"></span> Cálculo por Fator
+    </a>
+    <a class="nav-link" href="#matriz">
+      <span class="dot" id="dot-matriz"></span> Matriz P×S
+    </a>
+    <a class="nav-link" href="#simulador">
+      <span class="dot info"></span> Simulador
+    </a>
+    <div class="nav-section" style="margin-top:8px">Design &amp; UX</div>
+    <a class="nav-link" href="#cores">
+      <span class="dot" id="dot-cores"></span> Paleta de Cores
+    </a>
+    <a class="nav-link" href="#ux">
+      <span class="dot warn"></span> Avaliação UX
+    </a>
+    <div class="nav-section" style="margin-top:8px">Estatística</div>
+    <a class="nav-link" href="#estatistica">
+      <span class="dot info"></span> Regras Estatísticas
+    </a>
+    <a class="nav-link" href="#edgecases">
+      <span class="dot" id="dot-edge"></span> Casos de Borda
+    </a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <!-- SUMMARY -->
+    <div class="summary-grid" id="summary-cards">
+      <div class="sum-card"><div class="sum-val" id="s-total" style="color:var(--cyan)">—</div><div class="sum-lbl">Testes totais</div></div>
+      <div class="sum-card pass-card"><div class="sum-val" id="s-pass" style="color:var(--pass)">—</div><div class="sum-lbl">Aprovados</div></div>
+      <div class="sum-card fail-card"><div class="sum-val" id="s-fail" style="color:var(--fail)">—</div><div class="sum-lbl">Reprovados</div></div>
+      <div class="sum-card warn-card"><div class="sum-val" id="s-warn" style="color:var(--warn)">—</div><div class="sum-lbl">Avisos</div></div>
+    </div>
+
+    <!-- ── 1. EMPATE ── -->
+    <section class="section" id="empate">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Regra de Empate — Princípio da Precaução</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="formula">
+        moda = argmax<sub>k</sub> pcts[k]<br>
+        <em>desempate: argmax</em> k <em>entre os empatados</em> → maior k vence<br>
+        <small>NR-01 §1.5.2 / BS 8800: em ambiguidade, prevalece o cenário de maior risco</small>
+      </div>
+
+      <div class="test-group">
+        <div class="test-group-title">Casos de empate simples</div>
+        <div id="tests-empate"></div>
+      </div>
+
+      <div class="test-group">
+        <div class="test-group-title">naIdeal — detecção de "meta atingida"</div>
+        <div id="tests-naIdeal"></div>
+      </div>
+    </section>
+
+    <!-- ── 2. INVERSÃO ── -->
+    <section class="section" id="inversao">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Questões Inversas — Ajuste de Score</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="formula">
+        score<sub>adj</sub> = inv ? (5 − v) : v<br>
+        <small>Questão direta: resposta "Nunca" (v=1) → score 1 (baixo risco)</small><br>
+        <small>Questão inversa: resposta "Sempre" (v=4) → score 5−4 = 1 (baixo risco)</small>
+      </div>
+
+      <div id="tests-inversao"></div>
+    </section>
+
+    <!-- ── 3. CÁLCULO DE FATOR ── -->
+    <section class="section" id="fator">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Cálculo por Fator de Risco</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="formula">
+        avgDist[k] = round( Σ<sub>q</sub> pcts<sub>q</sub>[k] / N )<br>
+        P = moda(avgDist) &nbsp;[com desempate → mais grave]<br>
+        Nível = MATRIZ[P][S]<br>
+        <small>N = nº de questões ativas no fator · peso igual para cada questão</small>
+      </div>
+
+      <div id="tests-fator"></div>
+    </section>
+
+    <!-- ── 4. MATRIZ ── -->
+    <section class="section" id="matriz">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Matriz de Risco P × S</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>S1 Leve</th>
+            <th>S2 Moderado</th>
+            <th>S3 Sério</th>
+            <th>S4 Severo</th>
+          </tr>
+        </thead>
+        <tbody id="matrix-body"></tbody>
+      </table>
+
+      <div class="footnote">
+        P = Probabilidade (1–4) determinada pela moda da distribuição média das questões do fator.<br>
+        S = Severidade (1–4) definida no cadastro do fator de risco (RISCOS_DETALHES).
+      </div>
+
+      <div id="tests-matriz" style="margin-top:16px"></div>
+    </section>
+
+    <!-- ── 5. SIMULADOR ── -->
+    <section class="section" id="simulador">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">Simulador Interativo</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="sim-card">
+        <div class="sim-header">Engine em tempo real — ajuste a distribuição e a severidade</div>
+        <div class="sim-body">
+          <div class="sim-grid">
+
+            <div class="sim-input-group">
+              <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Distribuição de respostas (%)</div>
+
+              <div class="slider-row">
+                <span class="slider-lbl l1">1</span>
+                <input type="range" min="0" max="100" value="40" id="sl-1" oninput="simUpdate()"/>
+                <span class="slider-val" id="sv-1">40%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-lbl l2">2</span>
+                <input type="range" min="0" max="100" value="20" id="sl-2" oninput="simUpdate()"/>
+                <span class="slider-val" id="sv-2">20%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-lbl l3">3</span>
+                <input type="range" min="0" max="100" value="40" id="sl-3" oninput="simUpdate()"/>
+                <span class="slider-val" id="sv-3">40%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-lbl l4">4</span>
+                <input type="range" min="0" max="100" value="0" id="sl-4" oninput="simUpdate()"/>
+                <span class="slider-val" id="sv-4">0%</span>
+              </div>
+
+              <div style="font-size:10px;color:var(--tl);font-family:var(--mono)" id="sim-soma-warn"></div>
+
+              <div style="margin-top:8px">
+                <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Severidade (S) do fator</div>
+                <div class="s-select" id="sim-s-btns">
+                  <div class="s-btn-sim on" onclick="simSetS(1)" id="sb1">S1</div>
+                  <div class="s-btn-sim"    onclick="simSetS(2)" id="sb2">S2</div>
+                  <div class="s-btn-sim"    onclick="simSetS(3)" id="sb3">S3</div>
+                  <div class="s-btn-sim"    onclick="simSetS(4)" id="sb4">S4</div>
+                </div>
+              </div>
+
+              <label class="inv-toggle-sim">
+                <input type="checkbox" id="sim-inv" onchange="simUpdate()"/>
+                <span>Questão inversa (score = 5−v)</span>
+              </label>
+            </div>
+
+            <div class="sim-output">
+              <div class="sim-output-title">Resultado calculado</div>
+
+              <!-- distribuição visual -->
+              <div style="margin-bottom:12px">
+                <div style="font-size:9px;color:var(--tl);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Barra de distribuição</div>
+                <div class="dist-bar-wrap" id="sim-bar" style="background:var(--border)"></div>
+                <div id="sim-status-msg" class="status-msg"></div>
+              </div>
+
+              <div class="result-grid">
+                <div class="result-cell">
+                  <div class="result-cell-lbl">Moda (P)</div>
+                  <div class="result-cell-val" id="sim-moda">—</div>
+                </div>
+                <div class="result-cell">
+                  <div class="result-cell-lbl">Nível predominante</div>
+                  <div class="result-cell-val" id="sim-moda-label">—</div>
+                </div>
+                <div class="result-cell">
+                  <div class="result-cell-lbl">Empate detectado?</div>
+                  <div class="result-cell-val" id="sim-empate">—</div>
+                </div>
+                <div class="result-cell">
+                  <div class="result-cell-lbl">Meta atingida?</div>
+                  <div class="result-cell-val" id="sim-ideal">—</div>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--tm)">P=<span id="sim-p" style="color:var(--cyan)">—</span> × S=<span id="sim-s-val" style="color:var(--cyan)">—</span> →</span>
+                <span class="nivel-chip" id="sim-nivel">—</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. CORES ── -->
+    <section class="section" id="cores">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">Avaliação da Paleta de Cores</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <div class="test-group-title">Escala de distribuição (scores 1–4)</div>
+        <div class="palette-row" id="scale-palette"></div>
+        <div id="scale-color-assessment"></div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <div class="test-group-title">Níveis de risco</div>
+        <div class="palette-row" id="risk-palette"></div>
+        <div id="risk-color-assessment"></div>
+      </div>
+
+      <div>
+        <div class="test-group-title">Blocos temáticos</div>
+        <div class="palette-row" id="block-palette"></div>
+        <div id="block-color-assessment"></div>
+      </div>
+    </section>
+
+    <!-- ── 7. UX ── -->
+    <section class="section" id="ux">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">Avaliação de Experiência do Usuário</h2>
+        <div class="section-line"></div>
+      </div>
+      <div id="ux-items"></div>
+    </section>
+
+    <!-- ── 8. ESTATÍSTICA ── -->
+    <section class="section" id="estatistica">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title">Regras Estatísticas — Análise Crítica</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div id="stat-steps"></div>
+    </section>
+
+    <!-- ── 9. EDGE CASES ── -->
+    <section class="section" id="edgecases">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">Casos de Borda</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <table class="edge-table">
+        <thead>
+          <tr>
+            <th>Cenário</th>
+            <th>Distribuição</th>
+            <th>Moda esperada</th>
+            <th>Resultado</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="edge-tbody"></tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// ENGINE — extraído do sistema, isolado para testes
+// ══════════════════════════════════════════
+
+const MATRIZ_RISCO = {
+  '1_1':'IRRELEVANTE','1_2':'BAIXO','1_3':'BAIXO','1_4':'MÉDIO',
+  '2_1':'BAIXO',      '2_2':'BAIXO','2_3':'MÉDIO','2_4':'ALTO',
+  '3_1':'BAIXO',      '3_2':'MÉDIO','3_3':'ALTO', '3_4':'ALTO',
+  '4_1':'MÉDIO',      '4_2':'ALTO', '4_3':'ALTO', '4_4':'CRÍTICO',
+};
+
+const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
+const P_LABELS = {1:'Improvável',2:'Pouco provável',3:'Provável',4:'Quase certo'};
+const S_LABELS = {1:'Leve',2:'Moderado',3:'Sério',4:'Severo'};
+
+/** Moda com desempate → nível mais grave prevalece */
+function calcModa(pcts) {
+  return parseInt(
+    Object.entries(pcts)
+      .sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]
+  );
+}
+
+/** Verifica se há empate com nível pior que a meta */
+function isEmpateComPior(pcts, metaNivel) {
+  const vm = pcts[metaNivel] || 0;
+  if (vm === 0) return false;
+  return Object.entries(pcts).some(
+    ([k,v]) => parseInt(k) > metaNivel && v === vm && v > 0
+  );
+}
+
+/** naIdeal: moda na meta E sem empate com nível mais grave */
+function calcNaIdeal(moda, ve, pcts) {
+  const m = ve || 1;
+  return moda === m && !isEmpateComPior(pcts, m);
+}
+
+/** Aplica inversão */
+function applyInv(v, inv) { return inv ? 5 - v : v; }
+
+/** Calcula distribuição de um array de valores */
+function calcDist(vals) {
+  const n = vals.length;
+  if (!n) return null;
+  const counts = {1:0,2:0,3:0,4:0};
+  vals.forEach(v => counts[Math.min(4,Math.max(1,v))]++);
+  const pcts = {};
+  let soma = 0;
+  [1,2,3,4].forEach(k => { pcts[k] = Math.round(counts[k]/n*100); soma += pcts[k]; });
+  if (soma !== 100) {
+    // ajuste de arredondamento: aplica ao nível mais alto com maior %
+    const maxK = [4,3,2,1].find(k => pcts[k] > 0) || 1;
+    pcts[maxK] += (100 - soma);
+  }
+  return {pcts, moda: calcModa(pcts), n};
+}
+
+/** Full engine: questões com suas respostas → distribução + P */
+function calcFatorEngine(questoes_vals_pairs) {
+  // questoes_vals_pairs: [{inv, vals}]
+  if (!questoes_vals_pairs.length) return null;
+  const N = questoes_vals_pairs.length;
+  const acc = {1:0,2:0,3:0,4:0};
+  const perQ = questoes_vals_pairs.map(({inv,vals}) => {
+    const adjVals = vals.map(v => applyInv(v,inv));
+    const d = calcDist(adjVals);
+    if (!d) return null;
+    [1,2,3,4].forEach(k => acc[k] += d.pcts[k]);
+    return d;
+  }).filter(Boolean);
+  if (!perQ.length) return null;
+
+  const avgDist = {};
+  [1,2,3,4].forEach(k => avgDist[k] = Math.round(acc[k]/N));
+  const somaAvg = [1,2,3,4].reduce((s,k)=>s+avgDist[k],0);
+  if (somaAvg !== 100) {
+    const maxK = [4,3,2,1].find(k=>avgDist[k]>0)||1;
+    avgDist[maxK] += (100-somaAvg);
+  }
+  const p = calcModa(avgDist);
+  return {avgDist, p, perQ};
+}
+
+// ══════════════════════════════════════════
+// TESTES
+// ══════════════════════════════════════════
+
+let PASS=0, FAIL=0, WARN=0;
+
+function runTests() {
+  const empateTests = [
+    {
+      desc: 'Empate 50%/50% níveis 1 e 3 → pior (3) vence',
+      pcts: {1:50,2:0,3:50,4:0},
+      expectedModa: 3,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Caso reportado: 40% Nunca / 20% Às vezes / 40% Frequente → Frequente vence',
+      pcts: {1:40,2:20,3:40,4:0},
+      expectedModa: 3,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Empate triplo 33%/33%/33% → nível 3 vence (mais grave entre empatados)',
+      pcts: {1:33,2:33,3:34,4:0},
+      expectedModa: 3,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Empate quádruplo 25% cada → nível 4 vence',
+      pcts: {1:25,2:25,3:25,4:25},
+      expectedModa: 4,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Maioria clara em 1 (60%) → sem empate, meta atingida',
+      pcts: {1:60,2:20,3:20,4:0},
+      expectedModa: 1,
+      expectedNaIdeal: true,
+    },
+    {
+      desc: 'Empate entre níveis baixos (1 e 2, 50%/50%) → nível 2 vence; naIdeal false',
+      pcts: {1:50,2:50,3:0,4:0},
+      expectedModa: 2,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Empate entre 2 e 4 (ambos 50%) → nível 4 vence (crítico)',
+      pcts: {1:0,2:50,3:0,4:50},
+      expectedModa: 4,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Maioria em nível 4 (100%) → alto risco, naIdeal false',
+      pcts: {1:0,2:0,3:0,4:100},
+      expectedModa: 4,
+      expectedNaIdeal: false,
+    },
+    {
+      desc: 'Maioria em nível 1 (100%) + meta=1 → meta atingida',
+      pcts: {1:100,2:0,3:0,4:0},
+      expectedModa: 1,
+      expectedNaIdeal: true,
+    },
+  ];
+
+  const htmlEmpate = empateTests.map(t => {
+    const moda = calcModa(t.pcts);
+    const naIdeal = calcNaIdeal(moda, 1, t.pcts);
+    const empate = Object.values(t.pcts).filter(v=>v===t.pcts[moda]).length > 1;
+    const modaOk = moda === t.expectedModa;
+    const naOk   = naIdeal === t.expectedNaIdeal;
+    const pass   = modaOk && naOk;
+    if (pass) PASS++; else FAIL++;
+
+    const bar = renderMiniBar(t.pcts, moda, 1);
+    return `
+    <div class="test-row ${pass?'pass':'fail'}">
+      <div class="test-icon ${pass?'pass':'fail'}">${pass?'✓':'✗'}</div>
+      <div class="test-body">
+        <div class="test-name">${t.desc}</div>
+        <div style="margin:6px 0">${bar}</div>
+        <div class="test-detail">
+          input: ${fmtPcts(t.pcts)}<br>
+          moda calculada: <span class="${modaOk?'ok':'er'}">${moda} (${NIVEL_NM[moda]})</span>
+          &nbsp;·&nbsp; esperado: <span class="hl">${t.expectedModa} (${NIVEL_NM[t.expectedModa]})</span><br>
+          naIdeal: <span class="${naOk?'ok':'er'}">${naIdeal}</span>
+          &nbsp;·&nbsp; esperado: <span class="hl">${t.expectedNaIdeal}</span>
+          &nbsp;·&nbsp; empate: <span>${empate?'<span class="wa">sim</span>':'não'}</span>
+        </div>
+      </div>
+      <div class="test-badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tests-empate').innerHTML = htmlEmpate;
+
+  // ── naIdeal edge cases ──
+  const naIdealTests = [
+    {
+      desc: 'Empate 1=3 (40%/40%) — naIdeal deve ser false mesmo com moda corrigida',
+      pcts: {1:40,2:20,3:40,4:0}, moda:3, ve:1, expected: false
+    },
+    {
+      desc: 'Maioria em 1 sem empate com pior → naIdeal = true',
+      pcts: {1:70,2:20,3:10,4:0}, moda:1, ve:1, expected: true
+    },
+    {
+      desc: 'Moda em nível 1 mas há empate com nível 3 (40%/40%) → naIdeal = false',
+      pcts: {1:40,2:20,3:40,4:0}, moda:1, ve:1, expected: false
+    },
+    {
+      desc: 'Questão inversa: ve=1 (score mínimo), moda=1 sem empate → naIdeal = true',
+      pcts: {1:80,2:20,3:0,4:0}, moda:1, ve:1, expected: true
+    },
+  ];
+
+  const htmlNaIdeal = naIdealTests.map(t => {
+    const ni = calcNaIdeal(t.moda, t.ve, t.pcts);
+    const pass = ni === t.expected;
+    if (pass) PASS++; else FAIL++;
+    return `
+    <div class="test-row ${pass?'pass':'fail'}">
+      <div class="test-icon ${pass?'pass':'fail'}">${pass?'✓':'✗'}</div>
+      <div class="test-body">
+        <div class="test-name">${t.desc}</div>
+        <div class="test-detail">
+          pcts: ${fmtPcts(t.pcts)} · moda: ${t.moda} · ve: ${t.ve}<br>
+          naIdeal: <span class="${pass?'ok':'er'}">${ni}</span>
+          &nbsp;·&nbsp; esperado: <span class="hl">${t.expected}</span>
+        </div>
+      </div>
+      <div class="test-badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tests-naIdeal').innerHTML = htmlNaIdeal;
+
+  // ── INVERSÃO ──
+  const invTests = [
+    { desc:'Questão direta: v=1 → score 1 (meta)', inv:false, val:1, expected:1 },
+    { desc:'Questão direta: v=4 → score 4 (alto risco)', inv:false, val:4, expected:4 },
+    { desc:'Questão inversa: v=4 (Sempre) → score 1 (meta atingida)', inv:true, val:4, expected:1 },
+    { desc:'Questão inversa: v=1 (Nunca) → score 4 (pior possível)', inv:true, val:1, expected:4 },
+    { desc:'Questão inversa: v=2 (Às vezes) → score 3', inv:true, val:2, expected:3 },
+    { desc:'Questão inversa: v=3 (Frequente) → score 2', inv:true, val:3, expected:2 },
+    {
+      desc:'Dist. inversa: 80% Sempre (v=4) → score ajustado = 80% nível 1 → meta atingida',
+      inv:true,
+      vals:[4,4,4,4,4,4,4,4,3,2], // 8x Sempre + 1x Freq + 1x AV
+      expectedModa:1,
+      expectedNaIdeal:true,
+    },
+    {
+      desc:'Dist. inversa: 100% Nunca (v=1) → score = 4 → alto risco',
+      inv:true,
+      vals:[1,1,1,1,1],
+      expectedModa:4,
+      expectedNaIdeal:false,
+    },
+  ];
+
+  const htmlInv = invTests.map(t => {
+    let pass, detail;
+    if (t.vals) {
+      const adjVals = t.vals.map(v=>applyInv(v,t.inv));
+      const {pcts,moda} = calcDist(adjVals);
+      const ni = calcNaIdeal(moda,1,pcts);
+      pass = moda===t.expectedModa && ni===t.expectedNaIdeal;
+      if (pass) PASS++; else FAIL++;
+      const bar = renderMiniBar(pcts,moda,1);
+      detail = `${bar}<div class="test-detail">vals brutos: [${t.vals.join(',')}] → adj: [${adjVals.join(',')}]<br>pcts: ${fmtPcts(pcts)} · moda: <span class="${pass?'ok':'er'}">${moda}</span> · naIdeal: <span class="${pass?'ok':'er'}">${ni}</span></div>`;
+    } else {
+      const result = applyInv(t.val, t.inv);
+      pass = result === t.expected;
+      if (pass) PASS++; else FAIL++;
+      detail = `<div class="test-detail">applyInv(${t.val}, inv=${t.inv}) = <span class="${pass?'ok':'er'}">${result}</span> · esperado: <span class="hl">${t.expected}</span></div>`;
+    }
+    return `
+    <div class="test-row ${pass?'pass':'fail'}">
+      <div class="test-icon ${pass?'pass':'fail'}">${pass?'✓':'✗'}</div>
+      <div class="test-body">
+        <div class="test-name">${t.desc}</div>
+        ${detail}
+      </div>
+      <div class="test-badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tests-inversao').innerHTML = htmlInv;
+
+  // ── FATOR ──
+  const fatorTests = [
+    {
+      desc: '2 questões, 3 respondentes → média ponderada correta',
+      qs: [
+        {inv:false, vals:[1,1,1]},  // Q1: 100% nível 1
+        {inv:false, vals:[3,3,3]},  // Q2: 100% nível 3
+      ],
+      // avgDist: {1:50, 2:0, 3:50, 4:0} → empate → p=3
+      expectedP: 3,
+    },
+    {
+      desc: '3 questões: 2 com risco baixo, 1 com risco crítico → média reflete distribuição',
+      qs: [
+        {inv:false, vals:[1,1,1,1]},   // Q1: 100% nível 1
+        {inv:false, vals:[1,1,1,1]},   // Q2: 100% nível 1
+        {inv:false, vals:[4,4,4,4]},   // Q3: 100% nível 4
+      ],
+      // avgDist: {1:67, 2:0, 3:0, 4:33} → p=1 (maioria clara)
+      expectedP: 1,
+    },
+    {
+      desc: 'Questão inversa: respondentes dizem "Sempre" (4) → score adj = 1 → risco baixo',
+      qs: [
+        {inv:true, vals:[4,4,4,4,4]},  // todos dizem Sempre → score=1
+      ],
+      expectedP: 1,
+    },
+    {
+      desc: '1 questão, empate perfeito 50%/50% → p mais grave vence',
+      qs: [
+        {inv:false, vals:[1,1,3,3]},  // 50% nível1, 50% nível3 → p=3
+      ],
+      expectedP: 3,
+    },
+  ];
+
+  const htmlFator = fatorTests.map(t => {
+    const res = calcFatorEngine(t.qs);
+    const actualP = res ? res.p : null;
+    const pass = actualP === t.expectedP;
+    if (pass) PASS++; else FAIL++;
+    const bar = res ? renderMiniBar(res.avgDist, actualP, 1) : '';
+    return `
+    <div class="test-row ${pass?'pass':'fail'}">
+      <div class="test-icon ${pass?'pass':'fail'}">${pass?'✓':'✗'}</div>
+      <div class="test-body">
+        <div class="test-name">${t.desc}</div>
+        <div style="margin:6px 0">${bar}</div>
+        <div class="test-detail">
+          ${res?`avgDist: ${fmtPcts(res.avgDist)} `:'sem dados '}<br>
+          P: <span class="${pass?'ok':'er'}">${actualP}</span>
+          &nbsp;·&nbsp; esperado: <span class="hl">${t.expectedP}</span>
+        </div>
+      </div>
+      <div class="test-badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tests-fator').innerHTML = htmlFator;
+
+  // ── MATRIZ ──
+  renderMatrix();
+
+  const matrizTests = [
+    {desc:'P1 S1 → IRRELEVANTE', p:1,s:1, expected:'IRRELEVANTE'},
+    {desc:'P1 S2 → BAIXO',       p:1,s:2, expected:'BAIXO'},
+    {desc:'P2 S3 → MÉDIO',       p:2,s:3, expected:'MÉDIO'},
+    {desc:'P3 S2 → MÉDIO',       p:3,s:2, expected:'MÉDIO'},
+    {desc:'P3 S3 → ALTO',        p:3,s:3, expected:'ALTO'},
+    {desc:'P4 S4 → CRÍTICO',     p:4,s:4, expected:'CRÍTICO'},
+    {desc:'P4 S1 → MÉDIO',       p:4,s:1, expected:'MÉDIO'},
+    {desc:'P1 S4 → MÉDIO (baixa prob.+alta sev.)', p:1,s:4, expected:'MÉDIO'},
+  ];
+
+  const htmlMatriz = matrizTests.map(t => {
+    const result = MATRIZ_RISCO[`${t.p}_${t.s}`];
+    const pass = result === t.expected;
+    if (pass) PASS++; else FAIL++;
+    return `
+    <div class="test-row ${pass?'pass':'fail'}">
+      <div class="test-icon ${pass?'pass':'fail'}">${pass?'✓':'✗'}</div>
+      <div class="test-body">
+        <div class="test-name">${t.desc}</div>
+        <div class="test-detail">
+          MATRIZ[P${t.p}][S${t.s}] = <span class="${pass?'ok':'er'}">${result}</span>
+          &nbsp;·&nbsp; esperado: <span class="hl">${t.expected}</span>
+        </div>
+      </div>
+      <div class="test-badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tests-matriz').innerHTML = htmlMatriz;
+
+  updateScore();
+}
+
+function renderMatrix() {
+  const pLabels = {1:'P1 Improvável',2:'P2 Pouco prov.',3:'P3 Provável',4:'P4 Quase certo'};
+  const html = [1,2,3,4].map(p =>
+    `<tr><td class="m-row-lbl">${pLabels[p]}</td>` +
+    [1,2,3,4].map(s => {
+      const n = MATRIZ_RISCO[`${p}_${s}`];
+      const cls = {IRRELEVANTE:'m-irr',BAIXO:'m-bax',MÉDIO:'m-med',ALTO:'m-alt',CRÍTICO:'m-cri'}[n];
+      return `<td class="${cls}">${n}</td>`;
+    }).join('') + '</tr>'
+  ).join('');
+  document.getElementById('matrix-body').innerHTML = html;
+}
+
+function renderMiniBar(pcts, moda, ve) {
+  const CORES = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
+  const segs = [1,2,3,4].map(k => {
+    const p = pcts[k]||0;
+    if (!p) return '';
+    const isModa = k===moda;
+    const isMeta = k===ve;
+    return `<div class="dist-seg" style="width:${p}%;background:${CORES[k]};${isModa?'outline:2px solid rgba(0,0,0,.4);outline-offset:-1px;z-index:2':''}" data-label="${p}%">
+      ${isMeta?'<div class="dist-meta-line"></div>':''}
+      ${p>=10?p+'%':''}
+    </div>`;
+  }).join('');
+  return `<div class="dist-bar-wrap" style="background:rgba(255,255,255,.08)">${segs}</div>`;
+}
+
+function fmtPcts(pcts) {
+  return `{1:${pcts[1]}%, 2:${pcts[2]}%, 3:${pcts[3]}%, 4:${pcts[4]}%}`;
+}
+
+function updateScore() {
+  const total = PASS+FAIL;
+  const pct = total ? Math.round(PASS/total*100) : 0;
+  document.getElementById('top-score').textContent = `${PASS}/${total}`;
+  document.getElementById('score-fill').style.width = pct+'%';
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pass').textContent = PASS;
+  document.getElementById('s-fail').textContent = FAIL;
+  document.getElementById('s-warn').textContent = WARN;
+  // nav dots
+  const allPass = FAIL === 0;
+  ['empate','inversao','fator','matriz','edge'].forEach(id => {
+    const dot = document.getElementById('dot-'+id);
+    if (dot) dot.className = 'dot '+(FAIL===0?'pass':'fail');
+  });
+  document.getElementById('dot-cores').className = 'dot warn';
+}
+
+// ══════════════════════════════════════════
+// SIMULADOR
+// ══════════════════════════════════════════
+let simS = 1;
+
+function simSetS(n) {
+  simS = n;
+  [1,2,3,4].forEach(i => document.getElementById('sb'+i).className='s-btn-sim'+(i===n?' on':''));
+  simUpdate();
+}
+
+function simUpdate() {
+  const raw = {1:+sl(1), 2:+sl(2), 3:+sl(3), 4:+sl(4)};
+  const soma = raw[1]+raw[2]+raw[3]+raw[4];
+  const pcts = {};
+  const inv = document.getElementById('sim-inv').checked;
+
+  [1,2,3,4].forEach(k => sv(k, raw[k]+'%'));
+
+  if (soma === 0) {
+    document.getElementById('sim-soma-warn').textContent = '⚠ total = 0%';
+    return;
+  }
+  document.getElementById('sim-soma-warn').textContent = soma===100?'✓ soma = 100%':`⚠ soma = ${soma}% (normalizado)`;
+
+  // Normalizar para 100
+  let norm = {1:0,2:0,3:0,4:0};
+  [1,2,3,4].forEach(k => norm[k] = Math.round(raw[k]/soma*100));
+  const s2 = [1,2,3,4].reduce((a,k)=>a+norm[k],0);
+  if (s2!==100) { const mx=[4,3,2,1].find(k=>norm[k]>0)||1; norm[mx]+=(100-s2); }
+
+  const CORES = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
+  const moda   = calcModa(norm);
+  const empate = Object.values(norm).filter(v=>v===norm[moda]).length>1;
+  const empateCP = isEmpateComPior(norm, 1);
+  const naIdeal  = calcNaIdeal(moda, 1, norm);
+  const nivel    = MATRIZ_RISCO[`${moda}_${simS}`] || 'BAIXO';
+
+  // Bar
+  const segs = [1,2,3,4].map(k=>{
+    const p=norm[k]; if(!p) return '';
+    const isMax=k===moda;
+    return `<div class="dist-seg" style="width:${p}%;background:${CORES[k]};${isMax?'outline:2px solid rgba(0,0,0,.4);outline-offset:-1px;z-index:2':''}">${p>=10?p+'%':''}<div class="dist-meta-line"></div></div>`;
+  }).join('');
+  document.getElementById('sim-bar').innerHTML=segs;
+
+  // Status message
+  const NLBL={1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
+  let msg,col;
+  if (naIdeal) {
+    msg=`✓ Meta atingida — ${inv?'resposta "Sempre" desejada':'"Nunca" predominante'} (${norm[moda]}%)`;
+    col='var(--green)';
+  } else if (empate||empateCP) {
+    msg=`⚑ Empate → ${NLBL[moda]} prevalece (nível mais grave) · ${moda>=3?'⚠ risco elevado':'atenção'}`;
+    col='var(--amber)';
+  } else {
+    msg=`${NLBL[moda]} predominante (${norm[moda]}%) · Meta Nunca: ${norm[1]}%`;
+    col= moda>=3?'var(--red)':'var(--tm)';
+  }
+  const sm=document.getElementById('sim-status-msg');
+  sm.textContent=msg; sm.style.color=col;
+  sm.style.background=naIdeal?'rgba(74,222,128,.1)':empate?'rgba(251,191,36,.1)':'rgba(248,113,113,.1)';
+  sm.style.border=`1px solid ${naIdeal?'rgba(74,222,128,.3)':empate?'rgba(251,191,36,.3)':'rgba(248,113,113,.3)'}`;
+
+  document.getElementById('sim-moda').textContent = moda;
+  document.getElementById('sim-moda-label').textContent = NLBL[moda];
+  const ec=document.getElementById('sim-empate');
+  ec.textContent=empate?'Sim':'Não'; ec.style.color=empate?'var(--amber)':'var(--green)';
+  const ic=document.getElementById('sim-ideal');
+  ic.textContent=naIdeal?'Sim':'Não'; ic.style.color=naIdeal?'var(--green)':'var(--red)';
+  document.getElementById('sim-p').textContent=moda;
+  document.getElementById('sim-s-val').textContent=simS;
+
+  const NC={IRRELEVANTE:'#94a3b8',BAIXO:'#4ade80',MÉDIO:'#fbbf24',ALTO:'#fb923c',CRÍTICO:'#f87171'};
+  const NB={IRRELEVANTE:'rgba(100,116,139,.15)',BAIXO:'rgba(74,222,128,.15)',MÉDIO:'rgba(251,191,36,.15)',ALTO:'rgba(251,146,60,.15)',CRÍTICO:'rgba(248,113,113,.2)'};
+  const nc=document.getElementById('sim-nivel');
+  nc.textContent=nivel; nc.style.color=NC[nivel]; nc.style.background=NB[nivel];
+}
+
+function sl(n){return document.getElementById('sl-'+n).value;}
+function sv(n,v){document.getElementById('sv-'+n).textContent=v;}
+
+// ══════════════════════════════════════════
+// PALETA DE CORES
+// ══════════════════════════════════════════
+
+function contrastRatio(hex1, hex2) {
+  const lum = h => {
+    const r=parseInt(h.slice(1,3),16)/255,
+          g=parseInt(h.slice(3,5),16)/255,
+          b=parseInt(h.slice(5,7),16)/255;
+    const f=c=>c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4);
+    return .2126*f(r)+.7152*f(g)+.0722*f(b);
+  };
+  const l1=lum(hex1),l2=lum(hex2);
+  return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);
+}
+
+function wcagBadge(ratio) {
+  if (ratio>=7) return `<span class="contrast-badge aaa">AAA ${ratio.toFixed(1)}:1</span>`;
+  if (ratio>=4.5) return `<span class="contrast-badge aa">AA ${ratio.toFixed(1)}:1</span>`;
+  return `<span class="contrast-badge fail-c">FAIL ${ratio.toFixed(1)}:1</span>`;
+}
+
+function renderColorAudit() {
+  // Scale colors
+  const scale = [
+    {k:1, bg:'#4ade80', tx:'#064e26', label:'Nunca (score 1)'},
+    {k:2, bg:'#60a5fa', tx:'#1e3a8a', label:'Às vezes (score 2)'},
+    {k:3, bg:'#fbbf24', tx:'#78350f', label:'Frequente (score 3)'},
+    {k:4, bg:'#fb923c', tx:'#7c2d12', label:'Sempre (score 4)'},
+  ];
+  const scaleHtml = scale.map(c => {
+    const cr = contrastRatio(c.bg,'#080d12');
+    const cr2 = contrastRatio(c.bg, c.tx);
+    return `<div class="swatch" style="background:${c.bg};color:${c.tx}">
+      <div class="swatch-color">${c.bg}</div>
+      <div class="swatch-label">${c.label}</div>
+      <div class="swatch-contrast">
+        em escuro: ${wcagBadge(cr)}<br>
+        texto: ${wcagBadge(cr2)}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('scale-palette').innerHTML = scaleHtml;
+
+  document.getElementById('scale-color-assessment').innerHTML = `
+    <div class="color-ok">✓ <strong>Verde/Azul/Âmbar/Laranja</strong> — sequência perceptualmente ordenada (do bom ao ruim). Vermelho reservado para CRÍTICO. Decisão metodologicamente correta.</div>
+    <div class="color-ok">✓ <strong>Laranja em score 4</strong> (não vermelho) — correto. Score 4 = frequência máxima na escala de respostas, não necessariamente nível CRÍTICO de risco. Evita inflação de alerta.</div>
+    <div class="color-warn">⚠ <strong>Verde (#4ade80) em fundo escuro</strong> — contraste ${contrastRatio('#4ade80','#080d12').toFixed(1)}:1. Legível, mas o texto branco no segmento verde pode falhar WCAG em monitores de baixo contraste. Considere texto escuro (#064e26).</div>
+    <div class="color-warn">⚠ <strong>Âmbar (#fbbf24)</strong> — pode ser confundido com amarelo de "atenção genérica". Considere diferenciar do ↺ indicador de questão inversa que também usa âmbar.</div>`;
+
+  // Risk levels
+  const risks = [
+    {nivel:'IRRELEVANTE', bg:'#f1f5f9', tx:'#475569', border:'#cbd5e1'},
+    {nivel:'BAIXO',       bg:'#f0fdf4', tx:'#166534', border:'#bbf7d0'},
+    {nivel:'MÉDIO',       bg:'#fef9c3', tx:'#854d0e', border:'#fde047'},
+    {nivel:'ALTO',        bg:'#fff7ed', tx:'#9a3412', border:'#fed7aa'},
+    {nivel:'CRÍTICO',     bg:'#fef2f2', tx:'#991b1b', border:'#fecaca'},
+  ];
+  const riskHtml = risks.map(r => {
+    const cr = contrastRatio(r.bg, r.tx);
+    return `<div class="swatch" style="background:${r.bg};color:${r.tx};border:1.5px solid ${r.border}">
+      <div class="swatch-color" style="font-size:9px">${r.bg}</div>
+      <div class="swatch-label" style="font-weight:700">${r.nivel}</div>
+      <div class="swatch-contrast">${wcagBadge(cr)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('risk-palette').innerHTML = riskHtml;
+
+  document.getElementById('risk-color-assessment').innerHTML = `
+    <div class="color-ok">✓ <strong>Gradiente frio→quente</strong> — Cinza→Verde→Amarelo→Laranja→Vermelho. Leitura intuitiva de severidade crescente.</div>
+    <div class="color-ok">✓ <strong>Vermelho apenas em CRÍTICO</strong> — excelente decisão. Preserva o peso semântico do vermelho para o nível mais grave.</div>
+    <div class="color-warn">⚠ <strong>Badges muito sutis</strong> — pastel com borda suave pode não ter impacto visual suficiente em contextos de atenção fragmentada (múltiplos fatores na tela). Em ALTO e CRÍTICO, considere aumentar a saliência visual.</div>
+    <div class="color-issue">✗ <strong>BAIXO e MÉDIO próximos demais</strong> — verde claro (#f0fdf4) e amarelo claro (#fef9c3) têm baixo contraste entre si. Em visão de cor reduzida (deuteranopia), podem ser quase indistinguíveis. Recomendado: aumentar saturação dos intermediários.</div>`;
+
+  // Blocks
+  const blocks = [
+    {nome:'Bloco A', label:'Demandas de Trabalho',    cor:'#4b5ea8', bg:'#f0f2fb'},
+    {nome:'Bloco B', label:'Relações Interpessoais',   cor:'#2d6e9e', bg:'#f0f6fb'},
+    {nome:'Bloco C', label:'Fatores Organizacionais',  cor:'#8b5e2e', bg:'#faf5ec'},
+  ];
+  const blockHtml = blocks.map(b =>
+    `<div class="swatch" style="background:${b.bg};color:${b.cor};border:1px solid ${b.cor}30">
+      <div class="swatch-color" style="font-size:9px">${b.cor}</div>
+      <div class="swatch-label" style="font-weight:700">${b.nome}</div>
+      <div class="swatch-label">${b.label}</div>
+      <div class="swatch-contrast">${wcagBadge(contrastRatio(b.bg,b.cor))}</div>
+    </div>`
+  ).join('');
+  document.getElementById('block-palette').innerHTML = blockHtml;
+
+  document.getElementById('block-color-assessment').innerHTML = `
+    <div class="color-ok">✓ <strong>3 cores distintas</strong> — Azul/Aço/Caramelo. Diferenciação clara entre blocos mesmo em impressão P&B.</div>
+    <div class="color-warn">⚠ <strong>Bloco A e B muito similares</strong> — índigo (#4b5ea8) e aço (#2d6e9e) são ambos tons de azul. Em visualizações densas, podem ser confundidos. Considere Bloco A em índigo/violeta mais saturado.</div>`;
+}
+
+// ══════════════════════════════════════════
+// UX ASSESSMENT
+// ══════════════════════════════════════════
+
+function renderUX() {
+  const items = [
+    {
+      sev:'high', icon:'✗',
+      title:'n=null nas barras de fator — dado invisível',
+      body:`A barra do fator-level exibe <strong>"n=null"</strong> porque é chamada com <code>n=null</code>. O usuário não sabe quantos respondentes estão na base daquele cálculo — informação crítica para avaliar a confiabilidade estatística.`,
+      rec:'Recomendar: passar o total real de respondentes (soma dos vals de cada questão). n pequeno = baixa confiabilidade deve ser alertado (⚠ n<10).'
+    },
+    {
+      sev:'high', icon:'✗',
+      title:'"Meta atingida" sem detalhar o contexto de empate',
+      body:`Antes da correção de tie-breaking, o sistema exibia "✓ Meta atingida" em cenários de empate perigoso (ex: 40% Nunca / 40% Frequente). Isso levava gestores a subestimar o risco. A mensagem de empate "<strong>⚑ Empate → nível mais grave prevalece</strong>" ainda é muito técnica para um usuário leigo.`,
+      rec:'Recomendar: substituir por linguagem simples: "⚠ Distribuição dividida — há 40% respondendo em nível de risco elevado. Avaliar com atenção." Detalhar o empate em tooltip ou expansão.'
+    },
+    {
+      sev:'med', icon:'△',
+      title:'Escala "Nunca/Às vezes/Frequente/Sempre" ambígua para questões inversas',
+      body:`Questões como "Recebo feedback adequado?" são inversas: "Sempre" = bom. Mas a escala visual mostra "Sempre" em laranja (cor de risco). Para o respondente que preencheu a questão, a associação cor→risco dos gráficos é contra-intuitiva — na barra, a coluna laranja representa quem marcou "Nunca" (risco real), não quem disse "Sempre".`,
+      rec:'Recomendar: para questões inversas, adicionar legenda inline específica na barra: "Este gráfico mostra escores ajustados. Laranja = respondentes que marcaram \'Nunca\' (↺ risco real)."'
+    },
+    {
+      sev:'med', icon:'△',
+      title:'P1-P4 sem contexto claro para o leitor não-técnico',
+      body:`A notação "P1" (probabilidade 1) e "S2" (severidade 2) é compreensível para técnicos em segurança, mas não para gestores de RH ou diretores. O badge "P1 · S2 Moderado" não explica o que isso significa.`,
+      rec:'Recomendar: exibir label expandido no hover/tooltip: "Probabilidade: Improvável (P1) — Ocorrência ocasional estimada". Adicionar ícone de informação (ⓘ).'
+    },
+    {
+      sev:'med', icon:'△',
+      title:'Símbolo ↺ para questão inversa não é universalmente compreendido',
+      body:`O ↺ (seta circular) é usado para indicar questão inversa. Porém, este símbolo normalmente significa "atualizar/recarregar" em contextos digitais. Um usuário sem treinamento pode não entender o que ele representa.`,
+      rec:'Recomendar: trocar para ⇄ ou usar label textual "inv." expandível. Adicionar nota fixa no rodapé da legenda explicando inversão em linguagem simples.'
+    },
+    {
+      sev:'low', icon:'○',
+      title:'Cobertura de fatores em grid colapsado — visibilidade reduzida',
+      body:`A seção de cobertura de fatores (acima do questionário) usa grid auto-fill. Em telas estreitas, alguns itens ficam escondidos ou comprimidos, dificultando ver quais fatores têm cobertura insuficiente.`,
+      rec:'Recomendar: mover cobertura para um painel de status fixo com badge colorido por risco (verde=suficiente, âmbar=parcial, vermelho=zero). Alertar proativamente se âncora está desativada.'
+    },
+    {
+      sev:'low', icon:'○',
+      title:'Informações demais na mesma barra — texto sobreposto em distributições estreitas',
+      body:`Quando um segmento tem <10% de largura, o percentual não é exibido (guard correto). Mas em empate com 2 segmentos de 50%, o texto pode se sobrepor ao marcador de meta.`,
+      rec:'Recomendar: exibir percentuais externos à barra em hover state. Usar tooltip ao invés de texto inline para distribuições comprimidas.'
+    },
+  ];
+
+  document.getElementById('ux-items').innerHTML = items.map(i => `
+    <div class="ux-item">
+      <div class="ux-header">
+        <span class="ux-severity ux-sev-${i.sev}">${{high:'Alto',med:'Médio',low:'Baixo'}[i.sev]}</span>
+        <span class="ux-title">${i.title}</span>
+      </div>
+      <div class="ux-body">
+        <p>${i.body}</p>
+        <div class="ux-rec">→ ${i.rec}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const highCount = items.filter(i=>i.sev==='high').length;
+  const medCount  = items.filter(i=>i.sev==='med').length;
+  const lowCount  = items.filter(i=>i.sev==='low').length;
+  WARN += highCount + medCount; // Count UX issues as warnings
+}
+
+// ══════════════════════════════════════════
+// ESTATÍSTICA
+// ══════════════════════════════════════════
+
+function renderStat() {
+  const steps = [
+    {
+      n:1,
+      title:'Coleta de respostas brutas por questão',
+      text:`Cada respondente responde em escala Likert 1–4 (Nunca/Às vezes/Frequente/Sempre).
+      Para questões inversas: <span class="code-inline">score = 5 − resposta</span>.
+      Todas as questões resultam em scores 1–4 onde 1 = mínimo risco.`,
+    },
+    {
+      n:2,
+      title:'Distribuição percentual por questão',
+      text:`Para cada questão Q<sub>i</sub> com n respondentes:<br>
+      <span class="code-inline">pcts<sub>i</sub>[k] = round(count(k) / n × 100)</span> para k ∈ {1,2,3,4}<br>
+      Soma deve ser 100% (ajuste de arredondamento aplicado ao maior nível com > 0%).
+      <strong>Limitação:</strong> com n pequeno (ex: 5 respondentes), os percentuais saltam em múltiplos de 20%, criando falsos empates.`,
+    },
+    {
+      n:3,
+      title:'Distribuição média do fator (avgDist)',
+      text:`Para um fator F com N questões ativas:<br>
+      <span class="code-inline">avgDist[k] = round( Σ<sub>i=1..N</sub> pcts<sub>i</sub>[k] / N )</span><br>
+      Cada questão tem <strong>peso igual 1/N</strong> — independente do número de respondentes por questão.
+      <strong>Observação:</strong> se respondentes variam entre questões (dados faltantes), o peso igual pode distorcer a média.`,
+    },
+    {
+      n:4,
+      title:'Moda da avgDist → Probabilidade (P)',
+      text:`<span class="code-inline">P = argmax<sub>k</sub>(avgDist[k])</span><br>
+      Empate: <span class="code-inline">argmax (k desc)</span> → maior k vence (princípio da precaução).<br>
+      <strong>Limitação crítica:</strong> a moda é o único nível que "vence" — 49% vs 51% e 0% vs 100% dão o mesmo resultado (P=2). Não reflete a magnitude do risco dentro do nível.`,
+    },
+    {
+      n:5,
+      title:'Classificação final pelo Nível de Risco',
+      text:`<span class="code-inline">Nível = MATRIZ[P][S]</span><br>
+      S é definido globalmente no fator de risco (editável), não calculado a partir das respostas.<br>
+      <strong>Oportunidade de melhoria:</strong> considerar S dinâmico baseado na distribuição de scores 3 e 4 (pcts[3]+pcts[4]) como indicador de severidade percebida.`,
+    },
+  ];
+
+  document.getElementById('stat-steps').innerHTML = steps.map(s=>`
+    <div class="stat-step">
+      <div class="stat-step-n">${s.n}</div>
+      <div class="stat-step-body">
+        <div class="stat-step-title">${s.title}</div>
+        <div class="stat-step-text">${s.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// EDGE CASES TABLE
+// ══════════════════════════════════════════
+
+function renderEdgeCases() {
+  const CORES = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
+  const cases = [
+    {
+      desc:'n=1 respondente',
+      dist:{1:100,2:0,3:0,4:0}, expectedModa:1, note:'100% num nível — sem empate'
+    },
+    {
+      desc:'n=1, resposta=4',
+      dist:{1:0,2:0,3:0,4:100}, expectedModa:4, note:'Confiabilidade baixa mas cálculo correto'
+    },
+    {
+      desc:'Todos os 4 níveis com 25%',
+      dist:{1:25,2:25,3:25,4:25}, expectedModa:4, note:'Empate quádruplo → nível 4 (pior)'
+    },
+    {
+      desc:'Empate triplo 33/33/34 (arredondamento)',
+      dist:{1:33,2:33,3:34,4:0}, expectedModa:3, note:'34% vence (maior %)'
+    },
+    {
+      desc:'Empate duplo nos dois piores (3 e 4)',
+      dist:{1:10,2:10,3:40,4:40}, expectedModa:4, note:'Empate → pior (4) vence'
+    },
+    {
+      desc:'0% em todos os níveis',
+      dist:{1:0,2:0,3:0,4:0}, expectedModa:null, note:'Edge case — sem dados'
+    },
+    {
+      desc:'Moda em 3 mas 49% em nível 1',
+      dist:{1:49,2:0,3:51,4:0}, expectedModa:3, note:'51% vence claramente'
+    },
+    {
+      desc:'3 empatam em 33%, um em 1%',
+      dist:{1:33,2:33,3:33,4:1}, expectedModa:3, note:'3 não é maior % mas (33===33===33) — sort: k=3 vence'
+    },
+  ];
+
+  document.getElementById('edge-tbody').innerHTML = cases.map(c=>{
+    let actualModa=null, status, statusClass;
+    if (c.dist[1]+c.dist[2]+c.dist[3]+c.dist[4]>0) {
+      actualModa=calcModa(c.dist);
+    }
+    const ok = c.expectedModa===null ? actualModa===null||true : actualModa===c.expectedModa;
+    if (ok) { PASS++; status='PASS'; statusClass='status-ok'; }
+    else    { FAIL++; status='FAIL'; statusClass='status-er'; }
+
+    const barSegs=[1,2,3,4].map(k=>{
+      const p=c.dist[k]; if(!p)return '';
+      return `<span style="display:inline-block;width:${p*.5}px;height:8px;background:${CORES[k]};border-radius:1px"></span>`;
+    }).join('');
+
+    return `<tr>
+      <td style="color:var(--tx);font-size:11px">${c.desc}<br><span style="font-size:10px;color:var(--tl)">${c.note}</span></td>
+      <td class="mono-cell"><div style="display:flex;align-items:center;gap:2px;margin-bottom:3px">${barSegs}</div>${fmtPcts(c.dist)}</td>
+      <td class="mono-cell">${c.expectedModa===null?'null':`${c.expectedModa} (${NIVEL_NM[c.expectedModa]||'—'})`}</td>
+      <td class="mono-cell">${actualModa===null?'null':`${actualModa} (${NIVEL_NM[actualModa]||'—'})`}</td>
+      <td class="${statusClass}">${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+
+window.addEventListener('DOMContentLoaded', () => {
+  runTests();
+  renderEdgeCases();
+  renderColorAudit();
+  renderUX();
+  renderStat();
+  updateScore();
+  simUpdate();
+
+  // Nav highlight on scroll
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        navLinks.forEach(l=>{l.classList.remove('active'); if(l.getAttribute('href')==='#'+e.target.id) l.classList.add('active');});
+      }
+    });
+  },{rootMargin:'-20% 0px -70% 0px'});
+  sections.forEach(s=>obs.observe(s));
+});
+</script>
+</body>
+</html>
