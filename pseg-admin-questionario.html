@@ -578,6 +578,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       Distribuição
     </button>
 
+    <button class="nav-item" id="nb-comparativo" onclick="goScreen('comparativo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <span>Comparativo</span>
+    </button>
+
     <button class="nav-item" id="nb-auditoria" onclick="goScreen('auditoria',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
       Auditoria
@@ -591,6 +596,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </button>
 
     <div class="sidebar-section">Configuração</div>
+
+    <button class="nav-item" id="nb-plano" onclick="goScreen('plano',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Plano de Ação</span>
+    </button>
 
     <button class="nav-item" id="nb-usuarios" onclick="goScreen('usuarios',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1740,6 +1750,73 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TELA COMPARATIVO ENTRE CICLOS
+══════════════════════════════════════ -->
+<div class="screen" id="sc-comparativo">
+  <div class="page-header">
+    <div class="page-title">Comparativo de Ciclos</div>
+    <div class="page-sub">Evolução temporal dos fatores de risco entre avaliações</div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
+    <div class="filter-grp">
+      <label class="filter-lbl">Empresa</label>
+      <select id="cmp-empresa" class="filter-sel" onchange="renderComparativo()">
+        <option value="">— selecione —</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label class="filter-lbl">Setor (opcional)</label>
+      <select id="cmp-setor" class="filter-sel" onchange="renderComparativo()">
+        <option value="">Todos os setores</option>
+      </select>
+    </div>
+    <button class="btn-sm btn-prim" onclick="renderComparativo()">Atualizar</button>
+  </div>
+  <div id="comparativo-panel">
+    <div class="card"><div class="alert alert-y">Selecione uma empresa com ao menos 2 ciclos para visualizar a evolução.</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TELA PLANO DE AÇÃO 5W2H
+══════════════════════════════════════ -->
+<div class="screen" id="sc-plano">
+  <div class="page-header">
+    <div class="page-title">Plano de Ação 5W2H</div>
+    <div class="page-sub">Ações corretivas geradas a partir dos riscos identificados (MÉDIO, ALTO e CRÍTICO)</div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
+    <div class="filter-grp">
+      <label class="filter-lbl">Empresa</label>
+      <select id="plano-empresa" class="filter-sel" onchange="renderPlanoAcao()">
+        <option value="">— selecione —</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label class="filter-lbl">Ciclo</label>
+      <select id="plano-ciclo" class="filter-sel" onchange="renderPlanoAcao()">
+        <option value="">Todos os ciclos</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label class="filter-lbl">Nível mínimo</label>
+      <select id="plano-nivel" class="filter-sel" onchange="renderPlanoAcao()">
+        <option value="MÉDIO">MÉDIO ou superior</option>
+        <option value="ALTO">ALTO ou superior</option>
+        <option value="CRÍTICO">Apenas CRÍTICO</option>
+      </select>
+    </div>
+    <button class="btn-sm btn-sec" onclick="exportarPlanoCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar CSV
+    </button>
+  </div>
+  <div id="plano-panel">
+    <div class="card"><div class="alert alert-y">Selecione uma empresa para gerar o plano de ação.</div></div>
   </div>
 </div>
 
@@ -3133,15 +3210,15 @@ async function carregarEmpresas() {
 }
 
 function popularSelectsEmpresas() {
-  const ids = ['sel-emp','f-empresa','gf-empresa','ld-empresa','link-f-empresa'];
+  const ids = ['sel-emp','f-empresa','gf-empresa','ld-empresa','link-f-empresa','cmp-empresa','plano-empresa'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const cur = el.value;
     const vazio = id === 'sel-emp'
       ? '<option value="">Selecione a empresa...</option>'
-      : id === 'link-f-empresa'
-      ? '<option value="">Todas as empresas</option>'
+      : (id === 'cmp-empresa' || id === 'plano-empresa')
+      ? '<option value="">— selecione —</option>'
       : '<option value="">Todas as empresas</option>';
     el.innerHTML = vazio + _empresas.map(e =>
       `<option value="${e.id}"${e.id===cur?' selected':''}>${e.nome}</option>`
@@ -3215,6 +3292,43 @@ function abrirEditarEmpresa(empresaId) {
 function fecharModalEmpresa() {
   document.getElementById('modal-empresa').classList.remove('open');
   _neEditId = null;
+}
+
+// ── Edição inline diretamente no card de empresa ──
+function iniciarEdicaoInlineEmpresa(empId) {
+  document.getElementById('emp-display-'+empId).style.display = 'none';
+  document.getElementById('emp-edit-'+empId).style.display = '';
+  setTimeout(() => document.getElementById('emp-nome-inp-'+empId)?.focus(), 30);
+}
+
+function cancelarEdicaoInlineEmpresa(empId) {
+  document.getElementById('emp-display-'+empId).style.display = '';
+  document.getElementById('emp-edit-'+empId).style.display = 'none';
+}
+
+async function salvarEdicaoInlineEmpresa(empId) {
+  const nome = document.getElementById('emp-nome-inp-'+empId)?.value?.trim();
+  const cnpj = document.getElementById('emp-cnpj-inp-'+empId)?.value?.trim();
+  if (!nome) { toast('Nome da empresa não pode estar vazio.', 'w'); return; }
+
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+
+  if (!isDemoMode) {
+    try {
+      const { error } = await sbAdmin.from('empresas').update({ nome, cnpj: cnpj || null }).eq('id', empId);
+      if (error) throw new Error(error.message);
+    } catch(e) {
+      toast('Erro ao salvar: ' + e.message, 'w'); return;
+    }
+  }
+
+  emp.nome = nome;
+  emp.cnpj = cnpj || '';
+  _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+  popularSelectsEmpresas();
+  renderTelaEmpresas();
+  toast('Empresa atualizada!', 'g');
 }
 
 async function excluirEmpresa(empresaId, nomeEsc, nLinks) {
@@ -3705,7 +3819,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
       resultado.sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel)-NIVEIS_ORDEM.indexOf(a.nivel)).map(f => {
         const nc  = NIVEIS_CORES[f.nivel];
         const gid = 'fdist-'+grupo.nome.replace(/\s/g,'_')+'-'+(f.cd||f.id);
-        const barra = renderBarraDistribuicao(f.avgDist, f.p, 1, null, false);
+        const barra = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false);
         return '<div>'+
           '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--bs)" onclick="toggleFatorDist(\''+gid+'\')">'+
           '<div>'+
@@ -3864,7 +3978,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv) {
   const txt_status = naIdeal
     ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
     : ((isEmpate || isEmpateComPior)
-        ? '⚑ Empate → '+modaLabel+' (nível mais grave prevalece) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'
+        ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução). Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'
         : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%');
 
   return '<div style="height:20px;border-radius:4px;overflow:hidden;display:flex;background:#e5e7eb;position:relative">'+segs+'</div>'+
@@ -4007,6 +4121,7 @@ function calcFatores(linhas) {
       avgDist,           // distribuição média (para barras da aba Distribuição)
       distQuestoes,      // por questão (para collapsible na tabela)
       n_questoes: N,
+      n: linhas.length,  // total de respondentes
     };
   }).filter(Boolean)
     .sort((a,b) => {
@@ -6614,12 +6729,33 @@ function renderTelaEmpresas() {
     else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
     else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
 
-    return `<div class="card" style="padding:0;overflow:hidden">
+    return `<div class="card" style="padding:0;overflow:hidden" id="emp-card-${emp.id}">
       <div style="padding:14px 16px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3">${emp.nome}</div>
+          <div style="flex:1;min-width:0" id="emp-display-${emp.id}">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
+              <button onclick="iniciarEdicaoInlineEmpresa('${emp.id}')" title="Editar nome/CNPJ"
+                style="background:none;border:none;cursor:pointer;padding:2px;color:var(--tl);flex-shrink:0;opacity:.5;transition:opacity .15s"
+                onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            </div>
             <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}</div>
+          </div>
+          <div id="emp-edit-${emp.id}" style="display:none;flex:1;min-width:0;padding-right:8px">
+            <input id="emp-nome-inp-${emp.id}" type="text" value="${emp.nome.replace(/"/g,'&quot;')}"
+              style="width:100%;border:1.5px solid var(--g);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600;color:var(--tx);font-family:inherit;margin-bottom:5px;outline:none"
+              onkeydown="if(event.key==='Enter')salvarEdicaoInlineEmpresa('${emp.id}');if(event.key==='Escape')cancelarEdicaoInlineEmpresa('${emp.id}')"/>
+            <input id="emp-cnpj-inp-${emp.id}" type="text" value="${(emp.cnpj||'').replace(/"/g,'&quot;')}" placeholder="CNPJ (opcional)"
+              style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--tx);font-family:inherit;outline:none"
+              onkeydown="if(event.key==='Enter')salvarEdicaoInlineEmpresa('${emp.id}');if(event.key==='Escape')cancelarEdicaoInlineEmpresa('${emp.id}')"/>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button onclick="salvarEdicaoInlineEmpresa('${emp.id}')"
+                style="background:var(--g);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">✓ Salvar</button>
+              <button onclick="cancelarEdicaoInlineEmpresa('${emp.id}')"
+                style="background:var(--bg);color:var(--tm);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>
+            </div>
           </div>
           <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0;margin-left:8px">${status}</span>
         </div>
@@ -6664,10 +6800,6 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           Links por GHE
         </button>` : ''}
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirEditarEmpresa('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Editar
-        </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--red);border-color:transparent" onclick="excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           Excluir
@@ -7636,6 +7768,519 @@ function gheInputKeydown(e, tipo) {
 }
 
 // ══════════════════════════════════════════
+// UTILITÁRIOS DE SELECT
+// ══════════════════════════════════════════
+function preencherSelectEmpresas(selId) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— selecione —</option>';
+  _empresas.filter(e => e.ativo !== false).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id; opt.textContent = e.nome;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+function preencherSelectCiclos(selId, empId) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todos os ciclos</option>';
+  if (!empId) return;
+  _ciclos.filter(c => c.empresa_id === empId).sort((a,b) => {
+    const da = a.data_inicio || a.criado_em || '';
+    const db = b.data_inicio || b.criado_em || '';
+    return da < db ? -1 : da > db ? 1 : 0;
+  }).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.nome;
+    sel.appendChild(opt);
+  });
+}
+
+// ══════════════════════════════════════════
+// COMPARATIVO ENTRE CICLOS
+// ══════════════════════════════════════════
+async function renderComparativo() {
+  const panel  = document.getElementById('comparativo-panel');
+  const empId  = document.getElementById('cmp-empresa')?.value;
+  const setor  = document.getElementById('cmp-setor')?.value || '';
+
+  if (!empId) {
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">Selecione uma empresa para visualizar o comparativo.</div></div>';
+    return;
+  }
+
+  panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Carregando dados dos ciclos…</div></div>';
+
+  // Buscar todos os ciclos da empresa
+  const ciclos = _ciclos.filter(c => c.empresa_id === empId).sort((a,b) => {
+    const da = a.data_inicio || a.criado_em || '';
+    const db = b.data_inicio || b.criado_em || '';
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+
+  if (ciclos.length < 2) {
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) cadastrado(s).</div></div>';
+    return;
+  }
+
+  // Preencher select de setor com opções disponíveis
+  const setorSel = document.getElementById('cmp-setor');
+  if (setorSel) {
+    const emp = _empresas.find(e => e.id === empId);
+    const setores = emp?.setores || [];
+    const curSetor = setorSel.value;
+    setorSel.innerHTML = '<option value="">Todos os setores</option>';
+    setores.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      setorSel.appendChild(opt);
+    });
+    if (curSetor) setorSel.value = curSetor;
+  }
+
+  // Carregar respostas de cada ciclo
+  const dadosPorCiclo = [];
+  for (const ciclo of ciclos) {
+    const todasLinhas = await getLinhasParaAnalise(empId);
+    const linhas = todasLinhas.filter(r => r.ciclo_id === ciclo.id && (!setor || r.setor === setor));
+    if (!linhas.length) continue;
+    const fatores = calcFatores(linhas);
+    dadosPorCiclo.push({ ciclo, linhas, fatores });
+  }
+
+  if (dadosPorCiclo.length < 2) {
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos <strong>com respostas</strong> para exibir o comparativo. ' +
+      'Certifique-se de que os respondentes informaram o ciclo correto ao preencher o formulário.</div></div>';
+    return;
+  }
+
+  // Montar dados para os gráficos
+  const labels     = dadosPorCiclo.map(d => d.ciclo.nome);
+  const nResp      = dadosPorCiclo.map(d => d.linhas.length);
+  const NIVEIS_ORD = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
+  const NIVEIS_COR = {IRRELEVANTE:'#94a3b8',BAIXO:'#4ade80',MÉDIO:'#fbbf24',ALTO:'#fb923c',CRÍTICO:'#f87171'};
+
+  // Calcular distribuição de níveis por ciclo (%)
+  const niveisData = {};
+  NIVEIS_ORD.forEach(nv => { niveisData[nv] = dadosPorCiclo.map(d => {
+    const total = d.fatores.length;
+    if (!total) return 0;
+    return Math.round(d.fatores.filter(f => f.nivel === nv).length / total * 100);
+  }); });
+
+  // Pior nível por ciclo
+  const piorPorCiclo = dadosPorCiclo.map(d => {
+    if (!d.fatores.length) return 'IRRELEVANTE';
+    return d.fatores.reduce((w, f) =>
+      NIVEIS_ORD.indexOf(f.nivel) > NIVEIS_ORD.indexOf(w) ? f.nivel : w, 'IRRELEVANTE');
+  });
+
+  // Evolução P médio por fator (top riscos)
+  const todosFatores = [...new Set(dadosPorCiclo.flatMap(d => d.fatores.map(f => f.id)))];
+  const topFatores   = todosFatores.slice(0, 8);
+  const lineColors   = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+
+  let html = '';
+
+  // ─── Resumo de respondentes por ciclo ───
+  html += `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:12px">Respondentes por ciclo</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+      ${dadosPorCiclo.map((d,i) => {
+        const pior = piorPorCiclo[i];
+        const nc = NIVEIS_COR[pior];
+        return `<div style="background:var(--bg);border-radius:8px;padding:10px 12px;border:1px solid var(--bs)">
+          <div style="font-size:10px;color:var(--tl);margin-bottom:2px">${d.ciclo.nome}</div>
+          <div style="font-size:22px;font-weight:700;color:var(--tx)">${d.linhas.length}</div>
+          <div style="font-size:9px;margin-top:4px;display:flex;align-items:center;gap:4px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${nc};flex-shrink:0"></span>
+            <span style="color:var(--tl)">Pior: ${pior}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  // ─── Gráfico de barras empilhadas: distribuição de níveis ───
+  const cmpStackId = 'cmp-stack-chart';
+  html += `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px">Distribuição de níveis de risco por ciclo (%)</div>
+    <div style="font-size:10px;color:var(--tl);margin-bottom:12px">Percentual de fatores de risco em cada nível por avaliação</div>
+    <div style="max-height:280px"><canvas id="${cmpStackId}"></canvas></div>
+  </div>`;
+
+  // ─── Gráfico de linha: P médio dos principais fatores ───
+  const cmpLineId = 'cmp-line-chart';
+  html += `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px">Evolução do nível P por fator de risco</div>
+    <div style="font-size:10px;color:var(--tl);margin-bottom:12px">Probabilidade (P) de cada fator ao longo dos ciclos. Valores mais baixos indicam melhora.</div>
+    <div style="max-height:300px"><canvas id="${cmpLineId}"></canvas></div>
+  </div>`;
+
+  // ─── Tabela comparativa detalhada ───
+  html += `<div class="card">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:12px">Tabela comparativa — Nível por fator</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#374151;color:white">
+            <th style="padding:8px 12px;text-align:left;white-space:nowrap">Fator de Risco</th>
+            ${dadosPorCiclo.map(d => `<th style="padding:8px 10px;text-align:center;white-space:nowrap">${d.ciclo.nome}</th>`).join('')}
+            <th style="padding:8px 10px;text-align:center">Tendência</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${todosFatores.map(fid => {
+            const nomeF = dadosPorCiclo.map(d => d.fatores.find(f => f.id === fid)).find(Boolean)?.nome || fid;
+            const nivelPorCiclo = dadosPorCiclo.map(d => d.fatores.find(f => f.id === fid));
+            const validos = nivelPorCiclo.filter(Boolean);
+            if (!validos.length) return '';
+            const primeiro = validos[0]?.p || 0;
+            const ultimo   = validos[validos.length-1]?.p || 0;
+            const delta    = ultimo - primeiro;
+            const tendencia = delta < 0 ? '↓ Melhora' : delta > 0 ? '↑ Piora' : '→ Estável';
+            const corTend   = delta < 0 ? '#166534' : delta > 0 ? '#991b1b' : '#475569';
+            return `<tr style="border-bottom:1px solid var(--bs)">
+              <td style="padding:7px 12px;font-weight:500;color:var(--tx)">${nomeF}</td>
+              ${nivelPorCiclo.map(f => {
+                if (!f) return '<td style="padding:7px 10px;text-align:center;color:var(--tl)">—</td>';
+                const nc = NIVEIS_COR[f.nivel];
+                return `<td style="padding:7px 10px;text-align:center">
+                  <span style="background:${nc}22;color:${nc === '#4ade80' ? '#166534' : nc === '#fbbf24' ? '#854d0e' : nc === '#94a3b8' ? '#475569' : '#7f1d1d'};border:1px solid ${nc};border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700">${f.nivel}</span>
+                </td>`;
+              }).join('')}
+              <td style="padding:7px 10px;text-align:center;font-weight:700;color:${corTend};font-size:11px">${tendencia}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+
+  panel.innerHTML = html;
+
+  // ─── Renderizar gráficos Chart.js ───
+  requestAnimationFrame(() => {
+    // Stacked bar
+    try {
+      const ctx1 = document.getElementById(cmpStackId)?.getContext('2d');
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: NIVEIS_ORD.map(nv => ({
+              label: nv,
+              data: niveisData[nv],
+              backgroundColor: NIVEIS_COR[nv] + 'cc',
+              borderColor: NIVEIS_COR[nv],
+              borderWidth: 1,
+            }))
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+            scales: {
+              x: { stacked: true },
+              y: { stacked: true, max: 100, ticks: { callback: v => v + '%' } }
+            }
+          }
+        });
+      }
+    } catch(e) { console.warn('chart stack:', e); }
+
+    // Line chart P por fator
+    try {
+      const ctx2 = document.getElementById(cmpLineId)?.getContext('2d');
+      if (ctx2) {
+        const datasets = topFatores.map((fid, i) => {
+          const nomeF = dadosPorCiclo.map(d => d.fatores.find(f => f.id === fid)).find(Boolean)?.nome || fid;
+          return {
+            label: nomeF.slice(0, 30),
+            data: dadosPorCiclo.map(d => d.fatores.find(f => f.id === fid)?.p ?? null),
+            borderColor: lineColors[i % lineColors.length],
+            backgroundColor: lineColors[i % lineColors.length] + '22',
+            tension: 0.3,
+            spanGaps: true,
+            pointRadius: 5,
+          };
+        });
+        new Chart(ctx2, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 12 } } },
+            scales: {
+              y: { min: 1, max: 4, ticks: { stepSize: 1, callback: v => 'P' + v } }
+            }
+          }
+        });
+      }
+    } catch(e) { console.warn('chart line:', e); }
+  });
+}
+
+// ══════════════════════════════════════════
+// PLANO DE AÇÃO 5W2H
+// ══════════════════════════════════════════
+
+// Banco de ações recomendadas por fator de risco (cd_risco 1-11)
+const ACOES_5W2H = {
+  1: { // Excesso de demanda / carga excessiva
+    o_que: 'Revisar e redistribuir carga de trabalho entre colaboradores',
+    por_que: 'Carga excessiva aumenta estresse, burnout e absenteísmo',
+    onde: 'Setores com maior pontuação de risco',
+    quem: 'Gestores diretos com apoio de RH',
+    quando: 'Até 30 dias após a entrega do laudo',
+    como: 'Mapeamento de tarefas, análise de capacidade e realocação ou contratação',
+    quanto: 'Custo de horas de reunião e possível contratação',
+  },
+  2: { // Ritmo e pressão
+    o_que: 'Implementar pausas obrigatórias e controle de horas extras',
+    por_que: 'Pressão contínua compromete saúde física e mental',
+    onde: 'Todos os setores afetados',
+    quem: 'Liderança e SESMT',
+    quando: 'Imediato — antes do próximo ciclo',
+    como: 'Revisão de jornada, controle de banco de horas e política de pausas',
+    quanto: 'Sem custo adicional (gestão interna)',
+  },
+  3: { // Prazos e metas inatingíveis
+    o_que: 'Renegociar prazos e metas com base em capacidade real',
+    por_que: 'Metas inatingíveis desmotivam e elevam ansiedade',
+    onde: 'Setor operacional e comercial',
+    quem: 'Diretoria e gestores de área',
+    quando: 'No próximo ciclo de planejamento',
+    como: 'Metodologia OKR ou similar com participação dos times',
+    quanto: 'Custo de facilitação e treinamento',
+  },
+  4: { // Violência, assédio e constrangimento
+    o_que: 'Implantar canal de denúncia anônima e política anti-assédio',
+    por_que: 'Ambientes com violência ou assédio violam NR-17 e impactam saúde mental',
+    onde: 'Toda a organização',
+    quem: 'RH e Comitê de Ética',
+    quando: 'Até 60 dias',
+    como: 'Criação de canal, treinamento de lideranças e procedimento de apuração',
+    quanto: 'Custo de consultoria jurídica e plataforma de canal',
+  },
+  5: { // Discriminação e desigualdade
+    o_que: 'Realizar diagnóstico de equidade e implementar programa de inclusão',
+    por_que: 'Discriminação viola legislação e compromete clima organizacional',
+    onde: 'Toda a organização',
+    quem: 'RH e alta direção',
+    quando: 'Até 90 dias',
+    como: 'Pesquisa de clima, capacitação em diversidade e revisão de políticas de promoção',
+    quanto: 'Custo de consultoria e treinamentos',
+  },
+  6: { // Falta de clareza de papéis
+    o_que: 'Elaborar e divulgar descrições de cargos e responsabilidades',
+    por_que: 'Falta de clareza gera conflitos e erros operacionais',
+    onde: 'Todos os setores',
+    quem: 'RH com gestores de área',
+    quando: 'Até 45 dias',
+    como: 'Workshop de alinhamento + documentação de responsabilidades no sistema',
+    quanto: 'Custo de horas internas e ferramenta de gestão',
+  },
+  7: { // Falta de apoio social (colegas/chefia)
+    o_que: 'Fortalecer cultura de apoio mútuo e feedback positivo',
+    por_que: 'Falta de suporte aumenta isolamento e reduz engajamento',
+    onde: 'Setores com baixo índice de apoio',
+    quem: 'Gestores diretos e RH',
+    quando: 'Contínuo — início em até 30 dias',
+    como: 'Dinâmicas de time, programa de mentoria e reconhecimento regular',
+    quanto: 'Custo de facilitação e tempo de equipe',
+  },
+  8: { // Falta de reconhecimento
+    o_que: 'Implantar programa formal de reconhecimento e feedback',
+    por_que: 'Ausência de reconhecimento reduz motivação e aumenta turnover',
+    onde: 'Toda a organização',
+    quem: 'RH e gestores',
+    quando: 'Até 60 dias',
+    como: 'Política de feedback periódico, premiação por metas e reconhecimento público',
+    quanto: 'Custo de premiações e hora de reuniões',
+  },
+  9: { // Mudanças mal gerenciadas
+    o_que: 'Estabelecer processo estruturado de gestão da mudança',
+    por_que: 'Mudanças abruptas aumentam ansiedade e resistência',
+    onde: 'Gestão e setores afetados',
+    quem: 'Diretoria e comunicação interna',
+    quando: 'Antes da próxima mudança organizacional',
+    como: 'Plano de comunicação, reuniões de alinhamento e suporte pós-mudança',
+    quanto: 'Custo de comunicação e horas de gestão',
+  },
+  10: { // Insegurança no emprego
+    o_que: 'Melhorar comunicação sobre perspectivas e estabilidade da empresa',
+    por_que: 'Insegurança impacta produtividade e saúde mental',
+    onde: 'Toda a organização',
+    quem: 'Alta direção e comunicação interna',
+    quando: 'Imediato',
+    como: 'Comunicados periódicos sobre situação da empresa e planos futuros',
+    quanto: 'Sem custo adicional significativo',
+  },
+  11: { // Condições físicas e ambientais
+    o_que: 'Realizar laudo ergonômico e melhorar condições do ambiente de trabalho',
+    por_que: 'Desconforto físico reduz produtividade e pode gerar afastamentos',
+    onde: 'Postos de trabalho identificados como inadequados',
+    quem: 'SESMT e manutenção predial',
+    quando: 'Até 60 dias para diagnóstico; obras em até 6 meses',
+    como: 'Análise ergonômica, compra de equipamentos e adequação da infraestrutura',
+    quanto: 'Custo de laudo ergonômico + melhorias identificadas',
+  },
+};
+
+// Prazo sugerido por nível de risco
+const PRAZO_NIVEL = {
+  CRÍTICO: '30 dias',
+  ALTO:    '60 dias',
+  MÉDIO:   '90 dias',
+};
+
+async function renderPlanoAcao() {
+  const panel  = document.getElementById('plano-panel');
+  const empId  = document.getElementById('plano-empresa')?.value;
+  const cicloId= document.getElementById('plano-ciclo')?.value   || '';
+  const nivelMin = document.getElementById('plano-nivel')?.value || 'MÉDIO';
+
+  if (!empId) {
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">Selecione uma empresa para gerar o plano de ação.</div></div>';
+    return;
+  }
+
+  // Atualizar select de ciclos
+  preencherSelectCiclos('plano-ciclo', empId);
+  if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
+
+  panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
+
+  const todasLinhas = await getLinhasParaAnalise(empId);
+  const linhas = cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas;
+
+  if (!linhas.length) {
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta encontrada para os filtros selecionados.</div></div>';
+    return;
+  }
+
+  const NIVEIS_ORD = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
+  const nivelIdx   = NIVEIS_ORD.indexOf(nivelMin);
+  const fatores    = calcFatores(linhas).filter(f => NIVEIS_ORD.indexOf(f.nivel) >= nivelIdx);
+
+  if (!fatores.length) {
+    panel.innerHTML = `<div class="card"><div class="alert alert-g">
+      ✓ Nenhum fator de risco classificado como ${nivelMin} ou superior. Manter monitoramento periódico.
+    </div></div>`;
+    return;
+  }
+
+  const empNome = _empresas.find(e => e.id === empId)?.nome || '';
+  const cicloNome = cicloId ? (_ciclos.find(c => c.id === cicloId)?.nome || '') : 'Todos os ciclos';
+  const NIVEIS_COR = {MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
+  const NIVEIS_BG  = {MÉDIO:'#fefce8',ALTO:'#fff7ed',CRÍTICO:'#fef2f2'};
+
+  let html = `<div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${empNome}</div>
+        <div style="font-size:11px;color:var(--tl)">${cicloNome} · ${linhas.length} respondentes · ${fatores.length} risco(s) priorizados</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        ${NIVEIS_ORD.filter(n => NIVEIS_ORD.indexOf(n) >= nivelIdx).map(nv => {
+          const count = fatores.filter(f => f.nivel === nv).length;
+          return count > 0 ? `<span style="font-size:10px;font-weight:700;background:${NIVEIS_BG[nv]||'#f1f5f9'};color:${NIVEIS_COR[nv]||'#475569'};border:1px solid currentColor;border-radius:4px;padding:2px 8px">${nv}: ${count}</span>` : '';
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  fatores.sort((a,b) => NIVEIS_ORD.indexOf(b.nivel) - NIVEIS_ORD.indexOf(a.nivel)).forEach((f, idx) => {
+    const acao = ACOES_5W2H[f.cd] || null;
+    const nc   = NIVEIS_COR[f.nivel] || '#475569';
+    const nbg  = NIVEIS_BG[f.nivel]  || '#f8fafc';
+    const prazo= PRAZO_NIVEL[f.nivel] || '90 dias';
+
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${nc}">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="background:${nbg};color:${nc};border:1px solid ${nc};border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;white-space:nowrap">${f.nivel}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--tx)">${idx+1}. ${f.nome}</div>
+          <div style="font-size:11px;color:var(--tl);margin-top:2px">${f.cons || ''}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;flex-shrink:0">
+          <div style="font-size:10px;color:var(--tl)">P${f.p} × S${f.s}</div>
+          <div style="font-size:11px;font-weight:600;color:${nc}">Prazo: ${prazo}</div>
+        </div>
+      </div>
+
+      ${acao ? `
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px">
+          <thead>
+            <tr style="background:#374151;color:white">
+              <th style="padding:6px 10px;text-align:left;white-space:nowrap">5W2H</th>
+              <th style="padding:6px 10px;text-align:left">Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${[
+              ['O quê?',    acao.o_que],
+              ['Por quê?',  acao.por_que],
+              ['Onde?',     acao.onde],
+              ['Quem?',     acao.quem],
+              ['Quando?',   acao.quando],
+              ['Como?',     acao.como],
+              ['Quanto?',   acao.quanto],
+            ].map(([k,v],i) => `<tr style="background:${i%2?'var(--bg)':'white'};border-bottom:1px solid var(--bs)">
+              <td style="padding:6px 10px;font-weight:700;color:var(--tm);white-space:nowrap">${k}</td>
+              <td style="padding:6px 10px;color:var(--tx)">${v}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:6px;border:1px solid var(--bs)">
+        <div style="font-size:10px;font-weight:700;color:var(--tm);margin-bottom:4px">MONITORAMENTO</div>
+        <div style="font-size:11px;color:var(--tx)">Reavaliar no próximo ciclo de pesquisa. Indicador de sucesso: redução do nível P para BAIXO ou IRRELEVANTE.</div>
+      </div>` : `<div class="alert alert-y" style="font-size:11px">Fator sem ação padrão cadastrada. Consulte o especialista PSEG para elaborar ação específica.</div>`}
+    </div>`;
+  });
+
+  // Nota metodológica
+  html += `<div style="font-size:10px;color:var(--tl);padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--bs);margin-top:4px">
+    <strong>Nota:</strong> As ações sugeridas são baseadas em boas práticas (NR-01, NR-17, BS 8800) e devem ser adaptadas à realidade da empresa.
+    Prazos são recomendações — ajuste conforme contexto e recursos disponíveis.
+    Envolva gestores, SESMT e CIPA no planejamento das ações.
+  </div>`;
+
+  panel.innerHTML = html;
+  window._planoData = { empNome, cicloNome, fatores, linhas: linhas.length };
+}
+
+async function exportarPlanoCSV() {
+  if (!window._planoData) { toast('Gere o plano primeiro.', 'w'); return; }
+  const { empNome, cicloNome, fatores } = window._planoData;
+
+  const bom  = '﻿';
+  const cols = ['Empresa','Ciclo','Nível','Fator de Risco','P','S','O quê','Por quê','Onde','Quem','Quando','Como','Quanto','Prazo'];
+  const rows = fatores.map(f => {
+    const a = ACOES_5W2H[f.cd] || {};
+    return [
+      empNome, cicloNome, f.nivel, f.nome, f.p, f.s,
+      a.o_que||'—', a.por_que||'—', a.onde||'—', a.quem||'—',
+      a.quando||'—', a.como||'—', a.quanto||'—', PRAZO_NIVEL[f.nivel]||'—'
+    ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(';');
+  });
+
+  const csv = bom + cols.map(c=>'"'+c+'"').join(';') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `plano_acao_${empNome.replace(/\s/g,'_')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado!', 'green');
+}
+
+// ══════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function goScreen(id, btn) {
@@ -7652,7 +8297,8 @@ function goScreen(id, btn) {
   const map = {
     dashboard:'nb-dashboard', empresas:'nb-empresas', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
-    laudo:'nb-laudo', metodologia:'nb-metodologia', riscos:'nb-riscos',
+    laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
+    metodologia:'nb-metodologia', riscos:'nb-riscos',
     usuarios:'nb-usuarios', backlog:'nb-backlog'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
@@ -7660,7 +8306,7 @@ function goScreen(id, btn) {
   // 4. Propagar empresa ativa para todos os selects da tela
   const temEmpresa = !!_empresaAtiva?.id;
   if (temEmpresa) {
-    ['sel-emp','f-empresa','gf-empresa','ld-empresa'].forEach(sid => {
+    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa'].forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
@@ -7715,6 +8361,21 @@ function goScreen(id, btn) {
           break;
         case 'usuarios':
           carregarUsuarios();
+          break;
+        case 'comparativo':
+          preencherSelectEmpresas('cmp-empresa');
+          if (temEmpresa) {
+            document.getElementById('cmp-empresa').value = _empresaAtiva.id;
+            renderComparativo();
+          }
+          break;
+        case 'plano':
+          preencherSelectEmpresas('plano-empresa');
+          if (temEmpresa) {
+            document.getElementById('plano-empresa').value = _empresaAtiva.id;
+            preencherSelectCiclos('plano-ciclo', _empresaAtiva.id);
+            renderPlanoAcao();
+          }
           break;
         case 'backlog':
           // Tela estática — nada a renderizar
