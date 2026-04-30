@@ -1906,6 +1906,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </ul>
     </div>
   </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Ajuste de Probabilidade pelo Consultor</div>
+        <div class="card-sub">Prioridade: Média · Próxima versão</div>
+      </div>
+      <span style="background:var(--bluebg);color:var(--blue);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">🔬 Especificado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <p style="margin-bottom:8px">Permitir que o consultor/admin sobrescreva a probabilidade calculada (P) de um fator de risco específico, registrando a justificativa técnica — sem perder rastreabilidade do valor original.</p>
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Botão <strong>✎</strong> discreto ao lado do badge P, visível apenas para admin/consultor</li>
+        <li>Painel inline (não modal): P calculado (readonly) + seletor P ajustado (1–4) + campo de justificativa obrigatório</li>
+        <li>Badge muda para <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">P3*</code> com tooltip mostrando ajuste, autor e data</li>
+        <li>Tabela <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">ajuste_probabilidade</code> (empresa_id, ciclo_id, cd_risco, p_calculado, p_ajustado, justificativa, ajustado_por, created_at)</li>
+        <li>Laudo exibe ambos os valores (calculado e ajustado) com nota de rodapé</li>
+        <li>Reset para P calculado com um clique</li>
+      </ul>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
+      ℹ️ Caso de uso principal: amostras pequenas (n &lt; 5), ciclos atípicos (férias coletivas, greve) ou fatores contextuais que o algoritmo não captura.
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════════════════════════════
@@ -3838,11 +3863,8 @@ function renderViewRisco({grupos, filtrado, niveis}) {
                   <span style="${S_BADGE[f.s]};padding:1px 5px;border-radius:3px">S${f.s} ${S_LABELS[f.s]}</span>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-                <div style="text-align:center;background:${nc.bg};border:2px solid ${nc.cor};border-radius:8px;padding:5px 11px">
-                  <div style="font-size:20px;font-weight:800;color:${nc.cor};line-height:1">P${f.p}</div>
-                  <div style="font-size:8px;color:${nc.cor};opacity:.7;font-weight:600;letter-spacing:.3px">P×S${f.s}</div>
-                </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <span style="font-size:12px;font-weight:700;color:${nc.cor};background:${nc.bg};border:1.5px solid ${nc.cor};border-radius:5px;padding:2px 7px;white-space:nowrap">P${f.p}</span>
                 <span class="risk-badge ${nc.badge}">${f.nivel}</span>
               </div>
             </div>
@@ -3919,17 +3941,20 @@ function renderViewQuestao({grupos, filtrado}) {
       const qs = porCat[cat] || [];
       if (!qs.length) return;
       const ci = catCores[cat] || {cor:'#374151',bg:'#f3f4f6'};
-      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--bs)">'+
-        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+ci.cor+';background:'+ci.bg+';padding:4px 8px;border-radius:4px;margin-bottom:10px;display:inline-block">'+cat+'</div>'+
+      html += '<div style="padding:16px 20px;border-bottom:1px solid var(--bs)">'+
+        // Cabeçalho de categoria — neutro, sem cor de fundo, tipografia destacada
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--border)">'+
+          '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tm)">'+cat+'</span>'+
+        '</div>'+
         qs.map(d => {
           const rd  = d.q.cd ? RISCOS_DETALHES[d.q.cd] : null;
           const barra = renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false, d.q.inv);
-          return '<div style="margin-bottom:14px">'+
-            '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">'+
-            '<span style="font-size:10px;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:3px;color:var(--tl);white-space:nowrap">'+d.q.c+'</span>'+
-            (d.q.cd && rd ? '<span style="font-size:9px;color:'+ci.cor+';font-weight:600;background:'+ci.bg+';padding:1px 6px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
+          return '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--bs)">'+
+            '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:7px;flex-wrap:wrap">'+
+            '<span style="font-size:10px;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:3px;color:var(--tl);white-space:nowrap;font-family:monospace">'+d.q.c+'</span>'+
+            (d.q.cd && rd ? '<span style="font-size:9px;color:var(--tm);font-weight:600;background:var(--bs);padding:1px 6px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
-            '<span style="font-size:12px;color:var(--tx);line-height:1.4;flex:1">'+d.q.t+'</span>'+
+            '<span style="font-size:12px;color:var(--tx);line-height:1.5;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
         }).join('')+
         '</div>';
