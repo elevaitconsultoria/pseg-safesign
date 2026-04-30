@@ -3971,10 +3971,10 @@ function resolverEmpate(dist) {
 // ─── Barra de distribuição reutilizável ───
 // compact=true → barra menor (12px) para questões subordinadas
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact) {
-  // Vivid para o consolidado de risco; pastel (~40% saturação) para questões subordinadas
+  // Vivid para o consolidado de risco; semi-pastel (20% blend → mais forte) para questões
   const CORES_BG  = compact
-    ? {1:'#bbf7d0', 2:'#bfdbfe', 3:'#fef08a', 4:'#fed7aa'}   // pastel — questões
-    : {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};  // vivid  — consolidado
+    ? {1:'#a4f2c0', 2:'#acd0fd', 3:'#fde676', 4:'#fdc994'}   // semi-pastel — questões
+    : {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};  // vivid       — consolidado
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
   const NIVEL_NM  = getNivelLabels(inv);
   const barH      = compact ? '12px' : '20px';
@@ -3992,8 +3992,10 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     const isMax  = nv === moda;
     const isMeta = nv === metaNivel;
     const label  = (!compact && p >= 10) ? p + '%' : (compact && p >= 15 ? p+'%' : '');
+    // compact usa texto escuro pois o fundo é semi-pastel (claro)
+    const txtColor = compact ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.9)';
     return '<div style="height:100%;width:'+p+'%;background:'+CORES_BG[nv]+
-      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:rgba(255,255,255,.9);position:relative;overflow:hidden;transition:width .4s'+
+      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+txtColor+';position:relative;overflow:hidden;transition:width .4s'+
       (isMax?';outline:2px solid rgba(0,0,0,.25);outline-offset:-1px;z-index:2':'')+'">'+
       (isMeta ? '<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:white;opacity:.9"></div>' : '')+
       label+'</div>';
@@ -4051,31 +4053,31 @@ function renderDistQuestoes(distQuestoes, gid) {
     const barra = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false, q.inv, true);
     return `
     <div style="
-      display:grid;grid-template-columns:52px 1fr;
+      display:grid;grid-template-columns:72px 1fr;
       background:${idx%2===0?'#f8f9fb':'#f3f5f8'};
       border-top:1px solid #e4e7ec;
       ${isLast?'border-bottom-left-radius:8px;border-bottom-right-radius:8px;overflow:hidden':''}
     ">
-      <!-- Trilho de hierarquia: margem ampliada para deslocar questões para direita -->
+      <!-- Trilho: código da questão serve como marcador de hierarquia -->
       <div style="
-        display:flex;flex-direction:column;align-items:flex-end;padding-top:14px;padding-right:10px;
+        display:flex;align-items:flex-start;justify-content:flex-end;
+        padding:12px 10px 0 0;
         border-right:2px solid #d1d5db;
+        position:relative;
       ">
-        <!-- Linha horizontal indicando filho -->
-        <div style="display:flex;align-items:center;gap:0">
-          <div style="width:10px;height:1px;background:#d1d5db"></div>
-          <div style="width:5px;height:5px;border-radius:50%;background:#9ca3af;flex-shrink:0"></div>
-        </div>
+        <!-- Gancho horizontal do trilho -->
+        <div style="position:absolute;right:-1px;top:17px;width:12px;height:1px;background:#d1d5db"></div>
+        <!-- Código como rótulo-âncora -->
+        <span style="
+          font-size:8px;font-weight:700;font-family:monospace;
+          color:#9ca3af;letter-spacing:.3px;
+          white-space:nowrap;line-height:1;
+        ">${q.codigo}</span>
       </div>
 
-      <!-- Conteúdo da questão — recuado naturalmente pelo trilho -->
+      <!-- Conteúdo — barra + texto recuados pelo trilho -->
       <div style="padding:10px 16px 8px">
         <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">
-          <span style="
-            font-size:9px;font-weight:700;font-family:monospace;
-            color:#94a3b8;background:#e8ecf0;
-            padding:1px 5px;border-radius:3px;white-space:nowrap;flex-shrink:0
-          ">${q.codigo}</span>
           ${q.inv ? '<span style="font-size:8px;color:var(--amber);font-weight:700;background:#fef3c7;padding:1px 4px;border-radius:2px;flex-shrink:0">↺ inv</span>' : ''}
           <span style="font-size:11px;color:#374151;line-height:1.45;flex:1">${q.texto}</span>
         </div>
