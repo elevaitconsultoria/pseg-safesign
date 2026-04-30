@@ -3971,7 +3971,10 @@ function resolverEmpate(dist) {
 // ─── Barra de distribuição reutilizável ───
 // compact=true → barra menor (12px) para questões subordinadas
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact) {
-  const CORES_BG  = {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};
+  // Vivid para o consolidado de risco; pastel (~40% saturação) para questões subordinadas
+  const CORES_BG  = compact
+    ? {1:'#bbf7d0', 2:'#bfdbfe', 3:'#fef08a', 4:'#fed7aa'}   // pastel — questões
+    : {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};  // vivid  — consolidado
   const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
   const NIVEL_NM  = getNivelLabels(inv);
   const barH      = compact ? '12px' : '20px';
@@ -4045,37 +4048,37 @@ function renderDistQuestoes(distQuestoes, gid) {
 
   const itens = distQuestoes.map((q, idx) => {
     const isLast = idx === distQuestoes.length - 1;
-    // Barra compacta para questões
     const barra = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false, q.inv, true);
     return `
     <div style="
-      display:grid;grid-template-columns:24px 1fr;
-      background:${idx%2===0?'#f8f9fb':'#f2f4f7'};
-      border-top:1px solid #e8eaed;
+      display:grid;grid-template-columns:52px 1fr;
+      background:${idx%2===0?'#f8f9fb':'#f3f5f8'};
+      border-top:1px solid #e4e7ec;
       ${isLast?'border-bottom-left-radius:8px;border-bottom-right-radius:8px;overflow:hidden':''}
     ">
-      <!-- Trilho de hierarquia (linha vertical esquerda) -->
+      <!-- Trilho de hierarquia: margem ampliada para deslocar questões para direita -->
       <div style="
-        display:flex;flex-direction:column;align-items:center;padding-top:12px;
-        border-right:2px solid #dde1e7;
+        display:flex;flex-direction:column;align-items:flex-end;padding-top:14px;padding-right:10px;
+        border-right:2px solid #d1d5db;
       ">
-        <div style="width:8px;height:1px;background:#dde1e7;margin-bottom:4px"></div>
-        <div style="width:6px;height:6px;border-radius:50%;background:#c4c9d4;flex-shrink:0"></div>
+        <!-- Linha horizontal indicando filho -->
+        <div style="display:flex;align-items:center;gap:0">
+          <div style="width:10px;height:1px;background:#d1d5db"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:#9ca3af;flex-shrink:0"></div>
+        </div>
       </div>
 
-      <!-- Conteúdo da questão -->
-      <div style="padding:10px 14px 8px">
-        <!-- Código + inv + texto -->
+      <!-- Conteúdo da questão — recuado naturalmente pelo trilho -->
+      <div style="padding:10px 16px 8px">
         <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">
           <span style="
             font-size:9px;font-weight:700;font-family:monospace;
-            color:#64748b;background:#e2e6ed;
+            color:#94a3b8;background:#e8ecf0;
             padding:1px 5px;border-radius:3px;white-space:nowrap;flex-shrink:0
           ">${q.codigo}</span>
           ${q.inv ? '<span style="font-size:8px;color:var(--amber);font-weight:700;background:#fef3c7;padding:1px 4px;border-radius:2px;flex-shrink:0">↺ inv</span>' : ''}
-          <span style="font-size:11px;color:var(--tx);line-height:1.45;flex:1">${q.texto}</span>
+          <span style="font-size:11px;color:#374151;line-height:1.45;flex:1">${q.texto}</span>
         </div>
-        <!-- Barra compacta -->
         ${barra}
       </div>
     </div>`;
