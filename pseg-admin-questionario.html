@@ -153,10 +153,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .ll-stat-lbl{font-family:'DM Sans',sans-serif;font-size:9px;color:#475569;
   text-transform:uppercase;letter-spacing:.5px}
 
-/* Normas */
-.ll-norms{display:inline-flex;gap:5px;flex-wrap:wrap}
-.ll-norm{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
-  color:#334155;border:1px solid #1e293b;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+/* Normas — destaque */
+.ll-norms{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ll-norms-label{font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;color:#334155;margin-right:2px}
+.ll-norm{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  color:#cbd5e1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  padding:5px 12px;border-radius:6px;letter-spacing:.6px;
+  transition:background .2s,color .2s}
+.ll-norm:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:#fbbf24}
 
 /* ── Painel direito — formulário ── */
 .login-right{
@@ -647,28 +652,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
-      <!-- Stats -->
-      <div class="ll-stats ll-a ll-a4">
-        <div class="ll-stat">
-          <div class="ll-stat-num">11</div>
-          <div class="ll-stat-lbl">Fatores de risco</div>
+      <!-- Selos normativos — destaque -->
+      <div class="ll-a ll-a4" style="margin-bottom:8px">
+        <div style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:#334155;margin-bottom:10px">Conformidade normativa</div>
+        <div class="ll-norms">
+          <span class="ll-norm">NR-17</span>
+          <span class="ll-norm">NR-01</span>
+          <span class="ll-norm">BS 8800</span>
+          <span class="ll-norm">LGPD</span>
         </div>
-        <div class="ll-stat">
-          <div class="ll-stat-num">5W2H</div>
-          <div class="ll-stat-lbl">Plano de ação</div>
-        </div>
-        <div class="ll-stat">
-          <div class="ll-stat-num">100%</div>
-          <div class="ll-stat-lbl">Conformidade NR</div>
-        </div>
-      </div>
-
-      <!-- Selos normativos -->
-      <div class="ll-norms ll-a ll-a5">
-        <span class="ll-norm">NR-17</span>
-        <span class="ll-norm">NR-01</span>
-        <span class="ll-norm">BS 8800</span>
-        <span class="ll-norm">LGPD</span>
       </div>
 
     </div>
