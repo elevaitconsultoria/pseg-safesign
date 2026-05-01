@@ -5,7 +5,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>PSEG — Admin · Questionário & Análise</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <!-- QR Code (offline, local) -->
@@ -64,23 +64,101 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .page-title{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:3px}
 .page-sub{font-size:12px;color:var(--tl)}
 
-/* ── LOGIN OVERLAY ── */
-.login-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center}
+/* ══════════════════════════════════════════
+   LOGIN — Obsidian + Âmbar (redesign)
+══════════════════════════════════════════ */
+.login-overlay{display:none;position:fixed;inset:0;z-index:500}
 .login-overlay.show{display:flex}
-.login-box{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:32px 36px;width:100%;max-width:360px}
-.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
-.login-logo-icon{width:32px;height:32px;background:var(--tx);border-radius:6px;display:flex;align-items:center;justify-content:center}
-.login-logo-icon svg{width:18px;height:18px;fill:white}
-.login-logo-name{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.login-title{font-size:16px;font-weight:600;margin-bottom:4px}
-.login-sub{font-size:12px;color:var(--tl);margin-bottom:22px;line-height:1.6}
-.login-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--tm);margin-bottom:5px}
-.login-input{width:100%;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);font-family:'Inter',sans-serif;font-size:13px;color:var(--tx);padding:9px 12px;outline:none;transition:border-color .15s;margin-bottom:12px;display:block}
-.login-input:focus{border-color:var(--tx);background:white}
-.login-btn{width:100%;background:var(--tx);color:white;border:none;border-radius:var(--r);padding:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;transition:opacity .15s}
-.login-btn:hover{opacity:.85}
-.login-btn:disabled{opacity:.5;cursor:not-allowed}
-/* login-err agora usa inline style — gerenciado por _loginErro() / _loginOk() */
+
+/* ── Painel esquerdo — brand ── */
+.login-left{
+  flex:0 0 46%;background:#0d111c;
+  display:flex;align-items:center;justify-content:center;
+  padding:56px 52px;position:relative;overflow:hidden;
+}
+/* Grade de pontos ultra-sutil */
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1px);
+  background-size:28px 28px;
+  pointer-events:none;
+}
+/* Halo âmbar no canto inferior */
+.login-left::after{
+  content:'';position:absolute;bottom:-120px;left:-80px;
+  width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.login-left-inner{position:relative;z-index:1;max-width:320px}
+
+/* Marca */
+.ll-mark{width:44px;height:44px;background:#f59e0b;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:28px}
+.ll-mark svg{width:24px;height:24px;fill:#0d111c}
+
+/* Nome do produto */
+.ll-product{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;
+  color:#f1f5f9;line-height:1;letter-spacing:-.5px;margin-bottom:8px}
+.ll-product span{color:#f59e0b}
+
+/* Subtítulo */
+.ll-sub{font-family:'DM Sans',sans-serif;font-size:13px;color:#94a3b8;
+  line-height:1.6;margin-bottom:36px}
+
+/* Linha divisória âmbar */
+.ll-divider{width:36px;height:2px;background:#f59e0b;margin-bottom:28px;border-radius:2px}
+
+/* Features */
+.ll-features{display:flex;flex-direction:column;gap:14px;margin-bottom:40px}
+.ll-feat{display:flex;align-items:flex-start;gap:10px}
+.ll-feat-dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;margin-top:5px}
+.ll-feat-txt{font-family:'DM Sans',sans-serif;font-size:12px;color:#cbd5e1;line-height:1.5}
+.ll-feat-txt strong{color:#f1f5f9;font-weight:600}
+
+/* Normas */
+.ll-norms{display:inline-flex;gap:6px;flex-wrap:wrap}
+.ll-norm{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
+  color:#475569;border:1px solid #1e293b;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+
+/* ── Painel direito — formulário ── */
+.login-right{
+  flex:1;background:#fafaf9;
+  display:flex;align-items:center;justify-content:center;
+  padding:48px 40px;
+}
+.login-box{width:100%;max-width:340px}
+
+/* Form elements */
+.login-logo{display:none} /* substituído pelo painel esquerdo */
+.login-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;
+  color:#0d111c;margin-bottom:6px;letter-spacing:-.3px}
+.login-sub{font-family:'DM Sans',sans-serif;font-size:12px;color:#64748b;
+  margin-bottom:28px;line-height:1.6}
+.login-label{display:block;font-family:'DM Sans',sans-serif;font-size:10px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#64748b;margin-bottom:5px}
+.login-input{width:100%;border:1.5px solid #e2e8f0;border-radius:7px;
+  background:white;font-family:'DM Sans',sans-serif;font-size:13px;
+  color:#0d111c;padding:10px 13px;outline:none;transition:border-color .15s,box-shadow .15s;
+  margin-bottom:14px;display:block}
+.login-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
+.login-btn{width:100%;background:#0d111c;color:white;border:none;border-radius:7px;
+  padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;margin-top:2px;transition:background .15s,transform .1s;letter-spacing:.2px}
+.login-btn:hover{background:#1a2035}
+.login-btn:active{transform:scale(.99)}
+.login-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Mobile: empilhar */
+@media(max-width:680px){
+  .login-overlay.show{flex-direction:column}
+  .login-left{flex:0 0 auto;padding:28px 24px;min-height:160px}
+  .login-left-inner{display:flex;align-items:center;gap:16px;max-width:100%}
+  .ll-mark{margin-bottom:0;flex-shrink:0}
+  .ll-product{font-size:24px;margin-bottom:0}
+  .ll-sub,.ll-divider,.ll-features,.ll-norms{display:none}
+  .login-right{flex:1;padding:24px 20px;align-items:flex-start}
+}
 
 /* ── MOBILE ── */
 @media(max-width:768px){
@@ -468,48 +546,82 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </head>
 <body>
 
-<!-- LOGIN OVERLAY -->
+<!-- LOGIN OVERLAY — Obsidian + Âmbar -->
 <div class="login-overlay" id="login-overlay">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-      <span class="login-logo-name">PSEG</span>
-    </div>
-    <div class="login-title">Acesso ao painel</div>
-    <div class="login-sub">Informe suas credenciais PSEG. O acesso é restrito à equipe técnica autorizada.</div>
-    <label class="login-label" for="login-email">E-mail</label>
-    <input class="login-input" type="email" id="login-email" placeholder="seu@pseg.com.br" autocomplete="email"/>
-    <label class="login-label" for="login-senha">Senha</label>
-    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
-    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
-    <div style="text-align:center;margin-top:10px">
-      <span onclick="recuperarSenha()" style="font-size:11px;color:var(--tm);cursor:pointer;text-decoration:underline">Esqueci minha senha</span>
-    </div>
 
-    <!-- Separador -->
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-      <div style="flex:1;height:1px;background:#e5e7eb"></div>
-      <span style="font-size:10px;color:#9ca3af;white-space:nowrap">ou acesso rápido</span>
-      <div style="flex:1;height:1px;background:#e5e7eb"></div>
-    </div>
+  <!-- ── Painel esquerdo: brand + valor ── -->
+  <div class="login-left">
+    <div class="login-left-inner">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <!-- Bypass admin — usa Supabase real sem login (para configuração inicial) -->
-      <button
-        onclick="entrarModoAdmin()"
-        style="background:#f0fdf4;color:#16532d;border:1px solid #bbf7d0;border-radius:6px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
-      >⚙ Admin sem login</button>
-      <!-- Modo demo — dados simulados, sem Supabase -->
-      <button
-        onclick="entrarModoDemo()"
-        style="background:#f8f9fa;color:#6b7280;border:1px solid #e5e7eb;border-radius:6px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
-      >👁 Ver demonstração</button>
-    </div>
+      <div class="ll-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      </div>
 
-    <div id="login-err" style="display:none;margin-top:10px;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b"></div>
-    <!-- Diagnóstico de conexão -->
-    <div id="login-diag" style="margin-top:12px;padding:10px 12px;border-radius:6px;font-size:11px;line-height:1.7;display:none"></div>
+      <div class="ll-product">Safe<span>Sign</span></div>
+      <div class="ll-sub">Plataforma de análise e gestão de<br>riscos psicossociais no trabalho</div>
+
+      <div class="ll-divider"></div>
+
+      <div class="ll-features">
+        <div class="ll-feat">
+          <div class="ll-feat-dot"></div>
+          <div class="ll-feat-txt"><strong>Coleta estruturada</strong> por GHE, setor e função com links rastreáveis</div>
+        </div>
+        <div class="ll-feat">
+          <div class="ll-feat-dot"></div>
+          <div class="ll-feat-txt"><strong>Cálculo automático</strong> de probabilidade e severidade por fator de risco</div>
+        </div>
+        <div class="ll-feat">
+          <div class="ll-feat-dot"></div>
+          <div class="ll-feat-txt"><strong>Laudo técnico</strong> exportável com plano de ação 5W2H integrado</div>
+        </div>
+      </div>
+
+      <div class="ll-norms">
+        <span class="ll-norm">NR-17</span>
+        <span class="ll-norm">NR-01</span>
+        <span class="ll-norm">BS 8800</span>
+      </div>
+
+    </div>
   </div>
+
+  <!-- ── Painel direito: formulário ── -->
+  <div class="login-right">
+    <div class="login-box">
+
+      <div class="login-title">Acesso ao painel</div>
+      <div class="login-sub">Credenciais restritas à equipe técnica autorizada.</div>
+
+      <label class="login-label" for="login-email">E-mail</label>
+      <input class="login-input" type="email" id="login-email" placeholder="seu@email.com.br" autocomplete="email"/>
+
+      <label class="login-label" for="login-senha">Senha</label>
+      <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
+
+      <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+
+      <div style="text-align:center;margin-top:12px">
+        <span onclick="recuperarSenha()" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#94a3b8;cursor:pointer;text-decoration:underline">Esqueci minha senha</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin:18px 0 12px">
+        <div style="flex:1;height:1px;background:#e2e8f0"></div>
+        <span style="font-family:'DM Sans',sans-serif;font-size:10px;color:#94a3b8;white-space:nowrap">acesso rápido</span>
+        <div style="flex:1;height:1px;background:#e2e8f0"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="entrarModoAdmin()" style="background:#f8fafc;color:#0d111c;border:1.5px solid #e2e8f0;border-radius:7px;padding:9px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">⚙ Admin</button>
+        <button onclick="entrarModoDemo()" style="background:#fffbeb;color:#92400e;border:1.5px solid #fde68a;border-radius:7px;padding:9px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">◎ Demo</button>
+      </div>
+
+      <div id="login-err" style="display:none;margin-top:12px;padding:10px 13px;border-radius:7px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;font-family:'DM Sans',sans-serif"></div>
+      <div id="login-diag" style="margin-top:10px;padding:10px 13px;border-radius:7px;font-size:11px;line-height:1.7;display:none;font-family:'DM Sans',sans-serif"></div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- APP SHELL -->
@@ -1904,6 +2016,29 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <li>Acompanhamento de progresso (% concluído por empresa)</li>
         <li>Inclusão no relatório PDF como seção de "Plano de Intervenção"</li>
       </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Landing Page / Página de Vendas</div>
+        <div class="card-sub">Prioridade: Média · Site separado</div>
+      </div>
+      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <p style="margin-bottom:8px">Site separado voltado para conversão — apresenta o SafeSign para potenciais clientes sem misturar com o app operacional.</p>
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Domínio próprio (ex: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">safesign.com.br</code>) separado do app</li>
+        <li>Seções: hero + proposta de valor, como funciona, planos, contato</li>
+        <li>SEO-ready: meta tags, OG, Schema.org, carregamento sem Supabase</li>
+        <li>CTA para trial/contato; onboarding leva ao app (app.safesign.com.br)</li>
+        <li>Sem autenticação — página pública, otimizada para conversão</li>
+      </ul>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
+      ℹ️ Modelo atual (B2B consultivo) pede landing separada — visitante frio não deve cair no app diretamente.
     </div>
   </div>
 
