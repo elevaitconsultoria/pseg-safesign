@@ -704,6 +704,73 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY — exibido para novos usuários sem tenant
+     ══════════════════════════════════════════════════════════ -->
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;z-index:490;background:#0d111c;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:460px;padding:0 24px">
+
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px">
+      <div style="width:36px;height:36px;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#0d111c"><path d="M10 2L3 6v4c0 5.25 3.5 8.74 7 9.96 3.5-1.22 7-4.71 7-9.96V6L10 2z"/></svg>
+      </div>
+      <span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase">PSEG SafeSign</span>
+    </div>
+
+    <!-- Título -->
+    <h2 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#f1f5f9;line-height:1.2;margin-bottom:10px">
+      Configure sua <em style="color:#f59e0b;font-style:normal">conta</em>
+    </h2>
+    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;line-height:1.6;margin-bottom:32px">
+      Dê um nome à sua consultoria e crie seu espaço de trabalho.<br>
+      Você pode convidar sua equipe depois.
+    </p>
+
+    <!-- Formulário -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <div>
+        <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
+          Nome da consultoria / empresa
+        </label>
+        <input id="ob-nome" type="text" placeholder="ex: Elevait Consultoria" autocomplete="organization"
+          style="width:100%;padding:11px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#f1f5f9;outline:none;transition:border-color .2s"
+          oninput="obAutoSlug(this.value)"
+          onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
+          onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
+      </div>
+
+      <div>
+        <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
+          Identificador único (slug)
+        </label>
+        <div style="position:relative">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;pointer-events:none">safesign.app/</span>
+          <input id="ob-slug" type="text" placeholder="minha-consultoria"
+            style="width:100%;padding:11px 14px 11px 112px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#cbd5e1;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
+            onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
+        </div>
+        <div id="ob-slug-hint" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#475569;margin-top:4px">Apenas letras minúsculas, números e hífens.</div>
+      </div>
+
+      <div id="ob-err" style="display:none;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;color:#fca5a5"></div>
+
+      <button id="ob-btn" onclick="submitOnboarding()"
+        style="width:100%;padding:13px;background:#f59e0b;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;color:#0d111c;cursor:pointer;transition:background .2s;margin-top:4px"
+        onmouseover="this.style.background='#fbbf24'"
+        onmouseout="this.style.background='#f59e0b'">
+        Criar espaço de trabalho →
+      </button>
+    </div>
+
+    <p style="margin-top:20px;font-family:'DM Sans',sans-serif;font-size:11px;color:#334155;text-align:center">
+      Você terá 30 dias gratuitos para explorar todos os recursos.
+    </p>
+  </div>
+</div>
+
 <!-- APP SHELL -->
 <div class="app-shell" id="app-shell" style="display:none">
 
@@ -2718,6 +2785,7 @@ async function carregarRiscosDB() {
 async function _salvarRiscosDB() {
   if (isDemoMode || !sbAdmin) return;
   const upserts = Object.entries(RISCOS_DETALHES).map(([k, v]) => ({
+    tenant_id:     currentTenantId,
     empresa_id:    null,
     cd_risco:      parseInt(k),
     nome:          v.nome,
@@ -2728,7 +2796,7 @@ async function _salvarRiscosDB() {
   try {
     const { error } = await sbAdmin
       .from('riscos_config')
-      .upsert(upserts, { onConflict: 'empresa_id,cd_risco' });
+      .upsert(upserts, { onConflict: 'tenant_id,empresa_id,cd_risco' });
     if (error) throw error;
   } catch(e) { console.warn('[PSEG] _salvarRiscosDB:', e.message); }
 }
@@ -3664,7 +3732,7 @@ async function salvarNovaEmpresa() {
     const userId = currentUser?.id || null;
     const { data, error } = await sbAdmin
       .from('empresas')
-      .insert({ nome, cnpj: cnpj || null, contato: contato || null, ativo: true, criado_por: userId })
+      .insert({ nome, cnpj: cnpj || null, contato: contato || null, ativo: true, criado_por: userId, tenant_id: currentTenantId })
       .select('id,nome,cnpj,ativo,criado_por')
       .single();
     if (error) throw error;
@@ -5118,7 +5186,7 @@ async function gerarLink() {
         .from('links_coleta')
         .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
                   setor_sugerido: setor || null, token, ativo: true,
-                  expira_em: expira_em })
+                  expira_em: expira_em, tenant_id: currentTenantId })
         .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
         .single();
       if (error) throw error;
@@ -5292,7 +5360,7 @@ async function gerarLinksBatch() {
         const { data, error } = await sbAdmin
           .from('links_coleta')
           .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
-                    setor_sugerido: setor, token, ativo: true, expira_em })
+                    setor_sugerido: setor, token, ativo: true, expira_em, tenant_id: currentTenantId })
           .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
           .single();
         if (error) throw error;
@@ -6284,7 +6352,8 @@ async function _registrarLaudo() {
       empresa_id:    empresaId,
       gerado_em:     new Date().toISOString(),
       gerado_por:    currentUser?.email || currentUser?.id || null,
-      snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome }
+      snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome },
+      tenant_id:     currentTenantId
     });
     console.log('[PSEG] Laudo registrado no banco.');
   } catch(e) { console.warn('[PSEG] _registrarLaudo:', e.message); }
@@ -6505,6 +6574,7 @@ const SUPA_ANON = typeof __SUPA_ANON__ !== 'undefined' ? __SUPA_ANON__ : 'eyJhbG
 
 let sbAdmin = null;
 let currentUser = null;
+let currentTenantId = null;  // definido após login via loadPerfil()
 let isDemoMode = false;
 
 // ─────────────────────────────────────────────────────────────
@@ -6666,17 +6736,83 @@ function showLogin() {
   document.getElementById('app-shell').style.display = 'none';
 }
 
-function showApp() {
-  document.getElementById('login-overlay').classList.remove('show');
-  document.getElementById('app-shell').style.display = 'grid';
-  const email = currentUser?.email || 'admin';
-  const labelEmail = isDemoMode              ? '👁 Demonstração'
-                   : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
-                   : email;
-  document.getElementById('user-email-display').textContent = labelEmail;
+// ──────────────────────────────────────────────────────────────────
+// loadPerfil — carrega tenant_id e role do banco após login.
+// Chamado no início de showApp() antes de qualquer query de dados.
+// ──────────────────────────────────────────────────────────────────
+async function loadPerfil() {
+  // Modo dev/demo: usar tenant padrão
+  if (isDemoMode || !sbAdmin || !currentUser?.id
+      || currentUser.id === 'local-admin' || currentUser.id === 'demo') {
+    currentTenantId = '00000000-0000-0000-0000-000000000099';
+    return;
+  }
+  try {
+    const { data, error } = await sbAdmin
+      .from('perfis')
+      .select('tenant_id, role, nome, ativo')
+      .eq('id', currentUser.id)
+      .single();
+    if (error) throw error;
+    currentTenantId = data?.tenant_id || null;
+    // Sincronizar role do banco no objeto currentUser (usado por aplicarRestricoesPorRole)
+    if (data?.role) currentUser.role = data.role;
+    // Avisar se tenant não foi definido (usuário novo sem onboarding)
+    if (!currentTenantId) {
+      console.warn('[PSEG] Usuário sem tenant_id — onboarding pendente.');
+    }
+  } catch (e) {
+    console.warn('[PSEG] loadPerfil:', e.message);
+    currentTenantId = null;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Onboarding: auto-gerar slug a partir do nome
+// ──────────────────────────────────────────────────────────────────
+function obAutoSlug(nome) {
+  const slug = nome
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+    .replace(/[^a-z0-9\s\-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 40);
+  document.getElementById('ob-slug').value = slug;
+}
+
+async function submitOnboarding() {
+  const nome = document.getElementById('ob-nome').value.trim();
+  const slug = document.getElementById('ob-slug').value.trim();
+  const errEl = document.getElementById('ob-err');
+  const btn   = document.getElementById('ob-btn');
+
+  errEl.style.display = 'none';
+  if (!nome || nome.length < 3) { errEl.textContent = 'Informe o nome da consultoria (mínimo 3 caracteres).'; errEl.style.display='block'; return; }
+  if (!slug || slug.length < 3) { errEl.textContent = 'O identificador precisa ter ao menos 3 caracteres.'; errEl.style.display='block'; return; }
+
+  btn.textContent = 'Criando...';
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await sbAdmin.rpc('criar_tenant', { p_nome: nome, p_slug: slug });
+    if (error) throw error;
+    currentTenantId = data; // UUID retornado
+    document.getElementById('onboarding-overlay').style.display = 'none';
+    _iniciarAppAposTenant();
+  } catch(e) {
+    errEl.textContent = e.message || 'Erro ao criar conta. Tente outro identificador.';
+    errEl.style.display = 'block';
+    btn.textContent = 'Criar espaço de trabalho →';
+    btn.disabled = false;
+  }
+}
+
+// Inicia a aplicação normal após confirmar tenant_id
+function _iniciarAppAposTenant() {
   aplicarRestricoesPorRole();
   sincronizarQuestoes();
-  // Em modo real, limpar combos inicializados com dados demo
   if (!isDemoMode) {
     ['combo-setor','combo-funcao','combo-gf-setor','combo-gf-funcao',
      'combo-ld-setor','combo-audit-setor','combo-audit-funcao'].forEach(id => {
@@ -6684,7 +6820,6 @@ function showApp() {
       comboState[id] = new Set();
     });
   }
-  // Carregar dados do Supabase (ou demo) no boot
   carregarMapaQuestoesAdmin();
   carregarRiscosDB();
   carregarEmpresas().then(() => {
@@ -6692,13 +6827,11 @@ function showApp() {
       iniciarRealtimeRespostas();
       renderDashboard();
       renderTelaEmpresas();
-      // Restaurar empresa ativa da sessão se válida
       if (_empresaAtiva?.id) {
         const existe = _empresas.find(e => e.id === _empresaAtiva.id);
         if (existe) setEmpresaAtiva(existe.id, existe.nome);
         else setEmpresaAtiva('', '');
       }
-      // Combos dependem de _links já carregados — ficam dentro do .then() correto
       buildCombo('combo-setor'); buildCombo('combo-funcao');
       buildCombo('combo-nivel');
       if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
@@ -6706,6 +6839,25 @@ function showApp() {
       if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
     });
   });
+}
+
+async function showApp() {
+  document.getElementById('login-overlay').classList.remove('show');
+  document.getElementById('app-shell').style.display = 'grid';
+  const email = currentUser?.email || 'admin';
+  const labelEmail = isDemoMode              ? '👁 Demonstração'
+                   : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
+                   : email;
+  document.getElementById('user-email-display').textContent = labelEmail;
+  // Carregar tenant_id e role ANTES de qualquer query de dados
+  await loadPerfil();
+  // Novo usuário sem tenant → exibir onboarding primeiro
+  if (!currentTenantId && !isDemoMode && currentUser?.id !== 'local-admin') {
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('onboarding-overlay').style.display = 'flex';
+    return;
+  }
+  _iniciarAppAposTenant();
 }
 
 function aplicarRestricoesPorRole() {
@@ -7195,7 +7347,7 @@ async function salvarCiclo() {
   } else {
     try {
       const { data, error } = await sbAdmin.from('ciclos')
-        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim })
+        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim, tenant_id: currentTenantId })
         .select('id,nome,empresa_id,data_inicio,data_fim').single();
       if (error) throw error;
       _ciclos.unshift(data);
@@ -7879,9 +8031,9 @@ async function salvarGHE() {
   } else {
     try {
       const setRows = _gheTempSetores.map((nome, i) =>
-        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true }));
+        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
       const funRows = _gheTempFuncoes.map((nome, i) =>
-        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true }));
+        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
 
       const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
       const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
