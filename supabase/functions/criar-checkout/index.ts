@@ -90,8 +90,14 @@ async function criarCheckoutStripe({ tenant, plano, supabase, jwt }: any) {
   const STRIPE_KEY = Deno.env.get('STRIPE_SECRET_KEY')
   if (!STRIPE_KEY) return error(500, 'STRIPE_SECRET_KEY não configurada')
 
+  // IDs de preço: env var tem prioridade; fallback para IDs de test mode já criados
+  const PRICE_FALLBACK: Record<string, string> = {
+    starter:      'price_1TSrkgRxqMVTvLtPNZqzPM6m',
+    professional: 'price_1TSrkjRxqMVTvLtPvzZDsfaC',
+    enterprise:   'price_1TSrkmRxqMVTvLtPjsxWL6F8',
+  }
   const priceEnvKey = `STRIPE_PRICE_${plano.toUpperCase()}`
-  const priceId = Deno.env.get(priceEnvKey)
+  const priceId = Deno.env.get(priceEnvKey) || PRICE_FALLBACK[plano]
   if (!priceId) return error(500, `${priceEnvKey} não configurada`)
 
   // Criar ou recuperar customer Stripe

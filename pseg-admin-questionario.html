@@ -4690,11 +4690,11 @@ function salvarGrupo() {
 // TOAST
 // ══════════════════════════════════════════
 let _tt;
-function toast(msg,type){
+function toast(msg, type, ms = 3400){
   clearTimeout(_tt);
   const el=document.getElementById('toast');
   el.textContent=msg; el.className=`toast ${type||''} show`;
-  _tt=setTimeout(()=>el.classList.remove('show'),3400);
+  _tt=setTimeout(()=>el.classList.remove('show'), ms);
 }
 
 // ══════════════════════════════════════════
@@ -6908,6 +6908,19 @@ async function submitOnboarding() {
 
 // Inicia a aplicação normal após confirmar tenant_id
 function _iniciarAppAposTenant() {
+  // Verificar retorno de checkout Stripe
+  const _usp = new URLSearchParams(window.location.search);
+  if (_usp.get('payment') === 'success') {
+    const planoRet = _usp.get('plano') || '';
+    const label = { starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise' }[planoRet] || 'novo plano';
+    toast(`✅ Pagamento confirmado! Plano ${label} ativado. Bem-vindo!`, 'g', 6000);
+    // Limpar parâmetros da URL sem recarregar a página
+    history.replaceState({}, '', window.location.pathname);
+  } else if (_usp.get('payment') === 'canceled') {
+    toast('Pagamento cancelado. Você continua no plano atual.', 'w', 4000);
+    history.replaceState({}, '', window.location.pathname);
+  }
+
   // Carregar billing em paralelo (não bloqueia boot)
   carregarUsageTenant();
   aplicarRestricoesPorRole();
@@ -9127,6 +9140,13 @@ function fecharUpgrade() {
   document.getElementById('upgrade-overlay').classList.remove('show');
 }
 
+// ── Stripe Payment Links (test mode) — fallback quando Edge Function não está deployed
+const STRIPE_PAYMENT_LINKS = {
+  starter:      'https://buy.stripe.com/test_dRm00lgJA9lGfk2fEH57W00',
+  professional: 'https://buy.stripe.com/test_bJe6oJbpggO8fk2eAD57W01',
+  enterprise:   'https://buy.stripe.com/test_eVqcN7790btO7RAfEH57W02',
+};
+
 async function iniciarPagamento(plano, provider, metodo = 'cartao') {
   if (!sbAdmin || !currentUser) { toast('Faça login primeiro.', 'w'); return; }
 
@@ -9140,20 +9160,51 @@ async function iniciarPagamento(plano, provider, metodo = 'cartao') {
 
     // Chamar Edge Function criar-checkout
     const supabaseUrl = sbAdmin.supabaseUrl || '';
-    const res = await fetch(`${supabaseUrl}/functions/v1/criar-checkout`, {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({ plano, provider, metodo }),
-    });
+    let res, data;
+    try {
+      res  = await fetch(`${supabaseUrl}/functions/v1/criar-checkout`, {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ plano, provider, metodo }),
+      });
+      data = await res.json();
+    } catch (fetchErr) {
+      // Edge Function não deployed → fallback para payment link Stripe ou aviso
+      console.warn('[PSEG Billing] Edge Function indisponível, usando fallback:', fetchErr);
+      if (provider === 'stripe') {
+        const link = STRIPE_PAYMENT_LINKS[plano];
+        if (link) {
+          window.open(link, '_blank');
+          fecharUpgrade();
+          toast('Checkout Stripe aberto (modo direto).', 'g');
+        } else {
+          toast('Pagamento não disponível no momento.', 'w');
+        }
+        return;
+      }
+      throw fetchErr;
+    }
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erro ao iniciar pagamento');
+    if (!res.ok) {
+      // Edge Function retornou erro — fallback Stripe
+      if (provider === 'stripe') {
+        console.warn('[PSEG Billing] criar-checkout retornou erro, usando fallback:', data?.error);
+        const link = STRIPE_PAYMENT_LINKS[plano];
+        if (link) {
+          window.open(link, '_blank');
+          fecharUpgrade();
+          toast('Checkout Stripe aberto (modo direto).', 'g');
+          return;
+        }
+      }
+      throw new Error(data?.error || 'Erro ao iniciar pagamento');
+    }
 
     if (provider === 'stripe' && data.url) {
-      // Redirecionar para checkout Stripe
+      // Redirecionar para checkout Stripe personalizado (com metadata de tenant)
       window.open(data.url, '_blank');
       fecharUpgrade();
       toast('Abrindo checkout seguro…', 'g');
