@@ -743,16 +743,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <span onclick="recuperarSenha()" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#94a3b8;cursor:pointer;text-decoration:underline">Esqueci minha senha</span>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin:18px 0 12px">
-        <div style="flex:1;height:1px;background:#e2e8f0"></div>
-        <span style="font-family:'DM Sans',sans-serif;font-size:10px;color:#94a3b8;white-space:nowrap">acesso rápido</span>
-        <div style="flex:1;height:1px;background:#e2e8f0"></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button onclick="entrarModoAdmin()" style="background:#f8fafc;color:#0d111c;border:1.5px solid #e2e8f0;border-radius:7px;padding:9px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">⚙ Admin</button>
-        <button onclick="entrarModoDemo()" style="background:#fffbeb;color:#92400e;border:1.5px solid #fde68a;border-radius:7px;padding:9px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">◎ Demo</button>
-      </div>
 
       <div id="login-err" style="display:none;margin-top:12px;padding:10px 13px;border-radius:7px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;font-family:'DM Sans',sans-serif"></div>
       <div id="login-diag" style="margin-top:10px;padding:10px 13px;border-radius:7px;font-size:11px;line-height:1.7;display:none;font-family:'DM Sans',sans-serif"></div>
@@ -6675,16 +6665,15 @@ let currentTenantId = null;  // definido após login via loadPerfil()
 let isDemoMode = false;
 
 // ─────────────────────────────────────────────────────────────
-// DEV: bypass de autenticação
-// true  = entra direto (uso local/dev apenas)
-// false = login real via Supabase Auth (produção)
-const DEV_BYPASS_AUTH = false; // false = login real via Supabase (produção)
-const DEV_USER = { email: 'admin@pseg.com.br', role: 'admin', id: 'dev-admin' };
+// Autenticação obrigatória — apenas Supabase Auth (produção)
+// Bypass removido: acesso somente com login válido
+const DEV_BYPASS_AUTH = false; // NUNCA alterar para true em produção
 // ─────────────────────────────────────────────────────────────
 
 function initSupabase() {
   if (SUPA_URL.includes('SEU_PROJETO') || SUPA_ANON.includes('SUA_CHAVE')) {
-    isDemoMode = true;
+    // Credenciais não configuradas — bloquear acesso (sem modo demo)
+    isDemoMode = false;
     return null;
   }
   try {
@@ -6696,21 +6685,19 @@ function initSupabase() {
 }
 
 async function checkSession() {
-  // ── Modo DEV (somente local) ────────────────────────────────
-  if (DEV_BYPASS_AUTH) {
-    sbAdmin = initSupabase();
-    currentUser = DEV_USER;
-    showApp();
-    return;
-  }
-
   // ── Inicializar cliente ─────────────────────────────────────
   sbAdmin = initSupabase();
 
-  // ── Modo Demo (credenciais placeholder) ────────────────────
-  if (isDemoMode) {
-    currentUser = { email: 'demo@pseg.com.br', role: 'admin' };
-    showApp();
+  // ── Bloquear acesso se Supabase não configurado ─────────────
+  if (isDemoMode || !sbAdmin) {
+    showLogin();
+    const diagEl = document.getElementById('login-diag');
+    if (diagEl) {
+      diagEl.style.display = 'block';
+      diagEl.style.background = '#fef2f2';
+      diagEl.style.color = '#991b1b';
+      diagEl.textContent = 'Sistema não configurado. Entre em contato com o administrador.';
+    }
     return;
   }
 
@@ -7256,23 +7243,13 @@ document.addEventListener('keydown', function(e) {
   else openModal.classList.remove('open');
 });
 
-// Acesso admin sem autenticação — para configuração inicial e testes
+// Acesso sem autenticação desabilitado em produção
 function entrarModoAdmin() {
-  currentUser = { email: 'admin@pseg.com.br', role: 'admin', id: 'local-admin' };
-  if (!sbAdmin) sbAdmin = initSupabase();
-  const el = document.getElementById('login-err');
-  if (el) el.style.display = 'none';
-  showApp();
+  console.warn('[PSEG] Acesso sem autenticação desabilitado.');
 }
 
-// Modo demonstração — dados simulados, sem Supabase
 function entrarModoDemo() {
-  isDemoMode = true;
-  currentUser = { email: 'demo@pseg.com.br', role: 'admin', id: 'demo' };
-  if (!sbAdmin) sbAdmin = initSupabase();
-  const el = document.getElementById('login-err');
-  if (el) el.style.display = 'none';
-  showApp();
+  console.warn('[PSEG] Modo demonstração desabilitado.');
 }
 
 // ══════════════════════════════════════════
