@@ -650,6 +650,63 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .tut-dot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:background .15s}
 .tut-dot.on{background:var(--tx)}
 
+/* ── TELA ASSINATURA ── */
+.ass-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media(max-width:860px){.ass-layout{grid-template-columns:1fr}}
+.ass-plano-card{background:white;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;position:sticky;top:76px}
+.ass-plano-header{padding:20px 20px 16px;background:var(--tx);color:white;position:relative;overflow:hidden}
+.ass-plano-header::after{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none}
+.ass-plano-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.65;margin-bottom:4px}
+.ass-plano-title{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.ass-plano-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.ass-status-active{background:rgba(34,197,94,.2);color:#86efac}
+.ass-status-trial{background:rgba(245,158,11,.2);color:#fcd34d}
+.ass-status-pastdue{background:rgba(239,68,68,.2);color:#fca5a5}
+.ass-plano-body{padding:16px 20px}
+.ass-plano-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bs);font-size:12px}
+.ass-plano-row:last-child{border-bottom:none}
+.ass-plano-row-lbl{color:var(--tm)}
+.ass-plano-row-val{font-weight:600;color:var(--tx)}
+.ass-plano-cta{padding:14px 20px;border-top:1px solid var(--bs)}
+.ass-right{display:flex;flex-direction:column;gap:16px}
+.ass-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--tl);margin-bottom:12px}
+.ass-uso-card{background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px}
+.ass-uso-row{display:grid;grid-template-columns:120px 1fr 60px;align-items:center;gap:12px;margin-bottom:14px}
+.ass-uso-row:last-child{margin-bottom:0}
+.ass-uso-lbl{font-size:12px;font-weight:500;color:var(--tx)}
+.ass-uso-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.ass-uso-fill{height:100%;border-radius:4px;transition:width .5s ease;background:var(--gm)}
+.ass-uso-fill.warn{background:#f59e0b}
+.ass-uso-fill.danger{background:#ef4444}
+.ass-uso-count{font-size:11px;font-weight:600;color:var(--tm);text-align:right;white-space:nowrap}
+.ass-historico-card{background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px}
+.ass-pag-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bs)}
+.ass-pag-row:last-child{border-bottom:none;padding-bottom:0}
+.ass-pag-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.ass-pag-body{flex:1}
+.ass-pag-title{font-size:12px;font-weight:600;color:var(--tx)}
+.ass-pag-sub{font-size:11px;color:var(--tl);margin-top:1px}
+.ass-pag-valor{font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap}
+.ass-pag-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.ass-pag-status.paid{background:#f0fdf4;color:#16a34a}
+.ass-pag-status.pending{background:#fffbeb;color:#d97706}
+.ass-pag-status.failed{background:#fef2f2;color:#dc2626}
+.ass-upgrade-card{background:linear-gradient(135deg,var(--tx) 0%,#1f2937 100%);border-radius:12px;padding:24px;color:white;position:relative;overflow:hidden}
+.ass-upgrade-card::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none}
+.ass-upgrade-card::after{content:'';position:absolute;bottom:-40px;left:40px;width:120px;height:120px;border-radius:50%;background:rgba(34,197,94,.08);pointer-events:none}
+.ass-upgrade-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.ass-upgrade-sub{font-size:12px;opacity:.65;margin-bottom:20px;line-height:1.6}
+.ass-upgrade-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:640px){.ass-upgrade-plans{grid-template-columns:1fr}}
+.ass-up-plan{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;text-align:left}
+.ass-up-plan:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25)}
+.ass-up-plan.featured{border-color:var(--gm);background:rgba(34,197,94,.12)}
+.ass-up-plan-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.7;margin-bottom:4px}
+.ass-up-plan-price{font-size:20px;font-weight:800;margin-bottom:2px}
+.ass-up-plan-price span{font-size:11px;font-weight:400;opacity:.6}
+.ass-up-plan-desc{font-size:10px;opacity:.55;line-height:1.5}
+.ass-up-plan.featured .ass-up-plan-name{color:var(--gm);opacity:1}
+
 /* ── BILLING — upgrade modal ── */
 .upgrade-overlay{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px}
 .upgrade-overlay.show{display:flex}
@@ -887,9 +944,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             Metodologia
           </button>
           <div class="ham-drop-sep"></div>
-          <button class="ham-drop-item" onclick="abrirUpgrade();fecharHamMenu()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Upgrade de plano
+          <button class="ham-drop-item" onclick="goScreen('assinatura',document.getElementById('nb-assinatura'));fecharHamMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Assinatura & Plano
           </button>
           <div class="ham-drop-sep"></div>
           <button class="ham-drop-item" onclick="fazerLogout();fecharHamMenu()" style="color:var(--red)">
@@ -974,6 +1031,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       Relatório
     </button>
 
+    <div class="sidebar-section">Conta</div>
+
+    <button class="nav-item" id="nb-assinatura" onclick="goScreen('assinatura',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Assinatura
+      <span class="nav-badge" id="nb-assinatura-badge" style="display:none"></span>
+    </button>
+
     <div class="sidebar-section">Configuração</div>
 
     <button class="nav-item" id="nb-plano" onclick="goScreen('plano',this)">
@@ -1004,6 +1069,130 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
   <!-- MAIN CONTENT -->
   <main class="main-content">
+
+<!-- ══════════════════════════════════════════════════════
+     TELA ASSINATURA
+══════════════════════════════════════════════════════ -->
+<div class="screen" id="sc-assinatura">
+  <div class="page-header">
+    <div class="page-title">Assinatura</div>
+    <div class="page-sub">Gerencie seu plano, acompanhe o uso e acesse o histórico de pagamentos</div>
+  </div>
+
+  <div class="ass-layout">
+
+    <!-- COLUNA ESQUERDA — plano atual -->
+    <div>
+      <div class="ass-plano-card">
+        <div class="ass-plano-header">
+          <div class="ass-plano-name">Plano atual</div>
+          <div class="ass-plano-title" id="ass-plano-titulo">—</div>
+          <div class="ass-plano-status" id="ass-plano-status-badge">—</div>
+        </div>
+        <div class="ass-plano-body">
+          <div class="ass-plano-row">
+            <span class="ass-plano-row-lbl">Empresas</span>
+            <span class="ass-plano-row-val" id="ass-limite-empresas">—</span>
+          </div>
+          <div class="ass-plano-row">
+            <span class="ass-plano-row-lbl">Usuários</span>
+            <span class="ass-plano-row-val" id="ass-limite-usuarios">—</span>
+          </div>
+          <div class="ass-plano-row">
+            <span class="ass-plano-row-lbl">Respostas / mês</span>
+            <span class="ass-plano-row-val" id="ass-limite-respostas">—</span>
+          </div>
+          <div class="ass-plano-row">
+            <span class="ass-plano-row-lbl">Provider</span>
+            <span class="ass-plano-row-val" id="ass-provider">—</span>
+          </div>
+          <div class="ass-plano-row" id="ass-row-renovacao">
+            <span class="ass-plano-row-lbl">Renovação</span>
+            <span class="ass-plano-row-val" id="ass-renovacao">—</span>
+          </div>
+          <div class="ass-plano-row" id="ass-row-trial">
+            <span class="ass-plano-row-lbl">Trial expira</span>
+            <span class="ass-plano-row-val" id="ass-trial-ate">—</span>
+          </div>
+        </div>
+        <div class="ass-plano-cta" id="ass-cta-area">
+          <button onclick="abrirUpgrade()" class="btn btn-g" style="width:100%;font-size:13px;padding:10px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Fazer upgrade
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="ass-right">
+
+      <!-- USO DO PERÍODO -->
+      <div class="ass-uso-card">
+        <div class="ass-section-title">Uso do período atual</div>
+        <div class="ass-uso-row">
+          <div class="ass-uso-lbl">Empresas</div>
+          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-empresas" style="width:0%"></div></div>
+          <div class="ass-uso-count" id="ass-uc-empresas">—</div>
+        </div>
+        <div class="ass-uso-row">
+          <div class="ass-uso-lbl">Usuários</div>
+          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-usuarios" style="width:0%"></div></div>
+          <div class="ass-uso-count" id="ass-uc-usuarios">—</div>
+        </div>
+        <div class="ass-uso-row">
+          <div class="ass-uso-lbl">Respostas / mês</div>
+          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-respostas" style="width:0%"></div></div>
+          <div class="ass-uso-count" id="ass-uc-respostas">—</div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bs);font-size:11px;color:var(--tl)" id="ass-uso-nota">
+          Os contadores de uso são atualizados em tempo real.
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE PAGAMENTOS -->
+      <div class="ass-historico-card">
+        <div class="ass-section-title">Histórico de pagamentos</div>
+        <div id="ass-historico-body">
+          <div style="text-align:center;padding:24px 0;color:var(--tl);font-size:12px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="opacity:.25;display:block;margin:0 auto 8px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Nenhum pagamento registrado
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD DE UPGRADE -->
+      <div class="ass-upgrade-card" id="ass-upgrade-card">
+        <div class="ass-upgrade-title">Evolua com o SafeSign</div>
+        <div class="ass-upgrade-sub">Desbloqueie mais empresas, usuários e análises ilimitadas. Cancele quando quiser.</div>
+        <div class="ass-upgrade-plans">
+          <div class="ass-up-plan" onclick="iniciarPagamento('starter','stripe')">
+            <div class="ass-up-plan-name">Starter</div>
+            <div class="ass-up-plan-price">R$197<span>/mês</span></div>
+            <div class="ass-up-plan-desc">1 empresa · 10 usuários<br>500 respostas/mês</div>
+          </div>
+          <div class="ass-up-plan featured" onclick="iniciarPagamento('professional','stripe')">
+            <div class="ass-up-plan-name">Professional ★</div>
+            <div class="ass-up-plan-price">R$497<span>/mês</span></div>
+            <div class="ass-up-plan-desc">5 empresas · 25 usuários<br>2.000 respostas/mês</div>
+          </div>
+          <div class="ass-up-plan" onclick="iniciarPagamento('enterprise','stripe')">
+            <div class="ass-up-plan-name">Enterprise</div>
+            <div class="ass-up-plan-price">R$997<span>/mês</span></div>
+            <div class="ass-up-plan-desc">Ilimitado · White-label<br>SLA dedicado</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="abrirUpgrade()" style="padding:10px 20px;background:white;color:var(--tx);border:none;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
+            Ver todos os planos →
+          </button>
+          <span style="font-size:11px;opacity:.5;display:flex;align-items:center">Sem fidelidade · Cancele quando quiser</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════
      TELA USUÁRIOS
@@ -9024,7 +9213,7 @@ function goScreen(id, btn) {
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
-    usuarios:'nb-usuarios', backlog:'nb-backlog'
+    usuarios:'nb-usuarios', backlog:'nb-backlog', assinatura:'nb-assinatura'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
 
@@ -9083,6 +9272,9 @@ function goScreen(id, btn) {
           break;
         case 'metodologia':
           renderTelaMetodologia();
+          break;
+        case 'assinatura':
+          renderTelaAssinatura();
           break;
         case 'usuarios':
           carregarUsuarios();
@@ -9171,6 +9363,7 @@ async function carregarUsageTenant() {
     currentTenantUsage = { ...usage, sub };
     renderBannerPlano();
     renderUsageWidget();
+    _renderAssinaturaBadge();
   } catch(e) {
     console.warn('[PSEG Billing] carregarUsageTenant:', e.message);
   }
@@ -9271,6 +9464,157 @@ async function verificarLimiteTenant(recurso) {
   } catch(e) {
     console.warn('[PSEG Billing] verificarLimiteTenant:', e.message);
     return true; // fail-open para não bloquear em caso de erro de rede
+  }
+}
+
+// ── Badge sidebar (chamado no boot) ─────────────────────────────
+function _renderAssinaturaBadge() {
+  const u = currentTenantUsage;
+  const badge = document.getElementById('nb-assinatura-badge');
+  if (!badge || !u) return;
+  const plano = u.plano || 'trial';
+  const sub   = u.sub;
+  const subStatus = sub?.status || (plano === 'trial' ? 'trialing' : 'active');
+  if (subStatus === 'past_due' || sub?.trial_expirado) {
+    badge.textContent = '!'; badge.className = 'nav-badge alert'; badge.style.display = '';
+  } else if (plano === 'trial') {
+    const d = sub?.trial_dias_restantes;
+    badge.textContent = d !== null && d !== undefined ? `${d}d` : 'trial';
+    badge.className = 'nav-badge ' + (d <= 7 ? 'warn' : ''); badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Tela Assinatura ──────────────────────────────────────────────
+async function renderTelaAssinatura() {
+  const d = currentTenantUsage;
+
+  // Recarregar se ainda não tiver dados
+  if (!d) { await carregarUsageTenant(); }
+
+  const u = currentTenantUsage;
+  if (!u) return;
+
+  const plano   = u.plano || 'trial';
+  const sub     = u.sub;
+  const PLANO_LABELS = { trial:'Trial Gratuito', starter:'Starter', professional:'Professional', enterprise:'Enterprise' };
+  const STATUS_LABELS = { trialing:'Em trial', active:'Ativo', past_due:'Pagamento pendente', canceled:'Cancelado', unpaid:'Inadimplente' };
+
+  // Cabeçalho
+  document.getElementById('ass-plano-titulo').textContent = PLANO_LABELS[plano] || plano;
+
+  const statusEl = document.getElementById('ass-plano-status-badge');
+  const subStatus = sub?.status || (plano === 'trial' ? 'trialing' : 'active');
+  statusEl.textContent = STATUS_LABELS[subStatus] || subStatus;
+  statusEl.className = 'ass-plano-status ' + ({
+    trialing:'ass-status-trial', active:'ass-status-active', past_due:'ass-status-pastdue',
+    canceled:'ass-status-pastdue', unpaid:'ass-status-pastdue'
+  }[subStatus] || 'ass-status-trial');
+
+  // Limites
+  const fmt = v => v === null || v === undefined ? 'Ilimitado' : String(v);
+  document.getElementById('ass-limite-empresas').textContent  = fmt(u.max_empresas);
+  document.getElementById('ass-limite-usuarios').textContent  = fmt(u.max_usuarios);
+  document.getElementById('ass-limite-respostas').textContent = fmt(u.max_respostas_mes);
+  document.getElementById('ass-provider').textContent = sub?.provider ? sub.provider.charAt(0).toUpperCase() + sub.provider.slice(1) : '—';
+
+  // Renovação / Trial
+  const rowRen   = document.getElementById('ass-row-renovacao');
+  const rowTrial = document.getElementById('ass-row-trial');
+  if (plano === 'trial') {
+    rowRen.style.display = 'none'; rowTrial.style.display = '';
+    const trialAte = u.trial_ate || sub?.trial_ate;
+    document.getElementById('ass-trial-ate').textContent = trialAte
+      ? new Date(trialAte).toLocaleDateString('pt-BR') + (sub?.trial_dias_restantes !== null ? ` (${sub.trial_dias_restantes}d restantes)` : '')
+      : '—';
+  } else {
+    rowTrial.style.display = 'none'; rowRen.style.display = '';
+    const periodoFim = sub?.periodo_fim;
+    document.getElementById('ass-renovacao').textContent = periodoFim
+      ? new Date(periodoFim).toLocaleDateString('pt-BR') : '—';
+  }
+
+  // CTA: esconder botão upgrade se enterprise ativo
+  const ctaArea = document.getElementById('ass-cta-area');
+  if (plano === 'enterprise' && subStatus === 'active') ctaArea.style.display = 'none';
+  else ctaArea.style.display = '';
+
+  // Card upgrade: esconder se enterprise
+  const upCard = document.getElementById('ass-upgrade-card');
+  if (upCard) upCard.style.display = (plano === 'enterprise' && subStatus === 'active') ? 'none' : '';
+
+  // Badge sidebar
+  const badge = document.getElementById('nb-assinatura-badge');
+  if (badge) {
+    if (subStatus === 'past_due' || sub?.trial_expirado) {
+      badge.textContent = '!'; badge.className = 'nav-badge alert'; badge.style.display = '';
+    } else if (plano === 'trial') {
+      badge.textContent = 'trial'; badge.className = 'nav-badge warn'; badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Barras de uso
+  const setAssBar = (fillId, countId, atual, limite) => {
+    const fill  = document.getElementById(fillId);
+    const count = document.getElementById(countId);
+    if (!fill || !count) return;
+    const pct = limite ? Math.min(100, Math.round(atual * 100 / limite)) : 0;
+    fill.style.width = (limite ? pct : 2) + '%';
+    fill.className   = 'ass-uso-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+    count.textContent = limite ? `${atual}/${limite}` : `${atual} / ∞`;
+  };
+  setAssBar('ass-ub-empresas',  'ass-uc-empresas',  u.total_empresas,      u.max_empresas);
+  setAssBar('ass-ub-usuarios',  'ass-uc-usuarios',  u.total_usuarios,      u.max_usuarios);
+  setAssBar('ass-ub-respostas', 'ass-uc-respostas', u.respostas_mes_atual, u.max_respostas_mes);
+
+  const nota = document.getElementById('ass-uso-nota');
+  if (nota && plano === 'enterprise') nota.textContent = 'Plano Enterprise: sem limites de uso.';
+
+  // Histórico de pagamentos
+  await _renderHistoricoPagamentos();
+}
+
+async function _renderHistoricoPagamentos() {
+  const el = document.getElementById('ass-historico-body');
+  if (!el || !sbAdmin || !currentTenantId) return;
+  try {
+    const { data: pags, error } = await sbAdmin
+      .from('pagamentos')
+      .select('provider, valor_centavos, metodo, status, pago_em, created_at')
+      .eq('tenant_id', currentTenantId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    if (!pags?.length) {
+      el.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--tl);font-size:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="opacity:.25;display:block;margin:0 auto 8px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Nenhum pagamento registrado</div>';
+      return;
+    }
+    const METODO_ICONS = { cartao_credito:'💳', pix:'⚡', boleto:'📄', cartao_debito:'💳' };
+    const STATUS_CLASS = { paid:'paid', pending:'pending', failed:'failed', refunded:'pending', expired:'failed' };
+    const STATUS_LABEL = { paid:'Pago', pending:'Pendente', failed:'Falhou', refunded:'Estornado', expired:'Expirado' };
+    el.innerHTML = pags.map(p => {
+      const dt    = new Date(p.pago_em || p.created_at).toLocaleDateString('pt-BR');
+      const valor = p.valor_centavos ? `R$ ${(p.valor_centavos/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '—';
+      const icon  = METODO_ICONS[p.metodo] || '💰';
+      const sc    = STATUS_CLASS[p.status] || 'pending';
+      const sl    = STATUS_LABEL[p.status] || p.status;
+      return `<div class="ass-pag-row">
+        <div class="ass-pag-icon" style="background:var(--bg)">${icon}</div>
+        <div class="ass-pag-body">
+          <div class="ass-pag-title">${(p.provider||'').charAt(0).toUpperCase()+(p.provider||'').slice(1)} · ${(p.metodo||'').replace(/_/g,' ')}</div>
+          <div class="ass-pag-sub">${dt}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="ass-pag-valor">${valor}</div>
+          <span class="ass-pag-status ${sc}">${sl}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--tl);padding:12px 0">Erro ao carregar histórico.</div>';
   }
 }
 
