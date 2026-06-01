@@ -615,6 +615,41 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .usage-fill.danger{background:#ef4444}
 .usage-count{font-size:11px;font-weight:600;color:var(--tm);width:54px;text-align:right;flex-shrink:0}
 
+/* ── HAMBURGER MENU ── */
+.ham-btn{background:none;border:1.5px solid var(--border);border-radius:var(--r);width:30px;height:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;flex-shrink:0;padding:0}
+.ham-btn:hover{border-color:var(--tx);background:var(--bg)}
+.ham-btn span{display:block;width:13px;height:1.5px;background:var(--tx);border-radius:2px;transition:all .15s}
+.ham-dropdown{position:absolute;top:46px;right:20px;background:white;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:200px;z-index:500;display:none;overflow:hidden}
+.ham-dropdown.open{display:block}
+.ham-drop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12px;font-weight:500;color:var(--tx);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:background .12s;font-family:'Inter',sans-serif}
+.ham-drop-item:hover{background:var(--bg)}
+.ham-drop-item svg{flex-shrink:0;color:var(--tm)}
+.ham-drop-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* ── TUTORIAL OVERLAY ── */
+.tutorial-overlay{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px}
+.tutorial-overlay.show{display:flex}
+.tutorial-modal{background:white;border-radius:16px;width:100%;max-width:780px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.28);display:flex;flex-direction:column}
+.tutorial-header{padding:24px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.tutorial-header-text h2{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.tutorial-header-text p{font-size:13px;color:var(--tm)}
+.tutorial-steps{padding:20px 28px 28px;display:flex;flex-direction:column;gap:0}
+.tut-step{display:flex;gap:18px;padding:20px 0;border-bottom:1px solid var(--bs)}
+.tut-step:last-child{border-bottom:none;padding-bottom:0}
+.tut-num{width:36px;height:36px;border-radius:50%;background:var(--tx);color:white;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.tut-body{flex:1}
+.tut-title{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tut-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--gl);color:var(--g)}
+.tut-desc{font-size:12px;color:var(--tm);line-height:1.75;margin-bottom:10px}
+.tut-steps-inner{display:flex;flex-direction:column;gap:5px}
+.tut-step-inner{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tm);line-height:1.6}
+.tut-step-inner::before{content:attr(data-n);background:var(--bg);border:1px solid var(--border);border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--tx);margin-top:2px}
+.tut-tip{margin-top:10px;padding:8px 12px;background:#f0fdf4;border-left:3px solid var(--gm);border-radius:0 6px 6px 0;font-size:11px;color:#166534;line-height:1.6}
+.tut-nav{padding:0 28px 24px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bs);padding-top:16px;flex-shrink:0}
+.tut-dots{display:flex;gap:6px}
+.tut-dot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:background .15s}
+.tut-dot.on{background:var(--tx)}
+
 /* ── BILLING — upgrade modal ── */
 .upgrade-overlay{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px}
 .upgrade-overlay.show{display:flex}
@@ -836,10 +871,37 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
     <div class="topbar-right">
       <span id="plano-badge-topbar" style="display:none" onclick="abrirUpgrade()"></span>
-      <span class="user-pill" id="user-pill" onclick="fazerLogout()">
+
+      <!-- Hamburger menu -->
+      <div style="position:relative">
+        <button class="ham-btn" id="ham-btn" onclick="toggleHamMenu(event)" title="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="ham-dropdown" id="ham-dropdown">
+          <button class="ham-drop-item" onclick="abrirTutorial();fecharHamMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Tutorial de uso
+          </button>
+          <button class="ham-drop-item" onclick="goScreen('metodologia',document.getElementById('nb-metodologia'));fecharHamMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            Metodologia
+          </button>
+          <div class="ham-drop-sep"></div>
+          <button class="ham-drop-item" onclick="abrirUpgrade();fecharHamMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Upgrade de plano
+          </button>
+          <div class="ham-drop-sep"></div>
+          <button class="ham-drop-item" onclick="fazerLogout();fecharHamMenu()" style="color:var(--red)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
+        </div>
+      </div>
+
+      <span class="user-pill" id="user-pill">
         <span class="user-dot"></span>
         <span id="user-email-display">carregando...</span>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </span>
     </div>
   </div>
@@ -9217,6 +9279,25 @@ function abrirUpgrade() {
   document.getElementById('pix-display').style.display = 'none';
   document.getElementById('upgrade-overlay').classList.add('show');
 }
+// ── Hamburger menu ──────────────────────────────────────────────
+function toggleHamMenu(e) {
+  e.stopPropagation();
+  document.getElementById('ham-dropdown').classList.toggle('open');
+}
+function fecharHamMenu() {
+  document.getElementById('ham-dropdown').classList.remove('open');
+}
+document.addEventListener('click', () => fecharHamMenu());
+
+// ── Tutorial ──────────────────────────────────────────────────
+function abrirTutorial() {
+  document.getElementById('tutorial-overlay').classList.add('show');
+}
+function fecharTutorial() {
+  document.getElementById('tutorial-overlay').classList.remove('show');
+}
+
+// ── Upgrade ──────────────────────────────────────────────────
 function fecharUpgrade() {
   document.getElementById('upgrade-overlay').classList.remove('show');
 }
@@ -9341,7 +9422,118 @@ function copiarPix() {
 <!-- ══════════════════════════════════════════════════════════════
      MODAL UPGRADE DE PLANO
      ══════════════════════════════════════════════════════════════ -->
-<div class="upgrade-overlay" id="upgrade-overlay" onclick="if(event.target===this)fecharUpgrade()">
+
+<!-- ════════════════════════════════════════
+     TUTORIAL OVERLAY
+════════════════════════════════════════ -->
+<div class="tutorial-overlay" id="tutorial-overlay" onclick="if(event.target===this)fecharTutorial()">
+  <div class="tutorial-modal">
+    <div class="tutorial-header">
+      <div class="tutorial-header-text">
+        <h2>Como usar o PSEG SafeSign</h2>
+        <p>Guia rápido para os 4 fluxos principais da plataforma</p>
+      </div>
+      <button onclick="fecharTutorial()" style="background:none;border:none;cursor:pointer;color:var(--tm);font-size:20px;padding:0;line-height:1;margin-left:16px">×</button>
+    </div>
+
+    <div class="tutorial-steps" id="tutorial-steps">
+
+      <!-- PASSO 1: Cadastrar empresa -->
+      <div class="tut-step" data-step="0">
+        <div class="tut-num">1</div>
+        <div class="tut-body">
+          <div class="tut-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Cadastrar uma empresa cliente
+            <span class="tut-tag">Empresas</span>
+          </div>
+          <p class="tut-desc">Antes de qualquer avaliação, cadastre a empresa que será analisada. Cada empresa pode ter múltiplos setores e ciclos de coleta.</p>
+          <div class="tut-steps-inner">
+            <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Empresas</strong></div>
+            <div class="tut-step-inner" data-n="2">Clique em <strong>Nova empresa</strong> no canto superior direito</div>
+            <div class="tut-step-inner" data-n="3">Preencha o nome e CNPJ da empresa</div>
+            <div class="tut-step-inner" data-n="4">Após salvar, clique em <strong>Configurar GHE</strong> para cadastrar os setores e funções da empresa</div>
+          </div>
+          <div class="tut-tip">💡 GHE = Grupos Homogêneos de Exposição. Cadastre todos os setores antes de gerar os links de coleta.</div>
+        </div>
+      </div>
+
+      <!-- PASSO 2: Gerar links -->
+      <div class="tut-step" data-step="1">
+        <div class="tut-num">2</div>
+        <div class="tut-body">
+          <div class="tut-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            Gerar links de coleta
+            <span class="tut-tag">Links de Coleta</span>
+          </div>
+          <p class="tut-desc">Os links são URLs únicas que você envia para os colaboradores. Cada link pertence a um setor/função específico e pode ter data de expiração.</p>
+          <div class="tut-steps-inner">
+            <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Links de Coleta</strong></div>
+            <div class="tut-step-inner" data-n="2">Selecione a empresa e o ciclo de avaliação (ex.: <em>PGR — Ciclo 2025/1</em>)</div>
+            <div class="tut-step-inner" data-n="3">Escolha os setores desejados e clique em <strong>Gerar links</strong></div>
+            <div class="tut-step-inner" data-n="4">Copie o link de cada setor e envie por e-mail, WhatsApp ou intranet para os colaboradores</div>
+            <div class="tut-step-inner" data-n="5">Acompanhe o número de respostas em tempo real na coluna <strong>Respostas</strong></div>
+          </div>
+          <div class="tut-tip">💡 O respondente acessa o link, preenche o questionário de forma anônima e a resposta é registrada automaticamente. Nenhum login é necessário para responder.</div>
+        </div>
+      </div>
+
+      <!-- PASSO 3: Analisar resultados -->
+      <div class="tut-step" data-step="2">
+        <div class="tut-num">3</div>
+        <div class="tut-body">
+          <div class="tut-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Analisar os resultados
+            <span class="tut-tag">Análise</span>
+          </div>
+          <p class="tut-desc">Com respostas coletadas, o sistema calcula automaticamente o nível de risco de cada fator psicossocial usando a Matriz P × S (Probabilidade × Severidade).</p>
+          <div class="tut-steps-inner">
+            <div class="tut-step-inner" data-n="1">Selecione a empresa no seletor no topo da página</div>
+            <div class="tut-step-inner" data-n="2">Clique em <strong>Resultados</strong> para ver a tabela de riscos por fator — cada linha mostra P, S e o nível (Irrelevante → Crítico)</div>
+            <div class="tut-step-inner" data-n="3">Use <strong>Distribuição</strong> para visualizar os gráficos de barras por questão e setor</div>
+            <div class="tut-step-inner" data-n="4">Use os filtros de <strong>Setor</strong> e <strong>Função</strong> para comparar grupos específicos</div>
+            <div class="tut-step-inner" data-n="5">Em <strong>Comparativo</strong>, compare diferentes ciclos de avaliação ao longo do tempo</div>
+          </div>
+          <div class="tut-tip">💡 Riscos <span style="background:#fb923c;color:white;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700">ALTO</span> e <span style="background:#dc2626;color:white;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700">CRÍTICO</span> exigem ação imediata. Riscos <span style="background:#fcd34d;color:#78350f;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700">MÉDIO</span> exigem plano com prazo e responsável definidos.</div>
+        </div>
+      </div>
+
+      <!-- PASSO 4: Exportar relatório -->
+      <div class="tut-step" data-step="3">
+        <div class="tut-num">4</div>
+        <div class="tut-body">
+          <div class="tut-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exportar o relatório (laudo técnico)
+            <span class="tut-tag">Relatório</span>
+          </div>
+          <p class="tut-desc">O laudo técnico é o documento formal entregue à empresa — inclui metodologia, resultados por setor, gráficos e plano de ações recomendadas.</p>
+          <div class="tut-steps-inner">
+            <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Relatório</strong></div>
+            <div class="tut-step-inner" data-n="2">Selecione a empresa, o ciclo e os setores a incluir</div>
+            <div class="tut-step-inner" data-n="3">Escolha as seções desejadas: Capa, Metodologia, Resultados, Gráficos e Ações</div>
+            <div class="tut-step-inner" data-n="4">Visualize o preview no lado direito e ajuste os grupos de setor conforme necessário</div>
+            <div class="tut-step-inner" data-n="5">Clique em <strong>Gerar PDF</strong> para baixar o documento final pronto para entrega</div>
+          </div>
+          <div class="tut-tip">💡 O relatório inclui automaticamente a metodologia completa (Matriz P×S, critérios de probabilidade e severidade) e as ações recomendadas por nível de risco.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tut-nav">
+      <div style="font-size:12px;color:var(--tm)">4 fluxos · leitura estimada: 2 min</div>
+      <button onclick="fecharTutorial()" style="padding:8px 20px;background:var(--tx);color:white;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">
+        Entendido ✓
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     UPGRADE OVERLAY
   <div class="upgrade-modal">
     <div class="upgrade-header">
       <div>
