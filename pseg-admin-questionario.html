@@ -5365,17 +5365,45 @@ function iniciarRealtimeRespostas() {
       .channel('respostas_realtime')
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'respostas' },
-        (payload) => {
+        async (payload) => {
           const token = payload.new?.link_token;
           if (!token) return;
           const link = _links.find(l => l.token === token);
           if (link) {
             link.respostas = (link.respostas || 0) + 1;
+
+            // Invalidar cache para essa empresa antes de qualquer render
+            if (link.empresa_id) delete _respostasCache[link.empresa_id];
+
+            // Atualizar contadores e telas estáticas
             renderLinks();
             renderTelaEmpresas();
             renderDashboard();
-            // Invalidar cache para essa empresa
-            if (link.empresa_id) delete _respostasCache[link.empresa_id];
+
+            // Re-rodar análise automaticamente se a empresa afetada está ativa
+            const empresaAfetada = link.empresa_id && _empresaAtiva?.id === link.empresa_id;
+            const telasAnalise   = ['sc-analise','sc-graficos','sc-laudo','sc-comparativo','sc-auditoria'];
+            const telaAtiva      = telasAnalise.find(id => document.getElementById(id)?.classList.contains('on'));
+
+            if (empresaAfetada && telaAtiva) {
+              console.info('[Realtime] Nova resposta detectada — atualizando análise...');
+              try {
+                if (telaAtiva === 'sc-analise') {
+                  await onEmpresaChange();
+                  rodarAnalise();
+                } else if (telaAtiva === 'sc-graficos') {
+                  await onGrafFiltroChange();
+                  renderGraficos();
+                } else if (telaAtiva === 'sc-laudo') {
+                  await onLaudoFiltro();
+                  renderLaudo();
+                } else if (telaAtiva === 'sc-auditoria') {
+                  renderTelaAuditoria();
+                }
+              } catch(e) {
+                console.warn('[Realtime] Erro ao atualizar análise:', e.message);
+              }
+            }
           }
         }
       )
