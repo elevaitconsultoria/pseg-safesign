@@ -1960,6 +1960,49 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <div class="met-card">
       <div class="met-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div class="met-card-body">
+        <div class="met-card-title">Tabela 1 — Critérios de Probabilidade (P)</div>
+        <div class="met-card-text">
+          A gradação da probabilidade/frequência de ocorrência do dano é feita atribuindo-se um índice P de 1 a 4, conforme critérios abaixo:
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px">
+            <thead><tr style="background:#1a5e2a"><th style="color:white;padding:7px 10px;text-align:left;width:26%">Ocorrência / Probabilidade</th><th style="color:white;padding:7px 10px;text-align:left">Critérios adotados</th></tr></thead>
+            <tbody>
+              <tr style="background:#fef2f2"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#991b1b;vertical-align:top">P4 — Quase Certo<br><em style="font-weight:400;font-size:10px">(Permanente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Alta probabilidade. Exposição habitual <strong>&gt; 80%</strong> da jornada. Requisitos das NRs não atendidos. Situações ergonômicas críticas com alta frequência. Resposta ao questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#c2410c;vertical-align:top">P3 — Provável<br><em style="font-weight:400;font-size:10px">(Habitual)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Média probabilidade. Exposição intermitente <strong>50% a 80%</strong> da jornada. Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos significativos com frequência diária. Resposta = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas com desvios ou eficiência duvidosa.</td></tr>
+              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#a16207;vertical-align:top">P2 — Improvável<br><em style="font-weight:400;font-size:10px">(Intermitente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Baixa probabilidade. Exposição <strong>10% a 50%</strong> da jornada. Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta = <strong>"Às vezes"</strong>. Verbalizações e reclamações existentes. Medidas de controle adequadas e eficientes.</td></tr>
+              <tr style="background:#f0fdf4"><td style="padding:8px 10px;font-weight:700;color:#166534;vertical-align:top">P1 — Alt. Improvável<br><em style="font-weight:400;font-size:10px">(Ocasional)</em></td><td style="padding:8px 10px;font-size:11px;color:var(--tm)">Improvável que ocorra. Exposição ocasional <strong>&lt; 10%</strong> da jornada. Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle mantido em longo prazo.</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;font-size:10px;color:var(--tl)">Adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.<br><strong>Obs.:</strong> Para questões com resposta ideal de afirmação (ex.: "Sou tratado com justiça?"), a probabilidade é inversamente proporcional — resposta "Sempre" equivale a P1. O sistema aplica o ajuste automaticamente (score = 5 − valor).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="met-card">
+      <div class="met-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="met-card-body">
+        <div class="met-card-title">Tabela 2 — Critérios de Severidade (S)</div>
+        <div class="met-card-text">
+          Para a gradação da Severidade do dano potencial atribui-se um índice S de 1 a 4, com base nos critérios qualitativos abaixo:
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px">
+            <thead><tr style="background:#1a5e2a"><th style="color:white;padding:7px 10px;width:18%">Índice</th><th style="color:white;padding:7px 10px;width:28%">Definição geral</th><th style="color:white;padding:7px 10px">Critério ergonômico / psicossocial</th></tr></thead>
+            <tbody>
+              <tr style="background:#f0fdf4"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#166534;vertical-align:top">S1 — Leve</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Não geram sobrecargas ou são insignificantes</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Efeitos ergonômicos insignificantes/desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td></tr>
+              <tr style="background:#eff6ff"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#1e40af;vertical-align:top">S2 — Moderado</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Geram desconforto e fadiga</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
+              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#92400e;vertical-align:top">S3 — Sério</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Pode prejudicar a saúde levando a lesões ou afastamentos</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td></tr>
+              <tr style="background:#fef2f2"><td style="padding:8px 10px;font-weight:700;color:#991b1b;vertical-align:top">S4 — Severo</td><td style="padding:8px 10px;font-size:11px;color:var(--tm);vertical-align:top">Lesões ou afastamentos com alta incidência</td><td style="padding:8px 10px;font-size:11px;color:var(--tm)">Possibilidade de LER/DORT. Possibilidade de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="met-card">
+      <div class="met-card-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       </div>
       <div class="met-card-body">
@@ -6027,33 +6070,87 @@ function exportGrafPDF() {
 // LAUDO & RELATÓRIO
 // ══════════════════════════════════════════
 
-// ── Metodologia base (substituível) ──
+// ── Metodologia base — fundamentada em Mulhausen & Damiano (1998), BS 8800 e AIHA 2015 ──
 const METODOLOGIA = {
-  introducao: `A PSEG Engenharia de Segurança do Trabalho realizou a avaliação dos fatores de risco psicossocial ocupacional conforme as diretrizes da <strong>NR-17</strong> (Ergonomia) e <strong>NR-01</strong> (Disposições Gerais e Gerenciamento de Riscos Ocupacionais) do Ministério do Trabalho e Emprego.
 
-A avaliação psicossocial consiste na identificação e análise de fatores organizacionais e relacionais que podem impactar a saúde mental e o bem-estar dos trabalhadores, incluindo aspectos como carga de trabalho, relações interpessoais, autonomia, reconhecimento e segurança no emprego.`,
+  introducao: `Para cada risco psicossocial avaliado foi determinado o <strong>nível de risco ocupacional</strong>, resultante da combinação entre a <strong>probabilidade / frequência</strong> de ocorrência e a <strong>severidade / efeito</strong> dos possíveis agravos à saúde do trabalhador.
 
-  instrumento: `Foi aplicado um questionário com <strong>27 questões</strong> distribuídas em três blocos temáticos, respondidas de forma anônima pelos colaboradores em seu local de trabalho, sem prazo determinado para devolução. As questões utilizam <strong>escala Likert de 4 pontos</strong>:
+Foram utilizadas tabelas com descritores qualitativos e quantitativos para orientar a tomada de decisão pelo avaliador. Ressalta-se que os fatores descritos têm caráter <em>orientativo</em> — a classificação correta dos riscos deve também considerar os chamados <strong>"amenizadores"</strong> (pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos), as medidas antropométricas do trabalhador, as condições organizacionais, a postura e as características do posto de trabalho.
+
+Em situações onde não haja elementos suficientes para uma conclusão, o avaliador deve considerar, além dos fatores descritos, sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.`,
+
+  instrumento: `Foi aplicado um questionário com <strong>27 questões fechadas</strong>, respondidas de forma anônima pelos colaboradores. As respostas utilizam <strong>escala Likert de 4 pontos</strong> que indica a frequência de ocorrência de cada situação:
 <ul>
-<li><strong>1 — Nunca:</strong> a situação nunca ou quase nunca ocorre</li>
-<li><strong>2 — Às vezes:</strong> a situação ocorre ocasionalmente</li>
-<li><strong>3 — Frequente:</strong> a situação ocorre com regularidade</li>
-<li><strong>4 — Sempre:</strong> a situação ocorre de forma constante</li>
+<li><strong>1 — Nunca:</strong> altamente improvável / exposição ocasional (&lt; 10% do tempo)</li>
+<li><strong>2 — Às vezes:</strong> improvável / exposição intermitente (10% a 50% do tempo)</li>
+<li><strong>3 — Frequentemente:</strong> provável / exposição habitual (50% a 80% do tempo)</li>
+<li><strong>4 — Sempre:</strong> quase certo / exposição permanente (&gt; 80% do tempo)</li>
 </ul>
-Algumas questões são <em>inversas</em>: aquelas onde a resposta ideal é "Sempre" (ex: "Sou tratado com justiça?"). Para essas questões, o score é ajustado automaticamente antes do cálculo (score_ajustado = 5 − score_bruto).`,
+<strong>Nota sobre questões inversas:</strong> para questões cuja resposta ideal é de afirmação (ex.: <em>"Sou tratado de forma justa e respeitosa?"</em>), a probabilidade do risco é inversamente proporcional à escala — ou seja, resposta "Sempre" corresponde a P1 (altamente improvável). O sistema ajusta automaticamente o score dessas questões antes do cálculo (score ajustado = 5 − score bruto).`,
 
-  blocos: `Os 27 itens estão organizados em três blocos:
+  blocos: `Os 27 itens estão organizados em três blocos temáticos:
 <ul>
-<li><strong>Bloco A — Demandas de Trabalho (Q1–Q7):</strong> avalia sobrecarga, prazos, pressão e repetitividade</li>
-<li><strong>Bloco B — Relações Interpessoais (Q8–Q17):</strong> avalia reconhecimento, conflitos, constrangimentos e comunicação</li>
-<li><strong>Bloco C — Fatores Organizacionais (Q18–Q27):</strong> avalia satisfação, mudanças, ambiente físico e segurança no emprego</li>
+<li><strong>Bloco A — Demandas de Trabalho (Q1–Q7):</strong> avalia sobrecarga quantitativa e cognitiva, prazos, pressão temporal e repetitividade das tarefas</li>
+<li><strong>Bloco B — Relações Interpessoais (Q8–Q17):</strong> avalia reconhecimento, conflitos hierárquicos e entre pares, constrangimentos, comunicação e suporte social</li>
+<li><strong>Bloco C — Fatores Organizacionais (Q18–Q27):</strong> avalia satisfação, mudanças não planejadas, insegurança no emprego, ambiente físico e condições de trabalho</li>
 </ul>`,
 
-  calculo: `Para cada fator de risco, o nível de <strong>Probabilidade (P)</strong> é determinado pela <em>moda</em> das respostas ajustadas de todas as questões associadas àquele fator — ou seja, o valor de resposta mais frequente entre os respondentes.
+  probabilidade: `<strong>Tabela 1 — Critérios para gradação da probabilidade de ocorrência do dano (P)</strong>
+<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
+  <thead><tr style="background:#1a5e2a"><th style="color:white;padding:6px 9px;text-align:left;width:28%">Ocorrência / Probabilidade</th><th style="color:white;padding:6px 9px;text-align:left">Critérios adotados</th></tr></thead>
+  <tbody>
+    <tr style="background:#fef2f2">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#991b1b;vertical-align:top">P4 — Quase Certo<br><span style="font-weight:400;font-size:10px">(Permanente)</span></td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Alta probabilidade de ocorrência. <strong>Exposição habitual &gt; 80% da jornada.</strong> Requisitos legais das NRs não são atendidos. Situações ergonômicas críticas. Resposta questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td>
+    </tr>
+    <tr style="background:#fff7ed">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#c2410c;vertical-align:top">P3 — Provável<br><span style="font-weight:400;font-size:10px">(Habitual)</span></td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Média probabilidade de ocorrência. <strong>Exposição intermitente entre 50% e 80% da jornada.</strong> Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos com frequência diária. Resposta questionário = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas de controle com desvios ou eficiência duvidosa.</td>
+    </tr>
+    <tr style="background:#fefce8">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#a16207;vertical-align:top">P2 — Improvável<br><span style="font-weight:400;font-size:10px">(Intermitente)</span></td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Baixa probabilidade de ocorrência. <strong>Exposição entre 10% e 50% da jornada.</strong> Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta questionário = <strong>"Às vezes"</strong>. Existem verbalizações e reclamações. Medidas de controle adequadas e eficientes com garantia de manutenção.</td>
+    </tr>
+    <tr style="background:#f0fdf4">
+      <td style="padding:8px 9px;font-weight:700;color:#166534;vertical-align:top">P1 — Alt. Improvável<br><span style="font-weight:400;font-size:10px">(Ocasional)</span></td>
+      <td style="padding:8px 9px;font-size:11px;color:var(--tm)">É improvável que ocorra. <strong>Exposição ocasional &lt; 10% da jornada.</strong> Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta questionário = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle com garantia de manutenção em longo prazo.</td>
+    </tr>
+  </tbody>
+</table>
+<div style="font-size:10px;color:var(--tl);margin-top:6px">Quadro adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.</div>`,
 
-O nível de <strong>Severidade (S)</strong> é predefinido por fator de risco, baseado nos critérios qualitativos da <em>Tabela 2</em> da metodologia Mulhausen & Damiano (1998), adaptada pela norma BS 8800.
+  severidade: `<strong>Tabela 2 — Critérios para gradação da Severidade / Efeito do dano (S) — Qualitativa</strong>
+<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
+  <thead><tr style="background:#1a5e2a"><th style="color:white;padding:6px 9px;width:20%">Índice de Severidade</th><th style="color:white;padding:6px 9px;width:30%">Definição geral</th><th style="color:white;padding:6px 9px">Critério ergonômico / psicossocial</th></tr></thead>
+  <tbody>
+    <tr style="background:#f0fdf4">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#166534;vertical-align:top">S1 — Leve</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Não geram sobrecargas humanas ou são insignificantes</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Efeitos ergonômicos insignificantes / desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td>
+    </tr>
+    <tr style="background:#eff6ff">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#1e40af;vertical-align:top">S2 — Moderado</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Geram situações de desconforto e fadiga</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td>
+    </tr>
+    <tr style="background:#fefce8">
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#92400e;vertical-align:top">S3 — Sério</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Riscos que podem prejudicar a saúde levando a lesões ou afastamentos</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td>
+    </tr>
+    <tr style="background:#fef2f2">
+      <td style="padding:8px 9px;font-weight:700;color:#991b1b;vertical-align:top">S4 — Severo</td>
+      <td style="padding:8px 9px;font-size:11px;color:var(--tm);vertical-align:top">Lesões ou afastamentos com alta incidência</td>
+      <td style="padding:8px 9px;font-size:11px;color:var(--tm)">Possibilidade de LER / DORT. Possibilidade de desencadeamento de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td>
+    </tr>
+  </tbody>
+</table>`,
 
-O <strong>Nível de Risco</strong> final é obtido pelo cruzamento P × S na Matriz de Risco:`,
+  calculo: `Para cada fator de risco, o nível de <strong>Probabilidade (P)</strong> é determinado pela <em>moda</em> (valor mais frequente) das respostas ajustadas de todas as questões associadas àquele fator, de acordo com os critérios da Tabela 1.
+
+O nível de <strong>Severidade (S)</strong> é predefinido por fator de risco com base nos critérios qualitativos da Tabela 2 (Mulhausen &amp; Damiano, 1998 / BS 8800), podendo ser ajustado pelo avaliador mediante justificativa técnica.
+
+O <strong>Nível de Risco</strong> final é obtido pelo cruzamento <strong>P × S</strong> na Matriz de Risco (Tabela 4):`,
 
   matriz: [
     ['','S1 — Leve','S2 — Moderado','S3 — Sério','S4 — Severo'],
@@ -6063,16 +6160,17 @@ O <strong>Nível de Risco</strong> final é obtido pelo cruzamento P × S na Mat
     ['P1 — Alt. improvável','IRRELEVANTE','BAIXO','BAIXO','MÉDIO'],
   ],
 
-  conduta: `A classificação do nível de risco orienta a <strong>conduta administrativa</strong> a ser adotada pela empresa:
+  conduta: `A classificação do nível de risco, baseada na equivalência de Couto (2007) e BS 8800, orienta a <strong>conduta administrativa</strong> a ser adotada:
 <ul>
-<li><span style="color:#14532d;font-weight:600">IRRELEVANTE:</span> nenhuma ação necessária</li>
-<li><span style="color:#365314;font-weight:600">BAIXO:</span> monitoramento periódico; aperfeiçoamentos opcionais</li>
-<li><span style="color:#78350f;font-weight:600">MÉDIO:</span> ações planejadas com prazo e responsáveis definidos</li>
-<li><span style="color:#7c2d12;font-weight:600">ALTO:</span> ações prioritárias e urgentes; risco deve ser reduzido</li>
-<li><span style="color:#7f1d1d;font-weight:600">CRÍTICO:</span> atividade deve ser suspensa até redução do risco</li>
-</ul>`,
+<li><span style="color:#14532d;font-weight:600">IRRELEVANTE (Ação técnica normal):</span> nenhuma ação necessária; nenhum registro documental precisa ser mantido.</li>
+<li><span style="color:#365314;font-weight:600">BAIXO (Improvável, mas possível):</span> nenhum controle adicional necessário; monitoramento para assegurar manutenção dos controles; melhorias podem ser realizadas.</li>
+<li><span style="color:#78350f;font-weight:600">MÉDIO (Desconforto, Dificuldade ou Fadiga):</span> esforços para redução do risco com custos avaliados; responsáveis e prazos definidos; monitoramento contínuo.</li>
+<li><span style="color:#7c2d12;font-weight:600">ALTO (Risco ergonômico):</span> esforços prioritários para redução do risco; trabalho não deve ser iniciado até redução do risco; ação urgente quando o risco envolve trabalho em execução.</li>
+<li><span style="color:#7f1d1d;font-weight:600">CRÍTICO (Alto risco ergonômico):</span> trabalho não deve ser iniciado nem continuado até redução aceitável do risco; se não for possível reduzir, a atividade deve ser proibida.</li>
+</ul>
+<em>É importante destacar que os riscos significativos identificados devem compor o <strong>Inventário de Riscos Ocupacionais do PGR</strong>, conforme NR-01.</em>`,
 
-  referencia: `Fonte: Adaptado de <em>Mulhausen & Damiano (1998)</em> e Apêndice D da BS 8800 (BSI, 1996). Conforme estabelecido no Programa de Gerenciamento de Riscos Ocupacionais — PGR, NR-01.`
+  referencia: `Fonte: Adaptado de <em>Mulhausen &amp; Damiano (1998)</em>, Apêndice D da <em>BS 8800</em> (BSI, 1996) e <em>AIHA 2015</em>. Classificação ergonômica conforme <em>Hudson Couto (2007)</em>. Conforme estabelecido no Programa de Gerenciamento de Riscos Ocupacionais — PGR, <strong>NR-01</strong>.`
 };
 
 // ── Ações sugeridas por cd_risco e nível (parametrizável) ──
@@ -6262,14 +6360,25 @@ async function renderLaudo() {
       ['IRRELEVANTE','BAIXO','BAIXO','MÉDIO'],
     ];
     html += `<div class="laudo-section">
-      <div class="laudo-sec-title">Metodologia de trabalho</div>
+      <div class="laudo-sec-title">Metodologia de trabalho e normas aplicáveis</div>
       <div class="metodologia-block">
         <p>${METODOLOGIA.introducao}</p>
+
         <h4>Instrumento de coleta</h4>
         <p>${METODOLOGIA.instrumento}</p>
+
         <h4>Blocos temáticos</h4>
         <p>${METODOLOGIA.blocos}</p>
-        <h4>Cálculo do nível de risco</h4>
+
+        <h4>Probabilidade (P) / Frequência</h4>
+        <p>A gradação da probabilidade/frequência da ocorrência do dano é feita atribuindo-se um índice de Probabilidade (P) variando de 1 a 4:</p>
+        <p>${METODOLOGIA.probabilidade}</p>
+
+        <h4>Severidade (S) / Efeito</h4>
+        <p>Para a gradação da Severidade atribui-se um índice (S) variando de 1 a 4, com base nos critérios qualitativos da Tabela 2:</p>
+        <p>${METODOLOGIA.severidade}</p>
+
+        <h4>Definição do Nível de Risco — Matriz P × S</h4>
         <p>${METODOLOGIA.calculo}</p>
         <div class="matrix-mini">
           <div class="mx-hdr" style="grid-column:1"></div>
@@ -6279,8 +6388,10 @@ async function renderLaudo() {
             ${row.map(n=>`<div class="mx-cell ${mxColors[n]}">${n}</div>`).join('')}
           `).join('')}
         </div>
+
+        <h4>Conduta administrativa por nível de risco</h4>
         <p>${METODOLOGIA.conduta}</p>
-        <p style="font-size:11px;color:var(--tl);margin-top:8px">${METODOLOGIA.referencia}</p>
+        <p style="font-size:11px;color:var(--tl);margin-top:10px;border-top:1px solid var(--bs);padding-top:8px">${METODOLOGIA.referencia}</p>
       </div>
     </div>`;
   }
