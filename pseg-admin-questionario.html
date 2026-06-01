@@ -3169,20 +3169,86 @@ async function _salvarRiscosDB() {
   } catch(e) { console.warn('[PSEG] _salvarRiscosDB:', e.message); }
 }
 
-// cd_risco → detalhes do risco (fonte: imagem 1 / tabela oficial PSEG)
+// cd_risco → detalhes do risco (fonte: Planilha Riscos Psicossociais e Fontes Geradoras — PSEG)
 // Editável pelo admin PSEG via painel de configuração de riscos
 const RISCOS_DETALHES = {
-  1: {nome:'Carga de trabalho excessiva',           cat:'DEMANDAS DE TRABALHO',       s:2, cons:'Aumento de estresse, fadiga elevada, risco de Burnout'},
-  3: {nome:'Sobrecarga de trabalho mental',          cat:'DEMANDAS DE TRABALHO',       s:2, cons:'Síndrome de Burnout, dificuldades de concentração e memória'},
-  4: {nome:'Constrangimento no ambiente de trabalho',cat:'RELAÇÕES INTERPESSOAIS',     s:2, cons:'Estresse crônico, esgotamento emocional'},
-  5: {nome:'Estresse por situações de desigualdade', cat:'RELAÇÕES INTERPESSOAIS',     s:2, cons:'Esgotamento, desmotivação'},
-  6: {nome:'Conflitos hierárquicos no trabalho',     cat:'RELAÇÕES INTERPESSOAIS',     s:2, cons:'Síndrome de Burnout, problemas do sono, piora no bem-estar'},
-  7: {nome:'Estresse por mudanças frequentes',       cat:'FATORES ORGANIZACIONAIS',    s:2, cons:'Sobrecarga mental, Ansiedade'},
-  8: {nome:'Insatisfação no trabalho',               cat:'FATORES ORGANIZACIONAIS',    s:2, cons:'Aumento do estresse, Ansiedade, Baixo auto-estima'},
-  9: {nome:'Conflitos interpessoais no trabalho',    cat:'RELAÇÕES INTERPESSOAIS',     s:2, cons:'Desconforto, dificuldade de colaboração'},
-  10:{nome:'Insegurança no emprego',                 cat:'FATORES ORGANIZACIONAIS',    s:1, cons:'Estresse crônico, distúrbios do sono'},
-  11:{nome:'Desconfortos por ambiente inadequado',   cat:'FATORES ORGANIZACIONAIS',    s:1, cons:'Desconforto físico e emocional'},
-  12:{nome:'Estresse por situações de discriminação',cat:'FATORES ORGANIZACIONAIS',    s:3, cons:'Esgotamento, risco de depressão'},
+  1: {
+    nome:'Carga de trabalho excessiva',
+    cat:'DEMANDAS DE TRABALHO', s:2,
+    cons:'Aumento do estresse, fadiga elevada, distúrbios musculares',
+    fontes:'Excesso de horas extras e falta de pausas; trabalho por longos períodos sem revezamento.',
+    medidas:'Monitorar e ajustar a carga de tarefas garantindo compatibilidade com as capacidades dos trabalhadores; promover pausas curtas e frequentes; oferecer treinamentos de gestão do tempo; estimular ferramentas de organização e melhoria de processos; promover cultura de comunicação aberta e feedback.',
+  },
+  3: {
+    nome:'Sobrecarga de trabalho mental',
+    cat:'DEMANDAS DE TRABALHO', s:3,
+    cons:'Ansiedade, estresse, Síndrome de Burnout, dificuldades de concentração e memória',
+    fontes:'Prazos impossíveis de serem cumpridos; excesso de situações de estresse acumulado.',
+    medidas:'Manter avaliações regulares para identificar excesso de demandas; ajustar tarefas e responsabilidades para nível de controle adequado; capacitar líderes para identificar e abordar sinais de sobrecarga mental nas equipes.',
+  },
+  4: {
+    nome:'Constrangimento no ambiente de trabalho',
+    cat:'RELAÇÕES INTERPESSOAIS', s:2,
+    cons:'Ansiedade, aumento dos conflitos interpessoais',
+    fontes:'Ausência de canais seguros para denúncias de comportamentos inadequados; situações expostas publicamente que deveriam ser privadas.',
+    medidas:'Manter política ativa de combate ao assédio com condutas esperadas e consequências definidas; promover treinamentos periódicos sobre respeito, diversidade, inclusão, ética e prevenção de assédio; manter canais confidenciais para relatos com proteção contra retaliações.',
+  },
+  5: {
+    nome:'Estresse por situações de desigualdade',
+    cat:'RELAÇÕES INTERPESSOAIS', s:2,
+    cons:'Aumento do estresse, ansiedade, depressão, baixa autoestima, problemas do sono',
+    fontes:'Presença de situações de desigualdade ou discriminação no local de trabalho.',
+    medidas:'Promover cultura de respeito e diálogo, valorizando inclusão e diversidade; manter políticas de compliance contra comportamentos humilhantes ou discriminatórios; capacitar líderes para gestão ética, assertiva e empática.',
+  },
+  6: {
+    nome:'Conflitos hierárquicos no trabalho',
+    cat:'RELAÇÕES INTERPESSOAIS', s:3,
+    cons:'Síndrome de Burnout, problemas do sono, aumento do estresse, piora no bem-estar',
+    fontes:'Falta de oportunidades para questionar a chefia/liderança; falta de clareza nas atribuições e responsabilidades; gestão de conflitos ineficaz.',
+    medidas:'Promover cultura de respeito e diálogo com comunicação aberta e valorização do trabalho em equipe; manter espaços seguros para relato de conflitos; implementar políticas internas de compliance; treinar lideranças em comunicação assertiva, gestão de conflitos e inteligência emocional.',
+  },
+  7: {
+    nome:'Estresse por mudanças frequentes',
+    cat:'FATORES ORGANIZACIONAIS', s:2,
+    cons:'Sobrecarga mental, aumento do estresse, ansiedade',
+    fontes:'Deficiência na gestão de mudanças organizacionais; mudanças repentinas sem aviso prévio ou conflitantes.',
+    medidas:'Envolver os colaboradores nos processos de mudança promovendo participação e feedback; executar treinamentos para preparar os funcionários para as novas condições; implantar procedimento de gestão de mudanças bem estruturado com comunicação frequente.',
+  },
+  8: {
+    nome:'Insatisfação no trabalho',
+    cat:'FATORES ORGANIZACIONAIS', s:2,
+    cons:'Aumento do estresse, ansiedade, baixa autoestima, piora no bem-estar no trabalho',
+    fontes:'Falta de retorno/feedback sobre os trabalhos realizados; falta de reconhecimento e desenvolvimento profissional; possível insatisfação com o salário.',
+    medidas:'Manter programas de valorização e gestão de carreira; promover reconhecimento pelo bom desempenho; incentivar liderança empática; promover comunicação aberta para que trabalhadores expressem dificuldades e sugestões.',
+  },
+  9: {
+    nome:'Conflitos interpessoais no trabalho',
+    cat:'RELAÇÕES INTERPESSOAIS', s:2,
+    cons:'Aumento do estresse, ansiedade',
+    fontes:'Falta de ajuda e apoio necessário dos colegas de trabalho; conflitos nos locais de trabalho.',
+    medidas:'Promover cultura de respeito e diálogo com comunicação aberta e reconhecimento positivo; manter espaços seguros para relatos; treinar lideranças em habilidades de liderança, comunicação assertiva e gestão de conflitos; promover ambiente colaborativo e trabalho em equipe.',
+  },
+  10:{
+    nome:'Insegurança no emprego',
+    cat:'FATORES ORGANIZACIONAIS', s:2,
+    cons:'Estresse e ansiedade elevados, piora no bem-estar, problemas de sono',
+    fontes:'Incertezas sobre a carreira; medo de perder o emprego; ausência de feedback.',
+    medidas:'Manter transparência na comunicação sobre a situação da empresa e planos futuros; garantir que políticas de contratação, demissão e benefícios sejam claras e justas; manter programas de desenvolvimento e capacitação profissional; oferecer planejamento de carreira.',
+  },
+  11:{
+    nome:'Desconfortos por ambiente inadequado',
+    cat:'FATORES ORGANIZACIONAIS', s:2,
+    cons:'Estresse crônico, esgotamento físico e emocional, doenças musculares',
+    fontes:'Trabalho em ambiente inadequado com desconfortos físicos e/ou emocionais.',
+    medidas:'Manter monitoramento contínuo do ambiente com avaliações ergonômicas e de clima; treinar gestores e colaboradores sobre ergonomia e saúde mental; promover pausas e atividades de relaxamento; envolver colaboradores na melhoria do ambiente.',
+  },
+  12:{
+    nome:'Estresse por situações de discriminação',
+    cat:'FATORES ORGANIZACIONAIS', s:3,
+    cons:'Aumento do estresse, ansiedade, depressão, baixa autoestima, problemas do sono',
+    fontes:'Presença de situações de discriminação racial, de gênero, etária ou por qualquer outra característica pessoal no ambiente de trabalho.',
+    medidas:'Promover cultura de respeito e igualdade; implementar políticas de compliance com normas claras contra discriminação; capacitar líderes e colaboradores; criar canais de denúncia seguros e confidenciais.',
+  },
 };
 
 // Mapa reverso para o select do painel (cd_risco → label curto)
@@ -6452,63 +6518,184 @@ O <strong>Nível de Risco</strong> final é obtido pelo cruzamento <strong>P × 
   referencia: `Fonte: Adaptado de <em>Mulhausen &amp; Damiano (1998)</em>, Apêndice D da <em>BS 8800</em> (BSI, 1996) e <em>AIHA 2015</em>. Classificação ergonômica conforme <em>Hudson Couto (2007)</em>. Conforme estabelecido no Programa de Gerenciamento de Riscos Ocupacionais — PGR, <strong>NR-01</strong>.`
 };
 
-// ── Ações sugeridas por cd_risco e nível (parametrizável) ──
-// Chaves = cd_risco (1-12), alinhadas com RISCOS_DETALHES
+// ── Ações sugeridas por cd_risco e nível — fonte: Planilha PSEG "Riscos Psicossociais e Fontes Geradoras" ──
 const ACOES_SUGERIDAS = {
   '1': { // Carga de trabalho excessiva
-    MÉDIO:   ['Mapear as principais fontes de sobrecarga e redesenhar processos prioritários.','Estabelecer metas de trabalho realistas com revisão periódica pela liderança.'],
-    ALTO:    ['Redistribuir tarefas imediatamente e revisar dimensionamento da equipe.','Implantar pausas regulares e limites de horas extras.','Acompanhamento médico/psicológico para colaboradores afetados.'],
-    CRÍTICO: ['Suspender demandas não essenciais. Auditoria imediata de processos e carga horária.','Avaliação ergonômica presencial obrigatória.'],
+    MÉDIO: [
+      'Monitorar e ajustar a carga de tarefas, garantindo compatibilidade com as capacidades e recursos dos trabalhadores.',
+      'Promover pausas curtas e frequentes durante a rotina de trabalho.',
+      'Proporcionar treinamentos de gestão do tempo e uso de ferramentas de organização.',
+    ],
+    ALTO: [
+      'Revisar os escopos das funções de trabalho, buscando otimizar processos e diminuir cargas excessivas.',
+      'Aplicar revezamento nas tarefas mais exaustivas/intensas e limitar horas extras.',
+      'Promover cultura de comunicação aberta e feedback entre equipe e liderança.',
+    ],
+    CRÍTICO: [
+      'Redistribuir imediatamente tarefas excessivas e acionar avaliação ergonômica presencial.',
+      'Revisar dimensionamento da equipe — avaliar necessidade de contratação emergencial.',
+      'Disponibilizar acompanhamento médico e psicológico para colaboradores afetados.',
+    ],
   },
   '3': { // Sobrecarga de trabalho mental
-    MÉDIO:   ['Realizar avaliações regulares de demandas cognitivas.','Redesenhar tarefas para garantir variedade e controle adequado.','Políticas de equilíbrio trabalho-vida: horários flexíveis e limites de horas.'],
-    ALTO:    ['Treinamento de líderes para identificar sinais de sobrecarga.','Capacitação em gestão de tempo e priorização para equipes.','Avaliar necessidade de contratação ou redistribuição.'],
-    CRÍTICO: ['Redesenho imediato de processos + avaliação ergonômica presencial.'],
+    MÉDIO: [
+      'Realizar avaliações regulares para identificar excesso de demandas cognitivas e prazos inatingíveis.',
+      'Treinar funcionários em habilidades de gerenciamento de tempo, resolução de conflitos e técnicas de relaxamento.',
+    ],
+    ALTO: [
+      'Capacitar líderes para identificar e abordar sinais de sobrecarga mental em suas equipes.',
+      'Ajustar tarefas e responsabilidades, garantindo nível de controle adequado sobre o trabalho.',
+      'Revisar e adequar prazos — eliminar metas inatingíveis que geram estresse crônico.',
+    ],
+    CRÍTICO: [
+      'Suspender imediatamente demandas não essenciais e acionar avaliação ergonômica presencial.',
+      'Encaminhar colaboradores com sintomas de Burnout para acompanhamento médico/psicológico.',
+      'Reestruturar processos e redistribuir carga com plano de ação documentado e prazo definido.',
+    ],
   },
   '4': { // Constrangimento no ambiente de trabalho
-    MÉDIO:   ['Reforçar canal de denúncias anônimo e garantir retorno sobre casos.','Treinamento obrigatório sobre assédio moral e conduta adequada.'],
-    ALTO:    ['Auditoria de clima organizacional.','Mediação profissional para casos identificados.','Revisar e publicar Código de Conduta com procedimentos de apuração claros.'],
-    CRÍTICO: ['Abertura imediata de processo disciplinar para casos identificados.','Suporte psicológico imediato às vítimas.'],
+    MÉDIO: [
+      'Implementar/manter canais de denúncia confidenciais com proteção contra retaliações.',
+      'Realizar treinamentos periódicos abordando respeito, diversidade, inclusão, ética e prevenção de assédio.',
+    ],
+    ALTO: [
+      'Implementar política de tolerância zero ao assédio: divulgar condutas proibidas e consequências para infratores.',
+      'Disponibilizar espaços seguros para relato de situações de constrangimento.',
+      'Acionar mediação profissional para casos identificados e registrar formalmente as ocorrências.',
+    ],
+    CRÍTICO: [
+      'Abrir processo disciplinar imediato para os casos identificados.',
+      'Disponibilizar suporte psicológico às pessoas afetadas.',
+      'Acionar equipe jurídica e de RH — situação configura potencial infração legal.',
+    ],
   },
   '5': { // Estresse por situações de desigualdade
-    MÉDIO:   ['Revisar políticas de diversidade e inclusão com metas mensuráveis.','Sensibilização obrigatória em equidade para todos os colaboradores.'],
-    ALTO:    ['Canal de escuta ativo com acompanhamento formal de casos.','Auditoria de práticas de promoção, remuneração e oportunidades.'],
-    CRÍTICO: ['Intervenção jurídica e de RH imediata.','Programa estruturado de diversidade com governança dedicada.'],
+    MÉDIO: [
+      'Promover treinamento de lideranças e colaboradores para gestão justa, imparcial e sensível à diversidade.',
+      'Estabelecer políticas claras contra qualquer forma de discriminação, assédio ou exclusão.',
+    ],
+    ALTO: [
+      'Criar canais de denúncia seguros e confidenciais para relatos de desigualdade sem medo de retaliação.',
+      'Realizar auditoria interna de práticas de promoção, remuneração e oportunidades.',
+      'Revisar e reforçar políticas de não discriminação e igualdade de oportunidades.',
+    ],
+    CRÍTICO: [
+      'Intervenção jurídica e de RH imediata — situações podem configurar discriminação passível de ação legal.',
+      'Estabelecer programa estruturado de diversidade com governança dedicada e metas mensuráveis.',
+      'Disponibilizar acompanhamento psicológico para colaboradores afetados.',
+    ],
   },
   '6': { // Conflitos hierárquicos
-    MÉDIO:   ['Programa de comunicação não-violenta (CNV) para líderes.','Reuniões 1:1 regulares entre líderes e equipes.'],
-    ALTO:    ['Mediação profissional de conflitos ativos.','Avaliação 360° de líderes com plano de desenvolvimento.'],
-    CRÍTICO: ['Afastamento temporário de líder envolvido em conflitos graves.','Reestruturação de equipes se necessário.'],
+    MÉDIO: [
+      'Capacitar e treinar lideranças em habilidades de comunicação assertiva, gestão de conflitos e inteligência emocional.',
+      'Implementar políticas internas de compliance com normas claras contra comportamentos agressivos ou humilhantes.',
+    ],
+    ALTO: [
+      'Manter espaços seguros para que colaboradores possam relatar conflitos e buscar soluções.',
+      'Desenvolver habilidades de empatia, escuta ativa e resolução de conflitos em todos os níveis hierárquicos.',
+      'Realizar mediação profissional para conflitos ativos identificados.',
+    ],
+    CRÍTICO: [
+      'Afastamento temporário do líder envolvido em conflitos graves até conclusão de apuração.',
+      'Acionar RH e equipe jurídica — comportamentos agressivos ou humilhantes configuram infração.',
+      'Disponibilizar suporte psicológico imediato para os colaboradores afetados.',
+    ],
   },
   '7': { // Mudanças frequentes não planejadas
-    MÉDIO:   ['Implementar processo formal de gestão de mudanças com comunicação prévia.','Fórum regular de alinhamento sobre transformações organizacionais.'],
-    ALTO:    ['Treinamento de líderes em gestão de mudanças.','Envolver equipes nas decisões que as afetam.'],
-    CRÍTICO: ['Moratorium em mudanças não essenciais até estabilização.','Diagnóstico de capacidade de absorção de mudanças da organização.'],
+    MÉDIO: [
+      'Manter implantado procedimento de gestão de mudanças bem estruturado com comunicação frequente.',
+      'Explicar aos colaboradores os motivos, etapas e impactos das mudanças antes de sua implementação.',
+    ],
+    ALTO: [
+      'Envolver colaboradores nos processos de mudança, promovendo participação e feedback.',
+      'Realizar treinamentos para preparar os funcionários para as mudanças e adaptação às novas condições.',
+      'Estabelecer canais de escuta ativa para captar dúvidas e ansiedades geradas pelas transformações.',
+    ],
+    CRÍTICO: [
+      'Suspender mudanças não essenciais até estabilização do clima organizacional.',
+      'Contratar consultoria especializada em gestão de mudanças para apoiar o processo.',
+      'Disponibilizar apoio psicológico para colaboradores com sobrecarga decorrente das mudanças.',
+    ],
   },
   '8': { // Insatisfação no trabalho
-    MÉDIO:   ['Aplicar pesquisa de clima complementar para identificar causas raiz.','Revisar plano de cargos, salários e benefícios.'],
-    ALTO:    ['Criar planos de desenvolvimento individual (PDI) e trilhas de carreira claras.','Reconhecimento formal e informal de desempenho.'],
-    CRÍTICO: ['Diagnóstico organizacional amplo. Revisão estratégica da cultura e gestão de pessoas.'],
+    MÉDIO: [
+      'Implantar/manter programas de valorização e gestão de carreira com reconhecimento pelo bom desempenho.',
+      'Promover treinamentos para gestores identificarem sinais de insatisfação e adotarem liderança empática.',
+    ],
+    ALTO: [
+      'Revisar plano de cargos, salários e benefícios — alinhar remuneração às práticas de mercado.',
+      'Criar planos de desenvolvimento individual (PDI) e trilhas de carreira com metas claras.',
+      'Promover comunicação aberta para que trabalhadores expressem dificuldades e sugestões.',
+    ],
+    CRÍTICO: [
+      'Realizar diagnóstico amplo de clima organizacional para identificar causas raiz da insatisfação.',
+      'Revisão estratégica da gestão de pessoas, cultura organizacional e condições de trabalho.',
+      'Implementar plano de ação emergencial com prazos e responsáveis definidos pela alta liderança.',
+    ],
   },
   '9': { // Conflitos interpessoais
-    MÉDIO:   ['Fortalecer cultura de respeito e colaboração com dinâmicas de equipe.','Treinamento em resolução de conflitos.'],
-    ALTO:    ['Mediação de RH para conflitos identificados.','Avaliação de compatibilidade de equipes e possível realocação.'],
-    CRÍTICO: ['Intervenção imediata de RH. Suporte psicológico disponível.'],
+    MÉDIO: [
+      'Realizar capacitação da equipe em habilidades interpessoais: comunicação assertiva, empatia e trabalho em equipe.',
+      'Promover ambiente colaborativo com reconhecimento positivo e cultura de respeito mútuo.',
+    ],
+    ALTO: [
+      'Manter espaços seguros para que colaboradores possam relatar conflitos e buscar soluções de forma confidencial.',
+      'Acionar mediação de RH para conflitos ativos identificados.',
+      'Desenvolver habilidades de resolução de conflitos e escuta ativa em todos os níveis da equipe.',
+    ],
+    CRÍTICO: [
+      'Intervenção imediata de RH com mediação profissional e acompanhamento formal.',
+      'Disponibilizar suporte psicológico para colaboradores afetados.',
+      'Avaliar realocação de colaboradores se os conflitos envolverem situações graves ou reincidentes.',
+    ],
   },
   '10': { // Insegurança no emprego
-    MÉDIO:   ['Comunicação transparente sobre situação e perspectivas da empresa.','Programas de desenvolvimento e requalificação profissional internos.'],
-    ALTO:    ['Compromissos formais de estabilidade para grupos impactados.','Acompanhamento psicológico disponível.'],
-    CRÍTICO: ['Comunicação imediata e honesta pela alta liderança.','Programa emergencial de apoio a colaboradores afetados.'],
+    MÉDIO: [
+      'Criar e garantir que as políticas de contratação, demissão e benefícios estejam claras e justas para todos.',
+      'Criar planos de carreira com oportunidades de crescimento e desenvolvimento profissional.',
+    ],
+    ALTO: [
+      'Manter transparência na comunicação sobre a situação da empresa, planos futuros e ações a serem tomadas.',
+      'Manter programas de desenvolvimento e capacitação, investindo na qualificação dos colaboradores.',
+      'Criar e manter procedimentos de gestão de crises para minimizar impactos na força de trabalho.',
+    ],
+    CRÍTICO: [
+      'Comunicação imediata e honesta pela alta liderança sobre cenários e perspectivas da organização.',
+      'Disponibilizar acompanhamento psicológico e programa emergencial de apoio para colaboradores afetados.',
+      'Implementar plano de retenção de talentos com compromissos formais de estabilidade para grupos críticos.',
+    ],
   },
   '11': { // Desconfortos por ambiente inadequado
-    MÉDIO:   ['Avaliação ergonômica presencial do posto de trabalho.','Adequar iluminação, temperatura e ruído conforme NR-17.'],
-    ALTO:    ['Reforma ou realocação de espaços inadequados.','Criar áreas de descompressão e pausas estruturadas.'],
-    CRÍTICO: ['Interdição do ambiente inadequado até correção. Avaliação técnica imediata.'],
+    MÉDIO: [
+      'Realizar avaliações de clima organizacional para identificar fatores de desconforto físicos e/ou emocionais.',
+      'Treinar gestores e colaboradores sobre ergonomia, saúde mental e boas práticas de convivência.',
+    ],
+    ALTO: [
+      'Promover pausas regulares, alongamentos e atividades que reduzam o estresse físico e emocional.',
+      'Envolver colaboradores na melhoria do ambiente — ouvir demandas e sugestões.',
+      'Adequar condições físicas do posto de trabalho: iluminação, temperatura, ruído e mobiliário conforme NR-17.',
+    ],
+    CRÍTICO: [
+      'Acionar avaliação ergonômica presencial imediata do ambiente identificado.',
+      'Interromper atividades no ambiente inadequado até correção das condições.',
+      'Implementar melhorias estruturais com prazo definido e monitoramento contínuo pós-intervenção.',
+    ],
   },
-  '12': { // Discriminação
-    MÉDIO:   ['Revisar políticas de diversidade e inclusão com metas mensuráveis.','Sensibilização obrigatória sobre discriminação para todos os colaboradores.'],
-    ALTO:    ['Canal de escuta ativo e acompanhamento formal de casos de discriminação.','Auditoria interna de práticas e processos com comitê externo.'],
-    CRÍTICO: ['Intervenção jurídica imediata.','Afastamento preventivo de envolvidos até apuração concluída.'],
+  '12': { // Estresse por situações de discriminação
+    MÉDIO: [
+      'Realizar treinamento de lideranças e colaboradores para gestão justa, imparcial e sensível ao combate à discriminação.',
+      'Estabelecer políticas claras contra qualquer forma de discriminação, assédio ou exclusão.',
+    ],
+    ALTO: [
+      'Criar canais de denúncia seguros e confidenciais para relatos sem medo de retaliação.',
+      'Realizar auditoria interna de práticas e processos com comitê externo independente.',
+      'Reforçar políticas de não discriminação e igualdade com divulgação ativa para toda a equipe.',
+    ],
+    CRÍTICO: [
+      'Intervenção jurídica imediata — situações podem configurar crime ou infração trabalhista.',
+      'Afastamento preventivo dos envolvidos até conclusão da apuração.',
+      'Disponibilizar acompanhamento psicológico para as vítimas e implementar programa de reparação.',
+    ],
   },
 };
 
@@ -6774,7 +6961,7 @@ async function renderLaudo() {
     grupos.forEach(grupo => {
       const lGrupo = linhas.filter(r=>grupo.setores.includes(r.setor));
       if (!lGrupo.length) return;
-      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE'&&f.nivel!=='BAIXO');
+      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE');
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
           <div class="alert alert-g">Todos os fatores estão em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.</div></div>`;
@@ -6782,23 +6969,32 @@ async function renderLaudo() {
       }
       html += `<div class="laudo-section">
         <div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
-        <table class="acoes-table">
-          <thead><tr><th>Fator de risco</th><th>Nível</th><th>Ações recomendadas</th></tr></thead>
-          <tbody>
-          ${fGrupo.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).map(f=>{
-            // ACOES_SUGERIDAS indexado por cd_risco; fallback para o id legado
-    const acoesKey = f.cd ? String(f.cd) : f.id;
-    const acoes = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
-            return `<tr>
-              <td>${f.nome}<br><span style="font-size:10px;color:var(--tl)">${f.n_questoes||1} questão(ões)</span></td>
-              <td><span style="background:${NivelCores[f.nivel]};color:${NivelTxt[f.nivel]};font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;white-space:nowrap">${f.nivel}</span></td>
-              <td><ul style="padding-left:16px;margin:0">${acoes.map(a=>`<li style="margin-bottom:3px">${a}</li>`).join('')}</ul></td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table>
-        <div style="font-size:11px;color:var(--tl);margin-top:10px;font-style:italic">
-          As ações acima são sugestões baseadas na metodologia PSEG e devem ser complementadas com avaliação presencial pelo técnico responsável.
+        ${fGrupo.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).map(f=>{
+          const acoesKey = f.cd ? String(f.cd) : String(f.id);
+          const detalhe  = RISCOS_DETALHES[f.cd || f.id] || {};
+          const acoes    = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
+          const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
+          return `<div style="margin-bottom:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            <!-- cabeçalho do fator -->
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
+              <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${f.nome}</span>
+              <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
+            </div>
+            <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+              ${detalhe.cons ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Consequências:</strong> ${detalhe.cons}</div>` : ''}
+              ${detalhe.fontes ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${detalhe.fontes}</div>` : ''}
+              ${detalhe.medidas ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Medidas de controle:</strong> ${detalhe.medidas}</div>` : ''}
+              <div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado</div>
+                <ul style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
+                  ${acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">
+          ℹ️ As ações acima são baseadas na planilha de Riscos Psicossociais e Fontes Geradoras (PSEG) e devem ser complementadas com avaliação presencial pelo técnico responsável.
         </div>
       </div>`;
     });
@@ -6981,38 +7177,80 @@ async function gerarLaudoPDF() {
     grupos.forEach(grupo => {
       const lG = linhas.filter(r=>grupo.setores.includes(r.setor));
       if (!lG.length) return;
-      const fG = calcFatores(lG).filter(f=>f.nivel!=='IRRELEVANTE'&&f.nivel!=='BAIXO');
+      const fG = calcFatores(lG).filter(f=>f.nivel!=='IRRELEVANTE');
       checkY(14);
       doc.setFillColor(232,245,237); doc.roundedRect(M,y,CW,7,2,2,'F');
       doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
       doc.text(`4. Ações Recomendadas — ${grupo.nome}`,M+4,y+4.5); y+=11;
       if (!fG.length) {
         doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90,122,101);
-        doc.text('Todos os fatores em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.',M,y); y+=8;
+        doc.text('Todos os fatores em nível IRRELEVANTE. Manter monitoramento periódico.',M,y); y+=8;
         return;
       }
       const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
       fG.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).forEach(f=>{
-        const acoes = ACOES_SUGERIDAS[f.id]?.[f.nivel]||['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
-        checkY(10+acoes.length*5);
-        const nc=NivelPDF[f.nivel],nt=NivelTxtPDF[f.nivel];
+        const acoesKey = f.cd ? String(f.cd) : String(f.id);
+        const detalhe  = RISCOS_DETALHES[f.cd || f.id] || {};
+        const acoes    = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
+        // Estimar altura total do bloco
+        const linhasCons    = detalhe.cons   ? doc.splitTextToSize(detalhe.cons,   CW-36) : [];
+        const linhasFontes  = detalhe.fontes ? doc.splitTextToSize(detalhe.fontes, CW-36) : [];
+        const linhasMedidas = detalhe.medidas? doc.splitTextToSize(detalhe.medidas,CW-36) : [];
+        const linhasAcoes   = acoes.flatMap(a => doc.splitTextToSize('• '+a, CW-8));
+        const altTotal = 8 + (linhasCons.length+linhasFontes.length+linhasMedidas.length)*4 + linhasAcoes.length*4 + 16;
+        checkY(Math.min(altTotal, 60));
+
+        const nc=NivelPDF[f.nivel], nt=NivelTxtPDF[f.nivel];
+        // Cabeçalho do fator
         doc.setFillColor(248,252,249); doc.roundedRect(M,y,CW,6,1.5,1.5,'F');
-        doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+        doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
         doc.text(f.nome,M+3,y+4.2);
-        doc.setFillColor(...nc); doc.roundedRect(PW-M-24,y+1,22,4.5,1.5,1.5,'F');
-        doc.setFontSize(7); doc.setTextColor(...nt); doc.text(f.nivel,PW-M-13,y+4,{align:'center'});
+        doc.setFillColor(...nc); doc.roundedRect(PW-M-26,y+1,24,4.5,1.5,1.5,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...nt);
+        doc.text(f.nivel,PW-M-14,y+4,{align:'center'});
         y+=8;
-        acoes.forEach(a=>{
+
+        // Consequências
+        if (linhasCons.length) {
+          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(60,80,70);
+          doc.text('Consequências:',M+3,y);
+          doc.setFont('helvetica','normal');
+          doc.text(linhasCons,M+36,y);
+          y+=Math.max(linhasCons.length*4,4)+2;
+        }
+        // Fontes geradoras
+        if (linhasFontes.length) {
           checkY(6);
-          doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(60,80,70);
-          const w=doc.splitTextToSize('• '+a,CW-6);
+          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(60,80,70);
+          doc.text('Fontes geradoras:',M+3,y);
+          doc.setFont('helvetica','normal');
+          doc.text(linhasFontes,M+36,y);
+          y+=Math.max(linhasFontes.length*4,4)+2;
+        }
+        // Medidas de controle
+        if (linhasMedidas.length) {
+          checkY(6);
+          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(60,80,70);
+          doc.text('Medidas de controle:',M+3,y);
+          doc.setFont('helvetica','normal');
+          doc.text(linhasMedidas,M+36,y);
+          y+=Math.max(linhasMedidas.length*4,4)+2;
+        }
+        // Plano de ação
+        checkY(6);
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+        doc.text('Plano de ação recomendado:',M+3,y); y+=5;
+        acoes.forEach(a=>{
+          checkY(5);
+          doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(26,46,34);
+          const w=doc.splitTextToSize('• '+a, CW-8);
           doc.text(w,M+4,y);
-          y+=w.length*4+2;
+          y+=w.length*4+1;
         });
-        y+=3;
+        y+=5;
       });
-      doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(140,160,150);
-      doc.text('As ações acima devem ser complementadas com avaliação presencial pelo técnico responsável.',M,y); y+=8;
+      doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(140,160,150);
+      doc.text('Fonte: Planilha PSEG "Riscos Psicossociais e Fontes Geradoras". Ações devem ser complementadas com avaliação presencial pelo técnico responsável.',M,y); y+=8;
     });
   }
 
