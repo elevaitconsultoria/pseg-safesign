@@ -7096,9 +7096,9 @@ async function gerarLaudoPDF() {
   // PÁGINA 1 — CAPA (página inteira, sem conteúdo misturado)
   // ══════════════════════════════════════════════════════════════
   doc.setFillColor(26,95,46); doc.rect(0,0,PW,PH,'F');
-  // Linha decorativa
+  // Linhas decorativas
   doc.setFillColor(34,197,94); doc.rect(0,70,PW,1,'F');
-  doc.setFillColor(255,255,255,0.1); doc.rect(0,PH-70,PW,1,'F');
+  doc.setFillColor(255,255,255); doc.rect(0,PH-70,PW,0.4,'F');
 
   // Logo / marca
   txt('',10,'bold',255,255,255);
@@ -7148,8 +7148,9 @@ async function gerarLaudoPDF() {
 
   // ══════════════════════════════════════════════════════════════
   // 1. METODOLOGIA / INTRODUÇÃO
+  // Metodologia: sempre incluída no laudo técnico (seção obrigatória)
   // ══════════════════════════════════════════════════════════════
-  if (laudoSecoesAtivas.has('metodologia')) {
+  {
     secTitle('Introducao — Metodologia de Trabalho e Normas Aplicaveis','1');
 
     // Parágrafos do documento oficial
@@ -7281,7 +7282,7 @@ async function gerarLaudoPDF() {
   // 2. RESULTADOS
   // ══════════════════════════════════════════════════════════════
   if (laudoSecoesAtivas.has('resultados')) {
-    const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MEDIO','ALTO','CRITICO'];
+    const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
     // Colunas: Fator(72) + Consequencia(60) + P(12) + S(12) + Nivel(24) = 180 = CW
     const tCols=[72,60,12,12,24];
     const tX=[M, M+72, M+132, M+144, M+156];
@@ -7371,7 +7372,7 @@ async function gerarLaudoPDF() {
   // 4. AÇÕES RECOMENDADAS
   // ══════════════════════════════════════════════════════════════
   if (laudoSecoesAtivas.has('acoes')) {
-    const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MEDIO','ALTO','CRITICO'];
+    const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
     grupos.forEach(grupo=>{
       const lG=linhas.filter(r=>grupo.setores.includes(r.setor));
       if(!lG.length) return;
