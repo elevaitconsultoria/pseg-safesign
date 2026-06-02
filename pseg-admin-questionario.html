@@ -6826,9 +6826,18 @@ async function renderLaudo() {
       ['IRRELEVANTE','BAIXO','BAIXO','MÉDIO'],
     ];
     html += `<div class="laudo-section">
-      <div class="laudo-sec-title">Metodologia de trabalho e normas aplicáveis</div>
+      <div class="laudo-sec-title">1. Introdução — Metodologia de Trabalho e Normas Aplicáveis</div>
       <div class="metodologia-block">
-        <p>${METODOLOGIA.introducao}</p>
+
+        <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
+
+        <p>Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são <strong>orientativos</strong> e buscam auxiliar os avaliadores.</p>
+
+        <p>A classificação correta dos riscos também deve considerar o que podemos chamar de <strong>"amenizadores"</strong> — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.</p>
+
+        <p>Devem ser considerados também as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.</p>
+
+        <p>Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve levar em consideração na tomada de decisão, além dos fatores descritos, outros requisitos como sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.</p>
 
         <h4>Instrumento de coleta</h4>
         <p>${METODOLOGIA.instrumento}</p>
@@ -6841,7 +6850,7 @@ async function renderLaudo() {
         <p>${METODOLOGIA.probabilidade}</p>
 
         <h4>Severidade (S) / Efeito</h4>
-        <p>Para a gradação da Severidade atribui-se um índice (S) variando de 1 a 4, com base nos critérios qualitativos da Tabela 2:</p>
+        <p>Para a gradação da Severidade do dano potencial atribui-se um índice (S) variando de 1 a 4, com base nos critérios qualitativos da Tabela 2:</p>
         <p>${METODOLOGIA.severidade}</p>
 
         <h4>Definição do Nível de Risco — Matriz P × S</h4>
@@ -6857,7 +6866,10 @@ async function renderLaudo() {
 
         <h4>Conduta administrativa por nível de risco</h4>
         <p>${METODOLOGIA.conduta}</p>
-        <p style="font-size:11px;color:var(--tl);margin-top:10px;border-top:1px solid var(--bs);padding-top:8px">${METODOLOGIA.referencia}</p>
+
+        <p style="font-size:11px;color:var(--tl);margin-top:12px;border-top:1px solid var(--bs);padding-top:8px">
+          <strong>Fonte:</strong> ${METODOLOGIA.referencia}
+        </p>
       </div>
     </div>`;
   }
@@ -7067,31 +7079,148 @@ async function gerarLaudoPDF() {
   doc.text(`Setores: ${[...new Set(linhas.map(r=>r.setor))].join(', ')}`,M,44);
   y=58;
 
-  // ── METODOLOGIA ──
+  // ── INTRODUÇÃO / METODOLOGIA ──
   if (laudoSecoesAtivas.has('metodologia')) {
     checkY(10);
-    doc.setFillColor(232,245,237); doc.roundedRect(M,y,CW,7,2,2,'F');
-    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
-    doc.text('1. Metodologia de Trabalho',M+4,y+4.5); y+=11;
+    doc.setFillColor(26,95,46); doc.roundedRect(M,y,CW,7,2,2,'F');
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    doc.text('1. Introdução — Metodologia de Trabalho e Normas Aplicáveis',M+4,y+4.5); y+=12;
 
-    const metaTextos = [
-      {t:'Normas aplicáveis:', v:'NR-17 (Ergonomia) e NR-01 (Gerenciamento de Riscos Ocupacionais) do MTE.'},
-      {t:'Instrumento:', v:'Questionário de 27 questões em escala Likert 1-4 (Nunca · Às vezes · Frequente · Sempre). Questões inversas ajustadas: score = 5 − valor bruto.'},
-      {t:'Cálculo P:', v:'Moda das respostas ajustadas por fator de risco (1–4 → P1 a P4).'},
-      {t:'Cálculo S:', v:'Índice predefinido por fator de risco (S1 Leve a S4 Severo), conforme critérios qualitativos da metodologia.'},
-      {t:'Nível de Risco:', v:'Cruzamento P × S na Matriz BS 8800 → IRRELEVANTE / BAIXO / MÉDIO / ALTO / CRÍTICO.'},
-      {t:'Referência:', v:'Mulhausen & Damiano (1998) · BS 8800 (BSI, 1996) · PGR NR-01.'},
+    // Parágrafos introdutórios (texto exato do documento PSEG)
+    const introParagrafos = [
+      'Para cada risco psicossocial foi indicado o nível de risco ocupacional, determinado pela combinação da probabilidade / frequência de sua ocorrência e da severidade / efeito das possíveis lesões ou agravos à saúde.',
+      'Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são orientativos e buscam auxiliar os avaliadores.',
+      'A classificação correta dos riscos também deve considerar o que podemos chamar de "amenizadores" — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.',
+      'Devem ser considerados também: as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.',
+      'Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve considerar, além dos fatores descritos, sua experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas.',
     ];
-    metaTextos.forEach(({t,v})=>{
+    introParagrafos.forEach(p => {
+      checkY(10);
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(40,60,50);
+      const w = doc.splitTextToSize(p, CW);
+      doc.text(w, M, y);
+      y += w.length * 4 + 3;
+    });
+    y += 3;
+
+    // Instrumento de coleta
+    checkY(8);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+    doc.text('Instrumento de Coleta', M, y); y += 5;
+    const instrTexto = 'Foi aplicado um questionário com 27 questões fechadas, respondidas de forma anonima. As respostas utilizam escala Likert de 4 pontos: 1-Nunca (altamente improvavel / exposicao < 10%), 2-As vezes (improvavel / 10-50%), 3-Frequentemente (provavel / 50-80%), 4-Sempre (quase certo / > 80%). Questoes inversas tem score ajustado automaticamente (score = 5 - valor bruto).';
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(40,60,50);
+    const wi = doc.splitTextToSize(instrTexto, CW);
+    checkY(wi.length*4+2); doc.text(wi, M, y); y += wi.length*4+5;
+
+    // Tabela P
+    checkY(10);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+    doc.text('Tabela 1 — Critérios de Probabilidade (P)', M, y); y+=5;
+    const pRows = [
+      ['P4 — Quase Certo (Perm.)', 'Exposição > 80% da jornada. NRs não atendidas. Resposta = "Sempre". Medidas inexistentes.'],
+      ['P3 — Provável (Habitual)', 'Exposição 50-80% da jornada. NRs parcialmente atendidas. Resposta = "Frequentemente".'],
+      ['P2 — Improvável (Interm.)', 'Exposição 10-50% da jornada. NRs plenamente atendidas. Resposta = "Às vezes".'],
+      ['P1 — Alt. Improvável (Ocas.)', 'Exposição < 10% da jornada. Sem requisitos NR. Resposta = "Nunca". Controles ótimos.'],
+    ];
+    const pColors = [[254,226,226],[255,247,237],[254,252,232],[240,253,244]];
+    pRows.forEach(([lbl,txt],ri) => {
       checkY(8);
-      doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
-      doc.text(t, M, y);
-      doc.setFont('helvetica','normal'); doc.setTextColor(90,122,101);
-      const wrapped = doc.splitTextToSize(v, CW-36);
-      doc.text(wrapped, M+36, y);
-      y += Math.max(wrapped.length*4, 5)+2;
+      doc.setFillColor(...pColors[ri]); doc.roundedRect(M,y,CW,6.5,1,1,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+      doc.text(lbl,M+2,y+4.2);
+      doc.setFont('helvetica','normal'); doc.setTextColor(60,80,70);
+      const wt = doc.splitTextToSize(txt,CW-55);
+      doc.text(wt,M+56,y+(6.5-wt.length*3.5)/2+3);
+      y += Math.max(wt.length*3.8,6)+2;
+    });
+    y+=3;
+
+    // Tabela S
+    checkY(10);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+    doc.text('Tabela 2 — Critérios de Severidade (S)', M, y); y+=5;
+    const sRows = [
+      ['S1 — Leve','Efeitos insignificantes/desprezíveis. Desmotivação pontual, ansiedade leve, frustração passageira.'],
+      ['S2 — Moderado','Desconforto e fadiga moderada. Irritabilidade, desânimo, baixa autoestima frequentes.'],
+      ['S3 — Sério','Pode levar a lesões ou afastamentos. Estresse crônico, esgotamento, distúrbios do sono, crises de ansiedade.'],
+      ['S4 — Severo','Lesões/afastamentos com alta incidência. LER/DORT, transtornos graves, depressão, crises de pânico.'],
+    ];
+    const sColors = [[240,253,244],[239,246,255],[254,252,232],[254,242,242]];
+    sRows.forEach(([lbl,txt],ri) => {
+      checkY(8);
+      doc.setFillColor(...sColors[ri]); doc.roundedRect(M,y,CW,6.5,1,1,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+      doc.text(lbl,M+2,y+4.2);
+      doc.setFont('helvetica','normal'); doc.setTextColor(60,80,70);
+      const wt = doc.splitTextToSize(txt,CW-40);
+      doc.text(wt,M+40,y+(6.5-wt.length*3.5)/2+3);
+      y += Math.max(wt.length*3.8,6)+2;
+    });
+    y+=3;
+
+    // Matriz de risco P x S
+    checkY(36);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+    doc.text('Tabela 4 — Matriz de Risco P × S', M, y); y+=5;
+    const mxPDF = [
+      ['P4','MÉDIO','ALTO','ALTO','CRÍTICO'],
+      ['P3','BAIXO','MÉDIO','ALTO','ALTO'],
+      ['P2','BAIXO','BAIXO','MÉDIO','ALTO'],
+      ['P1','IRRELEVANTE','BAIXO','BAIXO','MÉDIO'],
+    ];
+    const mxW = CW/5;
+    // Header S
+    doc.setFillColor(26,95,46);
+    doc.rect(M+mxW,y,mxW*4,5,'F');
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    ['S1 — Leve','S2 — Mod.','S3 — Sério','S4 — Severo'].forEach((h,i)=>{
+      doc.text(h,M+mxW+mxW*i+mxW/2,y+3.5,{align:'center'});
+    });
+    y+=5;
+    const mxFill = {IRRELEVANTE:[240,253,244],BAIXO:[220,252,231],MÉDIO:[254,243,199],ALTO:[254,215,170],CRÍTICO:[254,202,202]};
+    const mxTxt  = {IRRELEVANTE:[21,128,61], BAIXO:[22,101,52], MÉDIO:[146,64,14], ALTO:[154,52,18], CRÍTICO:[153,27,27]};
+    mxPDF.forEach(row=>{
+      doc.setFillColor(26,95,46); doc.rect(M,y,mxW,5,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+      doc.text(row[0],M+mxW/2,y+3.5,{align:'center'});
+      row.slice(1).forEach((cell,ci)=>{
+        const fc=mxFill[cell]||[248,248,248],tc=mxTxt[cell]||[50,50,50];
+        doc.setFillColor(...fc); doc.rect(M+mxW+mxW*ci,y,mxW,5,'F');
+        doc.setTextColor(...tc); doc.setFontSize(6);
+        doc.text(cell,M+mxW+mxW*ci+mxW/2,y+3.5,{align:'center'});
+      });
+      y+=5;
     });
     y+=4;
+
+    // Conduta administrativa
+    checkY(10);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,95,46);
+    doc.text('Conduta Administrativa por Nível de Risco (BS 8800 / Couto 2007)', M, y); y+=5;
+    const condRows=[
+      ['IRRELEVANTE','Nenhuma ação necessária; nenhum registro documental precisa ser mantido.'],
+      ['BAIXO','Nenhum controle adicional necessário. Monitorar para assegurar manutenção dos controles.'],
+      ['MÉDIO','Esforços para reduzir o risco com responsáveis e prazos definidos; monitoramento contínuo.'],
+      ['ALTO','Ações prioritárias e urgentes. Trabalho não deve ser iniciado até redução do risco.'],
+      ['CRÍTICO','Trabalho não deve ser iniciado nem continuado até redução aceitável. Atividade proibida se não for possível reduzir.'],
+    ];
+    condRows.forEach(([nivel,txt])=>{
+      checkY(7);
+      const fc=mxFill[nivel]||[248,248,248], tc=mxTxt[nivel]||[50,50,50];
+      doc.setFillColor(...fc); doc.roundedRect(M,y,CW,6,1,1,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...tc);
+      doc.text(nivel,M+2,y+4);
+      doc.setFont('helvetica','normal'); doc.setTextColor(40,60,50);
+      const wt=doc.splitTextToSize(txt,CW-30);
+      doc.text(wt,M+32,y+(6-wt.length*3.2)/2+3);
+      y+=Math.max(wt.length*3.5,6)+2;
+    });
+
+    // Referências
+    y+=4; checkY(8);
+    doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(120,140,130);
+    doc.text('Referências: Mulhausen & Damiano (1998) · Apêndice D da BS 8800 (BSI, 1996) · AIHA 2015 · Hudson Couto (2007) · NR-01 / PGR.', M, y);
+    y+=8;
   }
 
   // ── RESULTADOS ──
