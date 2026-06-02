@@ -4858,8 +4858,39 @@ function agruparPorGrupos(setores, grupos) {
   return [...result,...sem];
 }
 
-const P_LABELS = {1:'Alt. improvável (Ocasional)',2:'Improvável (Intermitente)',3:'Provável (Habitual)',4:'Quase certo (Permanente)'};
-const S_LABELS = {1:'Leve',2:'Moderado',3:'Sério',4:'Severo'};
+const P_LABELS = {
+  1: 'Altamente Improvável (Ocasional)',
+  2: 'Improvável (Intermitente)',
+  3: 'Provável (Habitual)',
+  4: 'Quase Certo (Permanente)',
+};
+const S_LABELS = {1:'Leve', 2:'Moderado', 3:'Sério', 4:'Severo'};
+
+// Classificação ergonômica — Couto (2007) × BS 8800
+const CLASSIF_ERGONOMICA = {
+  IRRELEVANTE: 'Ação técnica normal ou sem risco ergonômico',
+  BAIXO:       'Improvável, mas possível',
+  MÉDIO:       'Desconforto, Dificuldade ou Fadiga',
+  ALTO:        'Risco Ergonômico',
+  CRÍTICO:     'Alto Risco Ergonômico',
+};
+
+// Critérios qualitativos de Severidade — Tabela 2 do documento PSEG
+const S_CRITERIA = {
+  1: 'Não geram sobrecargas significativas. Efeitos insignificantes/desprezíveis, baixa fadiga mental. Desmotivação, sensação de invisibilidade, ansiedade leve, frustração.',
+  2: 'Geram situações de desconforto e fadiga moderada. Frustração frequente, baixa autoestima, irritabilidade moderada, queda de imunidade.',
+  3: 'Podem prejudicar a saúde levando a afastamentos. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, crises de ansiedade.',
+  4: 'Lesões ou afastamentos com alta incidência. Crises de pânico, depressão, perda de controle emocional, possibilidade de DORT.',
+};
+
+// Conduta administrativa por nível — BS 8800 / NR-01
+const CONDUTA_ADMINISTRATIVA = {
+  IRRELEVANTE: 'Nenhuma ação é requerida e nenhum registro documental precisa ser mantido.',
+  BAIXO:       'Nenhum controle adicional é necessário. Pode-se considerar aperfeiçoamentos opcionais. Monitoração periódica para assegurar que os controles são mantidos.',
+  MÉDIO:       'Esforços devem ser realizados para reduzir o risco. As medidas a implementar devem ter responsáveis e prazos de conclusão definidos. Monitoramento contínuo necessário.',
+  ALTO:        'Esforços prioritários até que o risco seja reduzido. Quando o risco envolver trabalho em execução, ação urgente deve ser tomada. Recursos consideráveis podem ser necessários.',
+  CRÍTICO:     'O trabalho não deve ser iniciado nem continuado até que o risco seja reduzido. Se não for possível reduzir o risco, o trabalho deve permanecer proibido.',
+};
 const CAT_ORDER = ['DEMANDAS DE TRABALHO','RELAÇÕES INTERPESSOAIS','FATORES ORGANIZACIONAIS'];
 
 // ── ENGINE v2: calcula por cd_risco com peso igual por questão ──
@@ -4937,8 +4968,11 @@ function calcFatores(linhas) {
       cat:   rd ? rd.cat  : 'OUTROS',
       cons:  rd ? rd.cons : '',
       s, p, nivel,
-      pLabel:   P_LABELS[p],
-      sLabel:   S_LABELS[s] || String(s),
+      pLabel:     P_LABELS[p],
+      sLabel:     S_LABELS[s] || String(s),
+      sCriteria:  S_CRITERIA[s] || '',
+      classifErg: CLASSIF_ERGONOMICA[nivel] || nivel,
+      conduta:    CONDUTA_ADMINISTRATIVA[nivel] || '',
       avgDist,           // distribuição média (para barras da aba Distribuição)
       distQuestoes,      // por questão (para collapsible na tabela)
       n_questoes: N,
@@ -6915,13 +6949,19 @@ async function renderLaudo() {
                 <div style="height:16px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${barSegs}</div>
                 <div style="font-size:9px;color:var(--tm);margin-top:3px;font-style:italic">${f.cons}</div>
               </td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:middle">
+              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;padding-top:12px">
                 <span style="${S_BADGE_S[f.s]||''};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block">S${f.s}</span>
-                <div style="font-size:9px;color:var(--tl);margin-top:2px">${S_LABELS[f.s]||''}</div>
+                <div style="font-size:9px;color:var(--tl);margin-top:2px">${f.sLabel}</div>
+                <div style="font-size:9px;color:var(--tm);margin-top:4px;line-height:1.5;text-align:left;max-width:140px">${f.sCriteria}</div>
               </td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;font-weight:800;font-size:16px;color:${nt};vertical-align:middle;white-space:nowrap">P${f.p}</td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:middle;width:88px;min-width:88px">
-                <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:3px 0;border-radius:4px;white-space:nowrap;display:block;text-align:center;width:100%">${f.nivel}</span>
+              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;padding-top:12px">
+                <span style="font-weight:800;font-size:16px;color:${nt}">P${f.p}</span>
+                <div style="font-size:9px;color:var(--tl);margin-top:2px">${f.pLabel}</div>
+              </td>
+              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;width:120px;min-width:120px;padding-top:12px">
+                <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;display:inline-block">${f.nivel}</span>
+                <div style="font-size:9px;color:var(--tm);margin-top:4px;line-height:1.5;text-align:left">${f.classifErg}</div>
+                <div style="font-size:9px;color:var(--tl);margin-top:3px;line-height:1.5;text-align:left;font-style:italic">${f.conduta}</div>
               </td>
             </tr>`;
           }).join('')}
@@ -7280,12 +7320,12 @@ async function gerarLaudoPDF() {
 
   // ══════════════════════════════════════════════════════════════
   // 2. RESULTADOS
+  // Colunas: Fator(58) + P/S(22) + Nivel+Classif(100) = 180 = CW
   // ══════════════════════════════════════════════════════════════
   if (laudoSecoesAtivas.has('resultados')) {
     const NIVEIS_ORDER=['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
-    // Colunas: Fator(72) + Consequencia(60) + P(12) + S(12) + Nivel(24) = 180 = CW
-    const tCols=[72,60,12,12,24];
-    const tX=[M, M+72, M+132, M+144, M+156];
+    const C_FATOR=58, C_PS=22, C_NIVEL=CW-C_FATOR-C_PS; // 100mm
+    const tX=[M, M+C_FATOR, M+C_FATOR+C_PS];
 
     grupos.forEach(grupo=>{
       const lG=linhas.filter(r=>grupo.setores.includes(r.setor));
@@ -7294,41 +7334,65 @@ async function gerarLaudoPDF() {
       const pior=fG.reduce((w,f)=>NIVEIS_ORDER.indexOf(f.nivel)>NIVEIS_ORDER.indexOf(w)?f.nivel:w,'IRRELEVANTE');
       secTitle(`Resultados — ${grupo.nome}  (n=${lG.length})`,'2');
 
-      // Badge nível pior
+      // Badge nível pior ao lado do título
       const bg2=NC_BG[pior]||[240,240,240], tc2=NC_TXT[pior]||[50,50,50];
-      doc.setFillColor(...bg2); doc.roundedRect(PW-M-30,y-10,28,6,2,2,'F');
+      doc.setFillColor(...bg2); doc.roundedRect(PW-M-32,y-10,30,6,2,2,'F');
       doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...tc2);
-      doc.text(pior,PW-M-16,y-6,{align:'center'});
+      doc.text(pior,PW-M-17,y-6,{align:'center'});
 
-      // Cabeçalho tabela
+      // Cabeçalho
       doc.setFillColor(26,95,46); doc.rect(M,y,CW,7,'F');
       doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
-      ['Fator de Risco','Consequencia','P','S','Nivel'].forEach((h,i)=>doc.text(h,tX[i]+2,y+4.5));
+      doc.text('Fator de Risco / Consequencias',tX[0]+2,y+4.5);
+      doc.text('P / S',tX[1]+C_PS/2,y+4.5,{align:'center'});
+      doc.text('Nivel · Classificacao Ergonomica · Conduta',tX[2]+2,y+4.5);
       y+=8;
 
       fG.forEach((f,fi)=>{
-        const consWrap=doc.splitTextToSize(f.cons||'',tCols[1]-3);
-        const nomeWrap=doc.splitTextToSize(f.nome||'',tCols[0]-3);
-        const rowH=Math.max(nomeWrap.length,consWrap.length)*4.5+4;
+        const nb=NC_BG[f.nivel]||[240,240,240], nt=NC_TXT[f.nivel]||[50,50,50];
+        // Calcular altura da linha baseada no conteúdo
+        const nomeW   = doc.splitTextToSize(f.nome||'', C_FATOR-4);
+        const consW   = doc.splitTextToSize(f.cons||'', C_FATOR-4);
+        const clasW   = doc.splitTextToSize((f.classifErg||''), C_NIVEL-4);
+        const condW   = doc.splitTextToSize((f.conduta||''), C_NIVEL-4);
+        const rowH    = Math.max(
+          (nomeW.length+consW.length)*4+4,
+          (1+clasW.length+condW.length)*4+4,
+          14
+        );
         checkY(rowH+1);
+        // Fundo alternado
         doc.setFillColor(fi%2===0?255:248, fi%2===0?255:252, fi%2===0?255:249);
         doc.rect(M,y,CW,rowH,'F');
         doc.setDrawColor(210,225,215); doc.setLineWidth(0.15); doc.rect(M,y,CW,rowH,'D');
-        // Fator
+
+        // Coluna 1: fator + consequência
         doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
-        nomeWrap.forEach((l,li)=>doc.text(l,tX[0]+2,y+4+li*4.5));
-        // Consequência
+        nomeW.forEach((l,li)=>doc.text(l,tX[0]+2,y+4+li*4));
         doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(80,100,90);
-        consWrap.slice(0,3).forEach((l,li)=>doc.text(l,tX[1]+2,y+4+li*4));
-        // P e S
-        const nb=NC_BG[f.nivel]||[240,240,240], nt=NC_TXT[f.nivel]||[50,50,50];
-        doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(40,80,60);
-        doc.text('P'+f.p,tX[2]+tCols[2]/2,y+rowH/2+2,{align:'center'});
-        doc.text('S'+f.s,tX[3]+tCols[3]/2,y+rowH/2+2,{align:'center'});
-        // Nível
-        doc.setFillColor(...nb); doc.roundedRect(tX[4]+1,y+1.5,tCols[4]-2,rowH-3,1.5,1.5,'F');
-        doc.setFontSize(6.5); doc.setTextColor(...nt);
-        doc.text(f.nivel,tX[4]+tCols[4]/2,y+rowH/2+2,{align:'center'});
+        consW.slice(0,3).forEach((l,li)=>doc.text(l,tX[0]+2,y+4+nomeW.length*4+li*3.8));
+
+        // Coluna 2: P e S (centralizado)
+        doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+        doc.text('P'+f.p, tX[1]+C_PS/2, y+rowH/2-1, {align:'center'});
+        doc.setFontSize(6.5); doc.setTextColor(60,80,70);
+        doc.text(f.pLabel.split(' ')[0], tX[1]+C_PS/2, y+rowH/2+3.5, {align:'center'});
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+        doc.text('S'+f.s, tX[1]+C_PS/2, y+rowH/2+8, {align:'center'});
+        doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(80,100,90);
+        doc.text(f.sLabel, tX[1]+C_PS/2, y+rowH/2+12, {align:'center'});
+
+        // Coluna 3: nível + classificação + conduta
+        doc.setFillColor(...nb); doc.roundedRect(tX[2]+1,y+1.5,C_NIVEL-2,6,1.5,1.5,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...nt);
+        doc.text(f.nivel,tX[2]+C_NIVEL/2,y+5.5,{align:'center'});
+        let cy=y+9;
+        doc.setFontSize(6.5); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
+        clasW.forEach(l=>{doc.text(l,tX[2]+2,cy);cy+=3.8;});
+        cy+=1;
+        doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(80,100,90);
+        condW.slice(0,4).forEach(l=>{doc.text(l,tX[2]+2,cy);cy+=3.5;});
+
         y+=rowH+1;
       });
       y+=6;
