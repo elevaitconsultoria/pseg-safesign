@@ -584,36 +584,28 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .mp-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px;display:block}
 .mp-readonly{padding:8px 12px;background:var(--bs);border-radius:var(--r);font-size:12px;color:var(--tm);display:flex;align-items:center;gap:8px}
 
-/* ── BILLING — trial banner ── */
-.plano-banner{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:9px 20px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;border-bottom:1px solid transparent;transition:all .2s}
-.plano-banner.trial-ok{background:#fffbeb;border-bottom-color:#fde68a;color:#92400e}
-.plano-banner.trial-urgente{background:#fff7ed;border-bottom-color:#fed7aa;color:#9a3412}
-.plano-banner.trial-expirado{background:#fef2f2;border-bottom-color:#fecaca;color:#991b1b}
-.plano-banner.past-due{background:#fef2f2;border-bottom-color:#fecaca;color:#991b1b}
-.plano-banner-icon{font-size:14px;flex-shrink:0}
-.plano-banner-msg{flex:1}
-.plano-banner-btn{padding:4px 12px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
-.plano-banner.trial-ok .plano-banner-btn{background:#f59e0b;color:#fff}
-.plano-banner.trial-urgente .plano-banner-btn,.plano-banner.trial-expirado .plano-banner-btn,.plano-banner.past-due .plano-banner-btn{background:#dc2626;color:#fff}
-
-/* ── BILLING — plano badge na topbar ── */
-.plano-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;transition:all .15s}
-.plano-badge.trial{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-.plano-badge.trial:hover{background:#fde68a}
-.plano-badge.trial-expirado{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-.plano-badge.starter,.plano-badge.professional,.plano-badge.enterprise{background:var(--gl);color:var(--g);border:1px solid #bbf7d0}
-
-/* ── BILLING — usage bars no dashboard ── */
-.usage-widget{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;margin-bottom:20px}
-.usage-widget-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-.usage-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.usage-row:last-child{margin-bottom:0}
-.usage-label{font-size:11px;color:var(--tm);width:110px;flex-shrink:0}
-.usage-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.usage-fill{height:100%;border-radius:3px;transition:width .4s ease;background:var(--gm)}
-.usage-fill.warn{background:#f59e0b}
-.usage-fill.danger{background:#ef4444}
-.usage-count{font-size:11px;font-weight:600;color:var(--tm);width:54px;text-align:right;flex-shrink:0}
+/* ── ASSINATURA — status row + planos ── */
+.ass-status-row{background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:18px;display:grid;grid-template-columns:180px 1fr auto;gap:24px;align-items:center}
+@media(max-width:860px){.ass-status-row{grid-template-columns:1fr;gap:16px}}
+.ass-plans-compare{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:900px){.ass-plans-compare{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.ass-plans-compare{grid-template-columns:1fr}}
+.ass-pc{background:white;border:1.5px solid var(--border);border-radius:12px;padding:18px 16px;display:flex;flex-direction:column;transition:box-shadow .15s;position:relative}
+.ass-pc.current{border-color:var(--g);box-shadow:0 0 0 3px rgba(22,83,45,.1)}
+.ass-pc.featured{border-color:#d1fae5;background:#f7fdf9}
+.ass-pc-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 8px;border-radius:4px;display:inline-block;align-self:flex-start;margin-bottom:8px}
+.ass-pc-tag.t-current{background:var(--gl);color:var(--g)}
+.ass-pc-tag.t-popular{background:var(--g);color:white}
+.ass-pc-tag.t-placeholder{visibility:hidden}
+.ass-pc-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.ass-pc-price{font-size:24px;font-weight:800;color:var(--tx);line-height:1;margin-bottom:12px}
+.ass-pc-price span{font-size:12px;font-weight:400;color:var(--tl)}
+.ass-pc-feat{font-size:11px;color:var(--tm);line-height:1.85;flex:1;border-top:1px solid var(--bs);padding-top:10px}
+.ass-pc-feat strong{color:var(--tx);font-weight:600}
+.ass-pc-btn{margin-top:14px;padding:9px;text-align:center;border-radius:var(--r);border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--tx);transition:all .15s;font-family:'Inter',sans-serif;width:100%}
+.ass-pc-btn:hover{background:var(--bg);border-color:var(--tx)}
+.ass-pc-btn.prim{background:var(--tx);color:white;border-color:var(--tx)}
+.ass-pc-btn.prim:hover{background:#374151}
 
 /* ── HAMBURGER MENU ── */
 .ham-btn{background:none;border:1.5px solid var(--border);border-radius:var(--r);width:30px;height:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;flex-shrink:0;padding:0}
@@ -927,8 +919,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span id="empresa-chip-nome" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
     </div>
     <div class="topbar-right">
-      <span id="plano-badge-topbar" style="display:none" onclick="abrirUpgrade()"></span>
-
       <!-- Hamburger menu -->
       <div style="position:relative">
         <button class="ham-btn" id="ham-btn" onclick="toggleHamMenu(event)" title="Menu">
@@ -961,15 +951,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <span id="user-email-display">carregando...</span>
       </span>
     </div>
-  </div>
-
-  <!-- BANNER PLANO (trial / vencido / past_due) -->
-  <div id="plano-banner" class="plano-banner" style="display:none">
-    <span class="plano-banner-icon" id="plano-banner-icon"></span>
-    <span class="plano-banner-msg" id="plano-banner-msg"></span>
-    <button class="plano-banner-btn" onclick="abrirUpgrade()">Fazer upgrade</button>
-    <button onclick="document.getElementById('plano-banner').style.display='none'"
-      style="background:none;border:none;cursor:pointer;color:inherit;opacity:.5;font-size:16px;padding:0 0 0 6px;line-height:1">×</button>
   </div>
 
   <!-- SIDEBAR -->
@@ -1075,123 +1056,121 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 ══════════════════════════════════════════════════════ -->
 <div class="screen" id="sc-assinatura">
   <div class="page-header">
-    <div class="page-title">Assinatura</div>
-    <div class="page-sub">Gerencie seu plano, acompanhe o uso e acesse o histórico de pagamentos</div>
+    <div class="page-title">Assinatura & Plano</div>
+    <div class="page-sub">Plano atual, uso do período e histórico de pagamentos</div>
   </div>
 
-  <div class="ass-layout">
+  <!-- ── STATUS ROW: plano + uso + CTA ── -->
+  <div class="ass-status-row">
 
-    <!-- COLUNA ESQUERDA — plano atual -->
+    <!-- Plano atual -->
     <div>
-      <div class="ass-plano-card">
-        <div class="ass-plano-header">
-          <div class="ass-plano-name">Plano atual</div>
-          <div class="ass-plano-title" id="ass-plano-titulo">—</div>
-          <div class="ass-plano-status" id="ass-plano-status-badge">—</div>
-        </div>
-        <div class="ass-plano-body">
-          <div class="ass-plano-row">
-            <span class="ass-plano-row-lbl">Empresas</span>
-            <span class="ass-plano-row-val" id="ass-limite-empresas">—</span>
-          </div>
-          <div class="ass-plano-row">
-            <span class="ass-plano-row-lbl">Usuários</span>
-            <span class="ass-plano-row-val" id="ass-limite-usuarios">—</span>
-          </div>
-          <div class="ass-plano-row">
-            <span class="ass-plano-row-lbl">Respostas / mês</span>
-            <span class="ass-plano-row-val" id="ass-limite-respostas">—</span>
-          </div>
-          <div class="ass-plano-row">
-            <span class="ass-plano-row-lbl">Provider</span>
-            <span class="ass-plano-row-val" id="ass-provider">—</span>
-          </div>
-          <div class="ass-plano-row" id="ass-row-renovacao">
-            <span class="ass-plano-row-lbl">Renovação</span>
-            <span class="ass-plano-row-val" id="ass-renovacao">—</span>
-          </div>
-          <div class="ass-plano-row" id="ass-row-trial">
-            <span class="ass-plano-row-lbl">Trial expira</span>
-            <span class="ass-plano-row-val" id="ass-trial-ate">—</span>
-          </div>
-        </div>
-        <div class="ass-plano-cta" id="ass-cta-area">
-          <button onclick="abrirUpgrade()" class="btn btn-g" style="width:100%;font-size:13px;padding:10px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Fazer upgrade
-          </button>
-        </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl);margin-bottom:6px">Plano atual</div>
+      <div id="ass-plano-titulo" style="font-size:22px;font-weight:800;color:var(--tx);line-height:1;margin-bottom:8px">—</div>
+      <div id="ass-plano-status-badge" class="ass-plano-status">—</div>
+      <div id="ass-row-trial" style="margin-top:8px;font-size:11px;color:var(--tm)">Trial expira: <strong id="ass-trial-ate" style="color:var(--tx)">—</strong></div>
+      <div id="ass-row-renovacao" style="margin-top:8px;font-size:11px;color:var(--tm)">Renovação: <strong id="ass-renovacao" style="color:var(--tx)">—</strong></div>
+    </div>
+
+    <!-- Barras de uso -->
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl);margin-bottom:12px">Uso do período</div>
+      <div class="ass-uso-row">
+        <div class="ass-uso-lbl">Empresas</div>
+        <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-empresas" style="width:0%"></div></div>
+        <div class="ass-uso-count" id="ass-uc-empresas">—</div>
+      </div>
+      <div class="ass-uso-row">
+        <div class="ass-uso-lbl">Usuários</div>
+        <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-usuarios" style="width:0%"></div></div>
+        <div class="ass-uso-count" id="ass-uc-usuarios">—</div>
+      </div>
+      <div class="ass-uso-row">
+        <div class="ass-uso-lbl">Respostas / mês</div>
+        <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-respostas" style="width:0%"></div></div>
+        <div class="ass-uso-count" id="ass-uc-respostas">—</div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--tl)" id="ass-uso-nota">Contadores atualizados em tempo real.</div>
+    </div>
+
+    <!-- CTA -->
+    <div id="ass-cta-area" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <button onclick="abrirUpgrade()" class="btn btn-g" style="font-size:13px;padding:11px 22px;white-space:nowrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Fazer upgrade
+      </button>
+      <span style="font-size:10px;color:var(--tl);text-align:center;line-height:1.5">Sem fidelidade<br>Cancele quando quiser</span>
+    </div>
+
+  </div>
+
+  <!-- ── COMPARAÇÃO DE PLANOS ── -->
+  <div class="ass-plans-compare">
+
+    <div class="ass-pc" id="ass-pc-trial">
+      <div class="ass-pc-tag t-placeholder">—</div>
+      <div class="ass-pc-name">Trial</div>
+      <div class="ass-pc-price">Grátis<span> / 30 dias</span></div>
+      <div class="ass-pc-feat">
+        <strong>1</strong> empresa<br>
+        <strong>5</strong> usuários<br>
+        <strong>100</strong> respostas/mês<br>
+        Todos os módulos
       </div>
     </div>
 
-    <!-- COLUNA DIREITA -->
-    <div class="ass-right">
-
-      <!-- USO DO PERÍODO -->
-      <div class="ass-uso-card">
-        <div class="ass-section-title">Uso do período atual</div>
-        <div class="ass-uso-row">
-          <div class="ass-uso-lbl">Empresas</div>
-          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-empresas" style="width:0%"></div></div>
-          <div class="ass-uso-count" id="ass-uc-empresas">—</div>
-        </div>
-        <div class="ass-uso-row">
-          <div class="ass-uso-lbl">Usuários</div>
-          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-usuarios" style="width:0%"></div></div>
-          <div class="ass-uso-count" id="ass-uc-usuarios">—</div>
-        </div>
-        <div class="ass-uso-row">
-          <div class="ass-uso-lbl">Respostas / mês</div>
-          <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-respostas" style="width:0%"></div></div>
-          <div class="ass-uso-count" id="ass-uc-respostas">—</div>
-        </div>
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bs);font-size:11px;color:var(--tl)" id="ass-uso-nota">
-          Os contadores de uso são atualizados em tempo real.
-        </div>
+    <div class="ass-pc" id="ass-pc-starter">
+      <div class="ass-pc-tag t-placeholder">—</div>
+      <div class="ass-pc-name">Starter</div>
+      <div class="ass-pc-price">R$ 197<span>/mês</span></div>
+      <div class="ass-pc-feat">
+        <strong>1</strong> empresa<br>
+        <strong>10</strong> usuários<br>
+        <strong>500</strong> respostas/mês<br>
+        Relatórios PDF · Suporte e-mail
       </div>
+      <button class="ass-pc-btn prim" onclick="iniciarPagamento('starter','stripe')">Assinar Starter</button>
+    </div>
 
-      <!-- HISTÓRICO DE PAGAMENTOS -->
-      <div class="ass-historico-card">
-        <div class="ass-section-title">Histórico de pagamentos</div>
-        <div id="ass-historico-body">
-          <div style="text-align:center;padding:24px 0;color:var(--tl);font-size:12px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="opacity:.25;display:block;margin:0 auto 8px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Nenhum pagamento registrado
-          </div>
-        </div>
+    <div class="ass-pc featured" id="ass-pc-professional">
+      <div class="ass-pc-tag t-popular">Mais popular</div>
+      <div class="ass-pc-name">Professional</div>
+      <div class="ass-pc-price">R$ 497<span>/mês</span></div>
+      <div class="ass-pc-feat">
+        <strong>5</strong> empresas<br>
+        <strong>25</strong> usuários<br>
+        <strong>2.000</strong> respostas/mês<br>
+        Multi-consultores · Suporte prioritário
       </div>
+      <button class="ass-pc-btn prim" onclick="iniciarPagamento('professional','stripe')">Assinar Professional</button>
+    </div>
 
-      <!-- CARD DE UPGRADE -->
-      <div class="ass-upgrade-card" id="ass-upgrade-card">
-        <div class="ass-upgrade-title">Evolua com o SafeSign</div>
-        <div class="ass-upgrade-sub">Desbloqueie mais empresas, usuários e análises ilimitadas. Cancele quando quiser.</div>
-        <div class="ass-upgrade-plans">
-          <div class="ass-up-plan" onclick="iniciarPagamento('starter','stripe')">
-            <div class="ass-up-plan-name">Starter</div>
-            <div class="ass-up-plan-price">R$197<span>/mês</span></div>
-            <div class="ass-up-plan-desc">1 empresa · 10 usuários<br>500 respostas/mês</div>
-          </div>
-          <div class="ass-up-plan featured" onclick="iniciarPagamento('professional','stripe')">
-            <div class="ass-up-plan-name">Professional ★</div>
-            <div class="ass-up-plan-price">R$497<span>/mês</span></div>
-            <div class="ass-up-plan-desc">5 empresas · 25 usuários<br>2.000 respostas/mês</div>
-          </div>
-          <div class="ass-up-plan" onclick="iniciarPagamento('enterprise','stripe')">
-            <div class="ass-up-plan-name">Enterprise</div>
-            <div class="ass-up-plan-price">R$997<span>/mês</span></div>
-            <div class="ass-up-plan-desc">Ilimitado · White-label<br>SLA dedicado</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button onclick="abrirUpgrade()" style="padding:10px 20px;background:white;color:var(--tx);border:none;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
-            Ver todos os planos →
-          </button>
-          <span style="font-size:11px;opacity:.5;display:flex;align-items:center">Sem fidelidade · Cancele quando quiser</span>
-        </div>
+    <div class="ass-pc" id="ass-pc-enterprise">
+      <div class="ass-pc-tag t-placeholder">—</div>
+      <div class="ass-pc-name">Enterprise</div>
+      <div class="ass-pc-price">R$ 997<span>/mês</span></div>
+      <div class="ass-pc-feat">
+        Empresas <strong>ilimitadas</strong><br>
+        Usuários <strong>ilimitados</strong><br>
+        Respostas <strong>ilimitadas</strong><br>
+        White-label · SLA dedicado
       </div>
+      <button class="ass-pc-btn" onclick="iniciarPagamento('enterprise','stripe')">Falar com vendas</button>
+    </div>
 
+  </div>
+
+  <!-- ── HISTÓRICO DE PAGAMENTOS ── -->
+  <div class="ass-historico-card">
+    <div class="ass-section-title">Histórico de pagamentos</div>
+    <div id="ass-historico-body">
+      <div style="text-align:center;padding:24px 0;color:var(--tl);font-size:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="opacity:.25;display:block;margin:0 auto 8px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Nenhum pagamento registrado
+      </div>
     </div>
   </div>
+
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -1281,29 +1260,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="dash-kpi">
       <div class="dash-kpi-val" id="dash-n-sem-resp" style="color:var(--amber)">—</div>
       <div class="dash-kpi-lbl">Links sem resposta</div>
-    </div>
-  </div>
-
-  <!-- Uso do plano -->
-  <div class="usage-widget" id="usage-widget" style="display:none">
-    <div class="usage-widget-title">
-      <span>Uso do plano — <span id="usage-plano-nome" style="color:var(--tx)">—</span></span>
-      <button onclick="abrirUpgrade()" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;color:var(--g);text-decoration:underline;padding:0">Upgrade</button>
-    </div>
-    <div class="usage-row">
-      <span class="usage-label">Empresas</span>
-      <div class="usage-track"><div class="usage-fill" id="ub-empresas" style="width:0%"></div></div>
-      <span class="usage-count" id="uc-empresas">—</span>
-    </div>
-    <div class="usage-row">
-      <span class="usage-label">Usuários</span>
-      <div class="usage-track"><div class="usage-fill" id="ub-usuarios" style="width:0%"></div></div>
-      <span class="usage-count" id="uc-usuarios">—</span>
-    </div>
-    <div class="usage-row">
-      <span class="usage-label">Respostas/mês</span>
-      <div class="usage-track"><div class="usage-fill" id="ub-respostas" style="width:0%"></div></div>
-      <span class="usage-count" id="uc-respostas">—</span>
     </div>
   </div>
 
@@ -1774,8 +1730,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       
     </div>
     <button class="btn btn-g" onclick="gerarLaudoPDF()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-      Gerar PDF Completo
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Exportar / Imprimir
     </button>
   </div>
 
@@ -1813,6 +1769,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="card" style="padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Responsável técnico</div>
+        <input id="ld-responsavel" type="text" placeholder="Nome do ergonomista — CREA/CRF" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:12px;padding:7px 11px;outline:none;color:var(--tx)"/>
       </div>
 
       <div class="card" style="padding:14px">
@@ -2033,6 +1994,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div class="met-card-text">
           Riscos psicossociais são aspectos da organização do trabalho, do ambiente social e do conteúdo das tarefas que podem causar danos à saúde física e mental dos trabalhadores. Diferem dos riscos físicos ou químicos por serem <strong>relacionais e organizacionais</strong> — resultam da forma como o trabalho é estruturado, gerido e vivenciado.
           <br><br>
+          <strong>Contexto epidemiológico (OIT/OMS, 2022):</strong>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:10px 0">
+            <div style="padding:10px 12px;background:#fef9c3;border-radius:6px;border-left:3px solid #ca8a04">
+              <div style="font-size:18px;font-weight:800;color:#92400e">12 bi</div>
+              <div style="font-size:10px;color:#78350f;line-height:1.4">dias de trabalho perdidos por depressão e ansiedade <strong>por ano</strong> no mundo</div>
+            </div>
+            <div style="padding:10px 12px;background:#fef2f2;border-radius:6px;border-left:3px solid #dc2626">
+              <div style="font-size:18px;font-weight:800;color:#991b1b">US$ 1 tri</div>
+              <div style="font-size:10px;color:#7f1d1d;line-height:1.4">de custo anual à economia mundial por transtornos mentais relacionados ao trabalho</div>
+            </div>
+            <div style="padding:10px 12px;background:#f0fdf4;border-radius:6px;border-left:3px solid #16a34a">
+              <div style="font-size:18px;font-weight:800;color:#15803d">8,35%</div>
+              <div style="font-size:10px;color:#14532d;line-height:1.4">dos adoecimentos ocupacionais no Brasil são transtornos mentais (2022) — 2º lugar, após dorsalgia</div>
+            </div>
+          </div>
           Os principais domínios avaliados por este instrumento são:
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
             <div style="padding:10px 12px;background:#f0effe;border-radius:6px;border-left:3px solid #5b4fcf">
@@ -2369,12 +2345,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div class="met-card-title">Referências normativas e bibliográficas</div>
         <div class="met-card-text">
           <div class="met-ref-list">
-            <div class="met-ref"><span class="met-ref-tag">Norma</span> BRASIL. <strong>NR-01 — Disposições Gerais e Gerenciamento de Riscos Ocupacionais.</strong> MTE, atualizada em 2021. Inclui riscos psicossociais no escopo do PGR.</div>
+            <div class="met-ref"><span class="met-ref-tag">Norma</span> BRASIL. <strong>NR-01 — Disposições Gerais e Gerenciamento de Riscos Ocupacionais.</strong> MTE, Portaria 1.419/2024. Inclui riscos psicossociais no escopo obrigatório do PGR.</div>
             <div class="met-ref"><span class="met-ref-tag">Norma</span> BRASIL. <strong>NR-17 — Ergonomia.</strong> MTE, atualizada em 2021. Abrange organização do trabalho e aspectos psicofisiológicos.</div>
-            <div class="met-ref"><span class="met-ref-tag">Padrão</span> BSI. <strong>BS 8800:1996 — Guide to Occupational Health and Safety Management Systems.</strong> British Standards Institution, 1996. Define a Matriz de Risco P×S utilizada neste sistema.</div>
+            <div class="met-ref"><span class="met-ref-tag">Padrão</span> BSI. <strong>BS 8800:1996 — Guide to Occupational Health and Safety Management Systems.</strong> British Standards Institution, 1996. Define a Matriz de Risco P×S e a conduta administrativa por nível utilizada neste sistema.</div>
             <div class="met-ref"><span class="met-ref-tag">Metodologia</span> MULHAUSEN, J.R.; DAMIANO, J. <strong>A Strategy for Assessing and Managing Occupational Exposures.</strong> AIHA Press, 1998. Fundamenta a classificação de probabilidade de ocorrência.</div>
+            <div class="met-ref"><span class="met-ref-tag">Ergonomia</span> COUTO, H.A. <strong>Ergonomia Aplicada ao Trabalho em 18 Lições.</strong> ERGO Editora, 2007. Fornece a tabela de equivalência Classificação Ergonômica × Nível de Risco utilizada no sistema.</div>
+            <div class="met-ref"><span class="met-ref-tag">Instrumento</span> EDWARDS, J.A. et al. <strong>HSE Management Standards Indicator Tool.</strong> Health and Safety Executive, UK. Base metodológica do questionário de fatores psicossociais ocupacionais.</div>
+            <div class="met-ref"><span class="met-ref-tag">Instrumento</span> MENDES, A.M.; FERREIRA, M.C. <strong>ITRA — Inventário sobre Trabalho e Riscos de Adoecimento.</strong> In: Mendes (org.) Psicodinâmica do Trabalho, 2007. Instrumento de avaliação de riscos psicossociais relacionados ao trabalho.</div>
+            <div class="met-ref"><span class="met-ref-tag">Instrumento</span> FACAS, E.P. <strong>PROART — Protocolo de Avaliação dos Riscos Psicossociais no Trabalho.</strong> Tese de Doutorado, UnB, 2013. Protocolo nacional de avaliação de riscos psicossociais.</div>
+            <div class="met-ref"><span class="met-ref-tag">QVT</span> WALTON, R.E. <strong>Quality of Work Life: What is it?</strong> Sloan Management Review, v.15, n.1, 1973. Fundamenta os critérios de Qualidade de Vida no Trabalho adotados na análise organizacional.</div>
+            <div class="met-ref"><span class="met-ref-tag">Padrão</span> ISO. <strong>ISO 45003:2021 — Occupational health and safety management — Psychological health and safety at work.</strong> ISO, 2021. Diretrizes de gestão da saúde psicológica no ambiente de trabalho.</div>
+            <div class="met-ref"><span class="met-ref-tag">Epidemiologia</span> OIT; OMS. <strong>Mental health at work.</strong> 2022. Dados: 12 bilhões de dias de trabalho perdidos/ano por depressão e ansiedade; custo de ~1 trilhão de dólares anuais à economia mundial. Brasil: transtornos mentais = 8,35% dos adoecimentos ocupacionais (2022), 2º lugar após dorsalgia.</div>
             <div class="met-ref"><span class="met-ref-tag">Referência</span> EUROFOUND; EU-OSHA. <strong>Psychosocial risks in Europe: Prevalence and strategies for prevention.</strong> Publications Office of the European Union, 2014.</div>
-            <div class="met-ref"><span class="met-ref-tag">Referência</span> WHO. <strong>Mental health in the workplace — Information sheet.</strong> World Health Organization, 2019.</div>
           </div>
         </div>
       </div>
@@ -4523,101 +4505,55 @@ function exportarCSV() {
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
 function renderViewRisco({grupos, filtrado, niveis}) {
-  const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
-  const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
-  const S_BADGE  = {1:'background:#f0fdf4;color:#166534',2:'background:#eff6ff;color:#1e40af',3:'background:#fefce8;color:#92400e',4:'background:#fef2f2;color:#991b1b'};
-
+  const todosSetores = [...new Set(filtrado.map(r => r.setor))].sort();
+  const NC = NIVEIS_CORES;
   let html = '';
-  grupos.forEach(grupo => {
-    const linhas = filtrado.filter(r => grupo.setores.includes(r.setor));
-    if (!linhas.length) return;
-    const todos    = calcFatores(linhas);
-    const resultado = niveis.length ? todos.filter(f => niveis.includes(f.nivel)) : todos;
-    const ocultos   = todos.length - resultado.length;
 
-    if (!resultado.length) {
-      html += '<div style="margin-bottom:16px;background:white;border:1px solid var(--border);border-radius:8px;overflow:hidden">'+
-        '<div style="background:var(--g);padding:10px 16px"><span style="color:white;font-size:13px;font-weight:700">'+grupo.nome+'</span></div>'+
-        '<div style="padding:14px 16px;font-size:12px;color:var(--tm)">Nenhum risco nos níveis selecionados.'+
-        (ocultos ? ' ('+ocultos+' oculto(s) pelo filtro)' : '')+'</div></div>';
-      return;
-    }
-    const pior = resultado.reduce((w,f) => NIVEIS_ORDEM.indexOf(f.nivel)>NIVEIS_ORDEM.indexOf(w.nivel)?f:w, resultado[0]);
-    const nc_pior = NIVEIS_CORES[pior.nivel];
+  todosSetores.forEach(setor => {
+    const linhasSetor = filtrado.filter(r => r.setor === setor);
+    if (!linhasSetor.length) return;
 
-    html += '<div style="margin-bottom:24px;background:#f0f2f5;border:1px solid var(--border);border-radius:10px;overflow:hidden">'+
-      // Cabeçalho do grupo (setor/GHE)
-      '<div style="background:var(--g);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">'+
-      '<span style="color:white;font-size:13px;font-weight:700">'+grupo.nome+'</span>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-      (ocultos ? '<span style="font-size:10px;color:rgba(255,255,255,.6)">'+ocultos+' oculto(s)</span>' : '')+
-      '<span class="risk-badge '+nc_pior.badge+'">'+pior.nivel+' (pior)</span>'+
-      '</div></div>'+
+    const todosRiscos = calcFatores(linhasSetor);
+    const resultado = todosRiscos
+      .filter(f => f.nivel !== 'IRRELEVANTE' && (!niveis.length || niveis.includes(f.nivel)))
+      .sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel) - NIVEIS_ORDEM.indexOf(a.nivel));
 
-      // Legenda global — escore ajustado
-      '<div style="display:flex;gap:10px;padding:8px 16px;flex-wrap:wrap;font-size:10px;color:var(--tm);border-bottom:1px solid var(--border);background:#f8f9fb">'+
-      [1,2,3,4].map(n =>
-        '<span style="display:flex;align-items:center;gap:4px">'+
-        '<span style="width:9px;height:9px;border-radius:2px;background:'+CORES_BG[n]+';display:inline-block"></span>'+
-        '<strong>'+n+'</strong> '+NIVEL_NM[n]+(n===1?' ← meta':'')+'</span>'
-      ).join('')+
-      '<span style="font-size:9px;color:var(--tl);margin-left:4px">↺ inv já aplicado · barras = escore ajustado</span>'+
-      '</div>'+
+    if (!resultado.length) return;
 
-      // Padding top para os cards de fator
-      '<div style="padding:12px 0 4px">'+
-
-      resultado.sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel)-NIVEIS_ORDEM.indexOf(a.nivel)).map(f => {
-        const nc  = NIVEIS_CORES[f.nivel];
-        const gid = 'fdist-'+grupo.nome.replace(/\s/g,'_')+'-'+(f.cd||f.id);
-        const barra = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false);
-        return `
-        <div style="margin:0 12px 12px;border-radius:8px;border:1px solid var(--border);border-left:4px solid ${nc.cor};background:white;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">
-
-          <!-- ── CABEÇALHO DO FATOR ── -->
-          <div style="padding:14px 16px 12px;cursor:pointer" onclick="toggleFatorDist('${gid}')">
-
-            <!-- Linha 1: nome + P badge + nível -->
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
-              <div style="flex:1;min-width:0">
-                <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:3px">${f.nome}</div>
-                <div style="font-size:10px;color:var(--tl)">
-                  ${f.n_questoes} questão(ões) · peso 1/${f.n_questoes} cada ·
-                  <span style="${S_BADGE[f.s]};padding:1px 5px;border-radius:3px">S${f.s} ${S_LABELS[f.s]}</span>
-                </div>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-                <span style="font-size:12px;font-weight:700;color:${nc.cor};background:${nc.bg};border:1.5px solid ${nc.cor};border-radius:5px;padding:2px 7px;white-space:nowrap">P${f.p}</span>
-                <span class="risk-badge ${nc.badge}">${f.nivel}</span>
-              </div>
-            </div>
-
-            <!-- Linha 2: barra consolidada (largura total) -->
-            <div style="margin-bottom:8px">${barra}</div>
-
-            <!-- Linha 3: consequência + toggle expand -->
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <div style="font-size:10px;color:var(--tl);font-style:italic;flex:1">${f.cons}</div>
-              <div style="font-size:10px;color:var(--g);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:4px;padding:3px 8px">
-                <span id="icon-${gid}" class="fator-expand-icon" style="font-size:8px">▶</span>
-                <span>${f.n_questoes} questão(ões)</span>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- ── GAVETA DE QUESTÕES (colapsável) ── -->
-          <div id="${gid}" style="display:none">
-            ${renderDistQuestoes(f.distQuestoes, gid)}
-          </div>
-
-        </div>`;
-      }).join('')+
-      '</div>'+ // fecha padding-top dos cards
-      (ocultos ? '<div style="font-size:11px;color:var(--tl);padding:10px 16px;border-top:1px solid var(--border);background:#f8f9fb">'+ocultos+' risco(s) ocultos pelo filtro de nível. <span style="cursor:pointer;color:var(--g);text-decoration:underline" onclick="selectAllCombo(\'combo-nivel\');buildCombo(\'combo-nivel\');rodarAnalise()">Mostrar todos</span></div>' : '')+
-      '</div>'; // fecha grupo
+    html += `<div style="margin-bottom:24px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;
+        padding:8px 14px;background:var(--bg);border-left:3px solid var(--tx);
+        border-radius:0 6px 6px 0">${setor}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#1a5e2a">
+          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Risco</th>
+          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Fator Ergonômico observado</th>
+          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Consequência</th>
+          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Classificação Ergonômica</th>
+          <th style="color:white;padding:7px 10px;text-align:center;font-size:10px;font-weight:600">Nível de Risco</th>
+        </tr></thead>
+        <tbody>
+          ${resultado.map((f,i) => {
+            const nc = NC[f.nivel] || NC.BAIXO;
+            const classifErg = CLASSIF_ERGONOMICA[f.nivel] || '';
+            return `<tr style="background:${i%2?'#fafcfb':'white'};border-bottom:.5px solid var(--bs)">
+              <td style="padding:8px 10px;color:var(--tm)">Psicossocial</td>
+              <td style="padding:8px 10px;font-weight:600;color:var(--tx)">${f.nome}</td>
+              <td style="padding:8px 10px;color:var(--tm);max-width:220px;line-height:1.5">${f.cons}</td>
+              <td style="padding:8px 10px;color:var(--tm);font-style:italic">${classifErg}</td>
+              <td style="padding:8px 10px;text-align:center">
+                <span style="background:${nc.bg};color:${nc.cor};font-size:10px;font-weight:700;
+                  padding:3px 9px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
   });
-  document.getElementById('view-content').innerHTML = html || '<div style="font-size:13px;color:var(--tl)">Nenhum resultado encontrado.</div>';
+
+  document.getElementById('view-content').innerHTML =
+    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
 }
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
@@ -6653,17 +6589,18 @@ const ACOES_SUGERIDAS = {
   },
   '8': { // Insatisfação no trabalho
     MÉDIO: [
-      'Implantar/manter programas de valorização e gestão de carreira com reconhecimento pelo bom desempenho.',
-      'Promover treinamentos para gestores identificarem sinais de insatisfação e adotarem liderança empática.',
+      'Identificar fatores que contribuem para a sobrecarga mental: excesso de tarefas, prazos apertados, falta de autonomia e conflitos interpessoais.',
+      'Redesenhar tarefas e processos: ajustar responsabilidades para evitar sobrecarga, promover variedade de atividades e garantir controle sobre as tarefas.',
+      'Criar políticas de flexibilidade: horários flexíveis e outras formas de adaptação às necessidades dos colaboradores.',
     ],
     ALTO: [
-      'Revisar plano de cargos, salários e benefícios — alinhar remuneração às práticas de mercado.',
-      'Criar planos de desenvolvimento individual (PDI) e trilhas de carreira com metas claras.',
-      'Promover comunicação aberta para que trabalhadores expressem dificuldades e sugestões.',
+      'Criar planos de desenvolvimento individual (PDI) e trilhas de carreira claras.',
+      'Implementar reconhecimento formal e informal de desempenho.',
+      'Revisar plano de cargos, salários e benefícios para eliminar desigualdades percebidas.',
     ],
     CRÍTICO: [
-      'Realizar diagnóstico amplo de clima organizacional para identificar causas raiz da insatisfação.',
-      'Revisão estratégica da gestão de pessoas, cultura organizacional e condições de trabalho.',
+      'Diagnóstico organizacional amplo. Revisão estratégica da cultura e gestão de pessoas.',
+      'Intervenção imediata de psicólogo organizacional.',
       'Implementar plano de ação emergencial com prazos e responsáveis definidos pela alta liderança.',
     ],
   },
@@ -6742,6 +6679,7 @@ const LAUDO_SECOES = [
   {id:'capa',       label:'Capa & identificação',      on:true},
   {id:'metodologia',label:'Metodologia',               on:true},
   {id:'resultados', label:'Tabela de resultados',       on:true},
+  {id:'conduta',    label:'Conduta Administrativa',     on:true},
   {id:'graficos',   label:'Gráficos por questão',       on:true},
   {id:'acoes',      label:'Ações por setor',            on:true},
 ];
@@ -6908,60 +6846,40 @@ async function renderLaudo() {
     </div>`;
   }
 
-  // ── RESULTADOS ──
+  // ── RESULTADOS (5 colunas por setor — conforme documento de referência) ──
   if (laudoSecoesAtivas.has('resultados')) {
-    grupos.forEach(grupo => {
-      const lGrupo  = linhas.filter(r=>grupo.setores.includes(r.setor));
-      if (!lGrupo.length) return;
-      const fGrupo  = calcFatores(lGrupo);
-      const pior    = fGrupo.reduce((w,f)=>NIVEIS_ORDER.indexOf(f.nivel)>NIVEIS_ORDER.indexOf(w)?f.nivel:w,'IRRELEVANTE');
+    const todosSetoresLaudo = [...new Set(linhas.map(r => r.setor))].sort();
+    todosSetoresLaudo.forEach(setor => {
+      const lSetor  = linhas.filter(r => r.setor === setor);
+      if (!lSetor.length) return;
+      const fSetor  = calcFatores(lSetor)
+        .filter(f => f.nivel !== 'IRRELEVANTE')
+        .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
+      if (!fSetor.length) return;
 
       html += `<div class="laudo-section">
-        <div class="laudo-sec-title">
-          Resultados — ${grupo.nome}
-          <span style="background:${NivelCores[pior]};color:${NivelTxt[pior]};font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:4px;text-transform:none;letter-spacing:0">${pior}</span>
-        </div>
-        <div style="font-size:11px;color:var(--tl);margin-bottom:12px">Respondentes: <strong style="color:var(--tx)">${lGrupo.length}</strong> · Setores: <strong style="color:var(--tx)">${grupo.setores.join(', ')}</strong></div>
+        <div class="laudo-sec-title">Resultados — ${setor}</div>
+        <div style="font-size:11px;color:var(--tl);margin-bottom:12px">Respondentes: <strong style="color:var(--tx)">${lSetor.length}</strong></div>
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr style="background:#1a5e2a">
-            <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Fator de Risco · Distribuição média</th>
-            <th style="color:white;padding:7px 10px;text-align:center;font-weight:600;font-size:10px;width:60px">S</th>
-            <th style="color:white;padding:7px 10px;text-align:center;font-weight:600;font-size:10px;width:44px;white-space:nowrap">P</th>
-            <th style="color:white;padding:7px 10px;text-align:center;font-weight:600;font-size:10px;width:88px;min-width:88px">Nível</th>
+            <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Risco</th>
+            <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Fator Ergonômico observado</th>
+            <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Consequência</th>
+            <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Classificação Ergonômica da ocorrência de danos</th>
+            <th style="color:white;padding:7px 10px;text-align:center;font-weight:600;font-size:10px;width:88px;min-width:88px">Nível de Risco</th>
           </tr></thead>
           <tbody>
-          ${fGrupo.map((f,i)=>{
+          ${fSetor.map((f,i) => {
             const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
-            const CBGS = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
-            const barSegs = [1,2,3,4].map(nv => {
-              const p = (f.avgDist||{})[nv] || 0; if(!p) return '';
-              const isMax = nv === f.p;
-              return '<div style="height:100%;width:'+p+'%;background:'+CBGS[nv]+
-                ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:rgba(255,255,255,.9)'+
-                (isMax?';outline:2px solid rgba(0,0,0,.25);outline-offset:-1px;z-index:2':'')+'">'+(p>=12?p+'%':'')+'</div>';
-            }).join('');
-            const S_BADGE_S = {1:'background:#f0fdf4;color:#166534',2:'background:#eff6ff;color:#1e40af',3:'background:#fefce8;color:#92400e',4:'background:#fef2f2;color:#991b1b'};
-            return `<tr style="background:${i%2?'#fafcfb':'white'}">
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs)">
-                <div style="font-weight:600;color:var(--tx);margin-bottom:2px">${f.nome}</div>
-                <div style="font-size:10px;color:var(--tl);margin-bottom:6px">${f.n_questoes||1} questão(ões) · peso igual · ${f.pLabel}</div>
-                <div style="height:16px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${barSegs}</div>
-                <div style="font-size:9px;color:var(--tm);margin-top:3px;font-style:italic">${f.cons}</div>
-              </td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;padding-top:12px">
-                <span style="${S_BADGE_S[f.s]||''};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block">S${f.s}</span>
-                <div style="font-size:9px;color:var(--tl);margin-top:2px">${f.sLabel}</div>
-                <div style="font-size:9px;color:var(--tm);margin-top:4px;line-height:1.5;text-align:left;max-width:140px">${f.sCriteria}</div>
-              </td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;padding-top:12px">
-                <span style="font-weight:800;font-size:16px;color:${nt}">P${f.p}</span>
-                <div style="font-size:9px;color:var(--tl);margin-top:2px">${f.pLabel}</div>
-              </td>
-              <td style="padding:10px 10px;border-bottom:.5px solid var(--bs);text-align:center;vertical-align:top;width:120px;min-width:120px;padding-top:12px">
+            const classifErg = CLASSIF_ERGONOMICA[f.nivel] || '';
+            return `<tr style="background:${i%2?'#fafcfb':'white'};border-bottom:.5px solid var(--bs)">
+              <td style="padding:8px 10px;color:var(--tm)">Psicossocial</td>
+              <td style="padding:8px 10px;font-weight:600;color:var(--tx)">${f.nome}</td>
+              <td style="padding:8px 10px;color:var(--tm);line-height:1.5;max-width:200px">${f.cons}</td>
+              <td style="padding:8px 10px;color:var(--tm);font-style:italic">${classifErg}</td>
+              <td style="padding:8px 10px;text-align:center">
                 <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;display:inline-block">${f.nivel}</span>
-                <div style="font-size:9px;color:var(--tm);margin-top:4px;line-height:1.5;text-align:left">${f.classifErg}</div>
-                <div style="font-size:9px;color:var(--tl);margin-top:3px;line-height:1.5;text-align:left;font-style:italic">${f.conduta}</div>
               </td>
             </tr>`;
           }).join('')}
@@ -6970,6 +6888,38 @@ async function renderLaudo() {
         </div>
       </div>`;
     });
+  }
+
+  // ── CONDUTA ADMINISTRATIVA ──
+  if (laudoSecoesAtivas.has('conduta')) {
+    html += `<div class="laudo-section">
+      <div class="laudo-sec-title">Conduta administrativa por nível de risco</div>
+      <p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">
+        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
+        A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.
+      </p>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#1a5e2a">
+          <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Classificação Ergonômica</th>
+          <th style="color:white;padding:7px 10px;text-align:center;font-weight:600;font-size:10px;width:88px">Nível de Risco</th>
+          <th style="color:white;padding:7px 10px;text-align:left;font-weight:600;font-size:10px">Conduta Administrativa</th>
+        </tr></thead>
+        <tbody>
+          ${['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'].map((n,i) => {
+            const nc = NivelCores[n]; const nt = NivelTxt[n];
+            return `<tr style="background:${i%2?'#fafcfb':'white'};border-bottom:.5px solid var(--bs)">
+              <td style="padding:8px 10px;color:var(--tm);font-style:italic">${CLASSIF_ERGONOMICA[n]}</td>
+              <td style="padding:8px 10px;text-align:center">
+                <span style="background:${nc};color:${nt};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap">${n}</span>
+              </td>
+              <td style="padding:8px 10px;color:var(--tm);line-height:1.6">${CONDUTA_ADMINISTRATIVA[n]}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
   }
 
   // ── GRÁFICOS ──
@@ -7077,15 +7027,365 @@ async function _registrarLaudo() {
   } catch(e) { console.warn('[PSEG] _registrarLaudo:', e.message); }
 }
 
+// ── Helper HTML-escape ──────────────────────────────────────────
+function _esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Barra de distribuição para impressão (sem CSS vars) ─────────
+function _barPrint(pcts, moda) {
+  const C={1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
+  const segs = [1,2,3,4].map(n=>{
+    const p=(pcts||{})[n]||0; if(!p) return '';
+    const hi = n===moda ? 'outline:2px solid rgba(0,0,0,.22);outline-offset:-1px;z-index:2;' : '';
+    return `<div style="height:100%;width:${p}%;background:${C[n]};${hi}display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:rgba(255,255,255,.9)">${p>=12?p+'%':''}</div>`;
+  }).join('');
+  return `<div style="height:14px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${segs}</div>`;
+}
+
+// ── Gerador do HTML completo do laudo ───────────────────────────
+function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel }) {
+  const e = _esc;
+  const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
+  const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
+  const setoresList = [...new Set(linhas.map(r=>r.setor))].sort();
+
+  // ── CSS do modelo de referência ─────────────────────────────
+  const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6}
+.page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+@media print{body{background:white}.page{width:100%;margin:0;padding:18mm 18mm 14mm;box-shadow:none;page-break-after:always}.no-print{display:none}}
+.toolbar{position:sticky;top:0;z-index:100;background:white;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:10px}
+.toolbar .logo-mini{display:flex;align-items:center;gap:8px;margin-right:auto}
+.toolbar .logo-mini svg{width:22px;height:22px}.toolbar .logo-mini span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#111}
+.btn-print{display:inline-flex;align-items:center;gap:6px;background:#1a5e2a;color:white;border:none;border-radius:5px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-print:hover{background:#155223}.btn-print svg{width:14px;height:14px}
+.btn-outline{display:inline-flex;align-items:center;gap:6px;background:white;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-outline:hover{background:#f9fafb}
+.cover-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #1a5e2a}
+.cover-logo{width:56px;height:56px;background:#1a5e2a;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.cover-logo svg{width:30px;height:30px;fill:white}
+.cover-company{text-align:right}.cover-company-name{font-size:14px;font-weight:700;color:#1a5e2a;letter-spacing:.2px}.cover-company-sub{font-size:11px;color:#6b7280}
+.cover-body{padding:24px 0}
+.cover-tag{display:inline-block;background:#f0fdf4;color:#1a5e2a;border:1px solid #bbf7d0;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 10px;margin-bottom:16px}
+.cover-title{font-size:22px;font-weight:700;color:#111;line-height:1.3;margin-bottom:8px}
+.cover-subtitle{font-size:14px;color:#6b7280;margin-bottom:28px}
+.cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px}
+.cover-meta-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af}
+.cover-meta-value{font-size:13px;font-weight:600;color:#111;margin-top:2px}
+.cover-footer{margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#9ca3af}
+.cover-norm-pills{display:flex;gap:6px;flex-wrap:wrap}
+.norm-pill{background:#f0fdf4;border:1px solid #bbf7d0;color:#1a5e2a;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px}
+.sec-title{font-size:13px;font-weight:700;color:white;background:#1a5e2a;padding:7px 12px;border-radius:5px;margin:24px 0 12px;letter-spacing:.2px}
+.sec-title.sub{font-size:12px;background:#2d7a41;margin:16px 0 10px}
+.sec-title.setor{font-size:12px;background:#374151;padding:6px 12px;margin:16px 0 0;border-radius:5px 5px 0 0}
+.sec-title.setor + .tbl-wrap{border-radius:0 0 6px 6px}
+p{margin-bottom:10px;font-size:12px;color:#374151;line-height:1.75;text-align:justify}
+p strong{color:#111;font-weight:600}
+.highlight-box{background:#f0fdf4;border-left:3px solid #1a5e2a;border-radius:0 5px 5px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#374151;line-height:1.7}
+.highlight-box strong{color:#1a5e2a}
+.tbl-wrap{overflow-x:auto;margin-bottom:14px;border-radius:0 0 6px 6px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{background:#1a5e2a;color:white;padding:8px 10px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.3px;line-height:1.4}
+td{padding:8px 10px;border-bottom:.5px solid #e5e7eb;color:#374151;vertical-align:top;line-height:1.5}
+tr:nth-child(even) td{background:#f9fafb}
+tr:last-child td{border-bottom:none}
+.tbl-p th:first-child{width:26%}.tbl-p td:first-child{font-weight:600;color:#111;background:#f0fdf4}
+.tbl-s th:first-child{width:20%}.tbl-s td:first-child{font-weight:700;color:#111}
+.tbl-matriz{font-size:11px}
+.tbl-matriz .axis-label{background:#2d3748;color:white;font-weight:700;font-size:10px;padding:8px 6px;text-align:center}
+.tbl-matriz .p-label{background:#1e3a5f;color:white;font-size:10px;font-weight:600;padding:8px 10px;white-space:nowrap}
+.tbl-matriz .s-label{background:#1a5e2a;color:white;font-size:10px;font-weight:600;padding:8px 6px;text-align:center}
+.nivel-cell{text-align:center;font-weight:700;font-size:10px;padding:8px 4px}
+.nc-irr{background:#f0fdf4;color:#166534}.nc-bax{background:#dcfce7;color:#166534}.nc-med{background:#fef9c3;color:#854d0e}.nc-alt{background:#fee2e2;color:#991b1b}.nc-cri{background:#ede9fe;color:#5b21b6}
+.tbl-resultados th:nth-child(1){width:8%}.tbl-resultados th:nth-child(2){width:20%}.tbl-resultados th:nth-child(3){width:30%}.tbl-resultados th:nth-child(4){width:22%}.tbl-resultados th:nth-child(5){width:10%;text-align:center}
+.tbl-resultados td:nth-child(2){font-weight:600;color:#111}.tbl-resultados td:nth-child(5){text-align:center}
+.nivel-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;white-space:nowrap}
+.nb-irr{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.nb-bax{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.nb-med{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}.nb-alt{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.nb-cri{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+.tbl-conduta td:first-child{font-style:italic;color:#4b5563}.tbl-conduta td:nth-child(2){text-align:center;width:90px}
+.acoes-grupo{margin-bottom:18px}
+.acoes-risco-title{font-size:12px;font-weight:700;color:#111;margin-bottom:8px;padding-left:10px;border-left:3px solid #1a5e2a}
+.acoes-lista{list-style:none;padding:0;display:flex;flex-direction:column;gap:5px}
+.acoes-lista li{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#374151;line-height:1.6}
+.acoes-lista li::before{content:'';width:5px;height:5px;border-radius:50%;background:#1a5e2a;margin-top:7px;flex-shrink:0}
+.page-footer{margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#9ca3af}
+.footer-left{display:flex;align-items:center;gap:6px}.footer-left svg{width:14px;height:14px;fill:#9ca3af}
+.ref-item{display:flex;gap:8px;font-size:11px;color:#6b7280;line-height:1.6;margin-bottom:6px;align-items:flex-start}
+.ref-tag{font-size:9px;font-weight:700;background:#1a5e2a;color:white;padding:1px 6px;border-radius:3px;white-space:nowrap;margin-top:2px;flex-shrink:0}
+.ref-item strong{color:#374151}
+.fonte-nota{font-size:10px;color:#9ca3af;text-align:right;margin-top:4px;font-style:italic}
+.mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}`;
+
+  // ── Rodapé padrão ────────────────────────────────────────────
+  const footer = (pag) => `<div class="page-footer">
+    <div class="footer-left"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>PSEG Engenharia de Segurança do Trabalho</div>
+    <span>${e(pag)}</span>
+  </div>`;
+
+  // ── PÁGINA 4: Resultados por setor ───────────────────────────
+  let resultadosHTML = '';
+  setoresList.forEach(setor => {
+    const lS = linhas.filter(r=>r.setor===setor);
+    const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
+      .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
+    if (!fS.length) return;
+    resultadosHTML += `<div class="sec-title setor">${e(setor)}</div>
+    <div class="tbl-wrap"><table class="tbl-resultados"><thead><tr>
+      <th>Risco</th><th>Fator Ergonômico observado</th><th>Consequência</th>
+      <th>Classificação Ergonômica da ocorrência de danos</th><th>Nível de Risco</th>
+    </tr></thead><tbody>
+    ${fS.map(f=>`<tr>
+      <td>Psicossocial</td>
+      <td>${e(f.nome)}</td>
+      <td>${e(f.cons)}</td>
+      <td>${e(CLASSIF_ERGONOMICA[f.nivel]||'')}</td>
+      <td><span class="nivel-badge ${NB[f.nivel]||'nb-bax'}">${f.nivel}</span></td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+  });
+
+  // ── PÁGINA 5: Distribuição de respostas (gráficos inline) ────
+  let graficosHTML = '';
+  if (laudoSecoesAtivas.has('graficos')) {
+    const distAll = calcDistribuicaoQuestoes(linhas.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))})));
+    const CATS = [
+      {cat:'DEMANDAS DE TRABALHO',   bloco:'A',cor:'#4b5ea8',bg:'#f0f2fb'},
+      {cat:'RELAÇÕES INTERPESSOAIS', bloco:'B',cor:'#2d6e9e',bg:'#f0f6fb'},
+      {cat:'FATORES ORGANIZACIONAIS',bloco:'C',cor:'#8b5e2e',bg:'#faf5ec'},
+    ];
+    const legenda = [1,2,3,4].map(n=>`<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:9px;color:#6b7280">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${{1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'}[n]}"></span>
+      ${{1:'Nunca ← meta',2:'Às vezes',3:'Frequente',4:'Sempre'}[n]}</span>`).join('');
+    graficosHTML = `<div style="display:flex;flex-wrap:wrap;margin-bottom:12px">${legenda}</div>`;
+    CATS.forEach(({cat,bloco,cor,bg})=>{
+      const qs=distAll.filter(d=>d.q.b===bloco);
+      if (!qs.length) return;
+      graficosHTML += `<div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};padding:5px 10px;background:${bg};border-radius:4px;margin-bottom:8px">${cat}</div>
+        ${qs.map(d=>{
+          const rd=d.q.cd?RISCOS_DETALHES[d.q.cd]:null;
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
+              <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
+              ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
+              ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
+              <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
+            </div>
+            ${_barPrint(d.pcts, d.moda)}
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+  }
+
+  // ── PÁGINA 6: Ações recomendadas (fatores únicos) ────────────
+  let acoesHTML = '';
+  if (laudoSecoesAtivas.has('acoes')) {
+    const fatoresUnicos = calcFatores(linhas).filter(f=>f.nivel!=='IRRELEVANTE')
+      .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
+    const vistos = new Set();
+    fatoresUnicos.forEach(f=>{
+      const key = f.cd ? String(f.cd) : String(f.id);
+      if (vistos.has(key)) return;
+      vistos.add(key);
+      const acoes = ACOES_SUGERIDAS[key]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
+      acoesHTML += `<div class="acoes-grupo">
+        <div class="acoes-risco-title">${e(f.nome)}</div>
+        <ul class="acoes-lista">${acoes.map(a=>`<li>${e(a)}</li>`).join('')}</ul>
+      </div>`;
+    });
+  }
+
+  // ── HTML COMPLETO ─────────────────────────────────────────────
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PSEG — Laudo — ${e(nomeEmp)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>${css}</style></head>
+<body>
+
+<div class="toolbar no-print">
+  <div class="logo-mini">
+    <svg viewBox="0 0 24 24" fill="#1a5e2a"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+    <span>PSEG SafeSign — Laudo Técnico</span>
+  </div>
+  <span style="font-size:11px;color:#9ca3af">${e(nomeEmp)} · ${hoje}</span>
+  <button class="btn-print" onclick="window.print()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimir / PDF
+  </button>
+  <button class="btn-outline" onclick="window.close()">Fechar</button>
+</div>
+
+<!-- ── PÁGINA 1: CAPA ────────────────────────────────────────── -->
+<div class="page">
+  <div class="cover-header">
+    <div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+    <div class="cover-company">
+      <div class="cover-company-name">PSEG Engenharia de Segurança do Trabalho</div>
+      <div class="cover-company-sub">Saúde · Ergonomia · Segurança</div>
+    </div>
+  </div>
+  <div class="cover-body">
+    <div class="cover-tag">Avaliação Ergonômica Preliminar — AEP</div>
+    <div class="cover-title">Avaliação dos Fatores de<br>Risco Psicossociais</div>
+    <div class="cover-subtitle">Relatório de Resultados — Módulo Psicossocial</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><div class="cover-meta-label">Empresa avaliada</div><div class="cover-meta-value">${e(nomeEmp)}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Total de respondentes</div><div class="cover-meta-value">${linhas.length} colaboradores</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Data de emissão</div><div class="cover-meta-value">${hoje}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(setoresList.join(', '))}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Responsável técnico</div><div class="cover-meta-value">${e(responsavel)}</div></div>
+    </div>
+    <div class="cover-norm-pills" style="margin-top:18px">
+      <span class="norm-pill">NR-01 / 2024</span><span class="norm-pill">NR-17</span>
+      <span class="norm-pill">BS 8800</span><span class="norm-pill">Portaria MTE 1.419/2024</span><span class="norm-pill">ISO 45003</span>
+    </div>
+  </div>
+  <div class="cover-footer">
+    <span>Documento confidencial — uso exclusivo da empresa contratante</span>
+    <span>PSEG Engenharia de Segurança do Trabalho © ${new Date().getFullYear()}</span>
+  </div>
+</div>
+
+<!-- ── PÁGINA 2: METODOLOGIA — P e S ─────────────────────────── -->
+<div class="page">
+  <div class="sec-title">1. Metodologia de trabalho e normas aplicáveis</div>
+  <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
+  <p>A classificação correta dos riscos considera também os chamados "amenizadores" — <strong>pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos</strong> — durante a avaliação de cada atividade específica.</p>
+  <div class="sec-title sub">1.1 Probabilidade (P) / Frequência — Tabela 1</div>
+  <div class="tbl-wrap"><table class="tbl-p"><thead><tr><th>Ocorrência / Probabilidade</th><th>Critério — Psicossocial (Escala Likert)</th></tr></thead><tbody>
+    <tr><td><strong>P4 — Quase Certo (Permanente)</strong></td><td><div><strong>Exposição:</strong> Habitual, diversas vezes durante a jornada, superior a 80% do tempo.</div><div>Resposta: <strong>"Sempre"</strong> — Queixas frequentes. Medidas de controle inexistentes ou inadequadas.</div></td></tr>
+    <tr><td><strong>P3 — Provável (Habitual)</strong></td><td><div><strong>Exposição:</strong> Intermitente, entre 50% e 80% do tempo.</div><div>Resposta: <strong>"Frequentemente"</strong> — Queixas frequentes com pelo menos um registro. NRs parcialmente atendidas.</div></td></tr>
+    <tr><td><strong>P2 — Improvável (Intermitente)</strong></td><td><div><strong>Exposição:</strong> Intermitente, superior a 10% e inferior a 50% do tempo.</div><div>Resposta: <strong>"Às vezes"</strong> — Verbalizações de desconforto. NRs plenamente atendidas.</div></td></tr>
+    <tr><td><strong>P1 — Altamente Improvável (Ocasional)</strong></td><td><div><strong>Exposição:</strong> Ocasional, inferior a 10% do tempo.</div><div>Resposta: <strong>"Nunca"</strong> — Nenhuma ocorrência. Ótimo nível de controle.</div></td></tr>
+  </tbody></table></div>
+  <div class="fonte-nota">Quadro adaptado de MULHAUSEN &amp; DAMIANO (1998), Apêndice D da BS 8800 e AIHA 2015.</div>
+  <div class="highlight-box" style="margin-top:12px"><strong>Atenção — questões inversas:</strong> Para questões formuladas de forma positiva, a resposta ideal é "Sempre". O sistema aplica automaticamente a inversão do score: <em>score_ajustado = 5 − score_bruto</em>.</div>
+  <div class="sec-title sub" style="margin-top:18px">1.2 Severidade (S) / Efeito — Tabela 2</div>
+  <div class="tbl-wrap"><table class="tbl-s"><thead><tr><th>S — Índice de Severidade</th><th>Critério utilizado — Psicossocial</th></tr></thead><tbody>
+    <tr><td><strong>1 — Leve</strong></td><td>Não geram sobrecargas humanas significativas. Desmotivação, sensação de invisibilidade, ansiedade leve, frustração, desânimo.</td></tr>
+    <tr><td><strong>2 — Moderado</strong></td><td>Geram situações de desconforto e fadiga. Frustração frequente, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
+    <tr><td><strong>3 — Sério</strong></td><td>Riscos que podem prejudicar a saúde levando a afastamentos. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, crises de ansiedade.</td></tr>
+    <tr><td><strong>4 — Severo</strong></td><td>Lesões ou afastamentos com alta incidência. Possibilidade de DORT. Transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
+  </tbody></table></div>
+  ${footer('Metodologia — Página 2')}
+</div>
+
+<!-- ── PÁGINA 3: MATRIZ + CLASSIF + CONDUTA ──────────────────── -->
+<div class="page">
+  <div class="sec-title">1.3 Definição do Nível de Risco — Matriz P × S</div>
+  <p>Estimativa da categoria do nível de risco a partir da combinação P × S, conforme Tabela 4.</p>
+  <div class="tbl-wrap"><table class="tbl-matriz"><thead>
+    <tr><th class="axis-label" rowspan="2" style="width:120px;vertical-align:middle">PROBABILIDADE</th><th colspan="4" class="s-label" style="text-align:center">SEVERIDADE (S) / EFEITO</th></tr>
+    <tr><th class="s-label" style="text-align:center">S1<br><span style="font-weight:400;font-size:9px">Reversível (Leve)</span></th><th class="s-label" style="text-align:center">S2<br><span style="font-weight:400;font-size:9px">Reversível (Moderado)</span></th><th class="s-label" style="text-align:center">S3<br><span style="font-weight:400;font-size:9px">Irreversível (Sério)</span></th><th class="s-label" style="text-align:center">S4<br><span style="font-weight:400;font-size:9px">Fatal/Incapacitante</span></th></tr>
+  </thead><tbody>
+    <tr><td class="p-label">P4 — Quase Certo<br><span style="font-weight:400;font-size:10px">(Permanente)</span></td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td><td class="nivel-cell nc-alt">RISCO<br>ALTO</td><td class="nivel-cell nc-alt">RISCO<br>ALTO</td><td class="nivel-cell nc-cri">RISCO<br>CRÍTICO</td></tr>
+    <tr><td class="p-label">P3 — Provável<br><span style="font-weight:400;font-size:10px">(Habitual)</span></td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td><td class="nivel-cell nc-alt">RISCO<br>ALTO</td><td class="nivel-cell nc-alt">RISCO<br>ALTO</td></tr>
+    <tr><td class="p-label">P2 — Improvável<br><span style="font-weight:400;font-size:10px">(Intermitente)</span></td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td><td class="nivel-cell nc-alt">RISCO<br>ALTO</td></tr>
+    <tr><td class="p-label">P1 — Alt. Improvável<br><span style="font-weight:400;font-size:10px">(Ocasional)</span></td><td class="nivel-cell nc-irr">RISCO<br>IRRELEVANTE</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td></tr>
+  </tbody></table></div>
+  <div class="fonte-nota">Fonte: Adaptado de MULHAUSEN &amp; DAMIANO (1998) e Apêndice D da BS 8800 (BSI, 1996).</div>
+  <div class="sec-title sub" style="margin-top:18px">1.4 Classificação Ergonômica (Couto, 2007 × BS 8800)</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Classificação Ergonômica</th><th>Nível de Risco</th><th>Caracterização</th></tr></thead><tbody>
+    <tr><td style="font-style:italic">Ação técnica normal ou sem risco ergonômico</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>É natural do corpo humano aquele movimento, postura ou exigência psicofisiológica.</td></tr>
+    <tr><td style="font-style:italic">Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Existe exigência ergonômica além de uma ação técnica normal, porém há baixa probabilidade de distúrbio — geralmente pela existência de algum mecanismo de regulação.</td></tr>
+    <tr><td style="font-style:italic">Desconforto, Dificuldade ou Fadiga</td><td><span class="nivel-badge nb-med">MÉDIO</span></td><td>Situações consideradas causadoras de desconforto, dificuldade e fadiga; e situações causadoras de distúrbios.</td></tr>
+    <tr><td style="font-style:italic">Risco Ergonômico</td><td><span class="nivel-badge nb-alt">ALTO</span></td><td>Situações consideradas como potencialmente causadoras de lesões.</td></tr>
+    <tr><td style="font-style:italic">Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>Situações consideradas como potencialmente causadoras de lesões graves e afastamentos.</td></tr>
+  </tbody></table></div>
+  <div class="sec-title sub" style="margin-top:18px">1.5 Conduta Administrativa (BS 8800 / NR-01)</div>
+  <div class="tbl-wrap"><table class="tbl-conduta"><thead><tr><th>Classificação Ergonômica</th><th style="text-align:center">Nível</th><th>Conduta Administrativa</th></tr></thead><tbody>
+    <tr><td>Ação técnica normal ou sem risco</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>Nenhuma ação é requerida e nenhum registro documental precisa ser mantido.</td></tr>
+    <tr><td>Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Nenhum controle adicional é necessário. Podem-se considerar aperfeiçoamentos opcionais. Monitoração para assegurar que os controles são mantidos.</td></tr>
+    <tr><td>Desconforto, Dificuldade ou Fadiga</td><td><span class="nivel-badge nb-med">MÉDIO</span></td><td>Esforços devem ser realizados para reduzir o risco. As medidas a implementar devem ter responsáveis e prazos definidos. Monitoramento contínuo necessário.</td></tr>
+    <tr><td>Risco Ergonômico</td><td><span class="nivel-badge nb-alt">ALTO</span></td><td>Esforços prioritários até que o risco seja reduzido. Quando o risco envolver trabalho em execução, ação urgente deve ser tomada.</td></tr>
+    <tr><td>Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>O trabalho não deve ser iniciado nem continuado até que o risco seja reduzido. Se não for possível reduzir o risco, o trabalho deve permanecer proibido.</td></tr>
+  </tbody></table></div>
+  <div class="highlight-box mt14"><strong>Importante:</strong> Os riscos significativos identificados devem compor, junto aos demais riscos, o <strong>Inventário de Riscos Ocupacionais</strong> estabelecido no Programa de Gerenciamento de Riscos — PGR da NR-01.</div>
+  ${footer('Metodologia — Página 3')}
+</div>
+
+<!-- ── PÁGINA 4: RESULTADOS ──────────────────────────────────── -->
+<div class="page">
+  <div class="sec-title">2. Fatores de Risco Presentes × Nível de Risco</div>
+  <p>Os resultados individuais por grupo de exposição foram alocados nas tabelas abaixo, especificando os fatores de risco identificados, suas consequências, a classificação ergonômica e o nível de risco correspondente.</p>
+  <p>Os questionários foram respondidos de forma sigilosa pelos colaboradores, sem identificação nominal, com base na vivência dos últimos 6 meses de trabalho.</p>
+  ${resultadosHTML || '<p style="color:#6b7280;font-style:italic">Nenhum risco acima de IRRELEVANTE identificado nos setores selecionados.</p>'}
+  ${footer('Resultados — Página 4')}
+</div>
+
+${laudoSecoesAtivas.has('graficos') && graficosHTML ? `
+<!-- ── PÁGINA 5: GRÁFICOS ─────────────────────────────────────── -->
+<div class="page">
+  <div class="sec-title">3. Distribuição de Respostas por Questão</div>
+  <p>Distribuição percentual das respostas por questão. A barra destacada representa o nível predominante (moda). Questões inversas (↺) têm score ajustado: meta = "Sempre".</p>
+  ${graficosHTML}
+  ${footer('Distribuição — Página 5')}
+</div>` : ''}
+
+${laudoSecoesAtivas.has('acoes') && acoesHTML ? `
+<!-- ── PÁGINA 6: AÇÕES RECOMENDADAS ─────────────────────────── -->
+<div class="page">
+  <div class="sec-title">${laudoSecoesAtivas.has('graficos') ? '4' : '3'}. Ações Recomendadas por Fator de Risco</div>
+  <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
+  ${acoesHTML}
+  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na planilha de Riscos Psicossociais e Fontes Geradoras (PSEG) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
+  ${footer('Ações Recomendadas — Página ' + (laudoSecoesAtivas.has('graficos') ? '6' : '5'))}
+</div>` : ''}
+
+<!-- ── ÚLTIMA PÁGINA: REFERÊNCIAS ────────────────────────────── -->
+<div class="page">
+  <div class="sec-title">${(laudoSecoesAtivas.has('acoes') ? (laudoSecoesAtivas.has('graficos') ? 5 : 4) : (laudoSecoesAtivas.has('graficos') ? 4 : 3))}. Referências</div>
+  <div class="ref-item"><span class="ref-tag">Norma</span><div>BRASIL. <strong>NR-01 — Disposições Gerais e Gerenciamento de Riscos Ocupacionais.</strong> Portaria MTE nº 1.419, de 28 de novembro de 2024. Inclui expressamente os fatores de riscos psicossociais no GRO.</div></div>
+  <div class="ref-item"><span class="ref-tag">Norma</span><div>BRASIL. <strong>NR-17 — Ergonomia.</strong> MTE, 2021. Estabelece parâmetros para adaptação das condições de trabalho às características psicofisiológicas dos trabalhadores.</div></div>
+  <div class="ref-item"><span class="ref-tag">Padrão</span><div>BSI. <strong>BS 8800:1996 — Guide to Occupational Health and Safety Management Systems.</strong> British Standards Institution, 1996. Define a Matriz P×S utilizada neste laudo.</div></div>
+  <div class="ref-item"><span class="ref-tag">Método</span><div>MULHAUSEN, J.R.; DAMIANO, J. <strong>A Strategy for Assessing and Managing Occupational Exposures.</strong> AIHA Press, 1998. Fundamenta a classificação de probabilidade de ocorrência.</div></div>
+  <div class="ref-item"><span class="ref-tag">Método</span><div>COUTO, H.A. <strong>Ergonomia Aplicada ao Trabalho em 18 Lições.</strong> Ergo Editora, 2007. Tabela de equivalência entre classificação ergonômica e nível de risco.</div></div>
+  <div class="ref-item"><span class="ref-tag">Instrumento</span><div>EDWARDS, J.A. et al. <strong>HSE Management Standards Indicator Tool (HSE-MS-IT).</strong> HSE, 2008. Base do questionário de fatores psicossociais aplicado.</div></div>
+  <div class="ref-item"><span class="ref-tag">Instrumento</span><div>MENDES, A.M.; FERREIRA, M.C. <strong>ITRA — Inventário de Trabalho e Risco de Adoecimento.</strong> Instituto de Psicologia / UnB, 2007.</div></div>
+  <div class="ref-item"><span class="ref-tag">Instrumento</span><div>FACAS, E.P. <strong>PROART — Protocolo de Avaliação dos Riscos Psicossociais no Trabalho.</strong> UnB, 2013.</div></div>
+  <div class="ref-item"><span class="ref-tag">Referência</span><div>WALTON, R.E. <strong>Quality of Work Life: what is it?</strong> Sloan Management Review, 1973. Modelo teórico QVT de 8 dimensões.</div></div>
+  <div class="ref-item"><span class="ref-tag">Diretriz</span><div>WHO; ILO. <strong>Mental health at work — Policy brief.</strong> 2022. 12 bilhões de dias de trabalho perdidos/ano por depressão e ansiedade globalmente.</div></div>
+  <div class="ref-item"><span class="ref-tag">Norma</span><div>ISO 45003:2021. <strong>Occupational health and safety management — Psychological health and safety at work.</strong> ISO, 2021.</div></div>
+  <div class="highlight-box mt20"><strong>Nota metodológica:</strong> O questionário aplicado é composto por <strong>27 questões</strong> em escala Likert de 4 pontos (Nunca · Às vezes · Frequentemente · Sempre), referentes à percepção dos trabalhadores nos últimos 6 meses. Os questionários são sigilosos e sem identificação nominal. Participação mínima recomendada: 30% por GHE/GES.</div>
+  ${footer('Referências — Última Página')}
+</div>
+
+</body></html>`;
+}
+
 async function gerarLaudoPDF() {
   _registrarLaudo();
 
-  if (!document.getElementById('laudo-doc')) {
-    await renderLaudo();
-    await new Promise(r => setTimeout(r, 800));
-  }
+  const empId     = document.getElementById('ld-empresa')?.value || '';
+  const nomeEmp   = empId ? (_empresas.find(e=>e.id===empId)?.nome || empId) : 'Todas as empresas';
+  const setores   = [...(comboState['combo-ld-setor'] || new Set())];
+  const todos     = await getLinhasParaAnalise(empId);
+  const linhas    = setores.length ? todos.filter(r=>setores.includes(r.setor)) : todos;
 
-  const { jsPDF } = window.jspdf;
+  if (!linhas.length) { toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+
+  const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const responsavel = (document.getElementById('ld-responsavel')?.value||'').trim() || 'PSEG — Responsável Técnico';
+  const cicloId     = document.getElementById('ld-ciclo')?.value || '';
+  const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
+
+  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel });
+
+  const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
+  if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  toast('Laudo aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+}
+
+// ── LEGADO jsPDF removido — exportação agora via popup HTML ────
+async function _jsPDFLegado() {
+  void window.jspdf; // referência mantida para evitar erro de bundler
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   // ── Constantes de layout ──────────────────────────────────────
@@ -10038,13 +10338,6 @@ async function renderTelaAssinatura() {
     canceled:'ass-status-pastdue', unpaid:'ass-status-pastdue'
   }[subStatus] || 'ass-status-trial');
 
-  // Limites
-  const fmt = v => v === null || v === undefined ? 'Ilimitado' : String(v);
-  document.getElementById('ass-limite-empresas').textContent  = fmt(u.max_empresas);
-  document.getElementById('ass-limite-usuarios').textContent  = fmt(u.max_usuarios);
-  document.getElementById('ass-limite-respostas').textContent = fmt(u.max_respostas_mes);
-  document.getElementById('ass-provider').textContent = sub?.provider ? sub.provider.charAt(0).toUpperCase() + sub.provider.slice(1) : '—';
-
   // Renovação / Trial
   const rowRen   = document.getElementById('ass-row-renovacao');
   const rowTrial = document.getElementById('ass-row-trial');
@@ -10061,14 +10354,30 @@ async function renderTelaAssinatura() {
       ? new Date(periodoFim).toLocaleDateString('pt-BR') : '—';
   }
 
-  // CTA: esconder botão upgrade se enterprise ativo
+  // CTA: esconder se enterprise ativo
   const ctaArea = document.getElementById('ass-cta-area');
-  if (plano === 'enterprise' && subStatus === 'active') ctaArea.style.display = 'none';
-  else ctaArea.style.display = '';
+  if (ctaArea) ctaArea.style.display = (plano === 'enterprise' && subStatus === 'active') ? 'none' : '';
 
-  // Card upgrade: esconder se enterprise
-  const upCard = document.getElementById('ass-upgrade-card');
-  if (upCard) upCard.style.display = (plano === 'enterprise' && subStatus === 'active') ? 'none' : '';
+  // Destacar card do plano atual + tag "Plano atual"
+  ['trial','starter','professional','enterprise'].forEach(p => {
+    const card = document.getElementById('ass-pc-' + p);
+    if (!card) return;
+    const isCurrent = p === plano;
+    card.classList.toggle('current', isCurrent);
+    // Substituir o primeiro elemento de tag pelo badge correto
+    const tag = card.querySelector('.ass-pc-tag');
+    if (!tag) return;
+    if (isCurrent) {
+      tag.textContent = 'Plano atual';
+      tag.className = 'ass-pc-tag t-current';
+    } else if (p === 'professional') {
+      tag.textContent = 'Mais popular';
+      tag.className = 'ass-pc-tag t-popular';
+    } else {
+      tag.textContent = '—';
+      tag.className = 'ass-pc-tag t-placeholder';
+    }
+  });
 
   // Badge sidebar
   const badge = document.getElementById('nb-assinatura-badge');
