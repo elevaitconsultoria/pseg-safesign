@@ -10453,10 +10453,9 @@ async function _renderHistoricoPagamentos() {
   }
 }
 
-// ── Modal de upgrade ─────────────────────────────────────────────
+// ── Upgrade → redireciona para tela Assinatura ───────────────────
 function abrirUpgrade() {
-  document.getElementById('pix-display').style.display = 'none';
-  document.getElementById('upgrade-overlay').classList.add('show');
+  goScreen('assinatura', document.getElementById('nb-assinatura'));
 }
 // ── Hamburger menu ──────────────────────────────────────────────
 function toggleHamMenu(e) {
@@ -10476,10 +10475,7 @@ function fecharTutorial() {
   document.getElementById('tutorial-overlay').classList.remove('show');
 }
 
-// ── Upgrade ──────────────────────────────────────────────────
-function fecharUpgrade() {
-  document.getElementById('upgrade-overlay').classList.remove('show');
-}
+function fecharUpgrade() { /* overlay removido — sem ação necessária */ }
 
 // ── Stripe Payment Links (test mode) — fallback quando Edge Function não está deployed
 const STRIPE_PAYMENT_LINKS = {
@@ -10711,105 +10707,10 @@ function copiarPix() {
   </div>
 </div>
 
-<!-- ════════════════════════════════════════
-     UPGRADE OVERLAY
-  <div class="upgrade-modal">
-    <div class="upgrade-header">
-      <div>
-        <div class="upgrade-title">Escolha seu plano</div>
-        <div class="upgrade-sub">Cancele a qualquer momento. Sem fidelidade.</div>
-      </div>
-      <button class="upgrade-close" onclick="fecharUpgrade()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-
-    <div class="plans-grid">
-
-      <!-- Starter -->
-      <div class="plan-card">
-        <div class="plan-nome">Starter</div>
-        <div class="plan-preco">R$&nbsp;197 <span>/mês</span></div>
-        <ul class="plan-features">
-          <li>1 empresa cliente</li>
-          <li>10 usuários</li>
-          <li>500 respostas por mês</li>
-          <li>Relatórios PDF</li>
-          <li>Suporte por e-mail</li>
-        </ul>
-        <div class="plan-btns">
-          <button class="plan-btn-stripe" onclick="iniciarPagamento('starter','stripe')">
-            💳 Pagar com cartão
-          </button>
-          <button class="plan-btn-pix" onclick="iniciarPagamento('starter','asaas','pix')">
-            ⚡ PIX / Boleto
-          </button>
-        </div>
-      </div>
-
-      <!-- Professional — destaque -->
-      <div class="plan-card destaque">
-        <div class="plan-badge">Mais popular</div>
-        <div class="plan-nome">Professional</div>
-        <div class="plan-preco">R$&nbsp;497 <span>/mês</span></div>
-        <ul class="plan-features">
-          <li>5 empresas clientes</li>
-          <li>25 usuários</li>
-          <li>2.000 respostas por mês</li>
-          <li>Múltiplos consultores</li>
-          <li>Prioridade no suporte</li>
-        </ul>
-        <div class="plan-btns">
-          <button class="plan-btn-stripe" onclick="iniciarPagamento('professional','stripe')">
-            💳 Pagar com cartão
-          </button>
-          <button class="plan-btn-pix" onclick="iniciarPagamento('professional','asaas','pix')">
-            ⚡ PIX / Boleto
-          </button>
-        </div>
-      </div>
-
-      <!-- Enterprise -->
-      <div class="plan-card">
-        <div class="plan-nome">Enterprise</div>
-        <div class="plan-preco">R$&nbsp;997 <span>/mês</span></div>
-        <ul class="plan-features">
-          <li>Empresas ilimitadas</li>
-          <li>Usuários ilimitados</li>
-          <li>Respostas ilimitadas</li>
-          <li>White-label</li>
-          <li>SLA dedicado</li>
-          <li>Onboarding personalizado</li>
-        </ul>
-        <div class="plan-btns">
-          <button class="plan-btn-stripe" onclick="iniciarPagamento('enterprise','stripe')">
-            💳 Pagar com cartão
-          </button>
-          <button class="plan-btn-pix" onclick="iniciarPagamento('enterprise','asaas','pix')">
-            ⚡ PIX / Boleto
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- PIX display area (aparece após clicar PIX) -->
-    <div id="pix-display" style="display:none;padding:0 32px 28px">
-      <div style="border-top:1px solid var(--border);padding-top:20px">
-        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:16px">⚡ Pagar via PIX</div>
-        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
-          <div id="pix-qr-container" style="flex-shrink:0"></div>
-          <div>
-            <div style="font-size:11px;color:var(--tm);margin-bottom:8px">Código copia e cola:</div>
-            <div id="pix-code" style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bs);border:1px solid var(--border);border-radius:6px;padding:10px 12px;word-break:break-all;max-width:340px;color:var(--tx)"></div>
-            <button onclick="copiarPix()" style="margin-top:8px;padding:5px 14px;background:var(--g);color:white;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer">Copiar código</button>
-            <div id="pix-expira" style="font-size:11px;color:var(--tl);margin-top:8px"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
+<!-- pix-display mantido para compatibilidade com iniciarPagamento() -->
+<div id="pix-display" style="display:none"></div>
+<div id="pix-qr-container" style="display:none"></div>
+<div id="pix-code" style="display:none"></div>
+<div id="pix-expira" style="display:none"></div>
 </body>
 </html>
