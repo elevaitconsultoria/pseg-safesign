@@ -1484,30 +1484,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar CSV
       </button>
-
-      <!-- Exportar análise (PDF / PNG) — aparece junto com CSV após análise -->
-      <div id="btn-export-analise-wrap" style="display:none;position:relative">
-        <button class="btn btn-ghost" onclick="_toggleExpMenu(this)" style="width:100%">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar análise
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9" style="margin-left:auto"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div id="exp-menu" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 3px);background:white;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:400;overflow:hidden">
-          <div style="padding:6px 12px 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl)">Formato</div>
-          <button onclick="exportarResultados('png')"
-            style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:10px"
-            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
-            <span style="font-size:18px;line-height:1">🖼</span>
-            <div><div style="font-weight:600">PNG — Imagem</div><div style="font-size:10px;color:var(--tl)">Alta resolução, largura A4</div></div>
-          </button>
-          <button onclick="exportarResultados('pdf')"
-            style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:10px;border-top:1px solid var(--bs)"
-            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
-            <span style="font-size:18px;line-height:1">📄</span>
-            <div><div style="font-weight:600">PDF A4</div><div style="font-size:10px;color:var(--tl)">Multipágina, pronto para anexar</div></div>
-          </button>
-        </div>
-      </div>
+      <button class="btn btn-ghost" onclick="exportarResultados('pdf')" id="btn-export-pdf" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar PDF
+      </button>
+      <button class="btn btn-ghost" onclick="exportarResultados('png')" id="btn-export-png" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Imagem
+      </button>
     </div>
 
     <!-- PAINEL RESULTADOS -->
@@ -4494,8 +4478,10 @@ async function rodarAnalise() {
   }
   const btnCsv = document.getElementById('btn-export-csv');
   if (btnCsv) btnCsv.style.display = 'inline-flex';
-  const btnExp = document.getElementById('btn-export-analise-wrap');
-  if (btnExp) btnExp.style.display = 'block';
+  const btnPdf = document.getElementById('btn-export-pdf');
+  if (btnPdf) btnPdf.style.display = 'inline-flex';
+  const btnPng = document.getElementById('btn-export-png');
+  if (btnPng) btnPng.style.display = 'inline-flex';
 }
 
 function exportarCSV() {
