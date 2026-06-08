@@ -4757,9 +4757,9 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       ? setor
       : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
 
-    html += '<div style="margin-bottom:28px">' +
-      '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px;' +
-      'padding:8px 14px;background:var(--bg);border-left:3px solid var(--tx);' +
+    html += '<div style="margin-bottom:44px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:16px;' +
+      'padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);' +
       'border-radius:0 6px 6px 0">' + setorLabel + '</div>';
 
     resultado.forEach(f => {
@@ -4776,9 +4776,9 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         const barraQ  = renderBarraDistribuicao(dq.pcts, dq.moda, dq.ve ?? 1, dq.n, false, dq.inv, true);
         const textoQ  = dq.texto.length > 60 ? dq.texto.slice(0, 60) + '…' : dq.texto;
         const sep     = qi < f.distQuestoes.length - 1
-          ? 'padding-bottom:12px;border-bottom:1px dashed var(--bs);margin-bottom:12px' : '';
+          ? 'padding-bottom:18px;border-bottom:1px dashed var(--bs);margin-bottom:18px' : '';
         return '<div style="' + sep + '">' +
-          '<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:5px;flex-wrap:wrap">' +
+          '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px;flex-wrap:wrap">' +
           '<span style="font-size:9px;font-weight:700;font-family:monospace;background:white;' +
           'border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--tm);' +
           'white-space:nowrap;flex-shrink:0">' + dq.codigo + '</span>' +
@@ -4789,7 +4789,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
 
       const colapsivel = f.distQuestoes.length
         ? '<div>' +
-          '<div style="cursor:pointer;padding:7px 14px;background:#f8fafc;border-top:1px solid var(--bs);' +
+          '<div style="cursor:pointer;padding:10px 16px;background:#f8fafc;border-top:1px solid var(--bs);' +
           'font-size:11px;color:var(--tm);display:flex;align-items:center;gap:5px;user-select:none" ' +
           'onclick="(function(el){var c=el.nextElementSibling;var o=c.style.display!==\'none\';' +
           'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
@@ -4797,7 +4797,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           '<span>' + f.distQuestoes.length + ' questão' + (f.distQuestoes.length > 1 ? 'ões' : '') +
           ' que compõem este risco</span></div>' +
           '<div style="display:' + (nOpen ? 'block' : 'none') + ';background:#f8fafc;' +
-          'padding:10px 14px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
+          'padding:16px 18px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
           '</div>'
         : '';
 
@@ -4809,9 +4809,9 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
 
       html +=
         '<div style="border:1.5px solid ' + borda + ';border-left:4px solid ' + borda + ';' +
-        'border-radius:8px;margin-bottom:10px;overflow:hidden">' +
+        'border-radius:8px;margin-bottom:16px;overflow:hidden">' +
         // — Cabeçalho
-        '<div style="background:' + hdrBg + ';padding:9px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        '<div style="background:' + hdrBg + ';padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         cdBadge +
         '<span style="font-size:13px;font-weight:700;color:var(--tx);flex:1;min-width:0;word-break:break-word">' + f.nome + '</span>' +
         '<span style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">S' + f.s + ' ' + f.sLabel + '</span>' +
@@ -4819,12 +4819,12 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         'padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;border:1px solid ' + borda + '">' + f.nivel + '</span>' +
         '</div>' +
         // — Corpo
-        '<div style="padding:10px 14px;background:white">' +
+        '<div style="padding:14px 16px;background:white">' +
         barraMedia +
-        '<div style="margin-top:7px;font-size:11px;color:var(--tm)">' +
+        '<div style="margin-top:10px;font-size:11px;color:var(--tm)">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
         ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div>' +
-        (f.classifErg ? '<div style="font-size:10px;color:var(--tl);font-style:italic;margin-top:3px">' + f.classifErg + '</div>' : '') +
+        (f.classifErg ? '<div style="font-size:10px;color:var(--tl);font-style:italic;margin-top:5px">' + f.classifErg + '</div>' : '') +
         '</div>' +
         // — Colapsível
         colapsivel +
@@ -4855,9 +4855,9 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
     if (!resultado.length) return;
 
-    html += `<div style="margin-bottom:24px">
-      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;
-        padding:8px 14px;background:var(--bg);border-left:3px solid var(--tx);
+    html += `<div style="margin-bottom:40px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:14px;
+        padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);
         border-radius:0 6px 6px 0">${setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>'}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#1a5e2a">
@@ -4872,10 +4872,10 @@ function renderViewRisco({grupos, filtrado, niveis}) {
             const nc = NC[f.nivel] || NC.BAIXO;
             const classifErg = CLASSIF_ERGONOMICA[f.nivel] || '';
             return `<tr style="background:${i%2?'#fafcfb':'white'};border-bottom:.5px solid var(--bs)">
-              <td style="padding:8px 10px;color:var(--tm)">Psicossocial</td>
-              <td style="padding:8px 10px;font-weight:600;color:var(--tx)">${f.nome}</td>
-              <td style="padding:8px 10px;color:var(--tm);max-width:220px;line-height:1.5">${f.cons}</td>
-              <td style="padding:8px 10px;color:var(--tm);font-style:italic">${classifErg}</td>
+              <td style="padding:11px 12px;color:var(--tm)">Psicossocial</td>
+              <td style="padding:11px 12px;font-weight:600;color:var(--tx)">${f.nome}</td>
+              <td style="padding:11px 12px;color:var(--tm);max-width:220px;line-height:1.6">${f.cons}</td>
+              <td style="padding:11px 12px;color:var(--tm);font-style:italic">${classifErg}</td>
               <td style="padding:8px 10px;text-align:center">
                 <span style="background:${nc.bg};color:${nc.cor};font-size:10px;font-weight:700;
                   padding:3px 9px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
