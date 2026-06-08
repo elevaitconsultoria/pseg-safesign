@@ -4435,11 +4435,12 @@ async function rodarAnalise() {
   const niveisLabel = niveis.join(', ');
 
   // View toggle states — 'grafica' (padrão) | 'tabela'  ×  'risco' | 'questao'
-  window._displayMode = window._displayMode || 'grafica';
-  window._viewMode    = window._viewMode    || 'risco';
+  window._displayMode      = window._displayMode      || 'grafica';
+  window._viewMode         = window._viewMode         || 'risco';
+  window._detalhesVisiveis = window._detalhesVisiveis ?? false;   // default: oculto
   const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
   const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
-  const _dm = window._displayMode, _vm = window._viewMode;
+  const _dm = window._displayMode, _vm = window._viewMode, _dv = window._detalhesVisiveis;
 
   let html = `
   <div style="margin-bottom:14px">
@@ -4463,6 +4464,15 @@ async function rodarAnalise() {
           <button id="vbtn-questao" onclick="_setViewMode('questao')"
             style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
+        <!-- Toggle Detalhes — visível apenas na visão Gráfica -->
+        <button id="btn-detalhes" onclick="_toggleDetalhes()"
+          style="display:${_dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
+            padding:5px 11px;border:1.5px solid var(--border);border-radius:6px;
+            cursor:pointer;font-family:Inter,sans-serif;font-size:11px;
+            background:${_dv?'var(--tx)':'white'};color:${_dv?'white':'var(--tm)'};
+            white-space:nowrap">
+          ${_dv ? '▲ Ocultar detalhes' : '▼ Mostrar detalhes'}
+        </button>
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -4679,14 +4689,39 @@ async function exportarResultados(fmt) {
 const _TABA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
 const _TABH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
 
+function _toggleDetalhes() {
+  window._detalhesVisiveis = !window._detalhesVisiveis;
+  const show = window._detalhesVisiveis;
+  // Atualizar todas as seções colapsáveis no view-content atual
+  const vc = document.getElementById('view-content');
+  if (vc) {
+    vc.querySelectorAll('.qa-arr').forEach(arr => {
+      const body = arr.parentElement?.nextElementSibling;
+      if (body) {
+        body.style.display = show ? 'block' : 'none';
+        arr.textContent    = show ? '▼' : '▶';
+      }
+    });
+  }
+  // Atualizar visual do botão
+  const btn = document.getElementById('btn-detalhes');
+  if (btn) {
+    btn.textContent  = show ? '▲ Ocultar detalhes' : '▼ Mostrar detalhes';
+    btn.style.background = show ? 'var(--tx)' : 'white';
+    btn.style.color      = show ? 'white'     : 'var(--tm)';
+  }
+}
+
 function _setDisplayMode(mode) {
   window._displayMode = mode;
   const dg = document.getElementById('dbtn-grafica');
   const dt = document.getElementById('dbtn-tabela');
   const tv = document.getElementById('toggle-view');
+  const bd = document.getElementById('btn-detalhes');
   if (dg) dg.style.cssText = mode === 'grafica' ? _TABA : _TABH;
   if (dt) dt.style.cssText = mode === 'tabela'  ? _TABA : _TABH;
   if (tv) tv.style.display = mode === 'tabela'  ? 'flex' : 'none';
+  if (bd) bd.style.display = mode === 'grafica' ? 'flex' : 'none';
   if (!window._analiseData) return;
   if (mode === 'tabela') {
     if (window._viewMode === 'questao') renderViewQuestao(window._analiseData);
@@ -4745,7 +4780,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       const borda  = _GF_BORDA[f.nivel]  || '#e2e8f0';
       const hdrBg  = _GF_HDR[f.nivel]   || '#f8fafc';
       const nc     = NC[f.nivel]          || NC.BAIXO;
-      const nOpen  = f.nivel === 'ALTO' || f.nivel === 'CRÍTICO';
+      const nOpen  = !!window._detalhesVisiveis;   // controlado pelo toggle global
 
       // Barra da distribuição média (espaço ajustado: ve=1 = ideal para todos)
       const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false);
