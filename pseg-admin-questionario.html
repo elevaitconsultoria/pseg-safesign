@@ -1781,7 +1781,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
       </div>
 
-      <button class="btn btn-g" style="width:100%;justify-content:center;padding:11px" onclick="renderLaudo()">
+      <button class="btn btn-g" style="width:100%;justify-content:center;padding:11px" onclick="abrirLaudoJanela()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Pré-visualizar laudo
       </button>
@@ -4523,7 +4523,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
     html += `<div style="margin-bottom:24px">
       <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;
         padding:8px 14px;background:var(--bg);border-left:3px solid var(--tx);
-        border-radius:0 6px 6px 0">${setor}</div>
+        border-radius:0 6px 6px 0">${setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>'}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#1a5e2a">
           <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Risco</th>
@@ -4631,7 +4631,7 @@ function renderViewQuestao({grupos, filtrado}) {
 // Questões inversas: score ajustado = 5−v, logo adj 1 = respondeu "Sempre" (ideal),
 // adj 4 = respondeu "Nunca" (pior). Os rótulos refletem o que o respondente escolheu.
 function getNivelLabels(inv) {
-  if (inv) return {1:'Sempre ↺', 2:'Freq. ↺', 3:'AV ↺', 4:'Nunca ↺'};
+  if (inv) return {1:'Sempre', 2:'Frequente', 3:'Às vezes', 4:'Nunca'};
   return {1:'Nunca', 2:'Às vezes', 3:'Frequente', 4:'Sempre'};
 }
 
@@ -6746,7 +6746,7 @@ async function renderLaudo() {
   // Filtro defensivo: set vazio = todos incluídos
   const linhas  = dados.filter(r => setores.length === 0 || setores.includes(r.setor));
   const panel   = document.getElementById('laudo-preview-panel');
-  const nomeEmp = emp ? (_empresas.find(e => e.id === emp)?.nome || emp) : 'Todas as empresas';
+  const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todas as empresas';
   const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
   if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
@@ -6858,7 +6858,7 @@ async function renderLaudo() {
       if (!fSetor.length) return;
 
       html += `<div class="laudo-section">
-        <div class="laudo-sec-title">Resultados — ${setor}</div>
+        <div class="laudo-sec-title">Resultados — ${setor || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>'}</div>
         <div style="font-size:11px;color:var(--tl);margin-bottom:12px">Respondentes: <strong style="color:var(--tx)">${lSetor.length}</strong></div>
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -7129,7 +7129,7 @@ tr:last-child td{border-bottom:none}
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
-    resultadosHTML += `<div class="sec-title setor">${e(setor)}</div>
+    resultadosHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>
     <div class="tbl-wrap"><table class="tbl-resultados"><thead><tr>
       <th>Risco</th><th>Fator Ergonômico observado</th><th>Consequência</th>
       <th>Classificação Ergonômica da ocorrência de danos</th><th>Nível de Risco</th>
@@ -7357,11 +7357,16 @@ ${laudoSecoesAtivas.has('acoes') && acoesHTML ? `
 </body></html>`;
 }
 
+// Abre o laudo em nova janela limpa (sem toolbar do app) — usada pelo botão Pré-visualizar
+function abrirLaudoJanela() {
+  gerarLaudoPDF();
+}
+
 async function gerarLaudoPDF() {
   _registrarLaudo();
 
   const empId     = document.getElementById('ld-empresa')?.value || '';
-  const nomeEmp   = empId ? (_empresas.find(e=>e.id===empId)?.nome || empId) : 'Todas as empresas';
+  const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todas as empresas';
   const setores   = [...(comboState['combo-ld-setor'] || new Set())];
   const todos     = await getLinhasParaAnalise(empId);
   const linhas    = setores.length ? todos.filter(r=>setores.includes(r.setor)) : todos;
