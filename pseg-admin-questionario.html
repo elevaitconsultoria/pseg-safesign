@@ -1484,6 +1484,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar CSV
       </button>
+
+      <!-- Exportar análise (PDF / PNG) — aparece junto com CSV após análise -->
+      <div id="btn-export-analise-wrap" style="display:none;position:relative">
+        <button class="btn btn-ghost" onclick="_toggleExpMenu(this)" style="width:100%">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar análise
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9" style="margin-left:auto"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="exp-menu" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 3px);background:white;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:400;overflow:hidden">
+          <div style="padding:6px 12px 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl)">Formato</div>
+          <button onclick="exportarResultados('png')"
+            style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:10px"
+            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
+            <span style="font-size:18px;line-height:1">🖼</span>
+            <div><div style="font-weight:600">PNG — Imagem</div><div style="font-size:10px;color:var(--tl)">Alta resolução, largura A4</div></div>
+          </button>
+          <button onclick="exportarResultados('pdf')"
+            style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:10px;border-top:1px solid var(--bs)"
+            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
+            <span style="font-size:18px;line-height:1">📄</span>
+            <div><div style="font-weight:600">PDF A4</div><div style="font-size:10px;color:var(--tl)">Multipágina, pronto para anexar</div></div>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- PAINEL RESULTADOS -->
@@ -4439,29 +4463,6 @@ async function rodarAnalise() {
           <button id="vbtn-questao" onclick="_setViewMode('questao')"
             style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
-        <!-- Exportar dropdown -->
-        <div style="position:relative">
-          <button onclick="_toggleExpMenu(this)"
-            style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm);display:flex;align-items:center;gap:5px;white-space:nowrap">
-            ⬇ Exportar
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div id="exp-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:white;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:300;min-width:170px;overflow:hidden">
-            <div style="padding:7px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl)">Formato</div>
-            <button onclick="exportarResultados('png')"
-              style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:8px"
-              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
-              <span style="font-size:16px">🖼</span>
-              <div><div style="font-weight:600">Imagem PNG</div><div style="font-size:10px;color:var(--tl)">Alta resolução (2×)</div></div>
-            </button>
-            <button onclick="exportarResultados('pdf')"
-              style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:8px;border-top:1px solid var(--bs)"
-              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
-              <span style="font-size:16px">📄</span>
-              <div><div style="font-weight:600">PDF A4</div><div style="font-size:10px;color:var(--tl)">Multipágina, pronto para anexar</div></div>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -4483,6 +4484,8 @@ async function rodarAnalise() {
   }
   const btnCsv = document.getElementById('btn-export-csv');
   if (btnCsv) btnCsv.style.display = 'inline-flex';
+  const btnExp = document.getElementById('btn-export-analise-wrap');
+  if (btnExp) btnExp.style.display = 'block';
 }
 
 function exportarCSV() {
@@ -4550,62 +4553,80 @@ async function exportarResultados(fmt) {
   const vc = document.getElementById('view-content');
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
 
-  // Fechar dropdown
   const m = document.getElementById('exp-menu');
   if (m) m.style.display = 'none';
 
   toast('Gerando exportação — aguarde...', 'g');
 
-  // Expandir todas as seções colapsadas (para capturar conteúdo completo)
+  // 1. Expandir todas as seções colapsadas
   const arrows = [...vc.querySelectorAll('.qa-arr')];
   const wasHidden = arrows
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
     .filter(({ body }) => body && body.style.display === 'none');
   wasHidden.forEach(({ arrow, body }) => {
-    body.style.display  = 'block';
-    arrow.textContent   = '▼';
+    body.style.display = 'block';
+    arrow.textContent  = '▼';
   });
-
-  // Aguardar reflow
   await new Promise(r => setTimeout(r, 80));
 
+  // 2. Renderizar em largura fixa equivalente à área útil do A4
+  //    194mm × (96dpi / 25,4) = 733px  →  conteúdo preenche A4 1:1
+  const A4W = 733;
+  const scale = fmt === 'png' ? 3 : 2;   // PNG: 300dpi | PDF: ~190dpi
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText =
+    'position:fixed;left:-99999px;top:0;' +
+    'width:' + A4W + 'px;min-height:50px;background:#fff;' +
+    'padding:0;overflow:visible;z-index:-9999;font-family:Inter,sans-serif';
+  const clone = vc.cloneNode(true);
+  clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+  await new Promise(r => setTimeout(r, 120));  // layout settle
+
+  const today = new Date().toISOString().slice(0, 10);
+  let canvas;
+
   try {
-    const canvas = await html2canvas(vc, {
-      scale:           2,
+    canvas = await html2canvas(wrap, {
+      scale,
       useCORS:         true,
       allowTaint:      false,
       backgroundColor: '#ffffff',
       logging:         false,
-      scrollX:         0,
-      scrollY:         0,
-      width:           vc.scrollWidth,
-      height:          vc.scrollHeight,
-      windowWidth:     vc.scrollWidth,
-      windowHeight:    vc.scrollHeight,
+      width:           A4W,
+      windowWidth:     1280,   // desktop layout
     });
+  } finally {
+    document.body.removeChild(wrap);
+    // Restaurar collapsibles
+    wasHidden.forEach(({ arrow, body }) => {
+      body.style.display = 'none';
+      arrow.textContent  = '▶';
+    });
+  }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const emp   = (_analiseData?.setoresAtivos || []).join(', ') || 'análise';
-
+  try {
     if (fmt === 'png') {
-      // ── PNG: download direto ────────────────────────────────────
-      const a = document.createElement('a');
-      a.href     = canvas.toDataURL('image/png');
-      a.download = `pseg-analise-${today}.png`;
+      // PNG: 2199px de largura (A4 a 300dpi) — ideal para Word/relatórios
+      const a = Object.assign(document.createElement('a'), {
+        href:     canvas.toDataURL('image/png'),
+        download: `pseg-analise-${today}.png`,
+      });
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      toast('✓ Imagem exportada.', 'g');
+      toast('✓ PNG exportado (A4 300dpi).', 'g');
 
     } else {
-      // ── PDF: A4 multipágina ─────────────────────────────────────
+      // PDF A4 multipágina
       const { jsPDF } = window.jspdf;
       const PW = 210, PH = 297;
-      const MX = 8, MY = 8;           // margens horizontais e verticais
-      const HDR = 11;                  // altura do header em mm
-      const imgW   = PW - MX * 2;
-      const imgH   = canvas.height / canvas.width * imgW;  // altura total em mm
-      const mmPerPx = imgH / canvas.height;
+      const MX = 8, MY = 6;
+      const HDR = 11;
+      const imgW    = PW - MX * 2;          // 194mm — preenche A4
+      const mmPerPx = imgW / canvas.width;   // mm por pixel do canvas
 
       const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
 
@@ -4623,28 +4644,20 @@ async function exportarResultados(fmt) {
       };
 
       addHdr(true);
-
-      let srcY    = 0;   // pixel row no canvas origem
-      let topY    = HDR + MY;  // y inicial no PDF (primeira página)
-      let first   = true;
+      let srcY = 0;
+      let topY = HDR + MY;
 
       while (srcY < canvas.height) {
         const availMM = PH - topY - MY;
-        const availPx = Math.floor(availMM / mmPerPx);
-        const slicePx = Math.min(availPx, canvas.height - srcY);
+        const slicePx = Math.min(Math.floor(availMM / mmPerPx), canvas.height - srcY);
         if (slicePx <= 0) break;
 
-        // Recortar fatia
-        const tmp = document.createElement('canvas');
-        tmp.width  = canvas.width;
-        tmp.height = slicePx;
+        const tmp = Object.assign(document.createElement('canvas'),
+          { width: canvas.width, height: slicePx });
         tmp.getContext('2d').drawImage(canvas, 0, -srcY);
 
-        const sliceHmm = slicePx * mmPerPx;
-        doc.addImage(tmp.toDataURL('image/png'), 'PNG', MX, topY, imgW, sliceHmm);
-
-        srcY  += slicePx;
-        first  = false;
+        doc.addImage(tmp.toDataURL('image/png'), 'PNG', MX, topY, imgW, slicePx * mmPerPx);
+        srcY += slicePx;
 
         if (srcY < canvas.height) {
           doc.addPage();
@@ -4656,16 +4669,9 @@ async function exportarResultados(fmt) {
       doc.save(`pseg-analise-${today}.pdf`);
       toast('✓ PDF exportado.', 'g');
     }
-
   } catch (e) {
     console.error('[exportarResultados]', e);
     toast('Erro ao exportar: ' + e.message, 'r');
-  } finally {
-    // Restaurar seções que estavam fechadas
-    wasHidden.forEach(({ arrow, body }) => {
-      body.style.display = 'none';
-      arrow.textContent  = '▶';
-    });
   }
 }
 
