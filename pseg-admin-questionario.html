@@ -11,6 +11,7 @@
 <!-- QR Code (offline, local) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
   /* Neutros base */
@@ -4438,6 +4439,29 @@ async function rodarAnalise() {
           <button id="vbtn-questao" onclick="_setViewMode('questao')"
             style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
+        <!-- Exportar dropdown -->
+        <div style="position:relative">
+          <button onclick="_toggleExpMenu(this)"
+            style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm);display:flex;align-items:center;gap:5px;white-space:nowrap">
+            ⬇ Exportar
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="exp-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:white;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:300;min-width:170px;overflow:hidden">
+            <div style="padding:7px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl)">Formato</div>
+            <button onclick="exportarResultados('png')"
+              style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:8px"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
+              <span style="font-size:16px">🖼</span>
+              <div><div style="font-weight:600">Imagem PNG</div><div style="font-size:10px;color:var(--tl)">Alta resolução (2×)</div></div>
+            </button>
+            <button onclick="exportarResultados('pdf')"
+              style="width:100%;padding:9px 14px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12px;text-align:left;background:white;color:var(--tx);display:flex;align-items:center;gap:8px;border-top:1px solid var(--bs)"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='white'">
+              <span style="font-size:16px">📄</span>
+              <div><div style="font-weight:600">PDF A4</div><div style="font-size:10px;color:var(--tl)">Multipágina, pronto para anexar</div></div>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -4503,6 +4527,146 @@ function exportarCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('CSV exportado com sucesso.', 'g');
+}
+
+// ─── Export dropdown ─────────────────────────────────────────────
+function _toggleExpMenu(btn) {
+  const m = document.getElementById('exp-menu');
+  if (!m) return;
+  const opening = m.style.display !== 'block';
+  m.style.display = opening ? 'block' : 'none';
+  if (opening) {
+    const close = (e) => {
+      if (!m.contains(e.target) && e.target !== btn) {
+        m.style.display = 'none';
+        document.removeEventListener('click', close, true);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close, true), 0);
+  }
+}
+
+async function exportarResultados(fmt) {
+  const vc = document.getElementById('view-content');
+  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
+
+  // Fechar dropdown
+  const m = document.getElementById('exp-menu');
+  if (m) m.style.display = 'none';
+
+  toast('Gerando exportação — aguarde...', 'g');
+
+  // Expandir todas as seções colapsadas (para capturar conteúdo completo)
+  const arrows = [...vc.querySelectorAll('.qa-arr')];
+  const wasHidden = arrows
+    .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
+    .filter(({ body }) => body && body.style.display === 'none');
+  wasHidden.forEach(({ arrow, body }) => {
+    body.style.display  = 'block';
+    arrow.textContent   = '▼';
+  });
+
+  // Aguardar reflow
+  await new Promise(r => setTimeout(r, 80));
+
+  try {
+    const canvas = await html2canvas(vc, {
+      scale:           2,
+      useCORS:         true,
+      allowTaint:      false,
+      backgroundColor: '#ffffff',
+      logging:         false,
+      scrollX:         0,
+      scrollY:         0,
+      width:           vc.scrollWidth,
+      height:          vc.scrollHeight,
+      windowWidth:     vc.scrollWidth,
+      windowHeight:    vc.scrollHeight,
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const emp   = (_analiseData?.setoresAtivos || []).join(', ') || 'análise';
+
+    if (fmt === 'png') {
+      // ── PNG: download direto ────────────────────────────────────
+      const a = document.createElement('a');
+      a.href     = canvas.toDataURL('image/png');
+      a.download = `pseg-analise-${today}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('✓ Imagem exportada.', 'g');
+
+    } else {
+      // ── PDF: A4 multipágina ─────────────────────────────────────
+      const { jsPDF } = window.jspdf;
+      const PW = 210, PH = 297;
+      const MX = 8, MY = 8;           // margens horizontais e verticais
+      const HDR = 11;                  // altura do header em mm
+      const imgW   = PW - MX * 2;
+      const imgH   = canvas.height / canvas.width * imgW;  // altura total em mm
+      const mmPerPx = imgH / canvas.height;
+
+      const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+
+      const addHdr = (isFirst) => {
+        doc.setFillColor(26, 95, 46);
+        doc.rect(0, 0, PW, HDR, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', isFirst ? 'bold' : 'normal');
+        doc.setFontSize(isFirst ? 8 : 7);
+        doc.text(
+          isFirst ? 'PSEG SafeSign — Análise de Riscos Psicossociais' : 'PSEG SafeSign — continuação',
+          MX, 7.5
+        );
+        doc.text(today, PW - MX, 7.5, { align: 'right' });
+      };
+
+      addHdr(true);
+
+      let srcY    = 0;   // pixel row no canvas origem
+      let topY    = HDR + MY;  // y inicial no PDF (primeira página)
+      let first   = true;
+
+      while (srcY < canvas.height) {
+        const availMM = PH - topY - MY;
+        const availPx = Math.floor(availMM / mmPerPx);
+        const slicePx = Math.min(availPx, canvas.height - srcY);
+        if (slicePx <= 0) break;
+
+        // Recortar fatia
+        const tmp = document.createElement('canvas');
+        tmp.width  = canvas.width;
+        tmp.height = slicePx;
+        tmp.getContext('2d').drawImage(canvas, 0, -srcY);
+
+        const sliceHmm = slicePx * mmPerPx;
+        doc.addImage(tmp.toDataURL('image/png'), 'PNG', MX, topY, imgW, sliceHmm);
+
+        srcY  += slicePx;
+        first  = false;
+
+        if (srcY < canvas.height) {
+          doc.addPage();
+          addHdr(false);
+          topY = HDR + MY;
+        }
+      }
+
+      doc.save(`pseg-analise-${today}.pdf`);
+      toast('✓ PDF exportado.', 'g');
+    }
+
+  } catch (e) {
+    console.error('[exportarResultados]', e);
+    toast('Erro ao exportar: ' + e.message, 'r');
+  } finally {
+    // Restaurar seções que estavam fechadas
+    wasHidden.forEach(({ arrow, body }) => {
+      body.style.display = 'none';
+      arrow.textContent  = '▶';
+    });
+  }
 }
 
 // ─── Toggle helpers ──────────────────────────────────────────────
