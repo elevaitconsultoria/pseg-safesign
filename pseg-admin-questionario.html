@@ -4409,8 +4409,12 @@ async function rodarAnalise() {
   const grupos = agruparPorGrupos(setoresAtivos, gruposSetor);
   const niveisLabel = niveis.join(', ');
 
-  // View toggle state — 'risco' ou 'questao'
-  window._viewMode = window._viewMode || 'risco';
+  // View toggle states — 'grafica' (padrão) | 'tabela'  ×  'risco' | 'questao'
+  window._displayMode = window._displayMode || 'grafica';
+  window._viewMode    = window._viewMode    || 'risco';
+  const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
+  const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
+  const _dm = window._displayMode, _vm = window._viewMode;
 
   let html = `
   <div style="margin-bottom:14px">
@@ -4419,18 +4423,20 @@ async function rodarAnalise() {
         <div style="font-size:14px;font-weight:700;color:var(--tx)">Resultados da análise</div>
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:11px">
-          <button id="vbtn-risco"
-            onclick="window._viewMode='risco';document.getElementById('vbtn-risco').style.cssText='padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';document.getElementById('vbtn-questao').style.cssText='padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';renderViewRisco(window._analiseData)"
-            style="padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white">
-            Por risco
-          </button>
-          <button id="vbtn-questao"
-            onclick="window._viewMode='questao';document.getElementById('vbtn-questao').style.cssText='padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';document.getElementById('vbtn-risco').style.cssText='padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';renderViewQuestao(window._analiseData)"
-            style="padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)">
-            Por questão
-          </button>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <!-- Toggle Gráfica / Tabela -->
+        <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
+            style="${_dm==='grafica' ? _TA : _TH}">📊 Gráfica</button>
+          <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
+            style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
+        </div>
+        <!-- Toggle Por risco / Por questão — visível apenas na visão Tabela -->
+        <div id="toggle-view" style="display:${_dm==='tabela'?'flex':'none'};border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button id="vbtn-risco"   onclick="_setViewMode('risco')"
+            style="${_vm==='risco'   ? _TA : _TH}">Por risco</button>
+          <button id="vbtn-questao" onclick="_setViewMode('questao')"
+            style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
       </div>
     </div>
@@ -4441,19 +4447,15 @@ async function rodarAnalise() {
   </div>
   <div id="view-content"></div>`;
 
-  // Grupos processados por renderViewRisco() e renderViewQuestao()
-
-  // Guardar dados para re-render ao trocar de view
   window._analiseData = {grupos, filtrado, niveis, setoresAtivos};
-
   document.getElementById('resultado-panel').innerHTML = html;
-  // Render inicial na view selecionada
-  if (window._viewMode === 'questao') {
-    document.getElementById('vbtn-questao').style.cssText = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
-    document.getElementById('vbtn-risco').style.cssText   = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
-    renderViewQuestao(window._analiseData);
+
+  // Render inicial
+  if (_dm === 'tabela') {
+    if (_vm === 'questao') renderViewQuestao(window._analiseData);
+    else                   renderViewRisco(window._analiseData);
   } else {
-    renderViewRisco(window._analiseData);
+    renderViewGrafica(window._analiseData);
   }
   const btnCsv = document.getElementById('btn-export-csv');
   if (btnCsv) btnCsv.style.display = 'inline-flex';
@@ -4501,6 +4503,148 @@ function exportarCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('CSV exportado com sucesso.', 'g');
+}
+
+// ─── Toggle helpers ──────────────────────────────────────────────
+const _TABA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
+const _TABH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
+
+function _setDisplayMode(mode) {
+  window._displayMode = mode;
+  const dg = document.getElementById('dbtn-grafica');
+  const dt = document.getElementById('dbtn-tabela');
+  const tv = document.getElementById('toggle-view');
+  if (dg) dg.style.cssText = mode === 'grafica' ? _TABA : _TABH;
+  if (dt) dt.style.cssText = mode === 'tabela'  ? _TABA : _TABH;
+  if (tv) tv.style.display = mode === 'tabela'  ? 'flex' : 'none';
+  if (!window._analiseData) return;
+  if (mode === 'tabela') {
+    if (window._viewMode === 'questao') renderViewQuestao(window._analiseData);
+    else                                renderViewRisco(window._analiseData);
+  } else {
+    renderViewGrafica(window._analiseData);
+  }
+}
+
+function _setViewMode(mode) {
+  window._viewMode = mode;
+  const vr = document.getElementById('vbtn-risco');
+  const vq = document.getElementById('vbtn-questao');
+  if (vr) vr.style.cssText = mode === 'risco'   ? _TABA : _TABH;
+  if (vq) vq.style.cssText = mode === 'questao' ? _TABA : _TABH;
+  if (!window._analiseData) return;
+  if (mode === 'questao') renderViewQuestao(window._analiseData);
+  else                    renderViewRisco(window._analiseData);
+}
+
+// ─── VIEW GRÁFICA ─────────────────────────────────────────────────
+const _GF_BORDA = {
+  IRRELEVANTE:'#bbf7d0', BAIXO:'#86efac', MÉDIO:'#fde68a',
+  ALTO:'#fca5a5', CRÍTICO:'#c4b5fd'
+};
+const _GF_HDR = {
+  IRRELEVANTE:'#f0fdf4', BAIXO:'#dcfce7', MÉDIO:'#fef9c3',
+  ALTO:'#fff7ed', CRÍTICO:'#faf5ff'
+};
+
+function renderViewGrafica({grupos, filtrado, niveis}) {
+  const todosSetores = [...new Set(filtrado.map(r => r.setor))].sort();
+  const NC = NIVEIS_CORES;
+  let html = '';
+
+  todosSetores.forEach(setor => {
+    const linhasSetor = filtrado.filter(r => r.setor === setor);
+    if (!linhasSetor.length) return;
+
+    const fatores = calcFatores(linhasSetor);
+    const resultado = fatores
+      .filter(f => !niveis.length || niveis.includes(f.nivel))
+      .sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel) - NIVEIS_ORDEM.indexOf(a.nivel));
+    if (!resultado.length) return;
+
+    const setorLabel = setor
+      ? setor
+      : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
+
+    html += '<div style="margin-bottom:28px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px;' +
+      'padding:8px 14px;background:var(--bg);border-left:3px solid var(--tx);' +
+      'border-radius:0 6px 6px 0">' + setorLabel + '</div>';
+
+    resultado.forEach(f => {
+      const borda  = _GF_BORDA[f.nivel]  || '#e2e8f0';
+      const hdrBg  = _GF_HDR[f.nivel]   || '#f8fafc';
+      const nc     = NC[f.nivel]          || NC.BAIXO;
+      const nOpen  = f.nivel === 'ALTO' || f.nivel === 'CRÍTICO';
+
+      // Barra da distribuição média (espaço ajustado: ve=1 = ideal para todos)
+      const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false);
+
+      // Questões individuais (colapsível)
+      const questoesHtml = f.distQuestoes.map((dq, qi) => {
+        const barraQ  = renderBarraDistribuicao(dq.pcts, dq.moda, dq.ve ?? 1, dq.n, false, dq.inv, true);
+        const textoQ  = dq.texto.length > 60 ? dq.texto.slice(0, 60) + '…' : dq.texto;
+        const sep     = qi < f.distQuestoes.length - 1
+          ? 'padding-bottom:12px;border-bottom:1px dashed var(--bs);margin-bottom:12px' : '';
+        return '<div style="' + sep + '">' +
+          '<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:5px;flex-wrap:wrap">' +
+          '<span style="font-size:9px;font-weight:700;font-family:monospace;background:white;' +
+          'border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--tm);' +
+          'white-space:nowrap;flex-shrink:0">' + dq.codigo + '</span>' +
+          (dq.inv ? '<span style="font-size:9px;color:#d97706;font-weight:600;flex-shrink:0">↺ inv</span>' : '') +
+          '<span style="font-size:11px;color:var(--tx);line-height:1.45">' + textoQ + '</span>' +
+          '</div>' + barraQ + '</div>';
+      }).join('');
+
+      const colapsivel = f.distQuestoes.length
+        ? '<div>' +
+          '<div style="cursor:pointer;padding:7px 14px;background:#f8fafc;border-top:1px solid var(--bs);' +
+          'font-size:11px;color:var(--tm);display:flex;align-items:center;gap:5px;user-select:none" ' +
+          'onclick="(function(el){var c=el.nextElementSibling;var o=c.style.display!==\'none\';' +
+          'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
+          '<span class="qa-arr">' + (nOpen ? '▼' : '▶') + '</span>' +
+          '<span>' + f.distQuestoes.length + ' questão' + (f.distQuestoes.length > 1 ? 'ões' : '') +
+          ' que compõem este risco</span></div>' +
+          '<div style="display:' + (nOpen ? 'block' : 'none') + ';background:#f8fafc;' +
+          'padding:10px 14px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
+          '</div>'
+        : '';
+
+      const cdBadge = f.cd
+        ? '<span style="font-size:9px;font-family:monospace;background:rgba(255,255,255,.8);' +
+          'padding:1px 5px;border-radius:3px;color:var(--tm);border:1px solid rgba(0,0,0,.07);' +
+          'flex-shrink:0">cd' + f.cd + '</span>'
+        : '';
+
+      html +=
+        '<div style="border:1.5px solid ' + borda + ';border-left:4px solid ' + borda + ';' +
+        'border-radius:8px;margin-bottom:10px;overflow:hidden">' +
+        // — Cabeçalho
+        '<div style="background:' + hdrBg + ';padding:9px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        cdBadge +
+        '<span style="font-size:13px;font-weight:700;color:var(--tx);flex:1;min-width:0;word-break:break-word">' + f.nome + '</span>' +
+        '<span style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">S' + f.s + ' ' + f.sLabel + '</span>' +
+        '<span style="background:' + nc.bg + ';color:' + nc.cor + ';font-size:10px;font-weight:700;' +
+        'padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;border:1px solid ' + borda + '">' + f.nivel + '</span>' +
+        '</div>' +
+        // — Corpo
+        '<div style="padding:10px 14px;background:white">' +
+        barraMedia +
+        '<div style="margin-top:7px;font-size:11px;color:var(--tm)">' +
+        '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
+        ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div>' +
+        (f.classifErg ? '<div style="font-size:10px;color:var(--tl);font-style:italic;margin-top:3px">' + f.classifErg + '</div>' : '') +
+        '</div>' +
+        // — Colapsível
+        colapsivel +
+        '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  document.getElementById('view-content').innerHTML =
+    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco para os filtros selecionados.</div>';
 }
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
