@@ -8482,11 +8482,25 @@ async function showApp() {
 
 function aplicarRestricoesPorRole() {
   const role = currentUser?.role || 'consultor';
-  // admin e consultor veem tudo
-  if (role === 'admin' || role === 'consultor') {
+
+  if (role === 'admin') {
+    // Admin vê tudo — sem restrições
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
     return;
   }
+
+  if (role === 'consultor') {
+    // Consultor vê tudo EXCETO a aba Usuários (gerenciamento de membros é exclusivo do admin)
+    document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+    const nbUsuarios = document.getElementById('nb-usuarios');
+    if (nbUsuarios) nbUsuarios.style.display = 'none';
+    // Se a tela ativa for Usuários, redirecionar para dashboard
+    if (document.getElementById('sc-usuarios')?.style.display !== 'none') {
+      goScreen('dashboard', document.getElementById('nb-dashboard'));
+    }
+    return;
+  }
+
   // cliente_viewer: apenas dashboard, links e relatório
   const permitidos = new Set(['nb-dashboard','nb-links','nb-laudo']);
   const secoesPermitidas = new Set(['Início','Exportar']); // seções visíveis
@@ -8578,6 +8592,11 @@ async function carregarUsuarios() {
     el.innerHTML = '<div class="alert alert-y">Disponível apenas no modo real (com Supabase conectado).</div>';
     return;
   }
+  // Apenas admins podem gerenciar usuários
+  if (currentUser?.role !== 'admin') {
+    el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito — apenas administradores podem gerenciar usuários e perfis de acesso.</div>';
+    return;
+  }
   el.innerHTML = '<div style="color:var(--tl);font-size:12px;padding:16px">Carregando…</div>';
   try {
     const { data, error } = await sbAdmin
@@ -8616,6 +8635,17 @@ async function carregarUsuarios() {
 
 async function alterarRoleUsuario(id, novoRole) {
   if (!sbAdmin) return;
+  // Guard: apenas admin pode alterar roles (defesa no frontend; DB reforça via trigger)
+  if (currentUser?.role !== 'admin') {
+    toast('Acesso negado: apenas administradores podem alterar perfis de acesso.', 'r');
+    carregarUsuarios(); // recarregar para restaurar o select ao valor original
+    return;
+  }
+  const rolesValidos = ['admin', 'consultor', 'cliente_viewer'];
+  if (!rolesValidos.includes(novoRole)) {
+    toast('Perfil inválido.', 'r');
+    return;
+  }
   const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
   if (error) { toast('Erro ao alterar perfil: ' + error.message, 'w'); return; }
   toast('Perfil atualizado.', 'g');
@@ -8623,12 +8653,22 @@ async function alterarRoleUsuario(id, novoRole) {
 
 async function toggleAtivoUsuario(id, ativo) {
   if (!sbAdmin) return;
+  // Guard: apenas admin pode ativar/desativar usuários
+  if (currentUser?.role !== 'admin') {
+    toast('Acesso negado: apenas administradores podem ativar/desativar usuários.', 'r');
+    return;
+  }
   const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'w'); return; }
   carregarUsuarios();
 }
 
 function abrirModalNovoUsuario() {
+  // Guard: apenas admin pode convidar novos usuários
+  if (currentUser?.role !== 'admin') {
+    toast('Acesso negado: apenas administradores podem convidar usuários.', 'r');
+    return;
+  }
   document.getElementById('nu-email').value = '';
   document.getElementById('nu-nome').value  = '';
   document.getElementById('nu-role').value  = 'consultor';
@@ -10364,6 +10404,12 @@ async function exportarPlanoCSV() {
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function goScreen(id, btn) {
+  // Segurança: tela de Usuários é exclusiva para admins
+  if (id === 'usuarios' && currentUser?.role !== 'admin') {
+    toast('Acesso restrito: apenas administradores podem gerenciar usuários.', 'r');
+    return;
+  }
+
   // 1. Esconder todas as telas e desativar todos os nav items
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('on'));
