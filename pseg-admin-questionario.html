@@ -4817,8 +4817,15 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
+  // Pré-partição O(L) — elimina O(S×L) de filter dentro do loop
+  const linhasPorSetor = new Map();
+  filtrado.forEach(r => {
+    const arr = linhasPorSetor.get(r.setor);
+    if (arr) arr.push(r); else linhasPorSetor.set(r.setor, [r]);
+  });
+
   todosSetores.forEach(setor => {
-    const linhasSetor = filtrado.filter(r => r.setor === setor);
+    const linhasSetor = linhasPorSetor.get(setor) || [];
     if (!linhasSetor.length) return;
 
     const fatores = calcFatores(linhasSetor);
@@ -4831,38 +4838,12 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       ? setor
       : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
 
-    // Legenda divergente — uma vez por setor (régua com rótulos abaixo)
-    const _LE = [
-      {c:'#22c55e', l:'Nunca'},
-      {c:'#86efac', l:'Às vezes'},
-      {c:'#f59e0b', l:'Frequente'},
-      {c:'#ef4444', l:'Sempre'},
-    ];
-    const legendaEscala =
-      '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;' +
-      'padding:5px 10px 5px 8px;background:var(--bg);border-radius:6px;' +
-      'border:1px solid var(--border)">' +
-      '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>' +
-      '<div>' +
-        // barra de cores contígua
-        '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">' +
-        _LE.map(({c}) => '<div style="width:42px;height:10px;background:'+c+'"></div>').join('') +
-        '</div>' +
-        // rótulos centrados sob cada bloco
-        '<div style="display:flex;margin-top:2px">' +
-        _LE.map(({l}) =>
-          '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">'+l+'</div>'
-        ).join('') +
-        '</div>' +
-      '</div>' +
-      '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>' +
-      '</div>';
-
+    // Usa constante pré-calculada (sem realocação por iteração)
     html += '<div style="margin-bottom:44px">' +
       '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;' +
       'padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);' +
       'border-radius:0 6px 6px 0">' + setorLabel + '</div>' +
-      legendaEscala;
+      LEGENDA_ESCALA_HTML;
 
     resultado.forEach(f => {
       const borda  = _GF_BORDA[f.nivel]  || '#e2e8f0';
@@ -4946,8 +4927,15 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
+  // Pré-partição O(L) — elimina O(S×L) de filter dentro do loop
+  const linhasPorSetor = new Map();
+  filtrado.forEach(r => {
+    const arr = linhasPorSetor.get(r.setor);
+    if (arr) arr.push(r); else linhasPorSetor.set(r.setor, [r]);
+  });
+
   todosSetores.forEach(setor => {
-    const linhasSetor = filtrado.filter(r => r.setor === setor);
+    const linhasSetor = linhasPorSetor.get(setor) || [];
     if (!linhasSetor.length) return;
 
     const todosRiscos = calcFatores(linhasSetor);
@@ -5002,7 +4990,7 @@ function renderViewQuestao({grupos, filtrado}) {
   };
   const blocoParaCat = {A:'DEMANDAS DE TRABALHO',B:'RELAÇÕES INTERPESSOAIS',C:'FATORES ORGANIZACIONAIS'};
   const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
-  const NIVEL_NM = {1:'Nunca',2:'Às vezes',3:'Frequente',4:'Sempre'};
+  const NIVEL_NM = NIVEL_NM_ORIG; // constante global, sem realocação
 
   let html = '';
   grupos.forEach(grupo => {
@@ -5073,10 +5061,56 @@ function renderViewQuestao({grupos, filtrado}) {
 // DISTRIBUIÇÃO POR QUESTÃO — visual
 // ══════════════════════════════════════════
 
-// Rótulos dos níveis de resposta — sempre no espaço original (1=Nunca … 4=Sempre).
-// pcts está no espaço original; o parâmetro inv é mantido por compatibilidade, ignorado.
-function getNivelLabels(inv) {
-  return {1:'Nunca', 2:'Às vezes', 3:'Frequente', 4:'Sempre'};
+// ── Constantes de nível — criadas uma vez, nunca realocadas ──
+const NIVEL_NM_ORIG    = Object.freeze({1:'Nunca', 2:'Às vezes', 3:'Frequente', 4:'Sempre'});
+const NIVEL_NM_AJUST   = Object.freeze({1:'P1', 2:'P2', 3:'P3', 4:'P4'});
+
+// Paleta divergente posicional — duas variantes pré-calculadas
+const _CORES_DIRETA  = Object.freeze(['#22c55e','#86efac','#f59e0b','#ef4444']);
+const _CORES_INVERSA = Object.freeze(['#ef4444','#f59e0b','#86efac','#22c55e']);
+const _TXCORES       = Object.freeze(['rgba(255,255,255,.93)','rgba(0,0,0,.68)','rgba(0,0,0,.68)','rgba(255,255,255,.93)']);
+
+// Marcadores de meta — 2 variantes estáticas (esquerda / direita)
+const _META_MARKER_DIR =
+  '<div style="position:absolute;top:-3px;bottom:-3px;left:-1px;width:2px;background:#15803d;border-radius:1px;pointer-events:none;z-index:3"></div>'+
+  '<div style="position:absolute;top:-7px;left:-3.5px;width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid #15803d;pointer-events:none;z-index:3"></div>';
+const _META_MARKER_INV =
+  '<div style="position:absolute;top:-3px;bottom:-3px;right:-1px;width:2px;background:#15803d;border-radius:1px;pointer-events:none;z-index:3"></div>'+
+  '<div style="position:absolute;top:-7px;right:-3.5px;width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid #15803d;pointer-events:none;z-index:3"></div>';
+
+// Legenda régua divergente — estática, reutilizada em todos os módulos
+const LEGENDA_ESCALA_HTML =
+  '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;'+
+  'padding:5px 10px 5px 8px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">'+
+  '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>'+
+  '<div>'+
+    '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
+    '<div style="width:42px;height:10px;background:#22c55e"></div>'+
+    '<div style="width:42px;height:10px;background:#86efac"></div>'+
+    '<div style="width:42px;height:10px;background:#f59e0b"></div>'+
+    '<div style="width:42px;height:10px;background:#ef4444"></div>'+
+    '</div>'+
+    '<div style="display:flex;margin-top:2px">'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Nunca</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Às vezes</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Frequente</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Sempre</div>'+
+    '</div>'+
+  '</div>'+
+  '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>'+
+  '</div>';
+
+// getNivelLabels — mantido por compatibilidade com código legado; retorna constante
+function getNivelLabels() { return NIVEL_NM_ORIG; }
+
+// ── Normalização de arredondamento ─────────────────────────────────
+// Garante que objeto {1,2,3,4} some exatamente 100 após Math.round().
+function normalizarParaCem(obj) {
+  const soma = obj[1]+obj[2]+obj[3]+obj[4];
+  if (soma !== 100) {
+    const maxK = [1,2,3,4].reduce((a,b) => obj[a] >= obj[b] ? a : b);
+    obj[maxK] += (100 - soma);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -5088,22 +5122,16 @@ function getNivelLabels(inv) {
 // Inversa (inv=true):  1=vermelho(crítico) … 4=verde(ideal)
 // compact=true → barra menor (12px) para questões subordinadas
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact, ajustado) {
-  // Paleta posicional: índice i = nv-1 (posição fixa na barra)
-  const CORES   = inv
-    ? ['#ef4444','#f59e0b','#86efac','#22c55e']  // inversa: 1=crítico … 4=ideal
-    : ['#22c55e','#86efac','#f59e0b','#ef4444']; // direta:  1=ideal  … 4=crítico
-  const TXCORES = ['rgba(255,255,255,.93)','rgba(0,0,0,.68)','rgba(0,0,0,.68)','rgba(255,255,255,.93)'];
-
-  const metaNivel = inv ? 4 : 1;  // nível ideal: extremo esquerdo ou direito
+  // Usa constantes pré-alocadas — sem realocação por chamada
+  const CORES   = inv ? _CORES_INVERSA : _CORES_DIRETA;
+  const metaNivel = inv ? 4 : 1;
   const barH      = compact ? '12px' : '24px';
   const anchorFz  = compact ? '8px'  : '10px';
 
   const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
 
-  // NIVEL_NM necessário antes de segs para rótulo inline do segmento dominante
-  const NIVEL_NM = ajustado
-    ? {1:'P1', 2:'P2', 3:'P3', 4:'P4'}
-    : getNivelLabels(inv);
+  // NIVEL_NM: constantes globais, sem realocação
+  const NIVEL_NM = ajustado ? NIVEL_NM_AJUST : NIVEL_NM_ORIG;
 
   const segs = [1,2,3,4].map((nv, i) => {
     const p = pcts[nv] || 0;
@@ -5125,7 +5153,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     }
 
     return '<div style="height:100%;width:'+p+'%;background:'+CORES[i]+
-      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+TXCORES[i]+';position:relative;overflow:hidden;transition:width .4s'+
+      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+_TXCORES[i]+';position:relative;overflow:hidden;transition:width .4s'+
       (isMax ? ';box-shadow:inset 0 0 0 2px rgba(0,0,0,.32);z-index:2' : '')+'">'+
       label+'</div>';
   }).join('');
@@ -5136,15 +5164,8 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const anchorL = inv ? anchorCritico : anchorIdeal;
   const anchorR = inv ? anchorIdeal   : anchorCritico;
 
-  // Marcador de meta: linha verde + triângulo no lado ideal (igual ao gráfico Chart.js)
-  const metaSide  = inv ? 'right' : 'left';
-  const triSide   = inv ? 'left'  : 'right'; // lado oposto para o triângulo apontar para dentro
-  const metaMarker =
-    '<div style="position:absolute;top:-3px;bottom:-3px;'+metaSide+':-1px;'+
-    'width:2px;background:#15803d;border-radius:1px;pointer-events:none;z-index:3"></div>'+
-    '<div style="position:absolute;top:-7px;'+metaSide+':'+(-3.5)+'px;'+
-    'width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;'+
-    'border-top:5px solid #15803d;pointer-events:none;z-index:3"></div>';
+  // Marcador de meta: constante pré-calculada (sem alocação por chamada)
+  const metaMarker = inv ? _META_MARKER_INV : _META_MARKER_DIR;
 
   const barWrapper =
     '<div style="display:flex;align-items:center;gap:6px">' +
@@ -5329,12 +5350,8 @@ function calcFatores(linhas) {
       vals.forEach(v => counts[v]++);
       // % desta questão no espaço original (para exibição das barras individuais)
       const pcts = {};
-      let soma = 0;
-      [1,2,3,4].forEach(k => { pcts[k] = Math.round(counts[k]/n*100); soma += pcts[k]; });
-      if (soma !== 100) {
-        const maxK = [1,2,3,4].reduce((a,b) => pcts[a] >= pcts[b] ? a : b);
-        pcts[maxK] += (100 - soma);
-      }
+      [1,2,3,4].forEach(k => { pcts[k] = Math.round(counts[k]/n*100); });
+      normalizarParaCem(pcts);
       // Acumular no espaço ajustado (1=ideal, 4=crítico para todos):
       // questões inversas têm espelho — Sempre(4) → posição 1 (ideal)
       const pctsPara = q.inv
@@ -5358,12 +5375,7 @@ function calcFatores(linhas) {
     const Nefetivo = distQuestoes.length;
     const avgDist = {};
     [1,2,3,4].forEach(k => avgDist[k] = Math.round(acc[k] / Nefetivo));
-    // Corrigir arredondamento para somar 100
-    const somaAvg = [1,2,3,4].reduce((s,k) => s + avgDist[k], 0);
-    if (somaAvg !== 100) {
-      const maxK = [1,2,3,4].reduce((a,b) => avgDist[a] >= avgDist[b] ? a : b);
-      avgDist[maxK] += (100 - somaAvg);
-    }
+    normalizarParaCem(avgDist);
 
     // P = nível com maior % médio; empate → nível mais grave prevalece (princípio da precaução)
     const p = parseInt(Object.entries(avgDist).sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
@@ -6492,23 +6504,18 @@ function calcDistribuicaoQuestoes(linhas) {
     const vals = [];
     linhas.forEach(r => {
       const v = r.q[q.id];
-      if (v !== undefined && v !== null) {
-        vals.push(q.inv ? 5 - v : v);
-      }
+      // Mantém valores no espaço original (1–4); ci() no Chart.js faz o espelho de cor.
+      // NÃO aplicar 5-v aqui — causaria dupla inversão.
+      if (v !== undefined && v !== null) vals.push(v);
     });
     if (!vals.length) return null;
 
     const n = vals.length;
     const counts = {1:0,2:0,3:0,4:0};
     vals.forEach(v => counts[v]++);
-    const pcts   = {};
+    const pcts = {};
     [1,2,3,4].forEach(k => pcts[k] = Math.round(counts[k]/n*100));
-    // Corrigir arredondamento para somar 100%
-    const soma = pcts[1]+pcts[2]+pcts[3]+pcts[4];
-    if (soma !== 100) {
-      const maxK = [1,2,3,4].reduce((a,b)=>pcts[a]>=pcts[b]?a:b);
-      pcts[maxK] += (100-soma);
-    }
+    normalizarParaCem(pcts);
     // Empate → nível mais crítico prevalece (direta: maior pos; inversa: menor pos)
     const moda = parseInt(Object.entries(pcts).sort((a,b) =>
       b[1]-a[1] || (q.inv
