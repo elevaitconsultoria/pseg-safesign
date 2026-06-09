@@ -5064,11 +5064,9 @@ function renderViewQuestao({grupos, filtrado}) {
 // DISTRIBUIÇÃO POR QUESTÃO — visual
 // ══════════════════════════════════════════
 
-// Rótulos para nível ajustado (1–4) com consciência de inversão.
-// Questões inversas: score ajustado = 5−v, logo adj 1 = respondeu "Sempre" (ideal),
-// adj 4 = respondeu "Nunca" (pior). Os rótulos refletem o que o respondente escolheu.
+// Rótulos dos níveis de resposta — sempre no espaço original (1=Nunca … 4=Sempre).
+// pcts está no espaço original; o parâmetro inv é mantido por compatibilidade, ignorado.
 function getNivelLabels(inv) {
-  if (inv) return {1:'Sempre', 2:'Frequente', 3:'Às vezes', 4:'Nunca'};
   return {1:'Nunca', 2:'Às vezes', 3:'Frequente', 4:'Sempre'};
 }
 
