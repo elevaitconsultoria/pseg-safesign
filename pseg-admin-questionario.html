@@ -4831,10 +4831,31 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       ? setor
       : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
 
+    // Legenda semântica — uma vez por setor
+    const legendaSetor =
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
+      'margin-bottom:12px;padding:5px 10px;background:var(--bg);border-radius:6px;' +
+      'border:1px solid var(--border);font-size:9px;color:var(--tm)">' +
+      '<span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;' +
+      'color:var(--tl);margin-right:2px">Legenda:</span>' +
+      [
+        {cor:'#22c55e', label:'Nunca (meta)'},
+        {cor:'#86efac', label:'Às vezes'},
+        {cor:'#fbbf24', label:'Frequente'},
+        {cor:'#f87171', label:'Sempre'},
+      ].map(({cor,label}) =>
+        '<span style="display:inline-flex;align-items:center;gap:3px">' +
+        '<span style="width:9px;height:9px;border-radius:2px;background:'+cor+';display:inline-block;flex-shrink:0"></span>' +
+        label+'</span>'
+      ).join('') +
+      '<span style="color:var(--tl);margin-left:4px">· ↺ questões invertidas: escala reversa (Sempre = meta)</span>' +
+      '</div>';
+
     html += '<div style="margin-bottom:44px">' +
-      '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:16px;' +
+      '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;' +
       'padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);' +
-      'border-radius:0 6px 6px 0">' + setorLabel + '</div>';
+      'border-radius:0 6px 6px 0">' + setorLabel + '</div>' +
+      legendaSetor;
 
     resultado.forEach(f => {
       const borda  = _GF_BORDA[f.nivel]  || '#e2e8f0';
@@ -5064,17 +5085,27 @@ function resolverEmpate(dist) {
 // ─── Barra de distribuição reutilizável ───
 // compact=true → barra menor (12px) para questões subordinadas
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact) {
-  // Vivid para o consolidado de risco; semi-pastel (20% blend → mais forte) para questões
-  const CORES_BG  = compact
-    ? {1:'#a4f2c0', 2:'#acd0fd', 3:'#fde676', 4:'#fdc994'}   // semi-pastel — questões
-    : {1:'#4ade80', 2:'#60a5fa', 3:'#fbbf24', 4:'#fb923c'};  // vivid       — consolidado
-  const CORES_TX  = {1:'#14532d', 2:'#1e3a8a', 3:'#78350f', 4:'#7f1d1d'};
+  // ── Cores semânticas: distância da resposta ideal (ve) ──────────────
+  // dist=0 → verde (meta atingida) … dist=3 → vermelho (problemático)
+  // Questões diretas (ve=1):    Nunca=verde,  Sempre=vermelho
+  // Questões invertidas (ve=4): Sempre=verde, Nunca=vermelho
+  const metaNivel = ve || 1;
+  const VIVID_D  = ['#22c55e','#86efac','#fbbf24','#f87171']; // consolidado — vivid
+  const PASTEL_D = ['#bbf7d0','#d1fae5','#fef08a','#fecaca']; // questões   — pastel
+  const CORES_BG = {};
+  const CORES_TX = {};
+  for (let nv = 1; nv <= 4; nv++) {
+    const d = Math.min(3, Math.abs(nv - metaNivel));
+    CORES_BG[nv] = compact ? PASTEL_D[d] : VIVID_D[d];
+    // texto: branco nas cores mais escuras (d=0 verde-forte, d=3 vermelho); escuro nas claras
+    CORES_TX[nv] = compact ? 'rgba(0,0,0,.55)'
+                           : (d === 0 || d === 3 ? 'rgba(255,255,255,.93)' : 'rgba(0,0,0,.65)');
+  }
   const NIVEL_NM  = getNivelLabels(inv);
   const barH      = compact ? '12px' : '20px';
   // Empate: há outro nível com o mesmo % que a moda?
   const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
   // Empate com nível mais grave que a meta? (princípio da precaução)
-  const metaNivel = ve || 1;
   const isEmpateComPior = Object.entries(pcts).some(
     ([k,v]) => parseInt(k) > metaNivel && v > 0 && v === pcts[metaNivel]
   );
@@ -5085,8 +5116,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     const isMax  = nv === moda;
     const isMeta = nv === metaNivel;
     const label  = (!compact && p >= 10) ? p + '%' : (compact && p >= 15 ? p+'%' : '');
-    // compact usa texto escuro pois o fundo é semi-pastel (claro)
-    const txtColor = compact ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.9)';
+    const txtColor = CORES_TX[nv];
     return '<div style="height:100%;width:'+p+'%;background:'+CORES_BG[nv]+
       ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+txtColor+';position:relative;overflow:hidden;transition:width .4s'+
       (isMax?';outline:2px solid rgba(0,0,0,.25);outline-offset:-1px;z-index:2':'')+'">'+
@@ -5125,20 +5155,23 @@ function renderDistQuestoes(distQuestoes, gid) {
     return '<div style="font-size:11px;color:var(--tl);padding:10px 16px">Sem dados de distribuição por questão.</div>';
   }
 
-  const CORES_BG = {1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
-
-  // Cabeçalho da gaveta — rótulo discreto + nota sobre inv
+  // Legenda semântica (cores independem de inv — sempre verde=meta, vermelho=problema)
   const header =
     '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:8px 16px 6px;background:#f0f2f5;border-top:1px solid var(--border)">'+
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
         '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl)">Detalhamento por questão</span>'+
-        [1,2,3,4].map(n =>
+        [
+          {cor:'#bbf7d0', label:'Nunca (meta)'},
+          {cor:'#d1fae5', label:'Às vezes'},
+          {cor:'#fef08a', label:'Frequente'},
+          {cor:'#fecaca', label:'Sempre'},
+        ].map(({cor,label}) =>
           '<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--tm)">'+
-          '<span style="width:8px;height:8px;border-radius:1px;background:'+CORES_BG[n]+';display:inline-block;flex-shrink:0"></span>'+
-          getNivelLabels(false)[n]+(n===1?' ← meta':'')+'</span>'
+          '<span style="width:8px;height:8px;border-radius:1px;background:'+cor+';border:1px solid rgba(0,0,0,.1);display:inline-block;flex-shrink:0"></span>'+
+          label+'</span>'
         ).join('')+
       '</div>'+
-      '<span style="font-size:8px;color:var(--tl)">↺ inv: cor por risco ajustado</span>'+
+      '<span style="font-size:8px;color:var(--tl)">↺ inv: Sempre = meta (escala reversa)</span>'+
     '</div>';
 
   const itens = distQuestoes.map((q, idx) => {
