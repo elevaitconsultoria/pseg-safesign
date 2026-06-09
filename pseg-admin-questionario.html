@@ -6611,12 +6611,17 @@ async function renderGraficos() {
                 </div>
                 <div class="chart-card-text">${d.q.t}</div>
                 <div class="chart-card-badges">
-                  <span class="moda-badge" style="background:${GF_CORES[d.moda].fill};border-color:${GF_CORES[d.moda].border};color:${GF_CORES[d.moda].text}">
-                    ${getNivelLabels(d.q.inv)[d.moda]} — ${d.pcts[d.moda]}%
-                    ${d.moda === (d.q.ve||1) ? ' ✓' : ''}
-                  </span>
-                  ${d.moda !== (d.q.ve||1) ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pctMeta}% em ${getNivelLabels(d.q.inv)[d.q.ve||1]}</span>` : ''}
-                  <span style="font-size:10px;color:var(--tl)">n=${d.n}</span>
+                  ${(()=>{
+                    const metaNv   = d.q.inv ? 4 : 1;
+                    const ci       = d.q.inv ? 5 - d.moda : d.moda; // índice de cor na paleta divergente
+                    const naIdeal  = d.moda === metaNv;
+                    const metaLbl  = getNivelLabels(d.q.inv)[metaNv];
+                    return `<span class="moda-badge" style="background:${GF_CORES[ci].fill};border-color:${GF_CORES[ci].border};color:${GF_CORES[ci].text}">
+                      ${getNivelLabels(d.q.inv)[d.moda]} — ${d.pcts[d.moda]}%${naIdeal ? ' ✓' : ''}
+                    </span>`+
+                    (!naIdeal ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pcts[metaNv]||0}% em ${metaLbl}</span>` : '')+
+                    `<span style="font-size:10px;color:var(--tl)">n=${d.n}</span>`;
+                  })()}
                 </div>
               </div>
               <button class="dl-btn" onclick="exportChartPNG('${d.q.c}')">
@@ -6653,15 +6658,17 @@ function renderBarChart(d) {
     try { chartInstances[d.q.c].destroy(); } catch(e){}
   }
 
-  const moda = d.moda;
+  const moda  = d.moda;
+  const inv   = !!d.q.inv;
+  // Para inv: espelha o índice de cor (pos 1→vermelho, pos 4→verde)
+  const ci = n => inv ? 5 - n : n;
 
   // Plugin inline: desenha % dentro de cada segmento + marcador de meta
   const inlinePlugin = {
     id: 'inlineLabels',
     afterDraw(chart) {
       const ctx = chart.ctx;
-      const { top, bottom, left, right } = chart.chartArea;
-      const barH = bottom - top;
+      const { top, bottom } = chart.chartArea;
 
       chart.data.datasets.forEach((ds, i) => {
         const meta = chart.getDatasetMeta(i);
@@ -6671,16 +6678,14 @@ function renderBarChart(d) {
           if (!pct) return;
           const nivel = i + 1;
           const isMax = nivel === moda;
-          const x = (bar.x + bar.base) / 2;  // centro horizontal do segmento
-          const y = (top + bottom) / 2;        // centro vertical da barra
+          const x = (bar.x + bar.base) / 2;
+          const y = (top + bottom) / 2;
           const segW = Math.abs(bar.x - bar.base);
-
-          // Só escreve % se o segmento tiver largura suficiente
           if (segW < 18) return;
 
           ctx.save();
           ctx.font = `${isMax ? '700' : '500'} ${isMax ? '11' : '10'}px "Plus Jakarta Sans", sans-serif`;
-          ctx.fillStyle = GF_CORES[nivel].text;
+          ctx.fillStyle = GF_CORES[ci(nivel)].text;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(pct + '%', x, y);
@@ -6688,8 +6693,11 @@ function renderBarChart(d) {
         });
       });
 
-      // Marcador de meta: linha vertical fina no x=0 (início da barra = ideal)
-      const xMeta = chart.scales.x.getPixelForValue(0);
+      // Marcador de meta: ✓ Ideal à esquerda (diretas) ou direita (inversas)
+      const xMeta = inv
+        ? chart.scales.x.getPixelForValue(100)   // Sempre = direita
+        : chart.scales.x.getPixelForValue(0);    // Nunca  = esquerda
+      const triDir = inv ? 1 : -1;  // triângulo aponta para o lado certo
       ctx.save();
       ctx.strokeStyle = '#15803d';
       ctx.lineWidth = 2;
@@ -6698,12 +6706,11 @@ function renderBarChart(d) {
       ctx.moveTo(xMeta, top - 2);
       ctx.lineTo(xMeta, bottom + 2);
       ctx.stroke();
-      // Pequeno triângulo indicador no topo
       ctx.fillStyle = '#15803d';
       ctx.beginPath();
       ctx.moveTo(xMeta, top - 6);
-      ctx.lineTo(xMeta - 3.5, top);
-      ctx.lineTo(xMeta + 3.5, top);
+      ctx.lineTo(xMeta - 3.5 * triDir, top);
+      ctx.lineTo(xMeta + 3.5 * triDir, top);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -6716,9 +6723,9 @@ function renderBarChart(d) {
     data: {
       labels: [''],
       datasets: [1,2,3,4].map(n => ({
-        label: `${getNivelLabels(d.q.inv)[n]} — ${d.pcts[n]}%`,
+        label: `${getNivelLabels(inv)[n]} — ${d.pcts[n]}%`,
         data: [d.pcts[n]],
-        backgroundColor: GF_CORES[n].fill,
+        backgroundColor: GF_CORES[ci(n)].fill,
         borderColor: n === moda ? 'rgba(0,0,0,.28)' : 'transparent',
         borderWidth: n === moda ? 2 : 0,
         borderSkipped: false,
