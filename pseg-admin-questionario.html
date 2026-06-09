@@ -5325,9 +5325,10 @@ function calcFatores(linhas) {
 
     if (!distQuestoes.length) return null;
 
-    // Média dividindo pelo número de questões (peso igual 1/N)
+    // Média dividindo pelo número de questões com respondentes (não qs.length total)
+    const Nefetivo = distQuestoes.length;
     const avgDist = {};
-    [1,2,3,4].forEach(k => avgDist[k] = Math.round(acc[k] / N));
+    [1,2,3,4].forEach(k => avgDist[k] = Math.round(acc[k] / Nefetivo));
     // Corrigir arredondamento para somar 100
     const somaAvg = [1,2,3,4].reduce((s,k) => s + avgDist[k], 0);
     if (somaAvg !== 100) {
@@ -5358,7 +5359,7 @@ function calcFatores(linhas) {
       conduta:    CONDUTA_ADMINISTRATIVA[nivel] || '',
       avgDist,           // distribuição média (para barras da aba Distribuição)
       distQuestoes,      // por questão (para collapsible na tabela)
-      n_questoes: N,
+      n_questoes: Nefetivo,
       n: linhas.length,  // total de respondentes
     };
   }).filter(Boolean)
