@@ -5127,7 +5127,14 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const cor_status = naIdeal ? '#166534' : (distModa >= 2 ? '#991b1b' : '#854d0e');
   const bg_status  = naIdeal ? '#f0fdf4' : (distModa >= 2 ? '#fef2f2' : '#fefce8');
 
-  const txt_status = compact
+  const nStr = n !== undefined ? ' · n='+n : '';
+
+  // Linha de meta (discreta, sempre presente no modo normal)
+  const metaLine = compact ? '' :
+    '<div style="font-size:9px;font-weight:400;opacity:.7;margin-bottom:1px">'+
+    'Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'+nStr+'</div>';
+
+  const txt_resultado = compact
     ? (naIdeal
         ? '✓ meta atingida ('+pcts[moda]+'%)'
         : (isEmpate
@@ -5136,13 +5143,17 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     : (naIdeal
         ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
         : (isEmpate
-            ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução). Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'
-            : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'));
+            ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução)'
+            : modaLabel+' predominante ('+pcts[moda]+'%)'));
 
-  const badgeSz = compact ? 'font-size:9px;padding:1px 5px' : 'font-size:10px;padding:2px 6px';
+  const badgeSz = compact ? 'font-size:9px;padding:1px 5px' : 'font-size:10px;padding:3px 7px';
+  const badgeContent = compact
+    ? txt_resultado + nStr
+    : metaLine + '<div>'+txt_resultado+'</div>';
+
   return barWrapper +
     '<div style="margin-top:3px;'+badgeSz+';font-weight:600;border-radius:3px;background:'+bg_status+';color:'+cor_status+';display:inline-block">'+
-    txt_status + (n !== undefined ? ' · n='+n : '') + '</div>';
+    badgeContent + '</div>';
 }
 
 function renderDistQuestoes(distQuestoes, gid) {
