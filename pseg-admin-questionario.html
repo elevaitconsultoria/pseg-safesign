@@ -5128,31 +5128,23 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const bg_status  = naIdeal ? '#f0fdf4' : (distModa >= 2 ? '#fef2f2' : '#fefce8');
 
   const nStr = n !== undefined ? ' · n='+n : '';
+  const stDiscreta = 'font-size:9px;font-weight:400;opacity:.75;line-height:1.4';
 
-  // Linha de meta (discreta, sempre presente no modo normal)
-  const metaLine = compact ? '' :
-    '<div style="font-size:9px;font-weight:400;opacity:.7;margin-bottom:1px">'+
-    'Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'+nStr+'</div>';
+  const txt_resultado = naIdeal
+    ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
+    : (isEmpate
+        ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução)'
+        : modaLabel+' predominante ('+pcts[moda]+'%)');
 
-  const txt_resultado = compact
-    ? (naIdeal
-        ? '✓ meta atingida ('+pcts[moda]+'%)'
-        : (isEmpate
-            ? '⚠ Empate → '+modaLabel+' · Meta: '+(pcts[metaNivel]||0)+'%'
-            : modaLabel+' '+pcts[moda]+'% · Meta: '+(pcts[metaNivel]||0)+'%'))
-    : (naIdeal
-        ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
-        : (isEmpate
-            ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução)'
-            : modaLabel+' predominante ('+pcts[moda]+'%)'));
+  const txt_meta = 'Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'+nStr;
 
-  const badgeSz = compact ? 'font-size:9px;padding:1px 5px' : 'font-size:10px;padding:3px 7px';
-  const badgeContent = compact
-    ? txt_resultado + nStr
-    : metaLine + '<div>'+txt_resultado+'</div>';
+  const badgeContent =
+    '<div style="'+stDiscreta+'">'+txt_resultado+'</div>'+
+    '<div style="'+stDiscreta+'">'+txt_meta+'</div>';
 
+  const badgeSz = 'font-size:10px;padding:4px 7px';
   return barWrapper +
-    '<div style="margin-top:3px;'+badgeSz+';font-weight:600;border-radius:3px;background:'+bg_status+';color:'+cor_status+';display:inline-block">'+
+    '<div style="margin-top:7px;'+badgeSz+';border-radius:3px;background:'+bg_status+';color:'+cor_status+';display:inline-block">'+
     badgeContent + '</div>';
 }
 
