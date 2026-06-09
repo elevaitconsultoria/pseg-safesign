@@ -5316,8 +5316,14 @@ function calcFatores(linhas) {
         ? {1: pcts[4], 2: pcts[3], 3: pcts[2], 4: pcts[1]}
         : pcts;
       [1,2,3,4].forEach(k => acc[k] += pctsPara[k]);
-      // Empate → nível mais grave prevalece (princípio da precaução)
-      const moda = parseInt(Object.entries(pcts).sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
+      // Empate → nível mais crítico prevalece (precaução):
+      // direta: maior posição = pior → desempata pela maior
+      // inversa: menor posição = pior → desempata pela menor
+      const moda = parseInt(Object.entries(pcts).sort((a,b) =>
+        b[1]-a[1] || (q.inv
+          ? parseInt(a[0])-parseInt(b[0])   // inv: menor posição = mais crítico
+          : parseInt(b[0])-parseInt(a[0]))  // dir: maior posição = mais crítico
+      )[0][0]);
       return { id:q.id, codigo:q.c, texto:q.t, inv:q.inv, ve:q.ve ?? 1, pcts, moda, n };
     }).filter(Boolean);
 
@@ -6478,8 +6484,12 @@ function calcDistribuicaoQuestoes(linhas) {
       const maxK = [1,2,3,4].reduce((a,b)=>pcts[a]>=pcts[b]?a:b);
       pcts[maxK] += (100-soma);
     }
-    // Empate → nível mais grave prevalece (princípio da precaução)
-    const moda = parseInt(Object.entries(pcts).sort((a,b)=>b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
+    // Empate → nível mais crítico prevalece (direta: maior pos; inversa: menor pos)
+    const moda = parseInt(Object.entries(pcts).sort((a,b) =>
+      b[1]-a[1] || (q.inv
+        ? parseInt(a[0])-parseInt(b[0])
+        : parseInt(b[0])-parseInt(a[0]))
+    )[0][0]);
     const pctMeta = pcts[q.ve||1];
 
     return { q, n, pcts, moda, pctMeta };
