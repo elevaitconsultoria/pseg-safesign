@@ -4831,19 +4831,31 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       ? setor
       : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
 
-    // Legenda divergente — uma vez por setor
+    // Legenda divergente — uma vez por setor (régua com rótulos abaixo)
+    const _LE = [
+      {c:'#22c55e', l:'Nunca'},
+      {c:'#86efac', l:'Às vezes'},
+      {c:'#f59e0b', l:'Frequente'},
+      {c:'#ef4444', l:'Sempre'},
+    ];
     const legendaEscala =
-      '<div style="display:inline-flex;align-items:center;gap:7px;margin-bottom:12px;' +
-      'padding:4px 10px 4px 8px;background:var(--bg);border-radius:6px;' +
-      'border:1px solid var(--border);font-size:8.5px">' +
-      '<span style="color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>' +
-      '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">' +
-      ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c =>
-        '<div style="width:22px;height:12px;background:'+c+'"></div>'
-      ).join('') +
+      '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;' +
+      'padding:5px 10px 5px 8px;background:var(--bg);border-radius:6px;' +
+      'border:1px solid var(--border)">' +
+      '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>' +
+      '<div>' +
+        // barra de cores contígua
+        '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">' +
+        _LE.map(({c}) => '<div style="width:42px;height:10px;background:'+c+'"></div>').join('') +
+        '</div>' +
+        // rótulos centrados sob cada bloco
+        '<div style="display:flex;margin-top:2px">' +
+        _LE.map(({l}) =>
+          '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">'+l+'</div>'
+        ).join('') +
+        '</div>' +
       '</div>' +
-      '<span style="color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>' +
-      '<span style="color:var(--tl);border-left:1px solid var(--border);padding-left:7px;margin-left:1px">↺ inv: espelhado</span>' +
+      '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>' +
       '</div>';
 
     html += '<div style="margin-bottom:44px">' +
