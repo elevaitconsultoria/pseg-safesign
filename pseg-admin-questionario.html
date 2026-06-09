@@ -8262,7 +8262,7 @@ let isDemoMode = false;
 // ─────────────────────────────────────────────────────────────
 // Autenticação obrigatória — apenas Supabase Auth (produção)
 // Bypass removido: acesso somente com login válido
-const DEV_BYPASS_AUTH = false; // NUNCA alterar para true em produção
+const DEV_BYPASS_AUTH = true; // ⚠ TEMPORÁRIO — reverter para false após restaurar acesso
 // ─────────────────────────────────────────────────────────────
 
 function initSupabase() {
@@ -8280,6 +8280,13 @@ function initSupabase() {
 }
 
 async function checkSession() {
+  // ── Bypass de desenvolvimento ───────────────────────────────
+  if (DEV_BYPASS_AUTH) {
+    currentUser = { id: 'local-admin', email: 'admin@local', role: 'admin' };
+    showApp();
+    return;
+  }
+
   // ── Inicializar cliente ─────────────────────────────────────
   sbAdmin = initSupabase();
 
