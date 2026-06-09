@@ -5095,19 +5095,38 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const TXCORES = ['rgba(255,255,255,.93)','rgba(0,0,0,.68)','rgba(0,0,0,.68)','rgba(255,255,255,.93)'];
 
   const metaNivel = inv ? 4 : 1;  // nível ideal: extremo esquerdo ou direito
-  const barH      = compact ? '12px' : '20px';
+  const barH      = compact ? '12px' : '24px';
   const anchorFz  = compact ? '8px'  : '10px';
 
   const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
+
+  // NIVEL_NM necessário antes de segs para rótulo inline do segmento dominante
+  const NIVEL_NM = ajustado
+    ? {1:'Ideal', 2:'Aceitável', 3:'Atenção', 4:'Crítico'}
+    : getNivelLabels(inv);
 
   const segs = [1,2,3,4].map((nv, i) => {
     const p = pcts[nv] || 0;
     if (!p) return '';
     const isMax = nv === moda;
-    const label = (!compact && p >= 10) ? p + '%' : (compact && p >= 15 ? p+'%' : '');
+
+    let label = '';
+    if (compact) {
+      label = p >= 15 ? p+'%' : '';
+    } else if (isMax && p >= 22) {
+      // Segmento dominante largo: nome do nível + %
+      label =
+        '<div style="line-height:1.15;text-align:center;pointer-events:none">'+
+        '<div style="font-size:6.5px;font-weight:500;opacity:.9">'+NIVEL_NM[nv]+'</div>'+
+        '<div style="font-size:8.5px;font-weight:700">'+p+'%</div>'+
+        '</div>';
+    } else if (p >= 10) {
+      label = p + '%';
+    }
+
     return '<div style="height:100%;width:'+p+'%;background:'+CORES[i]+
       ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+TXCORES[i]+';position:relative;overflow:hidden;transition:width .4s'+
-      (isMax?';outline:2px solid rgba(0,0,0,.28);outline-offset:-1px;z-index:2':'')+'">'+
+      (isMax ? ';outline:2px solid rgba(0,0,0,.32);outline-offset:-1px;z-index:2' : '')+'">'+
       label+'</div>';
   }).join('');
 
@@ -5125,10 +5144,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     anchorR +
     '</div>';
 
-  // Status badge — ajustado=true: espaço ajustado (avgDist), labels neutros
-  const NIVEL_NM = ajustado
-    ? {1:'Ideal', 2:'Aceitável', 3:'Atenção', 4:'Crítico'}
-    : getNivelLabels(inv);
+  // Status badge
   const metaLabel  = NIVEL_NM[metaNivel] || '?';
   const modaLabel  = NIVEL_NM[moda]      || '?';
   const naIdeal    = moda === metaNivel;
