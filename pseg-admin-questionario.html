@@ -4831,31 +4831,10 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       ? setor
       : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
 
-    // Legenda semântica — uma vez por setor
-    const legendaSetor =
-      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
-      'margin-bottom:12px;padding:5px 10px;background:var(--bg);border-radius:6px;' +
-      'border:1px solid var(--border);font-size:9px;color:var(--tm)">' +
-      '<span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;' +
-      'color:var(--tl);margin-right:2px">Legenda:</span>' +
-      [
-        {cor:'#22c55e', label:'Nunca (meta)'},
-        {cor:'#d1fae5', label:'Às vezes'},
-        {cor:'#fbbf24', label:'Frequente'},
-        {cor:'#f87171', label:'Sempre'},
-      ].map(({cor,label}) =>
-        '<span style="display:inline-flex;align-items:center;gap:3px">' +
-        '<span style="width:9px;height:9px;border-radius:2px;background:'+cor+';display:inline-block;flex-shrink:0"></span>' +
-        label+'</span>'
-      ).join('') +
-      '<span style="color:var(--tl);margin-left:4px">· ↺ questões invertidas: escala reversa (Sempre = meta)</span>' +
-      '</div>';
-
     html += '<div style="margin-bottom:44px">' +
       '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px;' +
       'padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);' +
-      'border-radius:0 6px 6px 0">' + setorLabel + '</div>' +
-      legendaSetor;
+      'border-radius:0 6px 6px 0">' + setorLabel + '</div>';
 
     resultado.forEach(f => {
       const borda  = _GF_BORDA[f.nivel]  || '#e2e8f0';
@@ -4915,13 +4894,6 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         '</div>' +
         // — Corpo
         '<div style="padding:14px 16px;background:white">' +
-        '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px;font-size:7.5px;color:var(--tl)">' +
-        [['#22c55e','Nunca'],['#d1fae5','Às vezes'],['#fbbf24','Frequente'],['#f87171','Sempre']]
-          .map(function(p){return '<span style="display:inline-flex;align-items:center;gap:2px">' +
-            '<span style="width:7px;height:7px;border-radius:1px;background:'+p[0]+
-            ';display:inline-block;border:1px solid rgba(0,0,0,.09)"></span>'+p[1]+'</span>';})
-          .join('') +
-        '</div>' +
         barraMedia +
         '<div style="margin-top:10px;font-size:11px;color:var(--tm)">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
@@ -5090,58 +5062,64 @@ function resolverEmpate(dist) {
 }
 
 // ─── Barra de distribuição reutilizável ───
+// Paleta divergente posicional: posição 1→4 fixa, cores indicam distância do ideal.
+// Direta  (inv=false): 1=verde(ideal) … 4=vermelho(crítico)
+// Inversa (inv=true):  1=vermelho(crítico) … 4=verde(ideal)
 // compact=true → barra menor (12px) para questões subordinadas
 function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact) {
-  // ── Cores semânticas: distância da resposta ideal (ve) ──────────────
-  // dist=0 → verde (meta atingida) … dist=3 → vermelho (problemático)
-  // Questões diretas (ve=1):    Nunca=verde,  Sempre=vermelho
-  // Questões invertidas (ve=4): Sempre=verde, Nunca=vermelho
-  const metaNivel = ve || 1;
-  const VIVID_D  = ['#22c55e','#d1fae5','#fbbf24','#f87171']; // consolidado — vivid
-  const PASTEL_D = ['#4ade80','#e0fdf4','#fcd34d','#fca5a5']; // questões   — pastel (~10% mais claro)
-  const CORES_BG = {};
-  const CORES_TX = {};
-  for (let nv = 1; nv <= 4; nv++) {
-    const d = Math.min(3, Math.abs(nv - metaNivel));
-    CORES_BG[nv] = compact ? PASTEL_D[d] : VIVID_D[d];
-    // texto: branco nas cores mais escuras (d=0 verde-forte, d=3 vermelho); escuro nas claras
-    CORES_TX[nv] = compact ? 'rgba(0,0,0,.55)'
-                           : (d === 0 || d === 3 ? 'rgba(255,255,255,.93)' : 'rgba(0,0,0,.65)');
-  }
-  const NIVEL_NM  = getNivelLabels(inv);
-  const barH      = compact ? '12px' : '20px';
-  // Empate: há outro nível com o mesmo % que a moda?
-  const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
-  // Empate com nível mais grave que a meta? (princípio da precaução)
-  const isEmpateComPior = Object.entries(pcts).some(
-    ([k,v]) => parseInt(k) > metaNivel && v > 0 && v === pcts[metaNivel]
-  );
+  // Paleta posicional: índice i = nv-1 (posição fixa na barra)
+  const CORES   = inv
+    ? ['#ef4444','#f59e0b','#86efac','#22c55e']  // inversa: 1=crítico … 4=ideal
+    : ['#22c55e','#86efac','#f59e0b','#ef4444']; // direta:  1=ideal  … 4=crítico
+  const TXCORES = ['rgba(255,255,255,.93)','rgba(0,0,0,.68)','rgba(0,0,0,.68)','rgba(255,255,255,.93)'];
 
-  const segs = [1,2,3,4].map(nv => {
+  const metaNivel = inv ? 4 : 1;  // nível ideal: extremo esquerdo ou direito
+  const barH      = compact ? '12px' : '20px';
+  const anchorFz  = compact ? '8px'  : '10px';
+
+  // Empate com nível mais crítico que a meta
+  const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
+  const isEmpateComPior = inv
+    ? Object.entries(pcts).some(([k,v]) => parseInt(k) < metaNivel && v > 0 && v === pcts[metaNivel])
+    : Object.entries(pcts).some(([k,v]) => parseInt(k) > metaNivel && v > 0 && v === pcts[metaNivel]);
+
+  const segs = [1,2,3,4].map((nv, i) => {
     const p = pcts[nv] || 0;
     if (!p) return '';
-    const isMax  = nv === moda;
-    const isMeta = nv === metaNivel;
-    const label  = (!compact && p >= 10) ? p + '%' : (compact && p >= 15 ? p+'%' : '');
-    const txtColor = CORES_TX[nv];
-    return '<div style="height:100%;width:'+p+'%;background:'+CORES_BG[nv]+
-      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+txtColor+';position:relative;overflow:hidden;transition:width .4s'+
-      (isMax?';outline:2px solid rgba(0,0,0,.25);outline-offset:-1px;z-index:2':'')+'">'+
-      (isMeta ? '<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:white;opacity:.9"></div>' : '')+
+    const isMax = nv === moda;
+    const label = (!compact && p >= 10) ? p + '%' : (compact && p >= 15 ? p+'%' : '');
+    return '<div style="height:100%;width:'+p+'%;background:'+CORES[i]+
+      ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+TXCORES[i]+';position:relative;overflow:hidden;transition:width .4s'+
+      (isMax?';outline:2px solid rgba(0,0,0,.28);outline-offset:-1px;z-index:2':'')+'">'+
       label+'</div>';
   }).join('');
 
-  const metaLabel = NIVEL_NM[metaNivel] || '?';   // já usa rótulos inv-cientes
-  const modaLabel = NIVEL_NM[moda] || '?';
-  // naIdeal: moda na meta E sem empate com nível mais grave (princípio da precaução)
-  const naIdeal   = moda === metaNivel && !isEmpateComPior;
-  const cor_status = naIdeal ? '#166534' : (moda >= 3 ? '#991b1b' : '#854d0e');
-  const bg_status  = naIdeal ? '#f0fdf4' : (moda >= 3 ? '#fef2f2' : '#fefce8');
+  // Âncoras: indicam extremos sem nomear níveis
+  const anchorIdeal    = '<span style="font-size:'+anchorFz+';color:#166534;white-space:nowrap;flex-shrink:0">✓ Ideal</span>';
+  const anchorCritico  = '<span style="font-size:'+anchorFz+';color:#991b1b;white-space:nowrap;flex-shrink:0">✗ Crítico</span>';
+  const anchorL = inv ? anchorCritico : anchorIdeal;
+  const anchorR = inv ? anchorIdeal   : anchorCritico;
 
-  // No modo compact, status badge mais curto
+  const barWrapper =
+    '<div style="display:flex;align-items:center;gap:6px">' +
+    anchorL +
+    '<div style="flex:1;height:'+barH+';border-radius:4px;overflow:hidden;display:flex;background:#e5e7eb">' +
+    segs + '</div>' +
+    anchorR +
+    '</div>';
+
+  // Status badge
+  const NIVEL_NM   = getNivelLabels(inv);
+  const metaLabel  = NIVEL_NM[metaNivel] || '?';
+  const modaLabel  = NIVEL_NM[moda]      || '?';
+  const naIdeal    = moda === metaNivel && !isEmpateComPior;
+  const distModa   = Math.abs(moda - metaNivel);
+  const cor_status = naIdeal ? '#166534' : (distModa >= 2 ? '#991b1b' : '#854d0e');
+  const bg_status  = naIdeal ? '#f0fdf4' : (distModa >= 2 ? '#fef2f2' : '#fefce8');
+
   const txt_status = compact
     ? (naIdeal
-        ? '✓ '+modaLabel+' ('+pcts[moda]+'%)'
+        ? '✓ meta atingida ('+pcts[moda]+'%)'
         : ((isEmpate||isEmpateComPior)
             ? '⚠ Empate → '+modaLabel+' · Meta: '+(pcts[metaNivel]||0)+'%'
             : modaLabel+' '+pcts[moda]+'% · Meta: '+(pcts[metaNivel]||0)+'%'))
@@ -5152,7 +5130,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
             : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'));
 
   const badgeSz = compact ? 'font-size:9px;padding:1px 5px' : 'font-size:10px;padding:2px 6px';
-  return '<div style="height:'+barH+';border-radius:4px;overflow:hidden;display:flex;background:#e5e7eb;position:relative">'+segs+'</div>'+
+  return barWrapper +
     '<div style="margin-top:3px;'+badgeSz+';font-weight:600;border-radius:3px;background:'+bg_status+';color:'+cor_status+';display:inline-block">'+
     txt_status + (n !== undefined ? ' · n='+n : '') + '</div>';
 }
@@ -5162,23 +5140,11 @@ function renderDistQuestoes(distQuestoes, gid) {
     return '<div style="font-size:11px;color:var(--tl);padding:10px 16px">Sem dados de distribuição por questão.</div>';
   }
 
-  // Legenda semântica (cores independem de inv — sempre verde=meta, vermelho=problema)
+  // Cabeçalho do drawer de detalhamento
   const header =
     '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:8px 16px 6px;background:#f0f2f5;border-top:1px solid var(--border)">'+
-      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
-        '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl)">Detalhamento por questão</span>'+
-        [
-          {cor:'#bbf7d0', label:'Nunca (meta)'},
-          {cor:'#d1fae5', label:'Às vezes'},
-          {cor:'#fef08a', label:'Frequente'},
-          {cor:'#fecaca', label:'Sempre'},
-        ].map(({cor,label}) =>
-          '<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--tm)">'+
-          '<span style="width:8px;height:8px;border-radius:1px;background:'+cor+';border:1px solid rgba(0,0,0,.1);display:inline-block;flex-shrink:0"></span>'+
-          label+'</span>'
-        ).join('')+
-      '</div>'+
-      '<span style="font-size:8px;color:var(--tl)">↺ inv: Sempre = meta (escala reversa)</span>'+
+      '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl)">Detalhamento por questão</span>'+
+      '<span style="font-size:8px;color:var(--tl)">↺ inv — âncoras espelham (✓ Ideal à direita)</span>'+
     '</div>';
 
   const itens = distQuestoes.map((q, idx) => {
