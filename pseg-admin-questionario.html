@@ -4833,23 +4833,17 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
 
     // Legenda divergente — uma vez por setor
     const legendaEscala =
-      '<div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;' +
+      '<div style="display:inline-flex;align-items:center;gap:7px;margin-bottom:12px;' +
       'padding:4px 10px 4px 8px;background:var(--bg);border-radius:6px;' +
-      'border:1px solid var(--border);font-size:8.5px;color:var(--tm)">' +
+      'border:1px solid var(--border);font-size:8.5px">' +
       '<span style="color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>' +
-      [
-        {c:'#22c55e', l:'Nunca'},
-        {c:'#86efac', l:'Às vezes'},
-        {c:'#f59e0b', l:'Frequente'},
-        {c:'#ef4444', l:'Sempre'},
-      ].map(({c,l}) =>
-        '<span style="display:inline-flex;align-items:center;gap:3px">' +
-        '<span style="width:11px;height:11px;border-radius:2px;background:'+c+
-        ';display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.08)"></span>' +
-        l + '</span>'
-      ).join('<span style="color:var(--border);margin:0 1px">›</span>') +
+      '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">' +
+      ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c =>
+        '<div style="width:22px;height:12px;background:'+c+'"></div>'
+      ).join('') +
+      '</div>' +
       '<span style="color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>' +
-      '<span style="color:var(--tl);border-left:1px solid var(--border);padding-left:6px;margin-left:2px">↺ inv: espelhado</span>' +
+      '<span style="color:var(--tl);border-left:1px solid var(--border);padding-left:7px;margin-left:1px">↺ inv: espelhado</span>' +
       '</div>';
 
     html += '<div style="margin-bottom:44px">' +
