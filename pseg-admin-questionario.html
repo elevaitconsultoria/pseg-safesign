@@ -6387,11 +6387,11 @@ function limparCacheRespostas() { _respostasCache = {}; }
 
 // Cores das barras (nível ajustado 1→4)
 const GF_CORES = {
-  // Paleta muted: fills pastéis, fronteiras discretas
-  1: {fill:'#a7f3d0', border:'#34d399', text:'#065f46', label:'Nunca'},       // esmeralda suave
-  2: {fill:'#bfdbfe', border:'#60a5fa', text:'#1e3a8a', label:'Às vezes'},    // azul suave
-  3: {fill:'#fde68a', border:'#fbbf24', text:'#78350f', label:'Frequente'},   // âmbar suave
-  4: {fill:'#fed7aa', border:'#fb923c', text:'#9a3412', label:'Sempre'},      // laranja suave (não vermelho)
+  // Paleta divergente — alinhada com renderBarraDistribuicao
+  1: {fill:'#22c55e', border:'#16a34a', text:'rgba(255,255,255,.93)', label:'Nunca'},
+  2: {fill:'#86efac', border:'#4ade80', text:'rgba(0,0,0,.68)',       label:'Às vezes'},
+  3: {fill:'#f59e0b', border:'#d97706', text:'rgba(0,0,0,.68)',       label:'Frequente'},
+  4: {fill:'#ef4444', border:'#dc2626', text:'rgba(255,255,255,.93)', label:'Sempre'},
 };
 
 const GF_BLOCOS = {
@@ -6551,17 +6551,20 @@ async function renderGraficos() {
     <div class="sum-card"><div class="sum-val" style="color:#f44336">${n_critico+n_atencao}</div><div class="sum-lbl">Atenção/crítico</div></div>
   </div>`;
 
-  // Legenda global
-  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:8px 14px;background:white;border:1px solid var(--bs);border-radius:var(--r)">
-    <span style="font-size:10px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-right:4px">Legenda:</span>
-    ${[1,2,3,4].map(n=>`
-      <div style="display:flex;align-items:center;gap:5px">
-        <div style="width:12px;height:12px;border-radius:3px;background:${GF_CORES[n].fill};border:1.5px solid ${GF_CORES[n].border}"></div>
-        <span style="font-size:11px;color:var(--tm)">${GF_CORES[n].label}${n===1?'&nbsp;<b style="color:#15803d">← meta</b>':''}</span>
-      </div>`).join('')}
-    <div style="display:flex;align-items:center;gap:5px;margin-left:8px">
-      <div style="width:2px;height:14px;background:#15803d;border-radius:1px"></div>
-      <div style="padding-left:8px;border-left:1px solid var(--bs)"></div><span style="font-size:11px;color:var(--tm)">Marcador ideal</span>
+  // Legenda global — régua divergente (igual ao card de setor)
+  html += `<div style="margin-bottom:14px">
+    <div style="display:inline-flex;align-items:center;gap:8px;
+      padding:5px 10px 5px 8px;background:white;border-radius:6px;border:1px solid #e5e7eb">
+      <span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>
+      <div>
+        <div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">
+          ${[1,2,3,4].map(n=>`<div style="width:42px;height:10px;background:${GF_CORES[n].fill}"></div>`).join('')}
+        </div>
+        <div style="display:flex;margin-top:2px">
+          ${[1,2,3,4].map(n=>`<div style="width:42px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">${GF_CORES[n].label}</div>`).join('')}
+        </div>
+      </div>
+      <span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>
     </div>
   </div>`;
 
@@ -6716,7 +6719,7 @@ function renderBarChart(d) {
         label: `${getNivelLabels(d.q.inv)[n]} — ${d.pcts[n]}%`,
         data: [d.pcts[n]],
         backgroundColor: GF_CORES[n].fill,
-        borderColor: n === moda ? GF_CORES[n].border : 'transparent',
+        borderColor: n === moda ? 'rgba(0,0,0,.28)' : 'transparent',
         borderWidth: n === moda ? 2 : 0,
         borderSkipped: false,
         borderRadius: n === 1 ? {topLeft:4,bottomLeft:4} : n === 4 ? {topRight:4,bottomRight:4} : 0,
@@ -7144,12 +7147,13 @@ comboState['combo-ld-setor'] = new Set(SETORES_DEMO);
 // combo-ld-setor já definido em comboItems/comboState acima
 
 const LAUDO_SECOES = [
-  {id:'capa',       label:'Capa & identificação',      on:true},
-  {id:'metodologia',label:'Metodologia',               on:true},
-  {id:'resultados', label:'Tabela de resultados',       on:true},
-  {id:'conduta',    label:'Conduta Administrativa',     on:true},
-  {id:'graficos',   label:'Gráficos por questão',       on:true},
-  {id:'acoes',      label:'Ações por setor',            on:true},
+  {id:'capa',          label:'Capa & identificação',      on:true},
+  {id:'metodologia',   label:'Metodologia',               on:true},
+  {id:'resultados',    label:'Tabela de resultados',       on:true},
+  {id:'conduta',       label:'Conduta Administrativa',     on:true},
+  {id:'analise_risco', label:'Análise gráfica por risco',  on:true},
+  {id:'graficos',      label:'Gráficos por questão',       on:true},
+  {id:'acoes',         label:'Ações por setor',            on:true},
 ];
 let laudoSecoesAtivas = new Set(LAUDO_SECOES.filter(s=>s.on).map(s=>s.id));
 
@@ -7385,6 +7389,69 @@ async function renderLaudo() {
     </div>`;
   }
 
+  // ── ANÁLISE GRÁFICA POR RISCO ──
+  if (laudoSecoesAtivas.has('analise_risco')) {
+    const _LE_AR = [{c:'#22c55e',l:'Nunca'},{c:'#86efac',l:'Às vezes'},{c:'#f59e0b',l:'Frequente'},{c:'#ef4444',l:'Sempre'}];
+    const legendaAR =
+      '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;'+
+      'padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
+      '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>'+
+      '<div>'+
+        '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
+        _LE_AR.map(({c})=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
+        '</div>'+
+        '<div style="display:flex;margin-top:2px">'+
+        _LE_AR.map(({l})=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
+        '</div>'+
+      '</div>'+
+      '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>'+
+      '</div>';
+
+    grupos.forEach(grupo => {
+      const lGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      if (!lGrupo.length) return;
+      const fatores = calcFatores(lGrupo).filter(Boolean);
+      if (!fatores.length) return;
+
+      html += '<div class="laudo-section">'+
+        '<div class="laudo-sec-title">Análise gráfica por risco — '+grupo.nome+'</div>'+
+        legendaAR;
+
+      fatores.sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel)).forEach(f => {
+        const nc  = NivelCores[f.nivel] || '#e5e7eb';
+        const nt  = NivelTxt[f.nivel]  || '#374151';
+        const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false, false, true);
+
+        // Mini barras por questão
+        const detalhe = f.distQuestoes && f.distQuestoes.length
+          ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
+            f.distQuestoes.map(q => {
+              const bq = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false, q.inv, true);
+              return '<div style="margin-bottom:8px">'+
+                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+                '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+q.codigo+'</span>'+
+                (q.inv ? '<span style="font-size:8px;color:#d97706">↺ inv</span>' : '')+
+                '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+q.texto+'</span>'+
+                '</div>'+bq+'</div>';
+            }).join('')+
+            '</div>'
+          : '';
+
+        html += '<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid '+nc+';border-radius:6px">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'+
+          '<span style="font-size:12px;font-weight:700;color:#111827;flex:1">'+f.nome+'</span>'+
+          '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:'+nc+';color:'+nt+'">'+f.nivel+'</span>'+
+          '<span style="font-size:10px;color:#6b7280">P'+f.p+' · n='+f.n+'</span>'+
+          '</div>'+
+          barraMedia+
+          detalhe+
+          '</div>';
+      });
+
+      html += '</div>';
+    });
+  }
+
   // ── GRÁFICOS ──
   if (laudoSecoesAtivas.has('graficos')) {
     const distAll = calcDistribuicaoQuestoes(linhas.map(r=>({...r, q: Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))})));
@@ -7395,9 +7462,19 @@ async function renderLaudo() {
     ];
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Distribuição de respostas por questão</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:10px;color:var(--tm)">
-        ${[1,2,3,4].map(n=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${GF_CORES[n].fill};border:1px solid ${GF_CORES[n].border};display:inline-block"></span>${GF_CORES[n].label}${n===1?' ← meta (diretas)':''}</span>`).join('')}
-        <span style="font-size:9px;color:var(--tl);margin-left:4px">· ↺ inv: meta = Sempre (ajustado para escore 1)</span>
+      <div style="margin-bottom:12px">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">
+          <span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>
+          <div>
+            <div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">
+              ${[1,2,3,4].map(n=>`<div style="width:36px;height:10px;background:${GF_CORES[n].fill}"></div>`).join('')}
+            </div>
+            <div style="display:flex;margin-top:2px">
+              ${[1,2,3,4].map(n=>`<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">${GF_CORES[n].label}</div>`).join('')}
+            </div>
+          </div>
+          <span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>
+        </div>
       </div>`;
 
     CATS_LAUDO.forEach(({cat, bloco, cor, bg}) => {
