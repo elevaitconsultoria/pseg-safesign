@@ -8577,7 +8577,12 @@ async function showApp() {
 }
 
 function aplicarRestricoesPorRole() {
-  const role = currentUser?.role || 'consultor';
+  // Normalizar: Supabase coloca 'authenticated' em currentUser.role (JWT role).
+  // Sobrescrever com o role real do app após loadPerfil(); caso loadPerfil falhe,
+  // usar 'consultor' como fallback seguro em vez de cair no bloco cliente_viewer.
+  const raw = currentUser?.role;
+  const role = (raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
+    ? raw : 'consultor';
 
   if (role === 'admin') {
     // Admin vê tudo — sem restrições
