@@ -8490,14 +8490,9 @@ function aplicarRestricoesPorRole() {
   }
 
   if (role === 'consultor') {
-    // Consultor vê tudo EXCETO a aba Usuários (gerenciamento de membros é exclusivo do admin)
+    // Consultor vê tudo incluindo Usuários — pode gerenciar consultor/cliente_viewer
+    // mas NÃO pode criar ou promover admins (aplicado na UI e no banco)
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
-    const nbUsuarios = document.getElementById('nb-usuarios');
-    if (nbUsuarios) nbUsuarios.style.display = 'none';
-    // Se a tela ativa for Usuários, redirecionar para dashboard
-    if (document.getElementById('sc-usuarios')?.style.display !== 'none') {
-      goScreen('dashboard', document.getElementById('nb-dashboard'));
-    }
     return;
   }
 
@@ -8592,9 +8587,9 @@ async function carregarUsuarios() {
     el.innerHTML = '<div class="alert alert-y">Disponível apenas no modo real (com Supabase conectado).</div>';
     return;
   }
-  // Apenas admins podem gerenciar usuários
-  if (currentUser?.role !== 'admin') {
-    el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito — apenas administradores podem gerenciar usuários e perfis de acesso.</div>';
+  // Admin e consultor podem gerenciar usuários; cliente_viewer não
+  if (currentUser?.role === 'cliente_viewer') {
+    el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito.</div>';
     return;
   }
   el.innerHTML = '<div style="color:var(--tl);font-size:12px;padding:16px">Carregando…</div>';
@@ -8608,7 +8603,20 @@ async function carregarUsuarios() {
       el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum usuário encontrado</div><div class="empty-state-sub">Crie o primeiro usuário usando o botão acima.</div></div>';
       return;
     }
-    el.innerHTML = data.map(u => `
+    const callerIsAdmin = currentUser?.role === 'admin';
+    el.innerHTML = data.map(u => {
+      // Consultor não pode editar linhas de admin
+      const canEdit = callerIsAdmin || u.role !== 'admin';
+      const roleSelect = canEdit ? `
+        <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
+          <option value="consultor"     ${u.role==='consultor'?'selected':''}>Consultor</option>
+          ${callerIsAdmin ? `<option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>` : ''}
+          <option value="cliente_viewer" ${u.role==='cliente_viewer'?'selected':''}>Cliente</option>
+        </select>
+        <button class="btn ${u.ativo?'btn-ghost':'btn-amber'}" style="font-size:11px" onclick="toggleAtivoUsuario('${u.id}',${u.ativo})">
+          ${u.ativo ? 'Desativar' : 'Reativar'}
+        </button>` : `<span style="font-size:11px;color:var(--tl);padding:4px 8px;border:1px solid var(--bs);border-radius:var(--r)">Admin — gerenciado apenas por admins</span>`;
+      return `
       <div class="card" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--tx)">${u.nome || '(sem nome)'}</div>
@@ -8617,17 +8625,9 @@ async function carregarUsuarios() {
             ${!u.ativo ? '<span class="tag tgr" style="margin-left:4px">Inativo</span>' : ''}
           </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
-            <option value="consultor" ${u.role==='consultor'?'selected':''}>Consultor</option>
-            <option value="admin"     ${u.role==='admin'?'selected':''}>Admin</option>
-            <option value="cliente_viewer" ${u.role==='cliente_viewer'?'selected':''}>Cliente</option>
-          </select>
-          <button class="btn ${u.ativo?'btn-ghost':'btn-amber'}" style="font-size:11px" onclick="toggleAtivoUsuario('${u.id}',${u.ativo})">
-            ${u.ativo ? 'Desativar' : 'Reativar'}
-          </button>
-        </div>
-      </div>`).join('');
+        <div style="display:flex;gap:6px">${roleSelect}</div>
+      </div>`;
+    }).join('');
   } catch(e) {
     el.innerHTML = `<div class="alert alert-r">Erro ao carregar usuários: ${e.message}</div>`;
   }
@@ -8635,15 +8635,19 @@ async function carregarUsuarios() {
 
 async function alterarRoleUsuario(id, novoRole) {
   if (!sbAdmin) return;
-  // Guard: apenas admin pode alterar roles (defesa no frontend; DB reforça via trigger)
-  if (currentUser?.role !== 'admin') {
-    toast('Acesso negado: apenas administradores podem alterar perfis de acesso.', 'r');
-    carregarUsuarios(); // recarregar para restaurar o select ao valor original
+  const callerRole = currentUser?.role;
+  // cliente_viewer não pode alterar ninguém
+  if (callerRole === 'cliente_viewer' || !callerRole) {
+    toast('Acesso negado.', 'r');
+    carregarUsuarios();
     return;
   }
   const rolesValidos = ['admin', 'consultor', 'cliente_viewer'];
-  if (!rolesValidos.includes(novoRole)) {
-    toast('Perfil inválido.', 'r');
+  if (!rolesValidos.includes(novoRole)) { toast('Perfil inválido.', 'r'); return; }
+  // Consultor não pode definir nem tocar em role admin (DB também bloqueia via trigger)
+  if (callerRole === 'consultor' && novoRole === 'admin') {
+    toast('Apenas administradores podem definir o perfil Admin.', 'r');
+    carregarUsuarios();
     return;
   }
   const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
@@ -8653,25 +8657,29 @@ async function alterarRoleUsuario(id, novoRole) {
 
 async function toggleAtivoUsuario(id, ativo) {
   if (!sbAdmin) return;
-  // Guard: apenas admin pode ativar/desativar usuários
-  if (currentUser?.role !== 'admin') {
-    toast('Acesso negado: apenas administradores podem ativar/desativar usuários.', 'r');
+  const callerRole = currentUser?.role;
+  if (callerRole === 'cliente_viewer' || !callerRole) {
+    toast('Acesso negado.', 'r');
     return;
   }
+  // Consultor não pode desativar admin (DB também bloqueia via trigger)
   const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'w'); return; }
   carregarUsuarios();
 }
 
 function abrirModalNovoUsuario() {
-  // Guard: apenas admin pode convidar novos usuários
-  if (currentUser?.role !== 'admin') {
-    toast('Acesso negado: apenas administradores podem convidar usuários.', 'r');
+  const callerRole = currentUser?.role;
+  if (callerRole === 'cliente_viewer' || !callerRole) {
+    toast('Acesso negado.', 'r');
     return;
   }
   document.getElementById('nu-email').value = '';
   document.getElementById('nu-nome').value  = '';
   document.getElementById('nu-role').value  = 'consultor';
+  // Consultor não pode criar admins — ocultar opção no modal
+  const adminOpt = document.querySelector('#nu-role option[value="admin"]');
+  if (adminOpt) adminOpt.style.display = callerRole === 'admin' ? '' : 'none';
   document.getElementById('modal-novo-usuario').classList.add('open');
 }
 function fecharModalNovoUsuario() {
@@ -10404,9 +10412,9 @@ async function exportarPlanoCSV() {
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function goScreen(id, btn) {
-  // Segurança: tela de Usuários é exclusiva para admins
-  if (id === 'usuarios' && currentUser?.role !== 'admin') {
-    toast('Acesso restrito: apenas administradores podem gerenciar usuários.', 'r');
+  // Segurança: tela de Usuários bloqueada apenas para cliente_viewer
+  if (id === 'usuarios' && currentUser?.role === 'cliente_viewer') {
+    toast('Acesso restrito.', 'r');
     return;
   }
 
