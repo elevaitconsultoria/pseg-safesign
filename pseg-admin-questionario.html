@@ -4871,7 +4871,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       const nOpen  = !!window._detalhesVisiveis;   // controlado pelo toggle global
 
       // Barra da distribuição média (espaço ajustado: ve=1 = ideal para todos)
-      const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false);
+      const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false, false, true);
 
       // Questões individuais (colapsível)
       const questoesHtml = f.distQuestoes.map((dq, qi) => {
@@ -5072,27 +5072,13 @@ function getNivelLabels(inv) {
 
 // ═══════════════════════════════════════════
 // REGRA DE EMPATE:
-// Se dois ou mais níveis têm o mesmo % na distribuição média,
-// prevalece o de maior número (mais grave). Ex: 35% Nunca, 35% Frequente → P=3.
-// Isso é conservador: em caso de dúvida, assumir o pior nível.
-// ═══════════════════════════════════════════
-function resolverEmpate(dist) {
-  // dist = {1: %, 2: %, 3: %, 4: %}
-  // Retorna nível vencedor com critério conservador (maior nível em empate)
-  const maxVal = Math.max(dist[1], dist[2], dist[3], dist[4]);
-  // Em empate: pega o maior índice (mais grave)
-  for (let n = 4; n >= 1; n--) {
-    if (dist[n] === maxVal) return n;
-  }
-  return 1;
-}
 
 // ─── Barra de distribuição reutilizável ───
 // Paleta divergente posicional: posição 1→4 fixa, cores indicam distância do ideal.
 // Direta  (inv=false): 1=verde(ideal) … 4=vermelho(crítico)
 // Inversa (inv=true):  1=vermelho(crítico) … 4=verde(ideal)
 // compact=true → barra menor (12px) para questões subordinadas
-function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact) {
+function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact, ajustado) {
   // Paleta posicional: índice i = nv-1 (posição fixa na barra)
   const CORES   = inv
     ? ['#ef4444','#f59e0b','#86efac','#22c55e']  // inversa: 1=crítico … 4=ideal
@@ -5103,11 +5089,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const barH      = compact ? '12px' : '20px';
   const anchorFz  = compact ? '8px'  : '10px';
 
-  // Empate com nível mais crítico que a meta
   const isEmpate = Object.values(pcts).filter(v => v === pcts[moda]).length > 1;
-  const isEmpateComPior = inv
-    ? Object.entries(pcts).some(([k,v]) => parseInt(k) < metaNivel && v > 0 && v === pcts[metaNivel])
-    : Object.entries(pcts).some(([k,v]) => parseInt(k) > metaNivel && v > 0 && v === pcts[metaNivel]);
 
   const segs = [1,2,3,4].map((nv, i) => {
     const p = pcts[nv] || 0;
@@ -5134,11 +5116,13 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
     anchorR +
     '</div>';
 
-  // Status badge
-  const NIVEL_NM   = getNivelLabels(inv);
+  // Status badge — ajustado=true: espaço ajustado (avgDist), labels neutros
+  const NIVEL_NM = ajustado
+    ? {1:'Ideal', 2:'Aceitável', 3:'Atenção', 4:'Crítico'}
+    : getNivelLabels(inv);
   const metaLabel  = NIVEL_NM[metaNivel] || '?';
   const modaLabel  = NIVEL_NM[moda]      || '?';
-  const naIdeal    = moda === metaNivel && !isEmpateComPior;
+  const naIdeal    = moda === metaNivel;
   const distModa   = Math.abs(moda - metaNivel);
   const cor_status = naIdeal ? '#166534' : (distModa >= 2 ? '#991b1b' : '#854d0e');
   const bg_status  = naIdeal ? '#f0fdf4' : (distModa >= 2 ? '#fef2f2' : '#fefce8');
@@ -5146,12 +5130,12 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   const txt_status = compact
     ? (naIdeal
         ? '✓ meta atingida ('+pcts[moda]+'%)'
-        : ((isEmpate||isEmpateComPior)
+        : (isEmpate
             ? '⚠ Empate → '+modaLabel+' · Meta: '+(pcts[metaNivel]||0)+'%'
             : modaLabel+' '+pcts[moda]+'% · Meta: '+(pcts[metaNivel]||0)+'%'))
     : (naIdeal
         ? '✓ Meta atingida — '+modaLabel+' predominante ('+pcts[moda]+'%)'
-        : ((isEmpate || isEmpateComPior)
+        : (isEmpate
             ? '⚠ Empate ('+pcts[moda]+'%) — classificado como '+modaLabel+' (critério de precaução). Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'
             : modaLabel+' predominante ('+pcts[moda]+'%) · Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'));
 
