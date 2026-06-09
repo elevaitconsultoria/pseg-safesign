@@ -4653,7 +4653,7 @@ async function exportarResultados(fmt) {
   clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
-  await new Promise(r => setTimeout(r, 120));  // layout settle
+  await new Promise(r => setTimeout(r, 200));  // layout + CSS vars settle
 
   const today = new Date().toISOString().slice(0, 10);
   let canvas;
@@ -5126,7 +5126,7 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
 
     return '<div style="height:100%;width:'+p+'%;background:'+CORES[i]+
       ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:'+TXCORES[i]+';position:relative;overflow:hidden;transition:width .4s'+
-      (isMax ? ';outline:2px solid rgba(0,0,0,.32);outline-offset:-1px;z-index:2' : '')+'">'+
+      (isMax ? ';box-shadow:inset 0 0 0 2px rgba(0,0,0,.32);z-index:2' : '')+'">'+
       label+'</div>';
   }).join('');
 
@@ -7498,7 +7498,7 @@ function _barPrint(pcts, moda) {
   const C={1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
   const segs = [1,2,3,4].map(n=>{
     const p=(pcts||{})[n]||0; if(!p) return '';
-    const hi = n===moda ? 'outline:2px solid rgba(0,0,0,.22);outline-offset:-1px;z-index:2;' : '';
+    const hi = n===moda ? 'box-shadow:inset 0 0 0 2px rgba(0,0,0,.22);z-index:2;' : '';
     return `<div style="height:100%;width:${p}%;background:${C[n]};${hi}display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:rgba(255,255,255,.9)">${p>=12?p+'%':''}</div>`;
   }).join('');
   return `<div style="height:14px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${segs}</div>`;
