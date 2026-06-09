@@ -8565,12 +8565,7 @@ async function showApp() {
   document.getElementById('user-email-display').textContent = labelEmail;
   // Carregar tenant_id e role ANTES de qualquer query de dados
   await loadPerfil();
-  // Novo usuário sem tenant → exibir onboarding primeiro
-  if (!currentTenantId && !isDemoMode && currentUser?.id !== 'local-admin') {
-    document.getElementById('app-shell').style.display = 'none';
-    document.getElementById('onboarding-overlay').style.display = 'flex';
-    return;
-  }
+  // Onboarding desativado — acesso direto ao app após login
   _iniciarAppAposTenant();
 }
 
