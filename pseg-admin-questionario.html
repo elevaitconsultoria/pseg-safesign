@@ -839,68 +839,142 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- ══════════════════════════════════════════════════════════
      ONBOARDING OVERLAY — exibido para novos usuários sem tenant
+     Dois caminhos: criar espaço (admin) ou aguardar convite (membro)
      ══════════════════════════════════════════════════════════ -->
-<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;z-index:490;background:#0d111c;align-items:center;justify-content:center">
-  <div style="width:100%;max-width:460px;padding:0 24px">
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;z-index:490;background:#0d111c;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:480px">
 
     <!-- Logo -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px">
-      <div style="width:36px;height:36px;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:center">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="#0d111c"><path d="M10 2L3 6v4c0 5.25 3.5 8.74 7 9.96 3.5-1.22 7-4.71 7-9.96V6L10 2z"/></svg>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px">
+      <div style="width:34px;height:34px;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="#0d111c"><path d="M10 2L3 6v4c0 5.25 3.5 8.74 7 9.96 3.5-1.22 7-4.71 7-9.96V6L10 2z"/></svg>
       </div>
-      <span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase">PSEG SafeSign</span>
+      <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PSEG SafeSign</span>
     </div>
 
-    <!-- Título -->
-    <h2 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#f1f5f9;line-height:1.2;margin-bottom:10px">
-      Configure sua <em style="color:#f59e0b;font-style:normal">conta</em>
-    </h2>
-    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;line-height:1.6;margin-bottom:32px">
-      Dê um nome à sua consultoria e crie seu espaço de trabalho.<br>
-      Você pode convidar sua equipe depois.
-    </p>
-
-    <!-- Formulário -->
-    <div style="display:flex;flex-direction:column;gap:16px">
-
-      <div>
-        <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
-          Nome da consultoria / empresa
-        </label>
-        <input id="ob-nome" type="text" placeholder="ex: Elevait Consultoria" autocomplete="organization"
-          style="width:100%;padding:11px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#f1f5f9;outline:none;transition:border-color .2s"
-          oninput="obAutoSlug(this.value)"
-          onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
-          onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
-      </div>
-
-      <div>
-        <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
-          Identificador único (slug)
-        </label>
-        <div style="position:relative">
-          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;pointer-events:none">safesign.app/</span>
-          <input id="ob-slug" type="text" placeholder="minha-consultoria"
-            style="width:100%;padding:11px 14px 11px 112px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#cbd5e1;outline:none;transition:border-color .2s"
-            onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
-            onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
-        </div>
-        <div id="ob-slug-hint" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#475569;margin-top:4px">Apenas letras minúsculas, números e hífens.</div>
-      </div>
-
-      <div id="ob-err" style="display:none;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;color:#fca5a5"></div>
-
-      <button id="ob-btn" onclick="submitOnboarding()"
-        style="width:100%;padding:13px;background:#f59e0b;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;color:#0d111c;cursor:pointer;transition:background .2s;margin-top:4px"
-        onmouseover="this.style.background='#fbbf24'"
-        onmouseout="this.style.background='#f59e0b'">
-        Criar espaço de trabalho →
+    <!-- Toggle: Criar / Fui convidado -->
+    <div style="display:flex;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px;margin-bottom:32px">
+      <button id="ob-tab-criar" onclick="obTab('criar')"
+        style="flex:1;padding:9px 0;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#f59e0b;color:#0d111c">
+        🏢 Criar minha conta
+      </button>
+      <button id="ob-tab-convite" onclick="obTab('convite')"
+        style="flex:1;padding:9px 0;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:#64748b">
+        🔗 Fui convidado
       </button>
     </div>
 
-    <p style="margin-top:20px;font-family:'DM Sans',sans-serif;font-size:11px;color:#334155;text-align:center">
-      Você terá 30 dias gratuitos para explorar todos os recursos.
-    </p>
+    <!-- ── Painel A: Criar espaço ─────────────────────────────── -->
+    <div id="ob-panel-criar">
+      <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#f1f5f9;line-height:1.2;margin-bottom:8px">
+        Configure sua <em style="color:#f59e0b;font-style:normal">conta</em>
+      </h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;line-height:1.6;margin-bottom:28px">
+        Dê um nome à sua consultoria e crie seu espaço de trabalho.<br>
+        Você pode convidar sua equipe depois.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
+            Nome da consultoria / empresa
+          </label>
+          <input id="ob-nome" type="text" placeholder="ex: Elevait Consultoria" autocomplete="organization"
+            style="width:100%;box-sizing:border-box;padding:11px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#f1f5f9;outline:none;transition:border-color .2s"
+            oninput="obAutoSlug(this.value)"
+            onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
+            onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
+        </div>
+
+        <div>
+          <label style="display:block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">
+            Identificador único (slug)
+          </label>
+          <div style="position:relative">
+            <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;pointer-events:none">safesign.app/</span>
+            <input id="ob-slug" type="text" placeholder="minha-consultoria"
+              style="width:100%;box-sizing:border-box;padding:11px 14px 11px 112px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#cbd5e1;outline:none;transition:border-color .2s"
+              onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
+              onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#475569;margin-top:4px">Apenas letras minúsculas, números e hífens.</div>
+        </div>
+
+        <div id="ob-err" style="display:none;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;color:#fca5a5"></div>
+
+        <button id="ob-btn" onclick="submitOnboarding()"
+          style="width:100%;padding:13px;background:#f59e0b;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;color:#0d111c;cursor:pointer;transition:background .2s;margin-top:4px"
+          onmouseover="this.style.background='#fbbf24'"
+          onmouseout="this.style.background='#f59e0b'">
+          Criar espaço de trabalho →
+        </button>
+      </div>
+
+      <p style="margin-top:18px;font-family:'DM Sans',sans-serif;font-size:11px;color:#334155;text-align:center">
+        Você terá 30 dias gratuitos para explorar todos os recursos.
+      </p>
+    </div>
+
+    <!-- ── Painel B: Fui convidado ────────────────────────────── -->
+    <div id="ob-panel-convite" style="display:none">
+      <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#f1f5f9;line-height:1.2;margin-bottom:8px">
+        Acesso <em style="color:#f59e0b;font-style:normal">pendente</em>
+      </h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;line-height:1.6;margin-bottom:28px">
+        Sua conta foi criada, mas ainda não foi vinculada a nenhum espaço de trabalho.
+      </p>
+
+      <!-- Email do usuário logado -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;margin-bottom:24px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span id="ob-convite-email" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#f59e0b">—</span>
+      </div>
+
+      <!-- Passo a passo -->
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:22px;height:22px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+            <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;color:#60a5fa">1</span>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#94a3b8;line-height:1.5">
+            Envie seu e-mail ao <strong style="color:#cbd5e1">administrador</strong> da consultoria.
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:22px;height:22px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+            <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;color:#60a5fa">2</span>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#94a3b8;line-height:1.5">
+            O admin acessa <strong style="color:#cbd5e1">PSEG SafeSign → Usuários</strong> e associa sua conta ao espaço de trabalho.
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:22px;height:22px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+            <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;color:#60a5fa">3</span>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#94a3b8;line-height:1.5">
+            Faça <strong style="color:#cbd5e1">logout e login novamente</strong> para acessar o painel.
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão recarregar / logout -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="location.reload()"
+          style="width:100%;padding:12px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#cbd5e1;cursor:pointer;transition:all .2s"
+          onmouseover="this.style.background='rgba(255,255,255,.1)'"
+          onmouseout="this.style.background='rgba(255,255,255,.06)'">
+          🔄 Já fui adicionado — recarregar
+        </button>
+        <button onclick="fazerLogout()"
+          style="width:100%;padding:10px;background:transparent;border:none;font-family:'DM Sans',sans-serif;font-size:12px;color:#475569;cursor:pointer;transition:color .2s"
+          onmouseover="this.style.color='#94a3b8'"
+          onmouseout="this.style.color='#475569'">
+          ← Usar outro e-mail
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -8375,6 +8449,26 @@ async function loadPerfil() {
 // ──────────────────────────────────────────────────────────────────
 // Onboarding: auto-gerar slug a partir do nome
 // ──────────────────────────────────────────────────────────────────
+// ── Onboarding: toggle entre os dois painéis ────────────────────────
+function obTab(tab) {
+  const isCriar = tab === 'criar';
+  document.getElementById('ob-panel-criar').style.display   = isCriar ? 'block' : 'none';
+  document.getElementById('ob-panel-convite').style.display = isCriar ? 'none'  : 'block';
+
+  const tCriar   = document.getElementById('ob-tab-criar');
+  const tConvite = document.getElementById('ob-tab-convite');
+  tCriar.style.background   = isCriar ? '#f59e0b' : 'transparent';
+  tCriar.style.color        = isCriar ? '#0d111c' : '#64748b';
+  tConvite.style.background = isCriar ? 'transparent' : 'rgba(255,255,255,.08)';
+  tConvite.style.color      = isCriar ? '#64748b' : '#f1f5f9';
+
+  // Preencher e-mail do usuário logado no painel de convite
+  if (!isCriar) {
+    const el = document.getElementById('ob-convite-email');
+    if (el) el.textContent = currentUser?.email || '—';
+  }
+}
+
 function obAutoSlug(nome) {
   const slug = nome
     .toLowerCase()
