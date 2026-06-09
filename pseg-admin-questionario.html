@@ -4840,7 +4840,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       'color:var(--tl);margin-right:2px">Legenda:</span>' +
       [
         {cor:'#22c55e', label:'Nunca (meta)'},
-        {cor:'#86efac', label:'Às vezes'},
+        {cor:'#d1fae5', label:'Às vezes'},
         {cor:'#fbbf24', label:'Frequente'},
         {cor:'#f87171', label:'Sempre'},
       ].map(({cor,label}) =>
@@ -4915,6 +4915,13 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         '</div>' +
         // — Corpo
         '<div style="padding:14px 16px;background:white">' +
+        '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px;font-size:7.5px;color:var(--tl)">' +
+        [['#22c55e','Nunca'],['#d1fae5','Às vezes'],['#fbbf24','Frequente'],['#f87171','Sempre']]
+          .map(function(p){return '<span style="display:inline-flex;align-items:center;gap:2px">' +
+            '<span style="width:7px;height:7px;border-radius:1px;background:'+p[0]+
+            ';display:inline-block;border:1px solid rgba(0,0,0,.09)"></span>'+p[1]+'</span>';})
+          .join('') +
+        '</div>' +
         barraMedia +
         '<div style="margin-top:10px;font-size:11px;color:var(--tm)">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
@@ -5090,8 +5097,8 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
   // Questões diretas (ve=1):    Nunca=verde,  Sempre=vermelho
   // Questões invertidas (ve=4): Sempre=verde, Nunca=vermelho
   const metaNivel = ve || 1;
-  const VIVID_D  = ['#22c55e','#86efac','#fbbf24','#f87171']; // consolidado — vivid
-  const PASTEL_D = ['#bbf7d0','#d1fae5','#fef08a','#fecaca']; // questões   — pastel
+  const VIVID_D  = ['#22c55e','#d1fae5','#fbbf24','#f87171']; // consolidado — vivid
+  const PASTEL_D = ['#4ade80','#e0fdf4','#fcd34d','#fca5a5']; // questões   — pastel (~10% mais claro)
   const CORES_BG = {};
   const CORES_TX = {};
   for (let nv = 1; nv <= 4; nv++) {
