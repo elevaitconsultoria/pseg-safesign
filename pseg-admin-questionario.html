@@ -5297,14 +5297,14 @@ function calcFatores(linhas) {
       const vals = [];
       linhas.forEach(r => {
         const v = r.q[q.id];
-        if (v !== undefined && v !== null) vals.push(q.inv ? 5 - v : v);
+        if (v !== undefined && v !== null) vals.push(v); // espaço original: 1=Nunca, 4=Sempre
       });
       if (!vals.length) return null;
 
       const n = vals.length;
       const counts = {1:0, 2:0, 3:0, 4:0};
       vals.forEach(v => counts[v]++);
-      // % desta questão (soma exatamente 100 após correção de arredondamento)
+      // % desta questão no espaço original (para exibição das barras individuais)
       const pcts = {};
       let soma = 0;
       [1,2,3,4].forEach(k => { pcts[k] = Math.round(counts[k]/n*100); soma += pcts[k]; });
@@ -5312,8 +5312,12 @@ function calcFatores(linhas) {
         const maxK = [1,2,3,4].reduce((a,b) => pcts[a] >= pcts[b] ? a : b);
         pcts[maxK] += (100 - soma);
       }
-      // Acumular na distribuição média do risco
-      [1,2,3,4].forEach(k => acc[k] += pcts[k]);
+      // Acumular no espaço ajustado (1=ideal, 4=crítico para todos):
+      // questões inversas têm espelho — Sempre(4) → posição 1 (ideal)
+      const pctsPara = q.inv
+        ? {1: pcts[4], 2: pcts[3], 3: pcts[2], 4: pcts[1]}
+        : pcts;
+      [1,2,3,4].forEach(k => acc[k] += pctsPara[k]);
       // Empate → nível mais grave prevalece (princípio da precaução)
       const moda = parseInt(Object.entries(pcts).sort((a,b) => b[1]-a[1] || parseInt(b[0])-parseInt(a[0]))[0][0]);
       return { id:q.id, codigo:q.c, texto:q.t, inv:q.inv, ve:q.ve ?? 1, pcts, moda, n };
