@@ -1,0 +1,14 @@
+# PSEG SafeSign — Cloudflare Pages redirects
+# Documentação: https://developers.cloudflare.com/pages/configuration/redirects/
+
+# Rota pública do formulário de coleta
+/form         /pseg-forms.html         200
+/form/*       /pseg-forms.html         200
+
+# Painel admin (raiz já redireciona via index.html)
+/admin        /pseg-admin-questionario.html  200
+/admin/*      /pseg-admin-questionario.html  200
+
+# Arquivos SQL e Markdown: bloquear acesso direto
+/**.sql       /404.html                403
+/**.md        /404.html                403
