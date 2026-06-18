@@ -563,15 +563,50 @@ function coletarRespostas() {
 }
 
 // ══════════════════════════════════════════════════════════
+// GUARDA DE RATE LIMIT — evita reenvio acidental ou bot
+// ══════════════════════════════════════════════════════════
+let _tsUltimoEnvio = 0;
+const _RATE_LIMIT_MS = 30000; // 30 s entre tentativas
+
+// Sanitiza strings de metadados: remove tags HTML e limita comprimento
+function _sanitizeMeta(val, maxLen = 120) {
+  if (!val) return null;
+  return String(val).replace(/<[^>]*>/g, '').trim().slice(0, maxLen) || null;
+}
+
+// Valida que todos os valores de resposta são inteiros 1–4
+function _validarItens(itens) {
+  return itens.every(i => Number.isInteger(i.valor) && i.valor >= 1 && i.valor <= 4);
+}
+
+// Valida formato do token (12 chars alphanum gerados por Math.random().toString(36).slice(2,14))
+function _tokenValido(token) {
+  return typeof token === 'string' && /^[a-z0-9]{10,16}$/.test(token);
+}
+
+// ══════════════════════════════════════════════════════════
 // ENVIO
 // ══════════════════════════════════════════════════════════
 async function enviarResposta() {
+  // ── Rate limit client-side ────────────────────────────
+  const agora = Date.now();
+  if (agora - _tsUltimoEnvio < _RATE_LIMIT_MS) {
+    const restante = Math.ceil((_RATE_LIMIT_MS - (agora - _tsUltimoEnvio)) / 1000);
+    toast(`Aguarde ${restante}s antes de tentar novamente.`, 'warn');
+    return;
+  }
+
   const { respostas, invalidas } = coletarRespostas();
 
   if (invalidas.length > 0) {
     toast(`Responda ${invalidas.length} questão(ões) pendente(s).`, 'warn');
-    // Scroll até a primeira não respondida
     document.getElementById('qi-'+invalidas[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // ── Validar token antes de qualquer chamada ao Supabase ──
+  if (!_tokenValido(linkToken)) {
+    toast('Token de link inválido. Solicite um novo link ao responsável.', 'warn');
     return;
   }
 
@@ -579,7 +614,9 @@ async function enviarResposta() {
   btn.disabled = true;
   btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></div>Enviando...`;
 
-  // Garantir que o mapa de UUIDs está carregado (proteção extra contra race condition)
+  _tsUltimoEnvio = Date.now();
+
+  // Garantir que o mapa de UUIDs está carregado
   if (Object.keys(_mapaQuestoesUUID).length === 0) {
     await carregarMapaQuestoes();
   }
@@ -590,20 +627,28 @@ async function enviarResposta() {
     return;
   }
 
-  const funcaoVal  = document.getElementById('meta-funcao')?.value || null;
-  const escolarVal = document.getElementById('meta-escolaridade')?.value || null;
-  // Setor: usa setor pré-definido do link; se não houver, usa o que o funcionário escolheu
-  // Verifica dropdown e campo livre; fallback para 'Não informado' — coluna setor é NOT NULL
+  // ── Sanitização de metadados (previne injeção de strings longas) ──
+  const funcaoVal  = _sanitizeMeta(document.getElementById('meta-funcao')?.value);
+  const escolarVal = _sanitizeMeta(document.getElementById('meta-escolaridade')?.value, 60);
   const setorSelect = document.getElementById('meta-setor')?.value;
   const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
-  const setorVal    = setorNome || setorSelect || setorInput || 'Não informado';
+  const setorVal    = _sanitizeMeta(setorNome || setorSelect || setorInput) || 'Não informado';
 
-  // Montar itens com UUIDs das questões
+  // Montar itens com UUIDs — apenas valores válidos 1-4
   const itens = Object.entries(respostas)
     .map(([qId, valor]) => {
       const uuid = _mapaQuestoesUUID[parseInt(qId)];
-      return uuid ? { questao_id: uuid, valor: parseInt(valor) } : null;
+      const v    = parseInt(valor);
+      return (uuid && v >= 1 && v <= 4) ? { questao_id: uuid, valor: v } : null;
     }).filter(Boolean);
+
+  // ── Validação final do payload ───────────────────────
+  if (!_validarItens(itens) || itens.length === 0) {
+    btn.disabled = false;
+    btn.innerHTML = 'Tentar novamente';
+    toast('Erro ao preparar as respostas. Recarregue a página.', 'warn');
+    return;
+  }
 
   const rpcParams = {
     p_empresa_id:   empresaId,
@@ -615,31 +660,50 @@ async function enviarResposta() {
     p_itens:        itens,
   };
 
-  // Salvar no localStorage sempre (fallback offline)
-  const localKey = 'pseg_offline_' + Date.now();
-  localStorage.setItem(localKey, JSON.stringify({ rpcParams, tentativa: new Date().toISOString() }));
+  // ── Backup local ANTES do envio (chave inclui token para rastreabilidade) ──
+  const localKey = 'pseg_offline_' + linkToken + '_' + Date.now();
+  const localPayload = { rpcParams, tentativa: new Date().toISOString(), token: linkToken };
+  try { localStorage.setItem(localKey, JSON.stringify(localPayload)); } catch(e) { /* storage cheio */ }
 
-  // Tentar enviar ao Supabase via função SECURITY DEFINER (bypassa RLS)
+  // Limpar entradas offline com mais de 7 dias (evita acúmulo)
+  try {
+    const SETE_DIAS = 7 * 24 * 3600 * 1000;
+    Object.keys(localStorage).filter(k => k.startsWith('pseg_offline_')).forEach(k => {
+      try {
+        const d = JSON.parse(localStorage.getItem(k));
+        if (d?.tentativa && Date.now() - new Date(d.tentativa).getTime() > SETE_DIAS) {
+          localStorage.removeItem(k);
+        }
+      } catch(_) {}
+    });
+  } catch(_) {}
+
+  // Tentar enviar ao Supabase (com 1 retry automático em caso de falha transitória)
   let salvoComSucesso = false;
   if (empresaId !== 'dev-mode') {
-    try {
-      const { data, error } = await sb.rpc('salvar_resposta', rpcParams);
-      if (error) throw new Error(error.message || JSON.stringify(error));
-      if (!data) throw new Error('Função não retornou ID da resposta');
-
-      // Sucesso: limpar localStorage e marcar dispositivo
-      localStorage.removeItem(localKey);
-      salvoComSucesso = true;
-    } catch (e) {
-      console.warn('Falha no envio Supabase:', e.message);
-      btn.disabled = false;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>Tentar novamente`;
-      toast('Erro ao salvar: ' + (e.message || 'verifique sua conexão e tente novamente.'), 'warn');
-      return;
+    let tentativas = 0;
+    const MAX_TENTATIVAS = 2;
+    while (tentativas < MAX_TENTATIVAS && !salvoComSucesso) {
+      try {
+        if (tentativas > 0) await new Promise(r => setTimeout(r, 1500)); // aguarda antes de retry
+        const { data, error } = await sb.rpc('salvar_resposta', rpcParams);
+        if (error) throw new Error(error.message || JSON.stringify(error));
+        if (!data) throw new Error('Função não retornou ID da resposta');
+        localStorage.removeItem(localKey);
+        salvoComSucesso = true;
+      } catch (e) {
+        tentativas++;
+        if (tentativas >= MAX_TENTATIVAS) {
+          console.warn('Falha no envio após', MAX_TENTATIVAS, 'tentativas:', e.message);
+          btn.disabled = false;
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>Tentar novamente`;
+          toast('Erro ao salvar. Sua resposta foi guardada localmente — tente novamente em instantes.', 'warn');
+          return;
+        }
+      }
     }
   } else {
-    // Dev mode: remover da fila offline (não tenta enviar ao banco)
-    localStorage.removeItem(localKey);
+    try { localStorage.removeItem(localKey); } catch(_) {}
     salvoComSucesso = true;
   }
 
