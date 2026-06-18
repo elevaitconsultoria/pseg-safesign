@@ -4619,6 +4619,72 @@ function _toggleExpMenu(btn) {
   }
 }
 
+// ── Resolve todas as referências var(--x) em atributos style do clone ──────
+function _resolveStyleVars(rootEl) {
+  const cs  = getComputedStyle(document.documentElement);
+  const map = {};
+  // Extrair vars usadas nas CSS rules do documento
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        const txt = rule.cssText || '';
+        for (const m of txt.matchAll(/var\((--[\w-]+)\)/g)) {
+          const k = m[1];
+          if (!map[k]) map[k] = cs.getPropertyValue(k).trim();
+        }
+      }
+    } catch(_) {} // cross-origin sheets
+  }
+  // Também varrer atributos style inline
+  rootEl.querySelectorAll('[style]').forEach(el => {
+    let s = el.getAttribute('style');
+    if (!s.includes('var(')) return;
+    s = s.replace(/var\((--[\w-]+)\)/g, (_, k) => {
+      if (!map[k]) map[k] = cs.getPropertyValue(k).trim();
+      return map[k] || 'inherit';
+    });
+    el.setAttribute('style', s);
+  });
+}
+
+// ── Copia pixel data de canvas Chart.js para os canvas clonados ─────────────
+function _copiarCanvases(orig, clone) {
+  const oriCs = [...orig.querySelectorAll('canvas')];
+  const clnCs = [...clone.querySelectorAll('canvas')];
+  oriCs.forEach((oc, i) => {
+    const cc = clnCs[i];
+    if (!cc || !oc.width || !oc.height) return;
+    cc.width  = oc.width;
+    cc.height = oc.height;
+    cc.getContext('2d').drawImage(oc, 0, 0);
+  });
+}
+
+// ── Detecta quebras de página seguras: prefere cortar ENTRE seções ──────────
+function _calcPageBreaks(canvasH, pageH, scale, breakHints) {
+  // breakHints: array de Y-pixel (top de cada seção) do elemento original
+  // Retorna array de {srcY} onde cada página começa
+  const pages = [0];
+  let srcY = 0;
+  while (srcY < canvasH) {
+    const targetY = srcY + pageH;
+    if (targetY >= canvasH) break;
+    // Procurar o hint mais próximo ACIMA de targetY (dentro de 60px canvas-px)
+    const margin = 60 * scale;
+    let best = targetY;
+    for (const h of breakHints) {
+      const hy = h * scale;
+      if (hy > targetY - margin && hy < targetY + margin && hy > srcY) {
+        // Preferir cortar logo ANTES do início da seção (2px acima)
+        if (Math.abs(hy - targetY) < Math.abs(best - targetY)) best = hy - 2 * scale;
+      }
+    }
+    srcY = Math.max(srcY + 10, best);
+    pages.push(Math.round(srcY));
+  }
+  return pages;
+}
+
 async function exportarResultados(fmt) {
   const vc = document.getElementById('view-content');
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
@@ -4629,8 +4695,7 @@ async function exportarResultados(fmt) {
   toast('Gerando exportação — aguarde...', 'g');
 
   // 1. Expandir todas as seções colapsadas
-  const arrows = [...vc.querySelectorAll('.qa-arr')];
-  const wasHidden = arrows
+  const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
     .filter(({ body }) => body && body.style.display === 'none');
   wasHidden.forEach(({ arrow, body }) => {
@@ -4639,21 +4704,32 @@ async function exportarResultados(fmt) {
   });
   await new Promise(r => setTimeout(r, 80));
 
-  // 2. Renderizar em largura fixa equivalente à área útil do A4
-  //    194mm × (96dpi / 25,4) = 733px  →  conteúdo preenche A4 1:1
-  const A4W = 733;
-  const scale = fmt === 'png' ? 3 : 2;   // PNG: 300dpi | PDF: ~190dpi
+  // 2. Capturar Y-offsets das seções ANTES de clonar (para quebras de página)
+  const vcRect    = vc.getBoundingClientRect();
+  const breakHints = [...vc.querySelectorAll('[style*="border-left:3px solid"],[style*="font-size:13px"][style*="font-weight:700"]')]
+    .map(el => el.getBoundingClientRect().top - vcRect.top)
+    .filter(y => y > 0);
+
+  // 3. Renderizar em largura fixa A4 (194mm @ 96dpi ≈ 733px)
+  const A4W  = 733;
+  const scale = fmt === 'png' ? 3 : 2;
 
   const wrap = document.createElement('div');
+  // position:absolute abaixo do viewport — CSS vars herdam do :root normalmente
   wrap.style.cssText =
-    'position:fixed;left:-99999px;top:0;' +
-    'width:' + A4W + 'px;min-height:50px;background:#fff;' +
-    'padding:0;overflow:visible;z-index:-9999;font-family:Inter,sans-serif';
+    'position:absolute;left:0;top:' + (document.documentElement.scrollHeight + 100) + 'px;' +
+    'width:' + A4W + 'px;background:#ffffff;overflow:visible;font-family:Inter,sans-serif';
+
   const clone = vc.cloneNode(true);
   clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
-  await new Promise(r => setTimeout(r, 200));  // layout + CSS vars settle
+
+  // 4. Resolver CSS vars + copiar canvas ANTES do html2canvas
+  await new Promise(r => setTimeout(r, 200));
+  _resolveStyleVars(clone);
+  _copiarCanvases(vc, clone);
+  await new Promise(r => setTimeout(r, 50));
 
   const today = new Date().toISOString().slice(0, 10);
   let canvas;
@@ -4662,15 +4738,15 @@ async function exportarResultados(fmt) {
     canvas = await html2canvas(wrap, {
       scale,
       useCORS:         true,
-      allowTaint:      false,
+      allowTaint:      true,
       backgroundColor: '#ffffff',
       logging:         false,
-      width:           A4W,
-      windowWidth:     1280,   // desktop layout
+      windowWidth:     A4W,
+      scrollX:         0,
+      scrollY:         0,
     });
   } finally {
     document.body.removeChild(wrap);
-    // Restaurar collapsibles
     wasHidden.forEach(({ arrow, body }) => {
       body.style.display = 'none';
       arrow.textContent  = '▶';
@@ -4679,7 +4755,6 @@ async function exportarResultados(fmt) {
 
   try {
     if (fmt === 'png') {
-      // PNG: 2199px de largura (A4 a 300dpi) — ideal para Word/relatórios
       const a = Object.assign(document.createElement('a'), {
         href:     canvas.toDataURL('image/png'),
         download: `pseg-analise-${today}.png`,
@@ -4690,13 +4765,12 @@ async function exportarResultados(fmt) {
       toast('✓ PNG exportado (A4 300dpi).', 'g');
 
     } else {
-      // PDF A4 multipágina
       const { jsPDF } = window.jspdf;
       const PW = 210, PH = 297;
-      const MX = 8, MY = 6;
-      const HDR = 11;
-      const imgW    = PW - MX * 2;          // 194mm — preenche A4
-      const mmPerPx = imgW / canvas.width;   // mm por pixel do canvas
+      const MX = 8, MY = 6, HDR = 11;
+      const imgW    = PW - MX * 2;
+      const mmPerPx = imgW / canvas.width;
+      const pageHpx = Math.floor((PH - HDR - MY * 2) / mmPerPx);  // pixels por página
 
       const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
 
@@ -4713,27 +4787,27 @@ async function exportarResultados(fmt) {
         doc.text(today, PW - MX, 7.5, { align: 'right' });
       };
 
-      addHdr(true);
-      let srcY = 0;
-      let topY = HDR + MY;
+      // Quebras de página inteligentes: tenta cortar entre seções
+      const pageStarts = _calcPageBreaks(canvas.height, pageHpx, scale, breakHints);
+      pageStarts.push(canvas.height); // sentinela
 
-      while (srcY < canvas.height) {
-        const availMM = PH - topY - MY;
-        const slicePx = Math.min(Math.floor(availMM / mmPerPx), canvas.height - srcY);
-        if (slicePx <= 0) break;
+      addHdr(true);
+      let firstPage = true;
+
+      for (let pi = 0; pi < pageStarts.length - 1; pi++) {
+        if (!firstPage) { doc.addPage(); addHdr(false); }
+        firstPage = false;
+
+        const srcY    = pageStarts[pi];
+        const slicePx = Math.min(pageStarts[pi + 1] - srcY, canvas.height - srcY);
+        if (slicePx <= 0) continue;
 
         const tmp = Object.assign(document.createElement('canvas'),
           { width: canvas.width, height: slicePx });
         tmp.getContext('2d').drawImage(canvas, 0, -srcY);
 
-        doc.addImage(tmp.toDataURL('image/png'), 'PNG', MX, topY, imgW, slicePx * mmPerPx);
-        srcY += slicePx;
-
-        if (srcY < canvas.height) {
-          doc.addPage();
-          addHdr(false);
-          topY = HDR + MY;
-        }
+        doc.addImage(tmp.toDataURL('image/jpeg', 0.92), 'JPEG',
+          MX, HDR + MY, imgW, slicePx * mmPerPx);
       }
 
       doc.save(`pseg-analise-${today}.pdf`);
@@ -5078,10 +5152,11 @@ const _META_MARKER_INV =
   '<div style="position:absolute;top:-3px;bottom:-3px;right:-1px;width:2px;background:#15803d;border-radius:1px;pointer-events:none;z-index:3"></div>'+
   '<div style="position:absolute;top:-7px;right:-3.5px;width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid #15803d;pointer-events:none;z-index:3"></div>';
 
-// Legenda régua divergente — estática, reutilizada em todos os módulos
+// Legenda régua divergente — estática, reutilizada em todos os módulos.
+// USA VALORES HARDCODED (não CSS vars) para garantir render correto em html2canvas.
 const LEGENDA_ESCALA_HTML =
   '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;'+
-  'padding:5px 10px 5px 8px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">'+
+  'padding:5px 10px 5px 8px;background:#f8f9fa;border-radius:6px;border:1px solid #e5e7eb">'+
   '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>'+
   '<div>'+
     '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
@@ -5091,10 +5166,10 @@ const LEGENDA_ESCALA_HTML =
     '<div style="width:42px;height:10px;background:#ef4444"></div>'+
     '</div>'+
     '<div style="display:flex;margin-top:2px">'+
-    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Nunca</div>'+
-    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Às vezes</div>'+
-    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Frequente</div>'+
-    '<div style="width:42px;text-align:center;font-size:7px;color:var(--tl);line-height:1">Sempre</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">Nunca</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">Às vezes</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">Frequente</div>'+
+    '<div style="width:42px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">Sempre</div>'+
     '</div>'+
   '</div>'+
   '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span>'+
@@ -7619,7 +7694,16 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel }) {
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6}
 .page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
-@media print{body{background:white}.page{width:100%;margin:0;padding:18mm 18mm 14mm;box-shadow:none;page-break-after:always}.no-print{display:none}}
+@media print{
+  body{background:white}
+  .page{width:100%;margin:0;padding:18mm 18mm 14mm;box-shadow:none;page-break-after:always}
+  .no-print{display:none}
+  tr{page-break-inside:avoid}
+  .acoes-grupo{page-break-inside:avoid}
+  .tbl-wrap{page-break-inside:avoid}
+  .highlight-box{page-break-inside:avoid}
+  div[style*="margin-bottom:10px"]{page-break-inside:avoid}
+}
 .toolbar{position:sticky;top:0;z-index:100;background:white;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:10px}
 .toolbar .logo-mini{display:flex;align-items:center;gap:8px;margin-right:auto}
 .toolbar .logo-mini svg{width:22px;height:22px}.toolbar .logo-mini span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#111}
