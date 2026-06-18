@@ -230,7 +230,7 @@ CREATE POLICY "respostas_tenant_select" ON respostas
     empresa_id IN (
       SELECT e.id FROM empresas e
        WHERE e.tenant_id = (
-         SELECT tenant_id FROM perfis WHERE user_id = auth.uid() LIMIT 1
+         SELECT tenant_id FROM perfis WHERE id = auth.uid() LIMIT 1
        )
     )
   );
@@ -246,7 +246,7 @@ CREATE POLICY "resposta_itens_tenant_select" ON resposta_itens
       SELECT r.id FROM respostas r
       JOIN empresas e ON e.id = r.empresa_id
       WHERE e.tenant_id = (
-        SELECT tenant_id FROM perfis WHERE user_id = auth.uid() LIMIT 1
+        SELECT tenant_id FROM perfis WHERE id = auth.uid() LIMIT 1
       )
     )
   );
@@ -264,7 +264,7 @@ DROP POLICY IF EXISTS "links_coleta_tenant_all" ON links_coleta;
 CREATE POLICY "links_coleta_tenant_all" ON links_coleta
   FOR ALL TO authenticated
   USING (
-    tenant_id = (SELECT tenant_id FROM perfis WHERE user_id = auth.uid() LIMIT 1)
+    tenant_id = (SELECT tenant_id FROM perfis WHERE id = auth.uid() LIMIT 1)
   );
 
 
