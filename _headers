@@ -1,26 +1,13 @@
 # PSEG SafeSign — Cloudflare Pages security headers
-# Aplicados em todas as rotas por padrão
 
 /*
-  # Impede que a página seja embutida em iframe de outro domínio
   X-Frame-Options: SAMEORIGIN
-
-  # Impede sniffing de content-type
   X-Content-Type-Options: nosniff
-
-  # Não vaza URL do painel para sites externos
   Referrer-Policy: strict-origin-when-cross-origin
-
-  # Desativa features desnecessárias no browser
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-
-  # HSTS: força HTTPS por 1 ano (ativar só após confirmar domínio com SSL)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-ancestors 'none'
 
-  # CSP: permite apenas recursos dos próprios domínios + CDNs usados
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-ancestors 'none'
-
-# Bloquear acesso a arquivos sensíveis
 /*.sql
   X-Robots-Tag: noindex
   Cache-Control: no-store
