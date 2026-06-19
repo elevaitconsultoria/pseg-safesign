@@ -8518,8 +8518,15 @@ async function toggleAtivoEST(tenantId, nome, ativoAtual) {
   const novoStatus = !ativoAtual;
   const label = novoStatus ? 'ativar' : 'desativar';
   if (!confirm(`Deseja ${label} a EST "${nome}"?`)) return;
-  const { error } = await sbAdmin.from('tenants').update({ ativo: novoStatus }).eq('id', tenantId);
-  if (error) { toast('Erro ao atualizar status.', 'r'); return; }
+  const { error } = await sbAdmin
+    .from('tenants')
+    .update({ ativo: novoStatus })
+    .eq('id', tenantId);
+  if (error) {
+    toast('Erro ao atualizar status. Execute migration_rls_hardening.sql no Supabase.', 'r', 6000);
+    console.error('toggleAtivoEST:', error);
+    return;
+  }
   toast(`EST ${novoStatus ? 'ativada' : 'desativada'} com sucesso.`, 'g');
   carregarESTs();
 }
