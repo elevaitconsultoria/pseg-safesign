@@ -42,51 +42,75 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .brand-name{font-size:13px;font-weight:700;color:var(--tx);letter-spacing:.4px;text-transform:uppercase}
 .brand-module{font-size:11px;color:var(--tl);margin-left:4px;padding-left:12px;border-left:1px solid var(--border)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.user-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tm);padding:4px 10px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:#374151;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s}
 .user-pill:hover{border-color:var(--tx);color:var(--tx)}
 .user-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0}
 
 /* ── SIDEBAR ── */
-.sidebar{background:white;border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:calc(100vh - 52px);position:sticky;top:52px;align-self:start;width:220px;transition:width .22s cubic-bezier(.4,0,.2,1);overflow:hidden}
-.sidebar-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--tl);padding:16px 16px 4px;white-space:nowrap;transition:opacity .15s,padding .22s}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--tm);transition:all .12s;border-left:2px solid transparent;white-space:nowrap;position:relative}
-.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.45;transition:opacity .12s}
-.nav-item:hover{background:var(--bg);color:var(--tx)}
-.nav-item:hover svg{opacity:.7}
-.nav-item.on{background:var(--bg);color:var(--tx);font-weight:600;border-left-color:var(--tx)}
+.sidebar{
+  background:linear-gradient(160deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%);
+  border-right:none;
+  display:flex;flex-direction:column;min-height:calc(100vh - 52px);
+  position:sticky;top:52px;align-self:start;
+  width:220px;transition:width .24s cubic-bezier(.4,0,.2,1);overflow:hidden;
+}
+.sidebar::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+.sidebar-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:rgba(255,255,255,.45);padding:16px 16px 4px;white-space:nowrap;transition:opacity .15s,padding .22s}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,.75);transition:all .12s;border-left:2px solid transparent;white-space:nowrap;position:relative}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.6;transition:opacity .12s}
+.nav-item:hover{background:rgba(255,255,255,.12);color:#fff}
+.nav-item:hover svg{opacity:.9}
+.nav-item.on{background:rgba(255,255,255,.18);color:#fff;font-weight:600;border-left-color:rgba(255,255,255,.85)}
 .nav-item.on svg{opacity:1}
 .nav-label{transition:opacity .15s;white-space:nowrap;flex:1;min-width:0;overflow:hidden}
-.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--tl);line-height:1.6;transition:opacity .15s}
+.sidebar-footer{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.4);line-height:1.6;transition:opacity .15s}
 
-/* toggle button topbar */
+/* toggle button topbar — mantido mas discreto */
 .nav-toggle-btn{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--r);background:white;cursor:pointer;color:var(--tm);transition:all .15s;flex-shrink:0;font-family:'Inter',sans-serif;font-size:11px;font-weight:600}
 .nav-toggle-btn:hover{border-color:var(--tx);color:var(--tx);background:var(--bg)}
 .nav-toggle-btn svg{width:14px;height:14px;flex-shrink:0;transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .nav-collapsed .nav-toggle-btn svg{transform:rotate(180deg)}
 .nav-collapsed .nav-toggle-btn .ntb-label{display:none}
+
+/* toggle dentro da sidebar */
+.nav-toggle-sidebar{margin-top:4px;border-top:1px solid rgba(255,255,255,.12) !important;border-radius:0 !important;color:rgba(255,255,255,.55) !important;font-size:11px !important}
+.nav-toggle-sidebar svg{opacity:.55 !important;transition:transform .24s cubic-bezier(.4,0,.2,1) !important}
+.nav-toggle-sidebar:hover{color:rgba(255,255,255,.9) !important}
+.nav-toggle-sidebar:hover svg{opacity:.9 !important}
+.nav-collapsed .nav-toggle-sidebar svg{transform:rotate(180deg)}
+
 /* sidebar bottom toggle (legacy) */
 .nav-toggle{display:flex;align-items:center;justify-content:center;width:100%;padding:10px 0;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;color:var(--tl);transition:color .12s,background .12s}
 .nav-toggle:hover{background:var(--bg);color:var(--tx)}
 .nav-toggle svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}
 
 /* collapsed state */
-.nav-collapsed .sidebar{width:48px}
+.nav-collapsed .sidebar{width:68px}
 .nav-collapsed .sidebar-section{opacity:0;padding-top:0;padding-bottom:0;height:0}
-.nav-collapsed .nav-label{opacity:0;width:0}
-.nav-collapsed .nav-item{padding:10px 0;justify-content:center;border-left-color:transparent !important}
-.nav-collapsed .nav-item.on{background:var(--bg)}
-.nav-collapsed .nav-item.on svg{opacity:1}
+.nav-collapsed .nav-label{opacity:0;width:0;overflow:hidden}
+.nav-collapsed .nav-badge{display:none}
+/* gap:0 + border-left:0 garantem centralização real do ícone */
+.nav-collapsed .nav-item{padding:12px 0;justify-content:center;gap:0;border-left-width:0 !important}
+.nav-collapsed .nav-item svg{width:20px;height:20px;opacity:.7}
+.nav-collapsed .nav-item:hover svg{opacity:1}
+.nav-collapsed .nav-item.on{background:rgba(255,255,255,.18)}
+.nav-collapsed .nav-item.on svg{opacity:1;width:20px;height:20px}
+.nav-collapsed .nav-toggle-sidebar svg{width:16px !important;height:16px !important;opacity:.5 !important}
 .nav-collapsed .sidebar-footer{opacity:0;height:0;padding:0;overflow:hidden}
 .nav-collapsed .nav-toggle svg{transform:rotate(180deg)}
 
 /* tooltip no modo colapsado */
 .nav-collapsed .nav-item::after{
   content:attr(data-label);
-  position:absolute;left:52px;top:50%;transform:translateY(-50%);
+  position:absolute;left:74px;top:50%;transform:translateY(-50%);
   background:#1c1c1e;color:#fff;padding:4px 10px;border-radius:7px;
   font-size:11px;font-weight:500;white-space:nowrap;pointer-events:none;
-  opacity:0;transition:opacity .1s;z-index:300;
-  box-shadow:0 2px 8px rgba(0,0,0,.18)
+  opacity:0;transition:opacity .12s;z-index:300;
+  box-shadow:0 2px 8px rgba(0,0,0,.28)
 }
 .nav-collapsed .nav-item:hover::after{opacity:1}
 
@@ -117,19 +141,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* ── Painel esquerdo — brand ── */
 .login-left{
   flex:0 0 48%;
-  background:linear-gradient(145deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);
+  background:
+    linear-gradient(145deg,rgba(10,20,60,.82) 0%,rgba(20,55,160,.70) 60%,rgba(29,78,216,.60) 100%),
+    url('https://images.unsplash.com/photo-1573497620053-ea5300f94f21?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
   display:flex;align-items:center;justify-content:center;
   padding:52px 48px;position:relative;overflow:hidden;
 }
 .login-left::before{
   content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1px);
+  background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);
   background-size:28px 28px;pointer-events:none;
 }
 .login-left::after{
-  content:'';position:absolute;top:-80px;right:-80px;
-  width:360px;height:360px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);
+  content:'';position:absolute;bottom:0;left:0;right:0;height:180px;
+  background:linear-gradient(to top,rgba(10,20,60,.45) 0%,transparent 100%);
   pointer-events:none;
 }
 .login-left-inner{position:relative;z-index:1;width:100%;max-width:340px}
@@ -323,7 +348,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .s-btn.sel-2{background:#2563eb;border-color:#2563eb;color:white}
 .s-btn.sel-3{background:#d97706;border-color:#d97706;color:white}
 .s-btn.sel-4{background:#dc2626;border-color:#dc2626;color:white}
-.s-label{font-size:10px;color:var(--tl);margin-top:4px;text-align:center}
+.s-label{font-size:10px;color:#6b7280;margin-top:4px;text-align:center}
 .inv-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);transition:all .15s;background:#f7f9f8}
 .inv-toggle:hover{border-color:var(--amber);background:var(--amberbg)}
 .inv-toggle.on{border-color:var(--amber);background:var(--amberbg)}
@@ -331,7 +356,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .inv-dot{width:14px;height:14px;border-radius:3px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .inv-toggle.on .inv-dot{background:var(--amber);border-color:var(--amber)}
 .inv-toggle-lbl{font-size:12px;font-weight:500;color:var(--tx)}
-.inv-toggle-sub{font-size:10px;color:var(--tl);margin-left:auto}
+.inv-toggle-sub{font-size:10px;color:#6b7280;margin-left:auto}
 
 /* sidebar cobertura */
 .cov-mini{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:.5px solid var(--bs)}
@@ -391,7 +416,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .ms-item.sel .ms-chk{background:var(--g);border-color:var(--g)}
 .ms-item .ms-chk svg{display:none}
 .ms-item.sel .ms-chk svg{display:block}
-.ms-footer{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-top:1px solid var(--bs);font-size:10px;color:var(--tl)}
+.ms-footer{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-top:1px solid var(--bs);font-size:10px;color:#6b7280}
 
 /* GROUP BUILDER */
 .group-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bs);border-radius:var(--r);margin-bottom:6px;background:white}
@@ -556,7 +581,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .acoes-table td{padding:7px 10px;border-bottom:.5px solid var(--bs);vertical-align:top;color:var(--tm);line-height:1.5}
 .acoes-table tr:last-child td{border-bottom:none}
 .acoes-table td:first-child{font-weight:600;color:var(--tx)}
-.date-badge{font-size:11px;color:var(--tm);background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--bs)}
+.date-badge{font-size:11px;color:#374151;background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--bs)}
 
 /* ── MOBILE SIDEBAR ── */
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:140;cursor:pointer}
@@ -599,7 +624,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .dash-empresa-card{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;transition:border-color .15s}
 .dash-empresa-card:hover{border-color:#9ca3af}
 .dash-empresa-nome{font-size:13px;font-weight:700;color:var(--tx)}
-.dash-empresa-sub{font-size:11px;color:var(--tm);margin-top:2px}
+.dash-empresa-sub{font-size:11px;color:#374151;margin-top:2px}
 
 /* ── BANNER EMPRESA ATIVA ── */
 .empresa-banner{display:none;align-items:center;gap:8px;padding:9px 14px;background:var(--gl);border:1px solid #bbf7d0;border-radius:var(--r);font-size:12px;color:#1a5e2a;margin-bottom:14px}
@@ -636,7 +661,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .ass-pc-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px}
 .ass-pc-price{font-size:24px;font-weight:800;color:var(--tx);line-height:1;margin-bottom:12px}
 .ass-pc-price span{font-size:12px;font-weight:400;color:var(--tl)}
-.ass-pc-feat{font-size:11px;color:var(--tm);line-height:1.85;flex:1;border-top:1px solid var(--bs);padding-top:10px}
+.ass-pc-feat{font-size:11px;color:#374151;line-height:1.85;flex:1;border-top:1px solid var(--bs);padding-top:10px}
 .ass-pc-feat strong{color:var(--tx);font-weight:600}
 .ass-pc-btn{margin-top:14px;padding:9px;text-align:center;border-radius:var(--r);border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--tx);transition:all .15s;font-family:'Inter',sans-serif;width:100%}
 .ass-pc-btn:hover{background:var(--bg);border-color:var(--tx)}
@@ -1020,13 +1045,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <button class="menu-btn" id="menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-    <span class="brand-name">PSEG</span>
+    <div class="brand-icon" style="background:#1d4ed8;font-size:14px;font-weight:800;color:white;font-family:'DM Sans',sans-serif;letter-spacing:-.5px">E</div>
+    <span class="brand-name">Eleva IT</span>
     <span class="brand-module">Módulo Psicossocial — NR-17 / NR-01</span>
-    <button onclick="toggleSidebar()" title="Recolher/expandir menu" aria-label="Recolher menu" class="nav-toggle-btn" id="btn-nav-toggle">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      <span class="ntb-label">Menu</span>
-    </button>
     <div class="empresa-chip" id="empresa-chip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <span style="opacity:.55;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Cliente</span>
@@ -1166,6 +1187,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Gestão de ESTs</span>
     </button>
 
+    <button class="nav-item" id="nb-est-perfil" data-label="Perfil da EST" onclick="goScreen('est-perfil',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-1a7 7 0 0 1 14 0v1"/><path d="M17 13l2 2 4-4"/></svg>
+      <span class="nav-label">Perfil da EST</span>
+    </button>
+
+    <button class="nav-item nav-toggle-sidebar" onclick="toggleSidebar()" data-label="Expandir menu" title="Recolher/expandir menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      <span class="nav-label">Recolher menu</span>
+    </button>
+
     <div class="sidebar-footer">
       SafeSign v1.0<br>NR-17 · NR-01 · BS 8800
     </div>
@@ -1191,8 +1222,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl);margin-bottom:6px">Plano atual</div>
       <div id="ass-plano-titulo" style="font-size:22px;font-weight:800;color:var(--tx);line-height:1;margin-bottom:8px">—</div>
       <div id="ass-plano-status-badge" class="ass-plano-status">—</div>
-      <div id="ass-row-trial" style="margin-top:8px;font-size:11px;color:var(--tm)">Trial expira: <strong id="ass-trial-ate" style="color:var(--tx)">—</strong></div>
-      <div id="ass-row-renovacao" style="margin-top:8px;font-size:11px;color:var(--tm)">Renovação: <strong id="ass-renovacao" style="color:var(--tx)">—</strong></div>
+      <div id="ass-row-trial" style="margin-top:8px;font-size:11px;color:#374151">Trial expira: <strong id="ass-trial-ate" style="color:var(--tx)">—</strong></div>
+      <div id="ass-row-renovacao" style="margin-top:8px;font-size:11px;color:#374151">Renovação: <strong id="ass-renovacao" style="color:var(--tx)">—</strong></div>
     </div>
 
     <!-- Barras de uso -->
@@ -1213,7 +1244,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-respostas" style="width:0%"></div></div>
         <div class="ass-uso-count" id="ass-uc-respostas">—</div>
       </div>
-      <div style="margin-top:10px;font-size:10px;color:var(--tl)" id="ass-uso-nota">Contadores atualizados em tempo real.</div>
+      <div style="margin-top:10px;font-size:10px;color:#6b7280" id="ass-uso-nota">Contadores atualizados em tempo real.</div>
     </div>
 
     <!-- CTA -->
@@ -1222,7 +1253,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Fazer upgrade
       </button>
-      <span style="font-size:10px;color:var(--tl);text-align:center;line-height:1.5">Sem fidelidade<br>Cancele quando quiser</span>
+      <span style="font-size:10px;color:#6b7280;text-align:center;line-height:1.5">Sem fidelidade<br>Cancele quando quiser</span>
     </div>
 
   </div>
@@ -1231,26 +1262,26 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div class="ass-plans-compare">
 
     <div class="ass-pc" id="ass-pc-trial">
-      <div class="ass-pc-tag t-placeholder">—</div>
+      <div class="ass-pc-tag t-placeholder">Grátis</div>
       <div class="ass-pc-name">Trial</div>
       <div class="ass-pc-price">Grátis<span> / 30 dias</span></div>
       <div class="ass-pc-feat">
-        <strong>1</strong> empresa<br>
-        <strong>5</strong> usuários<br>
-        <strong>100</strong> respostas/mês<br>
-        Todos os módulos
+        <strong>1</strong> empresa-cliente<br>
+        <strong>3</strong> usuários<br>
+        <strong>30</strong> respostas<br>
+        Acesso completo à plataforma · Sem cartão
       </div>
     </div>
 
     <div class="ass-pc" id="ass-pc-starter">
       <div class="ass-pc-tag t-placeholder">—</div>
       <div class="ass-pc-name">Starter</div>
-      <div class="ass-pc-price">R$ 197<span>/mês</span></div>
+      <div class="ass-pc-price">R$ 1.297<span>/mês</span></div>
       <div class="ass-pc-feat">
-        <strong>1</strong> empresa<br>
-        <strong>10</strong> usuários<br>
-        <strong>500</strong> respostas/mês<br>
-        Relatórios PDF · Suporte e-mail
+        <strong>1</strong> empresa-cliente<br>
+        Usuários <strong>ilimitados</strong><br>
+        <strong>200</strong> respostas/mês<br>
+        Laudos PDF · Exportação Excel · Suporte e-mail
       </div>
       <button class="ass-pc-btn prim" onclick="iniciarPagamento('starter','stripe')">Assinar Starter</button>
     </div>
@@ -1258,25 +1289,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="ass-pc featured" id="ass-pc-professional">
       <div class="ass-pc-tag t-popular">Mais popular</div>
       <div class="ass-pc-name">Professional</div>
-      <div class="ass-pc-price">R$ 497<span>/mês</span></div>
+      <div class="ass-pc-price">R$ 3.270<span>/mês</span></div>
       <div class="ass-pc-feat">
-        <strong>5</strong> empresas<br>
-        <strong>25</strong> usuários<br>
-        <strong>2.000</strong> respostas/mês<br>
-        Multi-consultores · Suporte prioritário
+        Empresas-cliente <strong>ilimitadas</strong><br>
+        Usuários <strong>ilimitados</strong><br>
+        <strong>1.000</strong> respostas/mês<br>
+        Multi-consultores · Plano de ação 5W2H · Suporte prioritário
       </div>
       <button class="ass-pc-btn prim" onclick="iniciarPagamento('professional','stripe')">Assinar Professional</button>
     </div>
 
     <div class="ass-pc" id="ass-pc-enterprise">
-      <div class="ass-pc-tag t-placeholder">—</div>
+      <div class="ass-pc-tag t-placeholder">Sob consulta</div>
       <div class="ass-pc-name">Enterprise</div>
-      <div class="ass-pc-price">R$ 997<span>/mês</span></div>
+      <div class="ass-pc-price">R$ 6.997<span>/empresa/mês</span></div>
       <div class="ass-pc-feat">
-        Empresas <strong>ilimitadas</strong><br>
+        Empresas-cliente <strong>ilimitadas</strong><br>
         Usuários <strong>ilimitados</strong><br>
-        Respostas <strong>ilimitadas</strong><br>
-        White-label · SLA dedicado
+        <strong>30.000</strong> respostas/mês<br>
+        White-label · SLA dedicado · Gerente de conta
       </div>
       <button class="ass-pc-btn" onclick="iniciarPagamento('enterprise','stripe')">Falar com vendas</button>
     </div>
@@ -1317,6 +1348,83 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <div class="empty-state-title">Carregando usuários…</div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TELA PERFIL DA EST
+══════════════════════════════════════════════════════ -->
+<div class="screen" id="sc-est-perfil">
+  <div class="page-header">
+    <div class="page-hdr-left">
+      <div class="page-title">Perfil da EST</div>
+      <div class="page-sub">Identidade visual e dados da empresa responsável técnica — aparecem nos laudos e relatórios</div>
+    </div>
+    <div class="page-hdr-actions">
+      <button class="btn btn-g" onclick="salvarEstPerfil()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar
+      </button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+
+    <!-- Logo -->
+    <div class="card" style="grid-column:1/-1;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div id="ep-logo-preview" style="width:80px;height:80px;border-radius:10px;background:#f0fdf4;border:2px dashed #86efac;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Logo da empresa</div>
+        <div style="font-size:11px;color:var(--tl);margin-bottom:10px">PNG ou JPG, recomendado 200×80px. Aparece na capa e rodapé dos laudos.</div>
+        <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;color:var(--tm);transition:all .15s" onmouseenter="this.style.borderColor='var(--tx)'" onmouseleave="this.style.borderColor='var(--border)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Escolher imagem
+          <input type="file" id="ep-logo-input" accept="image/*" style="display:none" onchange="previewLogoEST(this)">
+        </label>
+        <button onclick="removerLogoEST()" style="margin-left:8px;padding:7px 12px;background:none;border:none;font-size:11px;color:var(--tl);cursor:pointer">Remover</button>
+      </div>
+    </div>
+
+    <!-- Nome e CNPJ -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Dados da empresa</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="field">
+          <label>Nome da empresa <span style="color:var(--red)">*</span></label>
+          <input type="text" id="ep-nome" placeholder="Ex: PSEG Engenharia de Segurança do Trabalho"/>
+        </div>
+        <div class="field">
+          <label>CNPJ</label>
+          <input type="text" id="ep-cnpj" placeholder="00.000.000/0000-00"/>
+        </div>
+        <div class="field">
+          <label>Endereço</label>
+          <input type="text" id="ep-endereco" placeholder="Rua, número, cidade — UF"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Responsável técnico -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Responsável técnico padrão</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="field">
+          <label>Nome completo</label>
+          <input type="text" id="ep-responsavel" placeholder="Nome do responsável técnico"/>
+        </div>
+        <div class="field">
+          <label>Registro profissional</label>
+          <input type="text" id="ep-registro" placeholder="Ex: CREA-SP 123456, CRQ 12345"/>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--tl);line-height:1.6;border:1px solid var(--border)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          O nome do responsável pode ser ajustado individualmente em cada laudo. Este valor é usado como padrão.
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2223,7 +2331,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             score_ajustado = 5 − score_bruto
           </div>
           Isso garante que o valor 1 sempre represente a situação ideal (risco mínimo) e o valor 4 sempre represente o pior cenário, independente da polaridade da questão. As questões inversas são indicadas com o símbolo <strong>↺</strong> na interface.
-          <div style="margin-top:10px;font-size:11px;color:var(--tm);background:var(--bg);padding:10px 12px;border-radius:6px">
+          <div style="margin-top:10px;font-size:11px;color:#374151;background:var(--bg);padding:10px 12px;border-radius:6px">
             <strong>Exemplo:</strong> Q08 — "Sinto que sou tratado(a) de forma justa e respeitosa?"<br>
             Respondente marcou <strong>4 (Sempre)</strong> → score_ajustado = 5 − 4 = <strong>1</strong> (situação ideal — risco mínimo)
           </div>
@@ -2328,7 +2436,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <tbody id="met-matriz-body"></tbody>
             </table>
           </div>
-          <div style="margin-top:12px;font-size:11px;color:var(--tm)">
+          <div style="margin-top:12px;font-size:11px;color:#374151">
             <strong>Leitura:</strong> Um risco com P3 (Provável/Habitual) e S2 (Moderado) resulta em nível <span style="background:#fcd34d;color:#78350f;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px">MÉDIO</span>. O mesmo risco com S3 resultaria em <span style="background:#fb923c;color:#7c2d12;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px">ALTO</span>.
           </div>
         </div>
@@ -2346,13 +2454,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px">
             <thead><tr style="background:#1a5e2a"><th style="color:white;padding:7px 10px;text-align:left;width:26%">Ocorrência / Probabilidade</th><th style="color:white;padding:7px 10px;text-align:left">Critérios adotados</th></tr></thead>
             <tbody>
-              <tr style="background:#fef2f2"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#991b1b;vertical-align:top">P4 — Quase Certo<br><em style="font-weight:400;font-size:10px">(Permanente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Alta probabilidade. Exposição habitual <strong>&gt; 80%</strong> da jornada. Requisitos das NRs não atendidos. Situações ergonômicas críticas com alta frequência. Resposta ao questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td></tr>
-              <tr style="background:#fff7ed"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#c2410c;vertical-align:top">P3 — Provável<br><em style="font-weight:400;font-size:10px">(Habitual)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Média probabilidade. Exposição intermitente <strong>50% a 80%</strong> da jornada. Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos significativos com frequência diária. Resposta = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas com desvios ou eficiência duvidosa.</td></tr>
-              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#a16207;vertical-align:top">P2 — Improvável<br><em style="font-weight:400;font-size:10px">(Intermitente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Baixa probabilidade. Exposição <strong>10% a 50%</strong> da jornada. Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta = <strong>"Às vezes"</strong>. Verbalizações e reclamações existentes. Medidas de controle adequadas e eficientes.</td></tr>
-              <tr style="background:#f0fdf4"><td style="padding:8px 10px;font-weight:700;color:#166534;vertical-align:top">P1 — Alt. Improvável<br><em style="font-weight:400;font-size:10px">(Ocasional)</em></td><td style="padding:8px 10px;font-size:11px;color:var(--tm)">Improvável que ocorra. Exposição ocasional <strong>&lt; 10%</strong> da jornada. Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle mantido em longo prazo.</td></tr>
+              <tr style="background:#fef2f2"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#991b1b;vertical-align:top">P4 — Quase Certo<br><em style="font-weight:400;font-size:10px">(Permanente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Alta probabilidade. Exposição habitual <strong>&gt; 80%</strong> da jornada. Requisitos das NRs não atendidos. Situações ergonômicas críticas com alta frequência. Resposta ao questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#c2410c;vertical-align:top">P3 — Provável<br><em style="font-weight:400;font-size:10px">(Habitual)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Média probabilidade. Exposição intermitente <strong>50% a 80%</strong> da jornada. Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos significativos com frequência diária. Resposta = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas com desvios ou eficiência duvidosa.</td></tr>
+              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#a16207;vertical-align:top">P2 — Improvável<br><em style="font-weight:400;font-size:10px">(Intermitente)</em></td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Baixa probabilidade. Exposição <strong>10% a 50%</strong> da jornada. Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta = <strong>"Às vezes"</strong>. Verbalizações e reclamações existentes. Medidas de controle adequadas e eficientes.</td></tr>
+              <tr style="background:#f0fdf4"><td style="padding:8px 10px;font-weight:700;color:#166534;vertical-align:top">P1 — Alt. Improvável<br><em style="font-weight:400;font-size:10px">(Ocasional)</em></td><td style="padding:8px 10px;font-size:11px;color:#374151">Improvável que ocorra. Exposição ocasional <strong>&lt; 10%</strong> da jornada. Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle mantido em longo prazo.</td></tr>
             </tbody>
           </table>
-          <div style="margin-top:8px;font-size:10px;color:var(--tl)">Adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.<br><strong>Obs.:</strong> Para questões com resposta ideal de afirmação (ex.: "Sou tratado com justiça?"), a probabilidade é inversamente proporcional — resposta "Sempre" equivale a P1. O sistema aplica o ajuste automaticamente (score = 5 − valor).</div>
+          <div style="margin-top:8px;font-size:10px;color:#6b7280">Adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.<br><strong>Obs.:</strong> Para questões com resposta ideal de afirmação (ex.: "Sou tratado com justiça?"), a probabilidade é inversamente proporcional — resposta "Sempre" equivale a P1. O sistema aplica o ajuste automaticamente (score = 5 − valor).</div>
         </div>
       </div>
     </div>
@@ -2368,10 +2476,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px">
             <thead><tr style="background:#1a5e2a"><th style="color:white;padding:7px 10px;width:18%">Índice</th><th style="color:white;padding:7px 10px;width:28%">Definição geral</th><th style="color:white;padding:7px 10px">Critério ergonômico / psicossocial</th></tr></thead>
             <tbody>
-              <tr style="background:#f0fdf4"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#166534;vertical-align:top">S1 — Leve</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Não geram sobrecargas ou são insignificantes</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Efeitos ergonômicos insignificantes/desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td></tr>
-              <tr style="background:#eff6ff"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#1e40af;vertical-align:top">S2 — Moderado</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Geram desconforto e fadiga</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
-              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#92400e;vertical-align:top">S3 — Sério</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Pode prejudicar a saúde levando a lesões ou afastamentos</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td></tr>
-              <tr style="background:#fef2f2"><td style="padding:8px 10px;font-weight:700;color:#991b1b;vertical-align:top">S4 — Severo</td><td style="padding:8px 10px;font-size:11px;color:var(--tm);vertical-align:top">Lesões ou afastamentos com alta incidência</td><td style="padding:8px 10px;font-size:11px;color:var(--tm)">Possibilidade de LER/DORT. Possibilidade de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
+              <tr style="background:#f0fdf4"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#166534;vertical-align:top">S1 — Leve</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Não geram sobrecargas ou são insignificantes</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Efeitos ergonômicos insignificantes/desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td></tr>
+              <tr style="background:#eff6ff"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#1e40af;vertical-align:top">S2 — Moderado</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Geram desconforto e fadiga</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
+              <tr style="background:#fefce8"><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#92400e;vertical-align:top">S3 — Sério</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Pode prejudicar a saúde levando a lesões ou afastamentos</td><td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td></tr>
+              <tr style="background:#fef2f2"><td style="padding:8px 10px;font-weight:700;color:#991b1b;vertical-align:top">S4 — Severo</td><td style="padding:8px 10px;font-size:11px;color:#374151;vertical-align:top">Lesões ou afastamentos com alta incidência</td><td style="padding:8px 10px;font-size:11px;color:#374151">Possibilidade de LER/DORT. Possibilidade de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
             </tbody>
           </table>
         </div>
@@ -2401,7 +2509,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <tr style="border-bottom:.5px solid var(--bs)"><td style="padding:5px 8px">Q07 (n=20)</td><td style="text-align:center;padding:5px 8px">5%</td><td style="text-align:center;padding:5px 8px">20%</td><td style="text-align:center;padding:5px 8px;background:#fefce8;font-weight:700;color:#78350f">50% ←</td><td style="text-align:center;padding:5px 8px">25%</td></tr>
               <tr style="background:#1a5e2a"><td style="padding:5px 8px;color:white;font-weight:600">Média (÷3)</td><td style="text-align:center;padding:5px 8px;color:white">10%</td><td style="text-align:center;padding:5px 8px;color:white">28%</td><td style="text-align:center;padding:5px 8px;color:#fcd34d;font-weight:700">42% → P=3</td><td style="text-align:center;padding:5px 8px;color:white">20%</td></tr>
             </table>
-            <div style="margin-top:8px;font-size:11px;color:var(--tm)">P=3 × S=2 → <span style="background:#fcd34d;color:#78350f;font-weight:700;padding:1px 6px;border-radius:3px">MÉDIO</span></div>
+            <div style="margin-top:8px;font-size:11px;color:#374151">P=3 × S=2 → <span style="background:#fcd34d;color:#78350f;font-weight:700;padding:1px 6px;border-radius:3px">MÉDIO</span></div>
           </div>
         </div>
       </div>
@@ -2423,35 +2531,35 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
                 <span style="background:#86efac;color:#14532d;font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px">IRRELEVANTE</span>
               </div>
               <div style="font-size:12px;color:var(--tx);font-weight:600;margin-bottom:4px">Nenhuma ação necessária</div>
-              <div style="font-size:11px;color:var(--tm)">O fator de risco não apresenta exposição relevante. Manter condições atuais e monitorar periodicamente nas próximas avaliações.</div>
+              <div style="font-size:11px;color:#374151">O fator de risco não apresenta exposição relevante. Manter condições atuais e monitorar periodicamente nas próximas avaliações.</div>
             </div>
             <div class="met-nivel-card" style="border-left:4px solid #a3e635;background:#f7fee7">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span style="background:#a3e635;color:#365314;font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px">BAIXO</span>
               </div>
               <div style="font-size:12px;color:var(--tx);font-weight:600;margin-bottom:4px">Monitoramento periódico</div>
-              <div style="font-size:11px;color:var(--tm)">Risco existente mas em nível aceitável. Aperfeiçoamentos opcionais. Reavaliar na próxima janela de avaliação (6–12 meses).</div>
+              <div style="font-size:11px;color:#374151">Risco existente mas em nível aceitável. Aperfeiçoamentos opcionais. Reavaliar na próxima janela de avaliação (6–12 meses).</div>
             </div>
             <div class="met-nivel-card" style="border-left:4px solid #fcd34d;background:#fefce8">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span style="background:#fcd34d;color:#78350f;font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px">MÉDIO</span>
               </div>
               <div style="font-size:12px;color:var(--tx);font-weight:600;margin-bottom:4px">Ações planejadas</div>
-              <div style="font-size:11px;color:var(--tm)">Risco que precisa ser reduzido. Definir ações com prazo, responsáveis e recursos. Não requer interrupção de atividades, mas deve ser tratado dentro de 3 meses.</div>
+              <div style="font-size:11px;color:#374151">Risco que precisa ser reduzido. Definir ações com prazo, responsáveis e recursos. Não requer interrupção de atividades, mas deve ser tratado dentro de 3 meses.</div>
             </div>
             <div class="met-nivel-card" style="border-left:4px solid #fb923c;background:#fff7ed">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span style="background:#fb923c;color:#7c2d12;font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px">ALTO</span>
               </div>
               <div style="font-size:12px;color:var(--tx);font-weight:600;margin-bottom:4px">Ações urgentes e prioritárias</div>
-              <div style="font-size:11px;color:var(--tm)">Risco deve ser reduzido com urgência. Implementar medidas de controle imediatas. Acompanhamento médico/psicológico disponível. Prazo máximo: 30 dias.</div>
+              <div style="font-size:11px;color:#374151">Risco deve ser reduzido com urgência. Implementar medidas de controle imediatas. Acompanhamento médico/psicológico disponível. Prazo máximo: 30 dias.</div>
             </div>
             <div class="met-nivel-card" style="border-left:4px solid #f87171;background:#fef2f2">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                 <span style="background:#f87171;color:#7f1d1d;font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px">CRÍTICO</span>
               </div>
               <div style="font-size:12px;color:var(--tx);font-weight:600;margin-bottom:4px">Suspender ou reestruturar imediatamente</div>
-              <div style="font-size:11px;color:var(--tm)">Risco inaceitável. A atividade causadora deve ser suspensa ou reestruturada até a eliminação ou redução do risco. Notificação obrigatória ao SESMT e à liderança executiva.</div>
+              <div style="font-size:11px;color:#374151">Risco inaceitável. A atividade causadora deve ser suspensa ou reestruturada até a eliminação ou redução do risco. Notificação obrigatória ao SESMT e à liderança executiva.</div>
             </div>
           </div>
         </div>
@@ -2966,19 +3074,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div style="display:flex;align-items:flex-start;gap:0;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px 0 0;border-right:1px dashed var(--border)">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Admin gera link</div><div style="font-size:11px;color:var(--tm)">Token único por empresa<br>+ setor sugerido opcional</div></div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Admin gera link</div><div style="font-size:11px;color:#374151">Token único por empresa<br>+ setor sugerido opcional</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px dashed var(--border)">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Envia por WhatsApp / e-mail / QR</div><div style="font-size:11px;color:var(--tm)">Funcionário abre no celular<br>Sem login. Anônimo.</div></div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Envia por WhatsApp / e-mail / QR</div><div style="font-size:11px;color:#374151">Funcionário abre no celular<br>Sem login. Anônimo.</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px dashed var(--border)">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Preenche 1 vez por dispositivo</div><div style="font-size:11px;color:var(--tm)">Token salvo no localStorage<br>Bloqueio automático após envio</div></div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Preenche 1 vez por dispositivo</div><div style="font-size:11px;color:#374151">Token salvo no localStorage<br>Bloqueio automático após envio</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;padding:0 0 0 14px">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">4</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Resposta salva no Supabase</div><div style="font-size:11px;color:var(--tm)">Admin vê respostas em<br>tempo real no painel</div></div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Resposta salva no Supabase</div><div style="font-size:11px;color:#374151">Admin vê respostas em<br>tempo real no painel</div></div>
       </div>
     </div>
   </div>
@@ -3027,7 +3135,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="modal-title">QR Code</div>
     <div id="qr-empresa-nome" style="font-size:12px;color:var(--tm);margin-bottom:12px"></div>
     <div id="qr-img" style="display:flex;align-items:center;justify-content:center;width:240px;height:240px;margin:0 auto"></div>
-    <div id="qr-url-display" style="font-size:10px;color:var(--tl);word-break:break-all;margin-bottom:4px;padding:0 8px"></div>
+    <div id="qr-url-display" style="font-size:10px;color:#6b7280;word-break:break-all;margin-bottom:4px;padding:0 8px"></div>
     <div class="modal-footer" style="margin-top:12px">
       <button class="btn btn-ghost" onclick="fecharModalQR()">Fechar</button>
       <button class="btn btn-ghost" onclick="copiarLink(document.getElementById('qr-url-display').textContent.trim())">
@@ -3101,11 +3209,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
     </div>
     <div class="field" style="margin-bottom:12px">
-      <label>Setor / GHE <span style="font-size:10px;color:var(--tl);font-weight:400;text-transform:none;letter-spacing:0">(opcional — pré-seleciona o setor no formulário)</span></label>
+      <label>Setor / GHE <span style="font-size:10px;color:#6b7280;font-weight:400;text-transform:none;letter-spacing:0">(opcional — pré-seleciona o setor no formulário)</span></label>
       <select id="nl-setor">
         <option value="">— Sem setor definido (funcionário escolhe) —</option>
       </select>
-      <div style="font-size:10px;color:var(--tl);margin-top:4px">
+      <div style="font-size:10px;color:#6b7280;margin-top:4px">
         💡 Selecione o cliente primeiro para ver os setores cadastrados.
         <span style="color:var(--g);cursor:pointer" onclick="abrirModalGHE(document.getElementById('nl-empresa').value)"> Configurar setores &amp; funções</span>
       </div>
@@ -3301,7 +3409,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
     </div>
 
-    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-top:0;font-size:11px;color:var(--tm)">
+    <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px;margin-top:0;font-size:11px;color:#374151">
       💡 Os setores cadastrados aparecem como <strong>opções fixas</strong> no formulário do funcionário (sem texto livre),
       eliminando variações de digitação nos relatórios.
     </div>
@@ -3886,7 +3994,7 @@ function renderParams(q) {
         <option value="">Selecione...</option>
         ${optsCd}
       </select>
-      <div style="font-size:10px;color:var(--tl);margin-top:4px" id="pp-cd-info">
+      <div style="font-size:10px;color:#6b7280;margin-top:4px" id="pp-cd-info">
         ${rdAtual ? `Categoria: ${rdAtual.cat} · S=${sAtual} (${sLabel})` : 'Selecione um risco para ver a severidade'}
       </div>
     </div>
@@ -3894,10 +4002,10 @@ function renderParams(q) {
     <div class="mp-readonly">
       <div>
         <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl)">Severidade (S)</span>
-        <span style="font-size:10px;color:var(--tl)"> — herdada do fator de risco</span>
+        <span style="font-size:10px;color:#6b7280"> — herdada do fator de risco</span>
       </div>
       <span style="font-size:18px;font-weight:700;color:var(--tx);margin-left:auto" id="pp-s-val">${sAtual}</span>
-      <span style="font-size:11px;color:var(--tm)" id="pp-s-lbl">${sLabel}${rdAtual ? ' · ' + rdAtual.cons : ''}</span>
+      <span style="font-size:11px;color:#374151" id="pp-s-lbl">${sLabel}${rdAtual ? ' · ' + rdAtual.cons : ''}</span>
     </div>
 
     <div class="param-field">
@@ -4513,7 +4621,7 @@ function buildCombo(id, query='') {
       return `<div class="combo-item ${sel?'sel':''}" onclick="toggleComboItem('${id}','${n}')">
         <div class="combo-chk"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
         <span class="risk-badge" style="background:${c.cor};font-size:10px;min-width:76px;text-align:center">${n}</span>
-        <span style="font-size:11px;color:var(--tm)">${{IRRELEVANTE:'Sem ação',BAIXO:'Monitorar',MÉDIO:'Ação planejada',ALTO:'Ação urgente',CRÍTICO:'Intervenção imediata'}[n]}</span>
+        <span style="font-size:11px;color:#374151">${{IRRELEVANTE:'Sem ação',BAIXO:'Monitorar',MÉDIO:'Ação planejada',ALTO:'Ação urgente',CRÍTICO:'Intervenção imediata'}[n]}</span>
       </div>`;
     }).join('');
   } else {
@@ -4884,7 +4992,14 @@ async function exportarResultados(fmt) {
 
   toast('Gerando exportação — aguarde...', 'g');
 
-  // 1. Expandir todas as seções colapsadas
+  // 1. Forçar render completo dos gráficos Chart.js (cancela animação pendente)
+  if (typeof chartInstances !== 'undefined') {
+    Object.values(chartInstances).forEach(chart => {
+      try { chart.update('none'); } catch(e) {}
+    });
+  }
+
+  // 2. Expandir todas as seções colapsadas
   const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
     .filter(({ body }) => body && body.style.display === 'none');
@@ -4892,20 +5007,19 @@ async function exportarResultados(fmt) {
     body.style.display = 'block';
     arrow.textContent  = '▼';
   });
-  await new Promise(r => setTimeout(r, 80));
+  await new Promise(r => setTimeout(r, 120));
 
-  // 2. Capturar Y-offsets das seções ANTES de clonar (para quebras de página)
+  // 3. Capturar Y-offsets das seções ANTES de clonar (para quebras de página)
   const vcRect    = vc.getBoundingClientRect();
   const breakHints = [...vc.querySelectorAll('[style*="border-left:3px solid"],[style*="font-size:13px"][style*="font-weight:700"]')]
     .map(el => el.getBoundingClientRect().top - vcRect.top)
     .filter(y => y > 0);
 
-  // 3. Renderizar em largura fixa A4 (194mm @ 96dpi ≈ 733px)
+  // 4. Renderizar em largura fixa A4 (194mm @ 96dpi ≈ 733px)
   const A4W  = 733;
   const scale = fmt === 'png' ? 3 : 2;
 
   const wrap = document.createElement('div');
-  // position:absolute abaixo do viewport — CSS vars herdam do :root normalmente
   wrap.style.cssText =
     'position:absolute;left:0;top:' + (document.documentElement.scrollHeight + 100) + 'px;' +
     'width:' + A4W + 'px;background:#ffffff;overflow:visible;font-family:Inter,sans-serif';
@@ -4915,11 +5029,11 @@ async function exportarResultados(fmt) {
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
 
-  // 4. Resolver CSS vars + copiar canvas ANTES do html2canvas
-  await new Promise(r => setTimeout(r, 200));
+  // 5. Resolver CSS vars + copiar pixels dos canvas Chart.js ANTES do html2canvas
+  await new Promise(r => setTimeout(r, 80));
   _resolveStyleVars(clone);
   _copiarCanvases(vc, clone);
-  await new Promise(r => setTimeout(r, 50));
+  await new Promise(r => setTimeout(r, 60));
 
   const today = new Date().toISOString().slice(0, 10);
   let canvas;
@@ -5137,7 +5251,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       const colapsivel = f.distQuestoes.length
         ? '<div>' +
           '<div style="cursor:pointer;padding:10px 16px;background:#f8fafc;border-top:1px solid var(--bs);' +
-          'font-size:11px;color:var(--tm);display:flex;align-items:center;gap:5px;user-select:none" ' +
+          'font-size:11px;color:#374151;display:flex;align-items:center;gap:5px;user-select:none" ' +
           'onclick="(function(el){var c=el.nextElementSibling;var o=c.style.display!==\'none\';' +
           'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
           '<span class="qa-arr">' + (nOpen ? '▼' : '▶') + '</span>' +
@@ -5168,10 +5282,10 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         // — Corpo
         '<div style="padding:14px 16px;background:white">' +
         barraMedia +
-        '<div style="margin-top:10px;font-size:11px;color:var(--tm)">' +
+        '<div style="margin-top:10px;font-size:11px;color:#374151">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
         ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div>' +
-        (f.classifErg ? '<div style="font-size:10px;color:var(--tl);font-style:italic;margin-top:5px">' + f.classifErg + '</div>' : '') +
+        (f.classifErg ? '<div style="font-size:10px;color:#6b7280;font-style:italic;margin-top:5px">' + f.classifErg + '</div>' : '') +
         '</div>' +
         // — Colapsível
         colapsivel +
@@ -5968,8 +6082,8 @@ function renderTelaRiscos() {
             <div style="font-size:11px;font-weight:700;color:var(--tl);text-align:center;background:var(--bg);border-radius:4px;padding:3px 0">${r.cd}</div>
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--tx)">${r.nome}</div>
-              <div style="font-size:11px;color:var(--tm);margin-top:2px">${r.cons || '—'}</div>
-              <div style="font-size:10px;color:var(--tl);margin-top:3px">${qA}/${qs.length} questão(ões) ativa(s)</div>
+              <div style="font-size:11px;color:#374151;margin-top:2px">${r.cons || '—'}</div>
+              <div style="font-size:10px;color:#6b7280;margin-top:3px">${qA}/${qs.length} questão(ões) ativa(s)</div>
             </div>
             <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;white-space:nowrap;${sBadge[r.s]||''}">S${r.s} ${sNome[r.s]||''}</span>
             <div style="display:flex;gap:6px">
@@ -6248,7 +6362,7 @@ function renderLinks() {
           <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--tx)">${l.nomeEmpresa}</div>
-            <div style="font-size:11px;color:var(--tm);margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
+            <div style="font-size:11px;color:#374151;margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
@@ -6258,7 +6372,7 @@ function renderLinks() {
         </div>
       </div>
       <div style="padding:10px 16px;background:var(--bg);border-top:1px solid var(--bs);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <code style="font-size:11px;color:var(--tm);flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</code>
+        <code style="font-size:11px;color:#374151;flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</code>
         <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="copiarLink('${url}')">
           📋 Copiar
         </button>
@@ -6276,7 +6390,7 @@ function renderLinks() {
           🗑 Excluir
         </button>
       </div>
-      <div style="padding:6px 16px 8px;font-size:10px;color:var(--tl);display:flex;gap:16px;flex-wrap:wrap">
+      <div style="padding:6px 16px 8px;font-size:10px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap">
         <span>Criado: ${l.criado}</span>
         <span>Expira: ${l.expira}</span>
         <span>Token: <code style="font-size:10px">${l.token}</code></span>
@@ -6927,7 +7041,7 @@ async function renderGraficos() {
                       ${getNivelLabels(d.q.inv)[d.moda]} — ${d.pcts[d.moda]}%${naIdeal ? ' ✓' : ''}
                     </span>`+
                     (!naIdeal ? `<span style="font-size:10px;color:var(--tm)">Meta: ${d.pcts[metaNv]||0}% em ${metaLbl}</span>` : '')+
-                    `<span style="font-size:10px;color:var(--tl)">n=${d.n}</span>`;
+                    `<span style="font-size:10px;color:#6b7280">n=${d.n}</span>`;
                   })()}
                 </div>
               </div>
@@ -7090,6 +7204,7 @@ function toggleBlocoSection(id, hdr) {
 function exportChartPNG(codigo) {
   const chart = chartInstances[codigo];
   if (!chart) { toast('Gráfico não encontrado.', 'w'); return; }
+  try { chart.update('none'); } catch(e) {}
   const canvas = chart.canvas;
   // Criar canvas temporário com fundo branco
   const tmp = document.createElement('canvas');
@@ -7111,6 +7226,10 @@ function exportGrafPDF() {
   if (!Object.keys(chartInstances).length) {
     toast('Gere os gráficos primeiro.', 'w'); return;
   }
+  // Forçar render final de todos os gráficos (evita canvas em branco por animação pendente)
+  Object.values(chartInstances).forEach(chart => {
+    try { chart.update('none'); } catch(e) {}
+  });
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const PW = 210, PH = 297, M = 14, CW = PW - M*2;
@@ -7201,23 +7320,23 @@ Em situações onde não haja elementos suficientes para uma conclusão, o avali
   <tbody>
     <tr style="background:#fef2f2">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#991b1b;vertical-align:top">P4 — Quase Certo<br><span style="font-weight:400;font-size:10px">(Permanente)</span></td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Alta probabilidade de ocorrência. <strong>Exposição habitual &gt; 80% da jornada.</strong> Requisitos legais das NRs não são atendidos. Situações ergonômicas críticas. Resposta questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Alta probabilidade de ocorrência. <strong>Exposição habitual &gt; 80% da jornada.</strong> Requisitos legais das NRs não são atendidos. Situações ergonômicas críticas. Resposta questionário = <strong>"Sempre"</strong>. Queixas frequentes e específicas com mais de um registro. Medidas de controle inexistentes ou inadequadas.</td>
     </tr>
     <tr style="background:#fff7ed">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#c2410c;vertical-align:top">P3 — Provável<br><span style="font-weight:400;font-size:10px">(Habitual)</span></td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Média probabilidade de ocorrência. <strong>Exposição intermitente entre 50% e 80% da jornada.</strong> Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos com frequência diária. Resposta questionário = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas de controle com desvios ou eficiência duvidosa.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Média probabilidade de ocorrência. <strong>Exposição intermitente entre 50% e 80% da jornada.</strong> Requisitos das NRs parcialmente atendidos. Esforço físico intenso ou movimentos repetitivos com frequência diária. Resposta questionário = <strong>"Frequentemente"</strong>. Queixas frequentes com pelo menos um registro. Medidas de controle com desvios ou eficiência duvidosa.</td>
     </tr>
     <tr style="background:#fefce8">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#a16207;vertical-align:top">P2 — Improvável<br><span style="font-weight:400;font-size:10px">(Intermitente)</span></td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Baixa probabilidade de ocorrência. <strong>Exposição entre 10% e 50% da jornada.</strong> Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta questionário = <strong>"Às vezes"</strong>. Existem verbalizações e reclamações. Medidas de controle adequadas e eficientes com garantia de manutenção.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Baixa probabilidade de ocorrência. <strong>Exposição entre 10% e 50% da jornada.</strong> Requisitos das NRs plenamente atendidos. Posturas incômodas ou mobiliários sem regulagem com frequência diária. Resposta questionário = <strong>"Às vezes"</strong>. Existem verbalizações e reclamações. Medidas de controle adequadas e eficientes com garantia de manutenção.</td>
     </tr>
     <tr style="background:#f0fdf4">
       <td style="padding:8px 9px;font-weight:700;color:#166534;vertical-align:top">P1 — Alt. Improvável<br><span style="font-weight:400;font-size:10px">(Ocasional)</span></td>
-      <td style="padding:8px 9px;font-size:11px;color:var(--tm)">É improvável que ocorra. <strong>Exposição ocasional &lt; 10% da jornada.</strong> Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta questionário = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle com garantia de manutenção em longo prazo.</td>
+      <td style="padding:8px 9px;font-size:11px;color:#374151">É improvável que ocorra. <strong>Exposição ocasional &lt; 10% da jornada.</strong> Não há requisitos específicos em NRs. Aspectos ergonômicos leves ou desprezíveis. Resposta questionário = <strong>"Nunca"</strong>. Nenhuma ocorrência relacionada ao agente. Ótimo nível de controle com garantia de manutenção em longo prazo.</td>
     </tr>
   </tbody>
 </table>
-<div style="font-size:10px;color:var(--tl);margin-top:6px">Quadro adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.</div>`,
+<div style="font-size:10px;color:#6b7280;margin-top:6px">Quadro adaptado de Mulhausen &amp; Damiano (1998), Apêndice D da BS 8800 e AIHA 2015.</div>`,
 
   severidade: `<strong>Tabela 2 — Critérios para gradação da Severidade / Efeito do dano (S) — Qualitativa</strong>
 <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
@@ -7225,23 +7344,23 @@ Em situações onde não haja elementos suficientes para uma conclusão, o avali
   <tbody>
     <tr style="background:#f0fdf4">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#166534;vertical-align:top">S1 — Leve</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Não geram sobrecargas humanas ou são insignificantes</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Efeitos ergonômicos insignificantes / desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Não geram sobrecargas humanas ou são insignificantes</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Efeitos ergonômicos insignificantes / desprezíveis, baixa fadiga mental ou não existente. Desmotivação pontual, sensação de invisibilidade, ansiedade leve, frustração passageira, sensação de estagnação.</td>
     </tr>
     <tr style="background:#eff6ff">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#1e40af;vertical-align:top">S2 — Moderado</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Geram situações de desconforto e fadiga</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Geram situações de desconforto e fadiga</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Pequenos desconfortos ao longo da jornada, fadiga mental moderada. Frustração frequente, desânimo, baixa autoestima, queda na imunidade, irritabilidade moderada.</td>
     </tr>
     <tr style="background:#fefce8">
       <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#92400e;vertical-align:top">S3 — Sério</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm);vertical-align:top">Riscos que podem prejudicar a saúde levando a lesões ou afastamentos</td>
-      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:var(--tm)">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151;vertical-align:top">Riscos que podem prejudicar a saúde levando a lesões ou afastamentos</td>
+      <td style="padding:8px 9px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#374151">Dores, fadiga física e mental significativa. Estresse crônico, esgotamento emocional intenso, distúrbios do sono, irritabilidade elevada, crises de ansiedade.</td>
     </tr>
     <tr style="background:#fef2f2">
       <td style="padding:8px 9px;font-weight:700;color:#991b1b;vertical-align:top">S4 — Severo</td>
-      <td style="padding:8px 9px;font-size:11px;color:var(--tm);vertical-align:top">Lesões ou afastamentos com alta incidência</td>
-      <td style="padding:8px 9px;font-size:11px;color:var(--tm)">Possibilidade de LER / DORT. Possibilidade de desencadeamento de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td>
+      <td style="padding:8px 9px;font-size:11px;color:#374151;vertical-align:top">Lesões ou afastamentos com alta incidência</td>
+      <td style="padding:8px 9px;font-size:11px;color:#374151">Possibilidade de LER / DORT. Possibilidade de desencadeamento de transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td>
     </tr>
   </tbody>
 </table>`,
@@ -7837,9 +7956,9 @@ async function renderLaudo() {
               <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
             </div>
             <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
-              ${detalhe.cons ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Consequências:</strong> ${detalhe.cons}</div>` : ''}
-              ${detalhe.fontes ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${detalhe.fontes}</div>` : ''}
-              ${detalhe.medidas ? `<div style="font-size:11px;color:var(--tm)"><strong style="color:var(--tx)">Medidas de controle:</strong> ${detalhe.medidas}</div>` : ''}
+              ${detalhe.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${detalhe.cons}</div>` : ''}
+              ${detalhe.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${detalhe.fontes}</div>` : ''}
+              ${detalhe.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${detalhe.medidas}</div>` : ''}
               <div>
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado</div>
                 <ul style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
@@ -7886,17 +8005,19 @@ function _esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // ── Barra de distribuição para impressão (sem CSS vars) ─────────
 function _barPrint(pcts, moda) {
-  const C={1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'};
+  // Paleta alinhada com GF_CORES (Chart.js) — nunca usar azul/laranja antigos
+  const C = {1:'#22c55e', 2:'#86efac', 3:'#f59e0b', 4:'#ef4444'};
+  const T = {1:'rgba(255,255,255,.92)', 2:'rgba(0,0,0,.68)', 3:'rgba(0,0,0,.72)', 4:'rgba(255,255,255,.92)'};
   const segs = [1,2,3,4].map(n=>{
     const p=(pcts||{})[n]||0; if(!p) return '';
     const hi = n===moda ? 'box-shadow:inset 0 0 0 2px rgba(0,0,0,.22);z-index:2;' : '';
-    return `<div style="height:100%;width:${p}%;background:${C[n]};${hi}display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:rgba(255,255,255,.9)">${p>=12?p+'%':''}</div>`;
+    return `<div style="height:100%;width:${p}%;background:${C[n]};${hi}display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:${T[n]}">${p>=12?p+'%':''}</div>`;
   }).join('');
   return `<div style="height:14px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${segs}</div>`;
 }
 
 // ── Gerador do HTML completo do laudo ───────────────────────────
-function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel }) {
+function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil }) {
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
@@ -7979,9 +8100,16 @@ tr:last-child td{border-bottom:none}
 .fonte-nota{font-size:10px;color:#9ca3af;text-align:right;margin-top:4px;font-style:italic}
 .mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}`;
 
+  // ── Branding da EST (ou padrão PSEG) ─────────────────────────
+  const estNome  = estPerfil?.nome_empresa    || 'PSEG Engenharia de Segurança do Trabalho';
+  const estLogo  = estPerfil?.logo_base64     || null;
+  const coverLogoHTML = estLogo
+    ? `<div class="cover-logo" style="background:white;padding:4px;border:1.5px solid #e5e7eb"><img src="${estLogo}" style="width:100%;height:100%;object-fit:contain"></div>`
+    : `<div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>`;
+
   // ── Rodapé padrão ────────────────────────────────────────────
   const footer = (pag) => `<div class="page-footer">
-    <div class="footer-left"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>PSEG Engenharia de Segurança do Trabalho</div>
+    <div class="footer-left"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>${e(estNome)}</div>
     <span>${e(pag)}</span>
   </div>`;
 
@@ -8017,7 +8145,7 @@ tr:last-child td{border-bottom:none}
       {cat:'FATORES ORGANIZACIONAIS',bloco:'C',cor:'#8b5e2e',bg:'#faf5ec'},
     ];
     const legenda = [1,2,3,4].map(n=>`<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:9px;color:#6b7280">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${{1:'#4ade80',2:'#60a5fa',3:'#fbbf24',4:'#fb923c'}[n]}"></span>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${{1:'#22c55e',2:'#86efac',3:'#f59e0b',4:'#ef4444'}[n]}"></span>
       ${{1:'Nunca ← meta',2:'Às vezes',3:'Frequente',4:'Sempre'}[n]}</span>`).join('');
     graficosHTML = `<div style="display:flex;flex-wrap:wrap;margin-bottom:12px">${legenda}</div>`;
     CATS.forEach(({cat,bloco,cor,bg})=>{
@@ -8084,10 +8212,10 @@ tr:last-child td{border-bottom:none}
 <!-- ── PÁGINA 1: CAPA ────────────────────────────────────────── -->
 <div class="page">
   <div class="cover-header">
-    <div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+    ${coverLogoHTML}
     <div class="cover-company">
-      <div class="cover-company-name">PSEG Engenharia de Segurança do Trabalho</div>
-      <div class="cover-company-sub">Saúde · Ergonomia · Segurança</div>
+      <div class="cover-company-name">${e(estNome)}</div>
+      <div class="cover-company-sub">${estPerfil?.endereco ? e(estPerfil.endereco) : 'Saúde · Ergonomia · Segurança'}</div>
     </div>
   </div>
   <div class="cover-body">
@@ -8109,7 +8237,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="cover-footer">
     <span>Documento confidencial — uso exclusivo da empresa contratante</span>
-    <span>PSEG Engenharia de Segurança do Trabalho © ${new Date().getFullYear()}</span>
+    <span>${e(estNome)} © ${new Date().getFullYear()}</span>
   </div>
 </div>
 
@@ -8237,11 +8365,14 @@ async function gerarLaudoPDF() {
   if (!linhas.length) { toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
 
   const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-  const responsavel = (document.getElementById('ld-responsavel')?.value||'').trim() || 'PSEG — Responsável Técnico';
+  const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
+  const responsavel = responsavelField
+    || _estPerfil?.responsavel_padrao
+    || 'Responsável Técnico';
   const cicloId     = document.getElementById('ld-ciclo')?.value || '';
   const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
 
-  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel });
+  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil });
 
   const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
@@ -8545,8 +8676,8 @@ async function carregarESTs() {
       return `<tr style="border-top:1px solid var(--border)">
         <td style="padding:11px 16px;font-size:12px">
           <div style="font-weight:600;color:var(--tx)">${t.nome || '—'}</div>
-          <div style="font-size:10px;color:var(--tl);font-family:monospace;margin-top:2px">${t.slug || ''}</div>
-          <div style="font-size:10px;color:var(--tl);margin-top:1px">desde ${criado}</div>
+          <div style="font-size:10px;color:#6b7280;font-family:monospace;margin-top:2px">${t.slug || ''}</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:1px">desde ${criado}</div>
         </td>
         <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.usuarios ?? 0}</td>
         <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.clientes ?? 0}</td>
@@ -8757,6 +8888,7 @@ function _iniciarAppAposTenant() {
   }
   carregarMapaQuestoesAdmin();
   carregarRiscosDB();
+  carregarEstPerfil(); // carrega branding EST em paralelo (não bloqueia boot)
   carregarEmpresas().then(() => {
     carregarLinks().then(() => {
       iniciarRealtimeRespostas();
@@ -8920,6 +9052,97 @@ function setEmpresaAtiva(id, nome) {
 const ROLE_LABEL = { admin: 'Admin', consultor: 'Consultor', cliente_viewer: 'Cliente (leitura)' };
 const ROLE_TAG   = { admin: 'tr', consultor: 'tg', cliente_viewer: 'tb' };
 
+// ══════════════════════════════════════════
+// PERFIL DA EST
+// ══════════════════════════════════════════
+let _estPerfil = null;
+
+async function carregarEstPerfil() {
+  if (!sbAdmin || !currentTenantId) return;
+  try {
+    const { data } = await sbAdmin
+      .from('est_perfil')
+      .select('*')
+      .eq('tenant_id', currentTenantId)
+      .maybeSingle();
+    _estPerfil = data || null;
+  } catch(e) { console.warn('[PSEG] carregarEstPerfil:', e.message); }
+}
+
+function preencherFormEstPerfil() {
+  const p = _estPerfil || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('ep-nome',        p.nome_empresa);
+  set('ep-cnpj',        p.cnpj);
+  set('ep-endereco',    p.endereco);
+  set('ep-responsavel', p.responsavel_padrao);
+  set('ep-registro',    p.registro_profissional);
+  const prev = document.getElementById('ep-logo-preview');
+  if (prev) {
+    if (p.logo_base64) {
+      prev.innerHTML = `<img src="${p.logo_base64}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+    } else {
+      prev.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    }
+  }
+}
+
+function previewLogoEST(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 300 * 1024) { toast('Imagem muito grande — máx. 300 KB.', 'w'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result;
+    const prev = document.getElementById('ep-logo-preview');
+    if (prev) prev.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+    if (!_estPerfil) _estPerfil = {};
+    _estPerfil._logoTemp = b64;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerLogoEST() {
+  const prev = document.getElementById('ep-logo-preview');
+  if (prev) prev.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  if (_estPerfil) { _estPerfil._logoTemp = null; _estPerfil.logo_base64 = null; }
+  const inp = document.getElementById('ep-logo-input');
+  if (inp) inp.value = '';
+}
+
+async function salvarEstPerfil() {
+  if (!sbAdmin || !currentTenantId) { toast('Sem conexão com o banco.', 'r'); return; }
+  const g = id => document.getElementById(id)?.value.trim() || null;
+  const logo = _estPerfil?._logoTemp !== undefined
+    ? _estPerfil._logoTemp
+    : (_estPerfil?.logo_base64 || null);
+
+  const payload = {
+    tenant_id:            currentTenantId,
+    nome_empresa:         g('ep-nome'),
+    cnpj:                 g('ep-cnpj'),
+    endereco:             g('ep-endereco'),
+    responsavel_padrao:   g('ep-responsavel'),
+    registro_profissional:g('ep-registro'),
+    logo_base64:          logo,
+    atualizado_em:        new Date().toISOString(),
+  };
+
+  const { data, error } = await sbAdmin
+    .from('est_perfil')
+    .upsert(payload, { onConflict: 'tenant_id' })
+    .select()
+    .single();
+
+  if (error) { toast('Erro ao salvar: ' + error.message, 'r'); return; }
+  _estPerfil = data;
+  toast('Perfil da EST salvo.', 'g');
+
+  // Preencher campo de responsável no laudo automaticamente se vazio
+  const ldResp = document.getElementById('ld-responsavel');
+  if (ldResp && !ldResp.value && data.responsavel_padrao) ldResp.value = data.responsavel_padrao;
+}
+
 async function carregarUsuarios() {
   const el = document.getElementById('usuarios-list');
   if (!el) return;
@@ -8962,7 +9185,7 @@ async function carregarUsuarios() {
       <div class="card" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
         <div>
           <div style="font-size:13px;font-weight:700;color:var(--tx)">${u.nome || '(sem nome)'}</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">
+          <div style="font-size:11px;color:#374151;margin-top:2px">
             <span class="tag ${ROLE_TAG[u.role] || 'tgr'}">${ROLE_LABEL[u.role] || u.role}</span>
             ${!u.ativo ? '<span class="tag tgr" style="margin-left:4px">Inativo</span>' : ''}
           </div>
@@ -9141,8 +9364,8 @@ function renderDashboard() {
           <div class="dash-empresa-nome">${e.nome || '—'}</div>
           <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${statusTag}
-            <span style="font-size:10px;color:var(--tl)">${linksAtiv} link(s) ativo(s)</span>
-            ${e.cnpj ? `<span style="font-size:10px;color:var(--tl)">${e.cnpj}</span>` : ''}
+            <span style="font-size:10px;color:#6b7280">${linksAtiv} link(s) ativo(s)</span>
+            ${e.cnpj ? `<span style="font-size:10px;color:#6b7280">${e.cnpj}</span>` : ''}
           </div>
         </div>
       </div>
@@ -9298,7 +9521,7 @@ function renderTelaEmpresas() {
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Ciclos</div>
           </div>
         </div>
-        ${nSetores ? `<div style="font-size:10px;color:var(--tl);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
+        ${nSetores ? `<div style="font-size:10px;color:#6b7280;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
       </div>
       <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalGHE('${emp.id}')">
@@ -9381,7 +9604,7 @@ function renderCiclosModal(empresaId) {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)">
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--tx)">${c.nome}</div>
-        ${dts ? `<div style="font-size:10px;color:var(--tl);margin-top:1px">📅 ${dts}</div>` : ''}
+        ${dts ? `<div style="font-size:10px;color:#6b7280;margin-top:1px">📅 ${dts}</div>` : ''}
       </div>
       <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px" title="Remover">&times;</button>
     </div>`;
@@ -10423,7 +10646,7 @@ async function renderComparativo() {
         const pior = piorPorCiclo[i];
         const nc = NIVEIS_COR[pior];
         return `<div style="background:var(--bg);border-radius:8px;padding:10px 12px;border:1px solid var(--bs)">
-          <div style="font-size:10px;color:var(--tl);margin-bottom:2px">${d.ciclo.nome}</div>
+          <div style="font-size:10px;color:#6b7280;margin-bottom:2px">${d.ciclo.nome}</div>
           <div style="font-size:22px;font-weight:700;color:var(--tx)">${d.linhas.length}</div>
           <div style="font-size:9px;margin-top:4px;display:flex;align-items:center;gap:4px">
             <span style="width:8px;height:8px;border-radius:50%;background:${nc};flex-shrink:0"></span>
@@ -10438,7 +10661,7 @@ async function renderComparativo() {
   const cmpStackId = 'cmp-stack-chart';
   html += `<div class="card" style="margin-bottom:12px">
     <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px">Distribuição de níveis de risco por ciclo (%)</div>
-    <div style="font-size:10px;color:var(--tl);margin-bottom:12px">Percentual de fatores de risco em cada nível por avaliação</div>
+    <div style="font-size:10px;color:#6b7280;margin-bottom:12px">Percentual de fatores de risco em cada nível por avaliação</div>
     <div style="max-height:280px"><canvas id="${cmpStackId}"></canvas></div>
   </div>`;
 
@@ -10446,7 +10669,7 @@ async function renderComparativo() {
   const cmpLineId = 'cmp-line-chart';
   html += `<div class="card" style="margin-bottom:12px">
     <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px">Evolução do nível P por fator de risco</div>
-    <div style="font-size:10px;color:var(--tl);margin-bottom:12px">Probabilidade (P) de cada fator ao longo dos ciclos. Valores mais baixos indicam melhora.</div>
+    <div style="font-size:10px;color:#6b7280;margin-bottom:12px">Probabilidade (P) de cada fator ao longo dos ciclos. Valores mais baixos indicam melhora.</div>
     <div style="max-height:300px"><canvas id="${cmpLineId}"></canvas></div>
   </div>`;
 
@@ -10738,7 +10961,7 @@ async function renderPlanoAcao() {
           <div style="font-size:11px;color:var(--tl);margin-top:2px">${f.cons || ''}</div>
         </div>
         <div style="margin-left:auto;text-align:right;flex-shrink:0">
-          <div style="font-size:10px;color:var(--tl)">P${f.p} × S${f.s}</div>
+          <div style="font-size:10px;color:#6b7280">P${f.p} × S${f.s}</div>
           <div style="font-size:11px;font-weight:600;color:${nc}">Prazo: ${prazo}</div>
         </div>
       </div>
@@ -10776,7 +10999,7 @@ async function renderPlanoAcao() {
   });
 
   // Nota metodológica
-  html += `<div style="font-size:10px;color:var(--tl);padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--bs);margin-top:4px">
+  html += `<div style="font-size:10px;color:#6b7280;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--bs);margin-top:4px">
     <strong>Nota:</strong> As ações sugeridas são baseadas em boas práticas (NR-01, NR-17, BS 8800) e devem ser adaptadas à realidade da empresa.
     Prazos são recomendações — ajuste conforme contexto e recursos disponíveis.
     Envolva gestores, SESMT e CIPA no planejamento das ações.
@@ -10842,7 +11065,7 @@ function goScreen(id, btn) {
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
     usuarios:'nb-usuarios', backlog:'nb-backlog', assinatura:'nb-assinatura',
-    'gestao-ests':'nb-gestao-ests'
+    'gestao-ests':'nb-gestao-ests', 'est-perfil':'nb-est-perfil'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
 
@@ -10889,6 +11112,11 @@ function goScreen(id, btn) {
           setTimeout(renderTelaAuditoria, 50);
           break;
         case 'laudo':
+          // Pré-preencher responsável com perfil da EST se campo vazio
+          const ldResp = document.getElementById('ld-responsavel');
+          if (ldResp && !ldResp.value && _estPerfil?.responsavel_padrao) {
+            ldResp.value = _estPerfil.responsavel_padrao;
+          }
           if (temEmpresa || _links.length) {
             onLaudoFiltro().then(() => renderLaudo());
           } else {
@@ -10909,6 +11137,9 @@ function goScreen(id, btn) {
           break;
         case 'gestao-ests':
           carregarESTs();
+          break;
+        case 'est-perfil':
+          preencherFormEstPerfil();
           break;
         case 'comparativo':
           preencherSelectEmpresas('cmp-empresa');
@@ -11518,3 +11749,5 @@ function copiarPix() {
 <div id="pix-expira" style="display:none"></div>
 </body>
 </html>
+
+
