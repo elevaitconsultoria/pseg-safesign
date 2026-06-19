@@ -8944,7 +8944,7 @@ async function carregarUsuarios() {
       el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum usuário encontrado</div><div class="empty-state-sub">Crie o primeiro usuário usando o botão acima.</div></div>';
       return;
     }
-    const callerIsAdmin = currentUser?.role === 'admin';
+    const callerIsAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
     el.innerHTML = data.map(u => {
       // Consultor não pode editar linhas de admin
       const canEdit = callerIsAdmin || u.role !== 'admin';
