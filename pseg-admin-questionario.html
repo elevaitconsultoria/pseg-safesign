@@ -8936,7 +8936,7 @@ async function carregarUsuarios() {
   try {
     const { data, error } = await sbAdmin
       .from('perfis')
-      .select('id, nome, role, ativo, empresa_id, created_at')
+      .select('id, nome, role, ativo, empresa_id, created_at, empresas(nome)')
       .neq('role', 'super_admin')
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -8944,13 +8944,15 @@ async function carregarUsuarios() {
       el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum usuário encontrado</div><div class="empty-state-sub">Crie o primeiro usuário usando o botão acima.</div></div>';
       return;
     }
-    const callerIsAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
-    el.innerHTML = data.map(u => {
-      // Consultor não pode editar linhas de admin
-      const canEdit = callerIsAdmin || u.role !== 'admin';
+
+    const isSuperAdmin   = currentUser?.role === 'super_admin';
+    const callerIsAdmin  = currentUser?.role === 'admin' || isSuperAdmin;
+
+    function renderUserRow(u) {
+      const canEdit    = callerIsAdmin || u.role !== 'admin';
       const roleSelect = canEdit ? `
         <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
-          <option value="consultor"     ${u.role==='consultor'?'selected':''}>Consultor</option>
+          <option value="consultor" ${u.role==='consultor'?'selected':''}>Consultor</option>
           ${callerIsAdmin ? `<option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>` : ''}
         </select>
         <button class="btn ${u.ativo?'btn-ghost':'btn-amber'}" style="font-size:11px" onclick="toggleAtivoUsuario('${u.id}',${u.ativo})">
@@ -8967,7 +8969,48 @@ async function carregarUsuarios() {
         </div>
         <div style="display:flex;gap:6px">${roleSelect}</div>
       </div>`;
-    }).join('');
+    }
+
+    if (!isSuperAdmin) {
+      // Admin/consultor: lista plana (só veem a própria EST)
+      el.innerHTML = data.map(renderUserRow).join('');
+    } else {
+      // super_admin: agrupar por EST
+      const grupos = {};
+      data.forEach(u => {
+        const key   = u.empresa_id || '__orphan__';
+        const label = u.empresas?.nome || (u.empresa_id ? u.empresa_id : null);
+        if (!grupos[key]) grupos[key] = { nome: label, users: [] };
+        grupos[key].users.push(u);
+      });
+
+      // Ordenar: ESTs com nome primeiro (alfabético), órfãos por último
+      const keys = Object.keys(grupos).sort((a, b) => {
+        if (a === '__orphan__') return 1;
+        if (b === '__orphan__') return -1;
+        return (grupos[a].nome || '').localeCompare(grupos[b].nome || '', 'pt-BR');
+      });
+
+      el.innerHTML = keys.map(key => {
+        const g        = grupos[key];
+        const isOrphan = key === '__orphan__';
+        const header   = isOrphan
+          ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:8px">
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+               <span style="font-size:12px;font-weight:700;color:var(--amber)">Sem empresa associada</span>
+             </div>`
+          : `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:8px">
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+               <span style="font-size:12px;font-weight:700;color:var(--blue)">${g.nome || key}</span>
+               <span style="font-size:11px;color:var(--tl)">${g.users.length} usuário(s)</span>
+             </div>`;
+        return `
+        <div style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden">
+          ${header}
+          <div style="padding:0 8px 8px">${g.users.map(renderUserRow).join('')}</div>
+        </div>`;
+      }).join('');
+    }
   } catch(e) {
     el.innerHTML = `<div class="alert alert-r">Erro ao carregar usuários: ${e.message}</div>`;
   }
