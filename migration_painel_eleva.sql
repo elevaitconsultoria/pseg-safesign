@@ -62,7 +62,7 @@ BEGIN
     'total_clientes',   (SELECT COUNT(*) FROM empresas WHERE ativo = true),
     'total_respostas',  (SELECT COUNT(*) FROM respostas),
     'respostas_mes',    (SELECT COUNT(*) FROM respostas
-                          WHERE criado_em >= date_trunc('month', now())),
+                          WHERE respondido_em >= date_trunc('month', now())),
     'links_ativos',     (SELECT COUNT(*) FROM links_coleta WHERE ativo = true)
   ) INTO result;
 
@@ -71,29 +71,25 @@ END;
 $$;
 
 -- ── 3. RPC: dados detalhados por tenant para o painel ────────────────────
+DROP FUNCTION IF EXISTS super_admin_tenant_details();
+
 CREATE OR REPLACE FUNCTION super_admin_tenant_details()
 RETURNS TABLE (
-  tenant_id   uuid,
-  nome        text,
-  slug        text,
-  ativo       boolean,
-  created_at  timestamptz,
-  usuarios    bigint,
-  clientes    bigint,
-  links_ativos bigint,
-  respostas   bigint,
-  ultima_resposta timestamptz
+  t_id             uuid,
+  nome             text,
+  slug             text,
+  ativo            boolean,
+  created_at       timestamptz,
+  usuarios         bigint,
+  clientes         bigint,
+  links_ativos     bigint,
+  respostas        bigint,
+  ultima_resposta  timestamptz
 )
-LANGUAGE plpgsql SECURITY DEFINER
+LANGUAGE sql SECURITY DEFINER
 SET search_path = public
 SET row_security = off
 AS $$
-BEGIN
-  IF (SELECT role FROM perfis WHERE id = auth.uid() LIMIT 1) <> 'super_admin' THEN
-    RAISE EXCEPTION 'Acesso negado';
-  END IF;
-
-  RETURN QUERY
   SELECT
     t.id,
     t.nome,
@@ -104,17 +100,16 @@ BEGIN
     COUNT(DISTINCT e.id)  FILTER (WHERE e.ativo = true),
     COUNT(DISTINCT lc.id) FILTER (WHERE lc.ativo = true),
     COUNT(DISTINCT r.id),
-    MAX(r.criado_em)
+    MAX(r.respondido_em)
   FROM tenants t
-  LEFT JOIN perfis         p  ON p.tenant_id  = t.id
-  LEFT JOIN empresas       e  ON e.tenant_id  = t.id
+  LEFT JOIN perfis         p  ON p.tenant_id = t.id
+  LEFT JOIN empresas       e  ON e.tenant_id = t.id
   LEFT JOIN links_coleta   lc ON lc.tenant_id = t.id
   LEFT JOIN respostas      r  ON r.link_token IN (
-    SELECT token FROM links_coleta WHERE tenant_id = t.id
+    SELECT lc2.token FROM links_coleta lc2 WHERE lc2.tenant_id = t.id
   )
   GROUP BY t.id, t.nome, t.slug, t.ativo, t.created_at
   ORDER BY t.created_at DESC;
-END;
 $$;
 
 -- ── VERIFICAÇÃO ───────────────────────────────────────────────────────────

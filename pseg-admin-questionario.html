@@ -8483,7 +8483,7 @@ async function carregarESTs() {
         <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.respostas ?? 0}</td>
         <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px">${ultima}</td>
         <td style="padding:11px 12px;text-align:center">
-          <button onclick="toggleAtivoEST('${t.tenant_id}','${(t.nome||'').replace(/'/g,'')}',${ativo})"
+          <button onclick="toggleAtivoEST('${t.t_id}','${(t.nome||'').replace(/'/g,'')}',${ativo})"
             style="background:${ativo ? 'rgba(52,199,89,.12)' : 'rgba(255,59,48,.1)'};border:none;cursor:pointer;
               padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;
               color:${ativo ? '#1a7a2e' : 'var(--danger)'}">
@@ -8491,7 +8491,7 @@ async function carregarESTs() {
           </button>
         </td>
         <td style="padding:11px 12px;text-align:center">
-          <button onclick="entrarComoEST('${t.tenant_id}','${(t.nome||'').replace(/'/g,'')}')"
+          <button onclick="entrarComoEST('${t.t_id}','${(t.nome||'').replace(/'/g,'')}')"
             style="background:var(--bg2);border:1px solid var(--border);cursor:pointer;
               padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;color:var(--tx);
               display:inline-flex;align-items:center;gap:4px">
