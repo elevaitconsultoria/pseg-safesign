@@ -8910,6 +8910,7 @@ async function carregarUsuarios() {
     const { data, error } = await sbAdmin
       .from('perfis')
       .select('id, nome, role, ativo, empresa_id, created_at')
+      .neq('role', 'super_admin')
       .order('created_at', { ascending: false });
     if (error) throw error;
     if (!data?.length) {
@@ -8949,20 +8950,19 @@ async function carregarUsuarios() {
 async function alterarRoleUsuario(id, novoRole) {
   if (!sbAdmin) return;
   const callerRole = currentUser?.role;
-  // cliente_viewer não pode alterar ninguém
   if (callerRole === 'cliente_viewer' || !callerRole) {
-    toast('Acesso negado.', 'r');
-    carregarUsuarios();
-    return;
+    toast('Acesso negado.', 'r'); carregarUsuarios(); return;
   }
   const rolesValidos = ['admin', 'consultor', 'cliente_viewer'];
   if (!rolesValidos.includes(novoRole)) { toast('Perfil inválido.', 'r'); return; }
-  // Consultor não pode definir nem tocar em role admin (DB também bloqueia via trigger)
   if (callerRole === 'consultor' && novoRole === 'admin') {
     toast('Apenas administradores podem definir o perfil Admin.', 'r');
-    carregarUsuarios();
-    return;
+    carregarUsuarios(); return;
   }
+  // Bloquear qualquer tentativa de tocar em super_admin
+  const { data: alvo } = await sbAdmin.from('perfis').select('role').eq('id', id).single();
+  if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
+
   const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
   if (error) { toast('Erro ao alterar perfil: ' + error.message, 'w'); return; }
   toast('Perfil atualizado.', 'g');
@@ -8972,10 +8972,12 @@ async function toggleAtivoUsuario(id, ativo) {
   if (!sbAdmin) return;
   const callerRole = currentUser?.role;
   if (callerRole === 'cliente_viewer' || !callerRole) {
-    toast('Acesso negado.', 'r');
-    return;
+    toast('Acesso negado.', 'r'); return;
   }
-  // Consultor não pode desativar admin (DB também bloqueia via trigger)
+  // Bloquear qualquer tentativa de tocar em super_admin
+  const { data: alvo } = await sbAdmin.from('perfis').select('role').eq('id', id).single();
+  if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
+
   const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'w'); return; }
   carregarUsuarios();
