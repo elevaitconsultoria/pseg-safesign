@@ -8408,9 +8408,26 @@ function aplicarRestricoesPorRole() {
   }
 
   if (role === 'consultor') {
-    // Consultor vê tudo incluindo Usuários — pode gerenciar consultor/cliente_viewer
-    // mas NÃO pode criar ou promover admins (aplicado na UI e no banco)
+    // Consultor: coleta + análise + relatórios — sem gestão de equipe, plano ou configurações
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+
+    // Ocultar itens restritos
+    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos']);
+    restritos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    // Ocultar seção "Conta" (só contém Assinatura)
+    document.querySelectorAll('.sidebar-section').forEach(sec => {
+      if (sec.textContent.trim() === 'Conta') sec.style.display = 'none';
+    });
+
+    // Se estiver numa tela restrita, redirecionar ao dashboard
+    const telaAtiva = document.querySelector('.screen.on')?.id;
+    if (['sc-usuarios','sc-assinatura','sc-riscos'].includes(telaAtiva)) {
+      goScreen('dashboard', document.getElementById('nb-dashboard'));
+    }
     return;
   }
 
@@ -10313,9 +10330,14 @@ async function exportarPlanoCSV() {
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
 function goScreen(id, btn) {
-  // Segurança: tela de Usuários bloqueada apenas para cliente_viewer
-  if (id === 'usuarios' && currentUser?.role === 'cliente_viewer') {
-    toast('Acesso restrito.', 'r');
+  // Controle de acesso por role
+  const role = currentUser?.role;
+  const restritos = {
+    consultor:      new Set(['usuarios','assinatura','riscos']),
+    cliente_viewer: new Set(['usuarios','assinatura','riscos','empresas','links','q','graficos','comparativo','auditoria','plano']),
+  };
+  if (restritos[role]?.has(id)) {
+    toast('Acesso restrito ao seu perfil.', 'r');
     return;
   }
 
