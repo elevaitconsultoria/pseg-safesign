@@ -8583,19 +8583,34 @@ async function enviarConviteEST() {
   btn.textContent = 'Enviando...';
 
   try {
-    // Convida o usuário via Supabase Auth Admin API
-    // O novo admin receberá o e-mail e, ao logar pela 1ª vez, verá o onboarding para criar o tenant
-    const { error } = await sbAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { nome_responsavel: resp, nome_empresa: nome, role: 'admin' }
+    // inviteUserByEmail requer service_role (Admin API).
+    // Tentativa via Edge Function 'convidar-est' se disponível.
+    const fnUrl = SUPA_URL + '/functions/v1/convidar-est';
+    const res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (await sbAdmin.auth.getSession()).data.session?.access_token,
+      },
+      body: JSON.stringify({ email, nome_empresa: nome, nome_responsavel: resp }),
     });
 
-    if (error) throw error;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
 
-    toast(`Convite enviado para ${email}!`, 'green');
+    toast(`Convite enviado para ${email}!`, 'g');
     fecharModalConvidarEST();
     carregarESTs();
   } catch (e) {
-    toast('Erro ao enviar convite: ' + (e.message || e), 'r');
+    // Edge Function não implantada ainda — orientar o usuário
+    const isNotFound = e.message?.includes('404') || e.message?.includes('Failed to fetch');
+    if (isNotFound) {
+      toast('Edge Function não configurada. Convide manualmente via Supabase → Authentication → Users → Invite user.', 'w', 8000);
+    } else {
+      toast('Erro ao enviar convite: ' + (e.message || e), 'r');
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar convite';
@@ -8644,9 +8659,16 @@ function _iniciarAppAposTenant() {
     history.replaceState({}, '', window.location.pathname);
   }
 
+  aplicarRestricoesPorRole();
+
+  // super_admin não tem tenant — vai direto ao painel Eleva IT
+  if (currentUser?.role === 'super_admin') {
+    goScreen('gestao-ests', document.getElementById('nb-gestao-ests'));
+    return;
+  }
+
   // Carregar billing em paralelo (não bloqueia boot)
   carregarUsageTenant();
-  aplicarRestricoesPorRole();
   sincronizarQuestoes();
   if (!isDemoMode) {
     ['combo-setor','combo-funcao','combo-gf-setor','combo-gf-funcao',
