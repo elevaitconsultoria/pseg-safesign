@@ -1144,12 +1144,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Riscos & Severidade</span>
     </button>
 
-    <button class="nav-item" id="nb-metodologia" onclick="goScreen('metodologia',this)">
+    <button class="nav-item" id="nb-metodologia" data-label="Metodologia" onclick="goScreen('metodologia',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
-      Metodologia
+      <span class="nav-label">Metodologia</span>
     </button>
 
     <!-- Backlog oculto — conteúdo movido para ROADMAP.md -->
+
+    <div class="sidebar-section sa-only" id="sb-sec-admin" style="display:none">Administração</div>
+
+    <button class="nav-item sa-only" id="nb-gestao-ests" data-label="Gestão de ESTs" onclick="goScreen('gestao-ests',this)" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 12h6"/></svg>
+      <span class="nav-label">Gestão de ESTs</span>
+    </button>
 
     <div class="sidebar-footer">
       SafeSign v1.0<br>NR-17 · NR-01 · BS 8800
@@ -2669,6 +2676,79 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
   </div>
 
+</div>
+
+<!-- ══════════════════════════════════════
+     TELA GESTÃO DE ESTs (super_admin only)
+══════════════════════════════════════ -->
+<div class="screen" id="sc-gestao-ests">
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="page-title">Gestão de ESTs</div>
+      <div class="page-sub">Empresas de Segurança do Trabalho cadastradas na plataforma</div>
+    </div>
+    <button class="btn btn-g" onclick="abrirModalConvidarEST()" style="font-size:12px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Convidar EST
+    </button>
+  </div>
+
+  <!-- Tabela de ESTs -->
+  <div class="card" style="margin-top:18px;padding:0;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;font-weight:600;color:var(--tx)">Tenants ativos</span>
+      <button onclick="carregarESTs()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:11px;display:flex;align-items:center;gap:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Atualizar
+      </button>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:var(--bg2)">
+            <th style="padding:10px 16px;text-align:left;font-weight:600;color:var(--tl);white-space:nowrap">EST / Tenant</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Slug</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Usuários</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Clientes</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Criado em</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Status</th>
+          </tr>
+        </thead>
+        <tbody id="ests-tbody">
+          <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal convidar nova EST -->
+<div id="modal-convidar-est" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div class="card" style="width:420px;max-width:94vw;padding:28px;border-radius:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--tx)">Convidar nova EST</div>
+      <button onclick="fecharModalConvidarEST()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:18px;line-height:1">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--tl);display:block;margin-bottom:5px">Nome da empresa</label>
+        <input id="est-nome" type="text" placeholder="Ex.: SafeWork Consultoria" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--tx);font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--tl);display:block;margin-bottom:5px">E-mail do administrador</label>
+        <input id="est-email" type="email" placeholder="admin@empresa.com.br" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--tx);font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--tl);display:block;margin-bottom:5px">Nome do responsável</label>
+        <input id="est-resp" type="text" placeholder="Nome completo" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--tx);font-size:13px;box-sizing:border-box">
+      </div>
+      <p style="margin:0;font-size:11px;color:var(--tl);line-height:1.5">O administrador receberá um e-mail de convite para definir a senha e configurar o espaço de trabalho da EST.</p>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
+      <button onclick="fecharModalConvidarEST()" class="btn btn-g" style="font-size:12px">Cancelar</button>
+      <button onclick="enviarConviteEST()" class="btn" style="font-size:12px" id="btn-enviar-convite">Enviar convite</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -8305,6 +8385,109 @@ function obAutoSlug(nome) {
   document.getElementById('ob-slug').value = slug;
 }
 
+// ══════════════════════════════════════════
+// GESTÃO DE ESTs (super_admin only)
+// ══════════════════════════════════════════
+async function carregarESTs() {
+  const tbody = document.getElementById('ests-tbody');
+  if (!tbody || !sbAdmin) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>';
+
+  // Busca todos os tenants
+  const { data: tenants, error: errT } = await sbAdmin
+    .from('tenants')
+    .select('id, nome, slug, created_at, ativo')
+    .order('created_at', { ascending: false });
+
+  if (errT || !tenants) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--danger);font-size:12px">Erro ao carregar ESTs.</td></tr>';
+    return;
+  }
+
+  if (!tenants.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Nenhuma EST cadastrada ainda.</td></tr>';
+    return;
+  }
+
+  // Busca contagens de usuários e empresas (clientes) por tenant
+  const { data: perfisCount } = await sbAdmin
+    .from('perfis')
+    .select('tenant_id');
+  const { data: empCount } = await sbAdmin
+    .from('empresas')
+    .select('tenant_id');
+
+  const countPerfis = {};
+  (perfisCount || []).forEach(r => { countPerfis[r.tenant_id] = (countPerfis[r.tenant_id] || 0) + 1; });
+  const countEmps = {};
+  (empCount || []).forEach(r => { countEmps[r.tenant_id] = (countEmps[r.tenant_id] || 0) + 1; });
+
+  tbody.innerHTML = tenants.map(t => {
+    const criado = t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '—';
+    const ativo = t.ativo !== false;
+    return `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:11px 16px;font-weight:600;color:var(--tx);font-size:12px">${t.nome || '—'}</td>
+      <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px;font-family:monospace">${t.slug || '—'}</td>
+      <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${countPerfis[t.id] || 0}</td>
+      <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${countEmps[t.id] || 0}</td>
+      <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px">${criado}</td>
+      <td style="padding:11px 12px;text-align:center">
+        <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;
+          background:${ativo ? 'rgba(52,199,89,.15)' : 'rgba(255,59,48,.12)'};
+          color:${ativo ? '#1c7c2e' : 'var(--danger)'}">
+          ${ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalConvidarEST() {
+  const modal = document.getElementById('modal-convidar-est');
+  if (!modal) return;
+  document.getElementById('est-nome').value = '';
+  document.getElementById('est-email').value = '';
+  document.getElementById('est-resp').value = '';
+  modal.style.display = 'flex';
+}
+
+function fecharModalConvidarEST() {
+  const modal = document.getElementById('modal-convidar-est');
+  if (modal) modal.style.display = 'none';
+}
+
+async function enviarConviteEST() {
+  const nome  = document.getElementById('est-nome').value.trim();
+  const email = document.getElementById('est-email').value.trim();
+  const resp  = document.getElementById('est-resp').value.trim();
+  const btn   = document.getElementById('btn-enviar-convite');
+
+  if (!nome || !email) { toast('Preencha nome e e-mail.', 'r'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'r'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    // Convida o usuário via Supabase Auth Admin API
+    // O novo admin receberá o e-mail e, ao logar pela 1ª vez, verá o onboarding para criar o tenant
+    const { error } = await sbAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { nome_responsavel: resp, nome_empresa: nome, role: 'admin' }
+    });
+
+    if (error) throw error;
+
+    toast(`Convite enviado para ${email}!`, 'green');
+    fecharModalConvidarEST();
+    carregarESTs();
+  } catch (e) {
+    toast('Erro ao enviar convite: ' + (e.message || e), 'r');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar convite';
+  }
+}
+
 async function submitOnboarding() {
   const nome = document.getElementById('ob-nome').value.trim();
   const slug = document.getElementById('ob-slug').value.trim();
@@ -8398,12 +8581,20 @@ function aplicarRestricoesPorRole() {
   // Sobrescrever com o role real do app após loadPerfil(); caso loadPerfil falhe,
   // usar 'consultor' como fallback seguro em vez de cair no bloco cliente_viewer.
   const raw = currentUser?.role;
-  const role = (raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
+  const role = (raw === 'super_admin' || raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
     ? raw : 'consultor';
 
-  if (role === 'admin') {
-    // Admin vê tudo — sem restrições
+  if (role === 'super_admin') {
+    // Super admin (Eleva IT): vê tudo + seção Administração exclusiva
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+    document.querySelectorAll('.sa-only').forEach(el => el.style.display = '');
+    return;
+  }
+
+  if (role === 'admin') {
+    // Admin vê tudo da sua EST — sem a seção Administração (Eleva IT only)
+    document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+    document.querySelectorAll('.sa-only').forEach(el => el.style.display = 'none');
     return;
   }
 
@@ -10333,8 +10524,9 @@ function goScreen(id, btn) {
   // Controle de acesso por role
   const role = currentUser?.role;
   const restritos = {
-    consultor:      new Set(['usuarios','assinatura','riscos']),
-    cliente_viewer: new Set(['usuarios','assinatura','riscos','empresas','links','q','graficos','comparativo','auditoria','plano']),
+    consultor:      new Set(['usuarios','assinatura','riscos','gestao-ests']),
+    admin:          new Set(['gestao-ests']),
+    cliente_viewer: new Set(['usuarios','assinatura','riscos','empresas','links','q','graficos','comparativo','auditoria','plano','gestao-ests']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -10356,7 +10548,8 @@ function goScreen(id, btn) {
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
-    usuarios:'nb-usuarios', backlog:'nb-backlog', assinatura:'nb-assinatura'
+    usuarios:'nb-usuarios', backlog:'nb-backlog', assinatura:'nb-assinatura',
+    'gestao-ests':'nb-gestao-ests'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
 
@@ -10420,6 +10613,9 @@ function goScreen(id, btn) {
           break;
         case 'usuarios':
           carregarUsuarios();
+          break;
+        case 'gestao-ests':
+          carregarESTs();
           break;
         case 'comparativo':
           preencherSelectEmpresas('cmp-empresa');
