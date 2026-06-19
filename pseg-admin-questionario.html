@@ -2684,8 +2684,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <div class="screen" id="sc-gestao-ests">
   <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <div>
-      <div class="page-title">Gestão de ESTs</div>
-      <div class="page-sub">Empresas de Segurança do Trabalho cadastradas na plataforma</div>
+      <div class="page-title">Painel Eleva IT</div>
+      <div class="page-sub">Visão consolidada de todas as ESTs na plataforma</div>
     </div>
     <button class="btn btn-g" onclick="abrirModalConvidarEST()" style="font-size:12px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2693,10 +2693,38 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </button>
   </div>
 
+  <!-- KPI Cards -->
+  <div id="eleva-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:20px">
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-ests" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">ESTs ativas</div>
+    </div>
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-usuarios" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Usuários totais</div>
+    </div>
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-clientes" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Clientes ativos</div>
+    </div>
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-respostas-mes" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Respostas este mês</div>
+    </div>
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-links" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Links ativos</div>
+    </div>
+    <div class="card" style="padding:16px 18px;text-align:center">
+      <div id="kpi-respostas-total" style="font-size:26px;font-weight:700;color:var(--tx)">—</div>
+      <div style="font-size:10px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Respostas total</div>
+    </div>
+  </div>
+
   <!-- Tabela de ESTs -->
   <div class="card" style="margin-top:18px;padding:0;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:12px;font-weight:600;color:var(--tx)">Tenants ativos</span>
+      <span style="font-size:12px;font-weight:600;color:var(--tx)">ESTs cadastradas</span>
       <button onclick="carregarESTs()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:11px;display:flex;align-items:center;gap:4px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
         Atualizar
@@ -2707,19 +2735,32 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <thead>
           <tr style="background:var(--bg2)">
             <th style="padding:10px 16px;text-align:left;font-weight:600;color:var(--tl);white-space:nowrap">EST / Tenant</th>
-            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Slug</th>
             <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Usuários</th>
             <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Clientes</th>
-            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Criado em</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Links ativos</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Respostas</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Última atividade</th>
             <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Status</th>
+            <th style="padding:10px 12px;text-align:center;font-weight:600;color:var(--tl)">Ações</th>
           </tr>
         </thead>
         <tbody id="ests-tbody">
-          <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>
+          <tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
+</div>
+
+<!-- Banner: modo suporte ativo -->
+<div id="banner-suporte" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:800;background:#ff9f0a;color:#1c1c1e;padding:10px 20px;display:none;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:600">
+  <div style="display:flex;align-items:center;gap:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Modo suporte — visualizando como: <span id="banner-suporte-nome" style="font-weight:800"></span>
+  </div>
+  <button onclick="sairModoSuporte()" style="background:rgba(0,0,0,.15);border:none;cursor:pointer;color:#1c1c1e;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px">
+    Sair do modo suporte
+  </button>
 </div>
 
 <!-- Modal convidar nova EST -->
@@ -4101,11 +4142,12 @@ async function carregarEmpresas() {
     return;
   }
   try {
+    const tid = _supportMode && _supportTenant?.id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
-      sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true).order('nome'),
-      sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').order('criado_em', { ascending: false }),
-      sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true).order('empresa_id').order('ordem'),
-      sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true).order('empresa_id').order('ordem'),
+      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true)).order('nome'),
+      (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
+      (tid ? sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
+      (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
     ]);
     _empresas = (emps || []).map(emp => ({
       ...emp,
@@ -6005,10 +6047,10 @@ async function carregarLinks() {
     return;
   }
   try {
-    const { data, error } = await sbAdmin
-      .from('links_coleta')
-      .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
-      .order('criado_em', { ascending: false });
+    const tid = _supportMode && _supportTenant?.id;
+    let q = sbAdmin.from('links_coleta').select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)');
+    if (tid) q = q.eq('tenant_id', tid);
+    const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
     _links = (data || []).map(l => ({
       id:            l.id,
@@ -8386,60 +8428,132 @@ function obAutoSlug(nome) {
 }
 
 // ══════════════════════════════════════════
-// GESTÃO DE ESTs (super_admin only)
+// PAINEL ELEVA IT (super_admin only)
 // ══════════════════════════════════════════
+let _supportMode = false;
+let _supportTenant = null; // {id, nome}
+
+async function carregarKPIsEleva() {
+  if (!sbAdmin) return;
+  try {
+    const { data, error } = await sbAdmin.rpc('super_admin_stats');
+    if (error) throw error;
+    const s = data || {};
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '—'; };
+    set('kpi-ests',           s.ests_ativas ?? s.total_ests ?? '—');
+    set('kpi-usuarios',       s.total_usuarios ?? '—');
+    set('kpi-clientes',       s.total_clientes ?? '—');
+    set('kpi-respostas-mes',  s.respostas_mes ?? '—');
+    set('kpi-links',          s.links_ativos ?? '—');
+    set('kpi-respostas-total',s.total_respostas ?? '—');
+  } catch(e) {
+    console.warn('carregarKPIsEleva:', e);
+  }
+}
+
 async function carregarESTs() {
   const tbody = document.getElementById('ests-tbody');
   if (!tbody || !sbAdmin) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>';
 
-  // Busca todos os tenants
-  const { data: tenants, error: errT } = await sbAdmin
-    .from('tenants')
-    .select('id, nome, slug, created_at, ativo')
-    .order('created_at', { ascending: false });
+  carregarKPIsEleva();
 
-  if (errT || !tenants) {
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--danger);font-size:12px">Erro ao carregar ESTs.</td></tr>';
-    return;
+  try {
+    const { data, error } = await sbAdmin.rpc('super_admin_tenant_details');
+    if (error) throw error;
+
+    if (!data?.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Nenhuma EST cadastrada ainda.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(t => {
+      const criado = t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '—';
+      const ultima = t.ultima_resposta ? new Date(t.ultima_resposta).toLocaleDateString('pt-BR') : '—';
+      const ativo = t.ativo !== false;
+      return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:11px 16px;font-size:12px">
+          <div style="font-weight:600;color:var(--tx)">${t.nome || '—'}</div>
+          <div style="font-size:10px;color:var(--tl);font-family:monospace;margin-top:2px">${t.slug || ''}</div>
+          <div style="font-size:10px;color:var(--tl);margin-top:1px">desde ${criado}</div>
+        </td>
+        <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.usuarios ?? 0}</td>
+        <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.clientes ?? 0}</td>
+        <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.links_ativos ?? 0}</td>
+        <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${t.respostas ?? 0}</td>
+        <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px">${ultima}</td>
+        <td style="padding:11px 12px;text-align:center">
+          <button onclick="toggleAtivoEST('${t.tenant_id}','${(t.nome||'').replace(/'/g,'')}',${ativo})"
+            style="background:${ativo ? 'rgba(52,199,89,.12)' : 'rgba(255,59,48,.1)'};border:none;cursor:pointer;
+              padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;
+              color:${ativo ? '#1a7a2e' : 'var(--danger)'}">
+            ${ativo ? 'Ativo' : 'Inativo'}
+          </button>
+        </td>
+        <td style="padding:11px 12px;text-align:center">
+          <button onclick="entrarComoEST('${t.tenant_id}','${(t.nome||'').replace(/'/g,'')}')"
+            style="background:var(--bg2);border:1px solid var(--border);cursor:pointer;
+              padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;color:var(--tx);
+              display:inline-flex;align-items:center;gap:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            Entrar como
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    console.warn('carregarESTs:', e);
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--danger);font-size:12px">Erro ao carregar ESTs.</td></tr>';
   }
+}
 
-  if (!tenants.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Nenhuma EST cadastrada ainda.</td></tr>';
-    return;
-  }
+async function toggleAtivoEST(tenantId, nome, ativoAtual) {
+  const novoStatus = !ativoAtual;
+  const label = novoStatus ? 'ativar' : 'desativar';
+  if (!confirm(`Deseja ${label} a EST "${nome}"?`)) return;
+  const { error } = await sbAdmin.from('tenants').update({ ativo: novoStatus }).eq('id', tenantId);
+  if (error) { toast('Erro ao atualizar status.', 'r'); return; }
+  toast(`EST ${novoStatus ? 'ativada' : 'desativada'} com sucesso.`, 'g');
+  carregarESTs();
+}
 
-  // Busca contagens de usuários e empresas (clientes) por tenant
-  const { data: perfisCount } = await sbAdmin
-    .from('perfis')
-    .select('tenant_id');
-  const { data: empCount } = await sbAdmin
-    .from('empresas')
-    .select('tenant_id');
+async function entrarComoEST(tenantId, nome) {
+  _supportMode = true;
+  _supportTenant = { id: tenantId, nome };
 
-  const countPerfis = {};
-  (perfisCount || []).forEach(r => { countPerfis[r.tenant_id] = (countPerfis[r.tenant_id] || 0) + 1; });
-  const countEmps = {};
-  (empCount || []).forEach(r => { countEmps[r.tenant_id] = (countEmps[r.tenant_id] || 0) + 1; });
+  // Mostrar banner
+  const banner = document.getElementById('banner-suporte');
+  const bannerNome = document.getElementById('banner-suporte-nome');
+  if (banner) { banner.style.display = 'flex'; }
+  if (bannerNome) bannerNome.textContent = nome;
 
-  tbody.innerHTML = tenants.map(t => {
-    const criado = t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '—';
-    const ativo = t.ativo !== false;
-    return `<tr style="border-top:1px solid var(--border)">
-      <td style="padding:11px 16px;font-weight:600;color:var(--tx);font-size:12px">${t.nome || '—'}</td>
-      <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px;font-family:monospace">${t.slug || '—'}</td>
-      <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${countPerfis[t.id] || 0}</td>
-      <td style="padding:11px 12px;text-align:center;color:var(--tx);font-size:12px">${countEmps[t.id] || 0}</td>
-      <td style="padding:11px 12px;text-align:center;color:var(--tl);font-size:11px">${criado}</td>
-      <td style="padding:11px 12px;text-align:center">
-        <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;
-          background:${ativo ? 'rgba(52,199,89,.15)' : 'rgba(255,59,48,.12)'};
-          color:${ativo ? '#1c7c2e' : 'var(--danger)'}">
-          ${ativo ? 'Ativo' : 'Inativo'}
-        </span>
-      </td>
-    </tr>`;
-  }).join('');
+  // Adicionar padding ao rodapé para não cobrir conteúdo
+  document.querySelector('.app-shell')?.style?.setProperty('padding-bottom', '48px');
+
+  // Recarregar dados filtrados ao tenant selecionado
+  await carregarEmpresas();
+  await carregarLinks();
+  renderDashboard();
+  renderTelaEmpresas();
+
+  goScreen('dashboard', document.getElementById('nb-dashboard'));
+  toast(`Visualizando como "${nome}"`, 'g', 3000);
+}
+
+async function sairModoSuporte() {
+  _supportMode = false;
+  _supportTenant = null;
+
+  const banner = document.getElementById('banner-suporte');
+  if (banner) banner.style.display = 'none';
+  document.querySelector('.app-shell')?.style?.removeProperty('padding-bottom');
+
+  // Recarregar sem filtro de suporte
+  await carregarEmpresas();
+  await carregarLinks();
+  renderDashboard();
+
+  goScreen('gestao-ests', document.getElementById('nb-gestao-ests'));
 }
 
 function abrirModalConvidarEST() {
