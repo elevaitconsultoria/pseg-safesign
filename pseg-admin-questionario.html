@@ -8391,11 +8391,13 @@ async function diagnosticarConexao() {
 }
 
 function mostrarDiag(el, linhas, isErro) {
+  if (!isErro) { el.style.display = 'none'; return; }
+  const erros = linhas.filter(l => l.startsWith('❌') || l.startsWith('⚠️'));
   el.style.display = 'block';
-  el.style.background = isErro ? '#fef2f2' : '#f0fdf4';
-  el.style.border = '1px solid ' + (isErro ? '#fca5a5' : '#bbf7d0');
-  el.style.color = isErro ? '#991b1b' : '#166534';
-  el.innerHTML = '<strong>Diagnóstico de conexão:</strong><br>' + linhas.join('<br>');
+  el.style.background = '#fef2f2';
+  el.style.border = '1px solid #fca5a5';
+  el.style.color = '#991b1b';
+  el.innerHTML = '<strong>Problema de conexão:</strong><br>' + erros.join('<br>');
 }
 
 function showLogin() {
