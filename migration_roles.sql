@@ -75,4 +75,4 @@ CREATE POLICY "perfis_admin_delete" ON perfis
   );
 
 -- ── VERIFICAÇÃO ───────────────────────────────────────────────────────────
-SELECT id, email, role, tenant_id FROM perfis ORDER BY tenant_id, role;
+SELECT id, nome, role, tenant_id, ativo FROM perfis ORDER BY tenant_id, role;
