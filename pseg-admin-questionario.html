@@ -141,19 +141,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* ── Painel esquerdo — brand ── */
 .login-left{
   flex:0 0 48%;
-  background:linear-gradient(145deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);
+  background:
+    linear-gradient(145deg,rgba(15,30,80,.78) 0%,rgba(29,78,216,.62) 60%,rgba(37,99,235,.55) 100%),
+    url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
   display:flex;align-items:center;justify-content:center;
   padding:52px 48px;position:relative;overflow:hidden;
 }
 .login-left::before{
   content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1px);
+  background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);
   background-size:28px 28px;pointer-events:none;
 }
 .login-left::after{
-  content:'';position:absolute;top:-80px;right:-80px;
-  width:360px;height:360px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);
+  content:'';position:absolute;bottom:0;left:0;right:0;height:180px;
+  background:linear-gradient(to top,rgba(10,20,60,.45) 0%,transparent 100%);
   pointer-events:none;
 }
 .login-left-inner{position:relative;z-index:1;width:100%;max-width:340px}
