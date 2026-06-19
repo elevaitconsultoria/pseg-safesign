@@ -3110,7 +3110,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <span style="color:var(--g);cursor:pointer" onclick="abrirModalGHE(document.getElementById('nl-empresa').value)"> Configurar setores &amp; funções</span>
       </div>
     </div>
-    <div class="field" style="margin-bottom:4px">
+    <div class="field" style="margin-bottom:12px">
       <label>Validade do link</label>
       <select id="nl-validade">
         <option value="0">Sem expiração</option>
@@ -3120,6 +3120,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <option value="60">60 dias</option>
       </select>
     </div>
+    <label class="inv-toggle" id="nl-teste-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-is-teste').checked=this.classList.contains('on')" style="margin-bottom:4px">
+      <input type="checkbox" id="nl-is-teste" style="display:none">
+      <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <span class="inv-toggle-lbl">Link de teste</span>
+      <span class="inv-toggle-sub">Respostas excluídas dos cálculos</span>
+    </label>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalLink()">Cancelar</button>
       <button class="btn btn-g" style="flex:2" onclick="gerarLink()">
@@ -6089,7 +6095,7 @@ async function carregarLinks() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
-    let q = sbAdmin.from('links_coleta').select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)');
+    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
     const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
@@ -6101,7 +6107,8 @@ async function carregarLinks() {
       ciclo:         l.ciclos?.nome || '',
       token:         l.token,
       ativo:         l.ativo,
-      respostas:     0, // será atualizado por carregarContagemRespostas()
+      is_teste:      l.is_teste || false,
+      respostas:     0,
       criado:        new Date(l.criado_em).toLocaleDateString('pt-BR'),
       expira:        l.expira_em ? new Date(l.expira_em).toLocaleDateString('pt-BR') : '—',
     }));
@@ -6235,8 +6242,8 @@ function renderLinks() {
     const nomeEsc  = (l.nomeEmpresa || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const waMsg    = encodeURIComponent(`Pesquisa Psicossocial PSEG — responda clicando:\n${url}`);
     return `
-    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${l.ativo?'white':'var(--bg)'}">
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px${l.is_teste?';border-color:#f59e0b;border-style:dashed':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${l.is_teste?'#fffbeb':l.ativo?'white':'var(--bg)'}">
         <div style="display:flex;align-items:center;gap:12px;min-width:0">
           <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
@@ -6245,6 +6252,7 @@ function renderLinks() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
+          ${l.is_teste?'<span class="tag ty" style="font-size:10px">⚗ Teste</span>':''}
           <span class="tag ${l.ativo?'tg':'tgr'}" style="font-size:10px">${l.ativo?'Ativo':'Inativo'}</span>
           <span class="tag tb" style="font-size:10px">${l.respostas} resp.</span>
         </div>
@@ -6264,7 +6272,7 @@ function renderLinks() {
         <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="toggleLink('${l.id}')">
           ${l.ativo?'Desativar':'Ativar'}
         </button>
-        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);opacity:.7" onclick="excluirLink('${l.id}',${l.respostas})" title="${l.respostas>0?'Link com respostas — não pode ser excluído':'Excluir link'}">
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);${(!l.is_teste&&l.respostas>0)?'opacity:.4;cursor:not-allowed':''}" onclick="excluirLink('${l.id}',${l.respostas},${l.is_teste},'${l.token}')" title="${(!l.is_teste&&l.respostas>0)?'Link com respostas — não pode ser excluído':l.is_teste?'Excluir link de teste e suas respostas':'Excluir link'}">
           🗑 Excluir
         </button>
       </div>
@@ -6335,25 +6343,41 @@ async function toggleLink(id) {
   toast(novoAtivo ? 'Link ativado.' : 'Link desativado.', novoAtivo?'g':'w');
 }
 
-async function excluirLink(id, nRespostas) {
-  if (nRespostas > 0) {
+async function excluirLink(id, nRespostas, isTeste, token) {
+  if (!isTeste && nRespostas > 0) {
     toast(`Este link possui ${nRespostas} resposta(s) e não pode ser excluído.`, 'w');
     return;
   }
-  if (!confirm('Excluir este link permanentemente? Esta ação não pode ser desfeita.')) return;
+  const msg = isTeste && nRespostas > 0
+    ? `Excluir este link de teste e suas ${nRespostas} resposta(s)? Esta ação não pode ser desfeita.`
+    : 'Excluir este link permanentemente? Esta ação não pode ser desfeita.';
+  if (!confirm(msg)) return;
 
   if (!isDemoMode) {
+    if (isTeste && nRespostas > 0) {
+      const { error: erDel } = await sbAdmin.from('respostas').delete().eq('link_token', token);
+      if (erDel) { toast('Erro ao excluir respostas: ' + erDel.message, 'w'); return; }
+    }
     const { error } = await sbAdmin.from('links_coleta').delete().eq('id', id);
     if (error) { toast('Erro ao excluir link: ' + error.message, 'w'); return; }
   }
+  const empresaIdDel = isTeste && nRespostas > 0 ? (_links.find(l => l.id === id)?.empresa_id) : null;
   _links = _links.filter(l => l.id !== id);
+  if (empresaIdDel) delete _respostasCache[empresaIdDel];
   renderLinks();
   renderTelaEmpresas();
   toast('Link excluído.', 'g');
 }
 
 function abrirModalLink() { document.getElementById('modal-link').classList.add('open'); }
-function fecharModalLink() { document.getElementById('modal-link').classList.remove('open'); }
+function fecharModalLink() {
+  document.getElementById('modal-link').classList.remove('open');
+  // Reset toggle de teste
+  const tog = document.getElementById('nl-teste-toggle');
+  const chk = document.getElementById('nl-is-teste');
+  if (tog) tog.classList.remove('on');
+  if (chk) chk.checked = false;
+}
 
 async function gerarLink() {
   const empresaId = document.getElementById('nl-empresa').value;
@@ -6362,9 +6386,8 @@ async function gerarLink() {
   const cicloId = document.getElementById('nl-ciclo').value || null;
   const val     = parseInt(document.getElementById('nl-validade').value) || 0;
   const token   = Math.random().toString(36).slice(2,14);
-  const expira_em = val > 0
-    ? new Date(Date.now() + val * 86400000).toISOString()
-    : null;
+  const expira_em = val > 0 ? new Date(Date.now() + val * 86400000).toISOString() : null;
+  const is_teste  = document.getElementById('nl-is-teste')?.checked || false;
 
   if (!isDemoMode) {
     try {
@@ -6372,7 +6395,7 @@ async function gerarLink() {
         .from('links_coleta')
         .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
                   setor_sugerido: setor || null, token, ativo: true,
-                  expira_em: expira_em, tenant_id: currentTenantId })
+                  expira_em: expira_em, tenant_id: currentTenantId, is_teste })
         .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
         .single();
       if (error) throw error;
@@ -6619,13 +6642,18 @@ async function loadRespostasParaEmpresa(empresaId) {
       codigoParaId[q.id] = n;
     });
 
+    // Tokens de links de teste desta empresa (excluídos dos cálculos)
+    const testTokens = _links.filter(l => l.empresa_id === empresaId && l.is_teste).map(l => l.token);
+
     // Buscar respostas com itens
-    const { data, error } = await sbAdmin
+    let rq = sbAdmin
       .from('respostas')
-      .select(`id, setor, funcao, ciclo_id, respondido_em,
+      .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
         resposta_itens ( questao_id, valor )`)
       .eq('empresa_id', empresaId)
       .order('respondido_em', { ascending: false });
+    if (testTokens.length > 0) rq = rq.not('link_token', 'in', `(${testTokens.join(',')})`);
+    const { data, error } = await rq;
 
     if (error) throw error;
 
