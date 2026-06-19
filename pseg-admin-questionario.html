@@ -1631,13 +1631,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
      TELA AUDITORIA — DADOS BRUTOS
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-auditoria">
-  <div class="page-header">
-    <div class="page-title">Auditoria de Respostas</div>
-    <div class="page-sub">Dados brutos por respondente — verificação das respostas coletadas junto aos clientes</div>
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="page-title">Auditoria de Respostas</div>
+      <div class="page-sub">Dados brutos por respondente — verificação das respostas coletadas junto aos clientes</div>
+    </div>
+    <button onclick="toggleFiltrosAuditoria()" id="btn-toggle-filtros-audit"
+      style="display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--tl);cursor:pointer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+      <span id="btn-toggle-filtros-audit-label">Ocultar filtros</span>
+    </button>
   </div>
 
   <!-- Filtros -->
-  <div class="card" style="margin-bottom:12px;padding:10px 14px">
+  <div class="card" id="audit-filtros-card" style="margin-bottom:12px;padding:10px 14px;transition:opacity .2s,max-height .25s;overflow:hidden;max-height:200px">
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
 
       <div style="flex:2;min-width:140px;max-width:220px">
@@ -9667,6 +9674,18 @@ async function renderTelaAuditoria() {
   // Guardar dados para export
   window._auditDados = filtrado;
   window._auditQs    = qs;
+}
+
+function toggleFiltrosAuditoria() {
+  const card  = document.getElementById('audit-filtros-card');
+  const label = document.getElementById('btn-toggle-filtros-audit-label');
+  if (!card) return;
+  const oculto = card.style.maxHeight === '0px';
+  card.style.maxHeight  = oculto ? '200px' : '0px';
+  card.style.opacity    = oculto ? '1' : '0';
+  card.style.padding    = oculto ? '10px 14px' : '0 14px';
+  card.style.marginBottom = oculto ? '12px' : '0';
+  if (label) label.textContent = oculto ? 'Ocultar filtros' : 'Exibir filtros';
 }
 
 function resetarFiltrosAuditoria() {
