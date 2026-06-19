@@ -91,22 +91,26 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* collapsed state */
 .nav-collapsed .sidebar{width:52px}
 .nav-collapsed .sidebar-section{opacity:0;padding-top:0;padding-bottom:0;height:0}
-.nav-collapsed .nav-label{opacity:0;width:0}
-.nav-collapsed .nav-item{padding:11px 0;justify-content:center;border-left-color:transparent !important}
-.nav-collapsed .nav-item svg{width:17px;height:17px}
+.nav-collapsed .nav-label{opacity:0;width:0;overflow:hidden}
+.nav-collapsed .nav-badge{display:none}
+/* gap:0 + border-left:0 garantem centralização real do ícone */
+.nav-collapsed .nav-item{padding:12px 0;justify-content:center;gap:0;border-left-width:0 !important}
+.nav-collapsed .nav-item svg{width:20px;height:20px;opacity:.7}
+.nav-collapsed .nav-item:hover svg{opacity:1}
 .nav-collapsed .nav-item.on{background:rgba(255,255,255,.18)}
-.nav-collapsed .nav-item.on svg{opacity:1}
+.nav-collapsed .nav-item.on svg{opacity:1;width:20px;height:20px}
+.nav-collapsed .nav-toggle-sidebar svg{width:16px !important;height:16px !important;opacity:.5 !important}
 .nav-collapsed .sidebar-footer{opacity:0;height:0;padding:0;overflow:hidden}
 .nav-collapsed .nav-toggle svg{transform:rotate(180deg)}
 
 /* tooltip no modo colapsado */
 .nav-collapsed .nav-item::after{
   content:attr(data-label);
-  position:absolute;left:58px;top:50%;transform:translateY(-50%);
+  position:absolute;left:56px;top:50%;transform:translateY(-50%);
   background:#1c1c1e;color:#fff;padding:4px 10px;border-radius:7px;
   font-size:11px;font-weight:500;white-space:nowrap;pointer-events:none;
-  opacity:0;transition:opacity .1s;z-index:300;
-  box-shadow:0 2px 8px rgba(0,0,0,.22)
+  opacity:0;transition:opacity .12s;z-index:300;
+  box-shadow:0 2px 8px rgba(0,0,0,.28)
 }
 .nav-collapsed .nav-item:hover::after{opacity:1}
 
