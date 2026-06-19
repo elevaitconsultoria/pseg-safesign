@@ -1339,7 +1339,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <select id="nu-role">
           <option value="consultor">Consultor</option>
           <option value="admin">Admin</option>
-          <option value="cliente_viewer">Cliente (somente leitura)</option>
         </select>
       </div>
     </div>
@@ -2600,7 +2599,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div style="font-size:13px;color:var(--tm);line-height:1.7">
       <p style="margin-bottom:8px">Área dedicada onde cada empresa cliente pode visualizar seus próprios resultados — sem precisar da intermediação da consultoria para cada análise.</p>
       <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Login separado (role <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">cliente_viewer</code>) por empresa</li>
+        <li>Login separado por empresa</li>
         <li>Dashboard resumido: score médio, top riscos, evolução temporal</li>
         <li>Gráficos de distribuição por setor e função (somente leitura)</li>
         <li>Download de relatório PDF sem marca da consultoria</li>
@@ -8925,7 +8924,6 @@ async function carregarUsuarios() {
         <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
           <option value="consultor"     ${u.role==='consultor'?'selected':''}>Consultor</option>
           ${callerIsAdmin ? `<option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>` : ''}
-          <option value="cliente_viewer" ${u.role==='cliente_viewer'?'selected':''}>Cliente</option>
         </select>
         <button class="btn ${u.ativo?'btn-ghost':'btn-amber'}" style="font-size:11px" onclick="toggleAtivoUsuario('${u.id}',${u.ativo})">
           ${u.ativo ? 'Desativar' : 'Reativar'}
@@ -8953,7 +8951,7 @@ async function alterarRoleUsuario(id, novoRole) {
   if (callerRole === 'cliente_viewer' || !callerRole) {
     toast('Acesso negado.', 'r'); carregarUsuarios(); return;
   }
-  const rolesValidos = ['admin', 'consultor', 'cliente_viewer'];
+  const rolesValidos = ['admin', 'consultor'];
   if (!rolesValidos.includes(novoRole)) { toast('Perfil inválido.', 'r'); return; }
   if (callerRole === 'consultor' && novoRole === 'admin') {
     toast('Apenas administradores podem definir o perfil Admin.', 'r');
