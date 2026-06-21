@@ -425,7 +425,7 @@ function popularMetaSetor() {
   field.style.display = 'block';
 
   if (empresaSetores.length) {
-    // Empresa tem setores cadastrados → dropdown
+    // Empresa tem setores cadastrados → dropdown com "Outro" ao final
     if (sel) {
       sel.style.display = '';
       sel.innerHTML = '<option value="">Prefiro não informar</option>';
@@ -434,6 +434,23 @@ function popularMetaSetor() {
         opt.value = s; opt.textContent = s;
         sel.appendChild(opt);
       });
+      // "Outro" sempre por último
+      const optOutro = document.createElement('option');
+      optOutro.value = '__outro__';
+      optOutro.textContent = 'Outro (especificar)';
+      sel.appendChild(optOutro);
+
+      sel.onchange = function() {
+        if (!inp) return;
+        if (this.value === '__outro__') {
+          inp.style.display = '';
+          inp.placeholder = 'Digite o nome do seu setor';
+          inp.focus();
+        } else {
+          inp.style.display = 'none';
+          inp.value = '';
+        }
+      };
     }
     if (inp) inp.style.display = 'none';
   } else {
@@ -632,7 +649,10 @@ async function enviarResposta() {
   const escolarVal = _sanitizeMeta(document.getElementById('meta-escolaridade')?.value, 60);
   const setorSelect = document.getElementById('meta-setor')?.value;
   const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
-  const setorVal    = _sanitizeMeta(setorNome || setorSelect || setorInput) || 'Não informado';
+  const setorRaw = setorSelect === '__outro__'
+    ? (setorInput ? `Outro: ${setorInput}` : 'Outro')
+    : (setorSelect || setorInput);
+  const setorVal = _sanitizeMeta(setorNome || setorRaw) || 'Não informado';
 
   // Montar itens com UUIDs — apenas valores válidos 1-4
   const itens = Object.entries(respostas)
