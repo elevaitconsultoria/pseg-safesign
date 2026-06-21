@@ -174,9 +174,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="field">
         <label>Função / Cargo</label>
-        <select id="meta-funcao">
-          <option value="">Prefiro não informar</option>
-        </select>
+        <select id="meta-funcao"></select>
+        <input id="meta-funcao-input" type="text" placeholder="Digite sua função / cargo"
+          style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
+          background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;
+          font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;margin-top:6px;box-sizing:border-box"
+          onfocus="this.style.borderColor='var(--g)';this.style.background='white'"
+          onblur="this.style.borderColor='var(--border)';this.style.background='#f7f9f8'"/>
       </div>
       <div class="field">
         <label>Escolaridade</label>
@@ -403,16 +407,36 @@ async function carregarGHEEmpresa(empId) {
 
 function popularMetaFuncao() {
   const sel = document.getElementById('meta-funcao');
+  const inp = document.getElementById('meta-funcao-input');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Prefiro não informar</option>';
-  const funcoes = empresaFuncoes.length
-    ? empresaFuncoes
-    : ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)','Outro'];
-  funcoes.forEach(f => {
+
+  const base = empresaFuncoes.length
+    ? empresaFuncoes.filter(f => f.toLowerCase() !== 'outro')
+    : ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)'];
+
+  sel.innerHTML = '<option value="">Selecione seu cargo</option>';
+  base.forEach(f => {
     const opt = document.createElement('option');
     opt.value = f; opt.textContent = f;
     sel.appendChild(opt);
   });
+
+  // "Outro" sempre por último
+  const optOutro = document.createElement('option');
+  optOutro.value = '__outro__';
+  optOutro.textContent = 'Outro (especificar)';
+  sel.appendChild(optOutro);
+
+  sel.onchange = function() {
+    if (!inp) return;
+    if (this.value === '__outro__') {
+      inp.style.display = '';
+      inp.focus();
+    } else {
+      inp.style.display = 'none';
+      inp.value = '';
+    }
+  };
 }
 
 function popularMetaSetor() {
@@ -645,7 +669,11 @@ async function enviarResposta() {
   }
 
   // ── Sanitização de metadados (previne injeção de strings longas) ──
-  const funcaoVal  = _sanitizeMeta(document.getElementById('meta-funcao')?.value);
+  const funcaoSelect = document.getElementById('meta-funcao')?.value;
+  const funcaoInput  = document.getElementById('meta-funcao-input')?.value?.trim();
+  const funcaoVal    = _sanitizeMeta(
+    funcaoSelect === '__outro__' ? (funcaoInput ? `Outro: ${funcaoInput}` : 'Outro') : funcaoSelect
+  );
   const escolarVal = _sanitizeMeta(document.getElementById('meta-escolaridade')?.value, 60);
   const setorSelect = document.getElementById('meta-setor')?.value;
   const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
