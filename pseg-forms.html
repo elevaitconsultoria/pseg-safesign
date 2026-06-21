@@ -144,7 +144,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
   <!-- Instruções -->
   <div class="instrucoes">
-    <strong>Instruções:</strong> Este questionário contém 27 perguntas sobre seus sentimentos em relação ao trabalho nos últimos 6 meses. As respostas são <strong>anônimas</strong> — não há identificação do respondente. Marque apenas uma alternativa por questão:<br><br>
+    <strong>Instruções:</strong><br><br>
+    O questionário a seguir é composto por <strong id="instrucoes-total">27</strong> questões sobre sua percepção em relação ao seu trabalho. Você <strong>não será identificado</strong> e suas respostas são <strong>anônimas</strong> — por isso, procure responder com sinceridade.<br><br>
+    Leia com atenção e assinale <strong>apenas uma alternativa</strong>, a que melhor representa a frequência dos acontecimentos no seu trabalho <strong>nos últimos 6 meses</strong>.<br><br>
+    Essas perguntas fazem parte do levantamento de riscos psicossociais, necessário para o atendimento das Normas Regulamentadoras <strong>NR-17</strong> (Ergonomia) e <strong>NR-01</strong> (PGR) do MTE.<br><br>
     <strong>(1) Nunca &nbsp;·&nbsp; (2) Às vezes &nbsp;·&nbsp; (3) Frequente &nbsp;·&nbsp; (4) Sempre</strong>
   </div>
 
@@ -505,6 +508,11 @@ function showForm() {
   document.getElementById('empresa-badge').style.display = 'block';
 
   buildQuestoes();
+
+  // Atualiza contagem de questões nas instruções
+  const totalQ = BLOCOS.reduce((acc, b) => acc + b.questoes.length, 0);
+  const elTotal = document.getElementById('instrucoes-total');
+  if (elTotal) elTotal.textContent = totalQ;
 
   // Popula metadados dinâmicos
   popularMetaFuncao();
