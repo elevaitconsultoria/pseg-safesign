@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   /* Neutros base */
@@ -3346,6 +3347,32 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           </select>
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="copiarDeEmpresaGHE()">Copiar</button>
         </div>
+      </div>
+
+      <!-- Seção D: Importar CSV/Excel -->
+      <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--tl);margin-bottom:8px">Importar CSV ou Excel</div>
+        <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;display:flex;align-items:center;gap:7px;width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('ghe-import-input').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Selecionar arquivo (.csv, .xlsx, .xls)
+        </button>
+        <div style="font-size:10px;color:var(--tl);margin-top:5px;text-align:center">
+          O arquivo deve ter colunas <strong>Setor</strong> e <strong>Cargo</strong> (ou variações como GHE, Função, Departamento)
+        </div>
+        <!-- Preview da importação -->
+        <div id="ghe-import-preview" style="display:none;margin-top:10px;background:white;border:1.5px solid var(--g);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--g);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+            Arquivo lido com sucesso
+          </div>
+          <div id="ghe-import-info" style="font-size:11px;color:var(--tm);margin-bottom:10px;line-height:1.7"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-g" style="font-size:12px;padding:6px 14px;flex:1" onclick="confirmarGHEImport()">Aplicar ao GHE</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="cancelarGHEImport()">Cancelar</button>
+          </div>
+        </div>
+        <div id="ghe-import-erro" style="display:none;margin-top:8px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r);font-size:11px;color:#991b1b"></div>
       </div>
 
       <!-- Seção C: Colar lista -->
@@ -10307,6 +10334,124 @@ function adicionarGHEFuncao() {
 }
 
 /** Persiste setores/funções (demo: atualiza _empresas; prod: upserta tabelas) */
+// ── IMPORTAÇÃO CSV / EXCEL PARA GHE ──────────────────────────────────────
+
+let _gheImportSetores = [];
+let _gheImportFuncoes = [];
+
+function importarGHEArquivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('ghe-import-preview').style.display = 'none';
+  document.getElementById('ghe-import-erro').style.display    = 'none';
+  input.value = ''; // reset para permitir re-selecionar o mesmo arquivo
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onerror = () => _gheImportErro('Erro ao ler o arquivo.');
+
+  if (ext === 'csv') {
+    reader.onload = e => _processarGHEImport(_parseGHECSV(e.target.result));
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    reader.onload = e => {
+      try {
+        const wb   = XLSX.read(e.target.result, { type: 'array' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        _processarGHEImport(rows);
+      } catch(err) { _gheImportErro('Erro ao ler Excel: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    _gheImportErro('Formato não suportado. Use .csv, .xlsx ou .xls');
+  }
+}
+
+function _parseGHECSV(text) {
+  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  // detecta delimitador: ; ou ,
+  const delim = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(delim).map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(delim).map(v => v.trim().replace(/^"|"$/g, ''));
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+function _detectarColuna(headers, candidatos) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  const h = headers.map(norm);
+  for (const c of candidatos) {
+    const idx = h.findIndex(x => x.includes(norm(c)));
+    if (idx !== -1) return headers[idx];
+  }
+  return null;
+}
+
+function _processarGHEImport(rows) {
+  if (!rows || rows.length === 0) {
+    return _gheImportErro('O arquivo está vazio ou sem dados válidos.');
+  }
+  const headers = Object.keys(rows[0]);
+  const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','area','grupo','sector','unidade']);
+  const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação']);
+
+  if (!colSetor && !colCargo) {
+    return _gheImportErro(
+      `Nenhuma coluna reconhecida. Colunas encontradas: ${headers.join(', ')}.\n` +
+      'Renomeie as colunas para "Setor" e "Cargo" (ou variações como GHE, Função, Departamento).'
+    );
+  }
+
+  const setores = colSetor
+    ? [...new Set(rows.map(r => (r[colSetor]||'').trim()).filter(Boolean))].sort()
+    : [];
+  const funcoes = colCargo
+    ? [...new Set(rows.map(r => (r[colCargo]||'').trim()).filter(Boolean))].sort()
+    : [];
+
+  _gheImportSetores = setores;
+  _gheImportFuncoes = funcoes;
+
+  const info = [
+    colSetor  ? `<strong>${setores.length}</strong> setor(es) na coluna "<em>${colSetor}</em>"` : '⚠️ Coluna de setor não identificada',
+    colCargo  ? `<strong>${funcoes.length}</strong> função(ões) na coluna "<em>${colCargo}</em>"` : '⚠️ Coluna de cargo não identificada',
+    `<strong>${rows.length}</strong> linha(s) lida(s)`,
+  ].join('<br>');
+
+  document.getElementById('ghe-import-info').innerHTML = info;
+  document.getElementById('ghe-import-preview').style.display = 'block';
+}
+
+function confirmarGHEImport() {
+  // Mescla com o que já existe (deduplicado)
+  const setMerge = [...new Set([..._gheTempSetores, ..._gheImportSetores])];
+  const funMerge = [...new Set([..._gheTempFuncoes, ..._gheImportFuncoes])];
+  _gheTempSetores = setMerge;
+  _gheTempFuncoes = funMerge;
+  renderGHELists();
+  document.getElementById('ghe-import-preview').style.display = 'none';
+  _gheImportSetores = [];
+  _gheImportFuncoes = [];
+  toast(`GHE importado: ${setMerge.length} setor(es), ${funMerge.length} função(ões). Clique em Salvar para confirmar.`, 'g', 4000);
+}
+
+function cancelarGHEImport() {
+  _gheImportSetores = [];
+  _gheImportFuncoes = [];
+  document.getElementById('ghe-import-preview').style.display = 'none';
+}
+
+function _gheImportErro(msg) {
+  const el = document.getElementById('ghe-import-erro');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 async function salvarGHE() {
   if (!_gheEmpresaId) {
     toast('Selecione um cliente antes de salvar.', 'w'); return;
