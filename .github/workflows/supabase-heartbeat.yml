@@ -1,0 +1,25 @@
+name: Supabase Heartbeat
+
+# Roda a cada 5 dias às 08:00 UTC para evitar pausa por inatividade
+# Supabase Free pausa projetos após 7 dias sem acesso
+on:
+  schedule:
+    - cron: '0 8 */5 * *'
+  workflow_dispatch: # permite rodar manualmente se necessário
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/empresas?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "406" ]; then
+            echo "AVISO: Supabase retornou status inesperado: $STATUS"
+            exit 1
+          fi
+          echo "Supabase ativo e respondendo."
