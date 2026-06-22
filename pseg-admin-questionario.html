@@ -48,7 +48,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 /* ── SIDEBAR ── */
 .sidebar{
-  background:linear-gradient(160deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%);
+  background:linear-gradient(160deg,#1e40af 0%,#2563eb 55%,#3b82f6 100%);
   border-right:none;
   display:flex;flex-direction:column;min-height:calc(100vh - 52px);
   position:sticky;top:52px;align-self:start;
@@ -890,6 +890,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <div id="login-err" style="display:none;margin-top:12px;padding:10px 13px;border-radius:7px;font-size:12px;line-height:1.5;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;font-family:'DM Sans',sans-serif"></div>
       <div id="login-diag" style="margin-top:10px;padding:10px 13px;border-radius:7px;font-size:11px;line-height:1.7;display:none;font-family:'DM Sans',sans-serif"></div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:#16a34a;font-family:'DM Sans',sans-serif;margin-bottom:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Conforme a LGPD — Lei 13.709/2018
+        </div>
+        <div style="font-size:10px;color:#94a3b8;line-height:1.6;font-family:'DM Sans',sans-serif">
+          Ao acessar, você concorda com o tratamento de dados<br>
+          de acordo com nossa política de privacidade.
+        </div>
+      </div>
 
     </div>
   </div>
@@ -6763,6 +6774,7 @@ async function loadRespostasParaEmpresa(empresaId) {
     let rq = sbAdmin
       .from('respostas')
       .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
+        session_id, lgpd_aceito, lgpd_aceito_em,
         resposta_itens ( questao_id, valor )`)
       .eq('empresa_id', empresaId)
       .order('respondido_em', { ascending: false });
@@ -6773,9 +6785,14 @@ async function loadRespostasParaEmpresa(empresaId) {
 
     // Converter para o formato que a engine espera: [{setor, funcao, ciclo_id, q:{1:v,2:v,...}}]
     const linhas = (data || []).map(r => ({
-      setor:    r.setor || 'Geral',
-      funcao:   r.funcao || '—',
-      ciclo_id: r.ciclo_id || null,
+      setor:          r.setor || 'Geral',
+      funcao:         r.funcao || '—',
+      ciclo_id:       r.ciclo_id || null,
+      link_token:     r.link_token || null,
+      data_registro:  r.respondido_em || null,
+      session_id:     r.session_id || null,
+      lgpd_aceito:    r.lgpd_aceito ?? true,
+      lgpd_aceito_em: r.lgpd_aceito_em || null,
       q: Object.fromEntries(
         (r.resposta_itens || [])
           .map(i => [codigoParaId[i.questao_id], i.valor])
@@ -9981,6 +9998,8 @@ async function renderTelaAuditoria() {
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:100px">FUNÇÃO</th>
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:80px">DATA</th>
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:80px">ID</th>
+            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:100px" title="UUID de sessão gerado no browser — rastreia tentativas sem identificar o respondente">SESSION ID</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:60px" title="Consentimento LGPD registrado">LGPD</th>
             ${qs.map(q => `<th style="text-align:center;padding:6px 3px;border-bottom:2px solid var(--border);border-left:1px solid var(--bs);white-space:nowrap;font-size:9px;color:var(--tm);font-weight:600;min-width:38px" title="${q.t}">${q.c}${q.inv?'<br><span style="font-weight:400;color:var(--tl);font-size:8px">↺</span>':''}</th>`).join('')}
           </tr>
         </thead>
@@ -9996,6 +10015,8 @@ async function renderTelaAuditoria() {
               <td style="padding:6px 10px;color:var(--tl);white-space:nowrap">${r.funcao||'—'}</td>
               <td style="padding:6px 10px;color:var(--tl);white-space:nowrap">${data}</td>
               <td style="padding:6px 10px;color:var(--tl);font-family:monospace;font-size:10px">${idResp}</td>
+              <td style="padding:6px 10px;color:var(--tl);font-family:monospace;font-size:9px;max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${r.session_id||''}">${r.session_id ? r.session_id.slice(0,8)+'…' : '—'}</td>
+              <td style="padding:6px 10px;text-align:center;font-size:11px">${r.lgpd_aceito ? '<span title="Consentimento registrado em '+(r.lgpd_aceito_em?new Date(r.lgpd_aceito_em).toLocaleString('pt-BR'):'?')+'" style="color:#16a34a">✓</span>' : '<span style="color:#dc2626">✗</span>'}</td>
               ${qs.map(q => {
                 const v = r.q?.[q.id];
                 return `<td style="padding:5px 3px;text-align:center;border-left:1px solid var(--bs);font-size:12px;font-weight:500;color:${v!=null?'var(--tx)':'var(--tl)'}">${v!=null?v:'—'}</td>`;
@@ -10077,12 +10098,15 @@ function exportarAuditoriaCSV() {
   const qs    = window._auditQs || QS_OFICIAIS;
   if (!dados?.length) return;
 
-  const header = ['#','Empresa','Setor/GHE','Função','Data','ID Respondente', ...qs.map(q=>q.c)].join(';');
+  const header = ['#','Empresa','Setor/GHE','Função','Data','ID Respondente','Session ID','LGPD Aceito','LGPD Aceito Em', ...qs.map(q=>q.c)].join(';');
   const rows = dados.map((r, i) => {
-    const data   = r.data_registro ? new Date(r.data_registro).toLocaleDateString('pt-BR') : _auditDataDemo(r._idx, dados.length);
-    const idResp = r.id_respondente || r.respondente_id || ('RESP-'+String(r._idx+1).padStart(3,'0'));
+    const data        = r.data_registro ? new Date(r.data_registro).toLocaleDateString('pt-BR') : _auditDataDemo(r._idx, dados.length);
+    const idResp      = r.id_respondente || r.respondente_id || ('RESP-'+String(r._idx+1).padStart(3,'0'));
+    const sessionId   = r.session_id || '';
+    const lgpdAceito  = r.lgpd_aceito ? 'Sim' : 'Não';
+    const lgpdAceitoEm = r.lgpd_aceito_em ? new Date(r.lgpd_aceito_em).toLocaleString('pt-BR') : '';
     const scores = qs.map(q => r.q?.[q.id] ?? '');
-    return [i+1, r._empNome||'—', r.setor||'—', r.funcao||'—', data, idResp, ...scores].join(';');
+    return [i+1, r._empNome||'—', r.setor||'—', r.funcao||'—', data, idResp, sessionId, lgpdAceito, lgpdAceitoEm, ...scores].join(';');
   });
 
   const csv  = '\uFEFF' + [header, ...rows].join('\r\n');
