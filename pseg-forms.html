@@ -98,6 +98,31 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   .q-dot{height:34px;font-size:11px}
   .q-opt-lbl{font-size:8px}
 }
+
+/* ── LGPD CONSENT SCREEN ── */
+.consent-box{background:white;border:1px solid var(--bs);border-radius:var(--rl);padding:24px;max-width:560px;width:100%;margin:0 auto;box-shadow:var(--sh);text-align:left}
+.consent-title{font-size:17px;font-weight:800;color:var(--tx);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.consent-title svg{flex-shrink:0}
+.consent-sub{font-size:12px;color:var(--tl);margin-bottom:18px}
+.consent-section{margin-bottom:14px}
+.consent-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:5px}
+.consent-section p{font-size:12px;color:var(--tx);line-height:1.65}
+.consent-section ul{font-size:12px;color:var(--tx);line-height:1.7;padding-left:18px}
+.consent-divider{border:none;border-top:1px solid var(--bs);margin:14px 0}
+.consent-check-row{display:flex;align-items:flex-start;gap:10px;background:var(--gl);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;cursor:pointer}
+.consent-check-row input[type=checkbox]{width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:var(--g);cursor:pointer}
+.consent-check-row label{font-size:12px;color:var(--tx);line-height:1.5;cursor:pointer;font-weight:500}
+.consent-btns{display:flex;gap:10px;flex-direction:column}
+.btn-consent-aceitar{width:100%;background:var(--g);color:white;border:none;border-radius:var(--r);padding:13px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-consent-aceitar:hover{background:var(--gd)}
+.btn-consent-aceitar:disabled{opacity:.45;cursor:not-allowed}
+.btn-consent-recusar{width:100%;background:transparent;color:var(--tl);border:1px solid var(--bs);border-radius:var(--r);padding:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
+.btn-consent-recusar:hover{color:var(--red);border-color:#f5c6c6}
+
+/* ── LGPD FOOTER ── */
+.lgpd-footer{text-align:center;padding:24px 16px 32px;font-size:10px;color:var(--tl);line-height:1.7;max-width:520px;margin:0 auto}
+.lgpd-footer a{color:var(--tm);text-decoration:underline}
+.lgpd-badge{display:inline-flex;align-items:center;gap:5px;background:var(--gl);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;color:var(--g);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -128,6 +153,70 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   <div class="screen-icon" style="background:var(--gl)"><svg viewBox="0 0 24 24" fill="var(--g)" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
   <div class="screen-title" style="color:var(--g)">Obrigado!</div>
   <div class="screen-sub">Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PSEG.</div>
+</div>
+
+<!-- CONSENTIMENTO LGPD -->
+<div class="screen" id="consent-screen" style="align-items:stretch;justify-content:flex-start;padding:20px 16px 40px">
+  <div class="consent-box">
+    <div class="consent-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2" width="22" height="22"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Termo de Consentimento
+    </div>
+    <div class="consent-sub">Lei Geral de Proteção de Dados — Lei 13.709/2018</div>
+
+    <div class="consent-section">
+      <div class="consent-section-title">Finalidade da coleta</div>
+      <p>Esta pesquisa tem como objetivo realizar o <strong>levantamento de riscos psicossociais</strong> no ambiente de trabalho, exigido pelas Normas Regulamentadoras <strong>NR-17</strong> (Ergonomia) e <strong>NR-01</strong> (PGR) do Ministério do Trabalho e Emprego. Os resultados subsidiam ações de melhoria das condições de trabalho.</p>
+    </div>
+
+    <div class="consent-section">
+      <div class="consent-section-title">Dados coletados</div>
+      <ul>
+        <li>Respostas numéricas (escala 1 a 4) para cada questão</li>
+        <li>Setor / GHE, função e escolaridade <em>(opcionais)</em></li>
+        <li>Identificador anônimo de sessão (código técnico, sem dados pessoais)</li>
+        <li>Data e hora do envio</li>
+      </ul>
+    </div>
+
+    <div class="consent-section">
+      <div class="consent-section-title">Anonimidade e segurança</div>
+      <p>Suas respostas são <strong>completamente anônimas</strong>. Nenhum dado que permita sua identificação pessoal (nome, CPF, e-mail, matrícula) é coletado ou armazenado. Os dados são tratados de forma agregada para análise estatística.</p>
+    </div>
+
+    <div class="consent-section">
+      <div class="consent-section-title">Controlador e operador dos dados</div>
+      <p><strong>Controlador:</strong> a empresa contratante da pesquisa (seu empregador).<br>
+      <strong>Operador:</strong> Eleva IT Consultoria — plataforma PSEG SafeSign.<br>
+      Os dados ficam armazenados em ambiente seguro com criptografia e controle de acesso.</p>
+    </div>
+
+    <div class="consent-section">
+      <div class="consent-section-title">Seus direitos (Art. 17–22 da LGPD)</div>
+      <ul>
+        <li>Confirmação de existência de tratamento</li>
+        <li>Acesso, correção ou exclusão dos dados</li>
+        <li>Portabilidade e revogação do consentimento</li>
+        <li>Oposição ao tratamento em caso de descumprimento</li>
+      </ul>
+      <p style="margin-top:6px">Para exercer seus direitos, entre em contato com o responsável pela pesquisa em sua empresa ou com a Eleva IT: <strong>eleva.it.consultoria@gmail.com</strong></p>
+    </div>
+
+    <hr class="consent-divider">
+
+    <div class="consent-check-row" onclick="document.getElementById('chk-lgpd').click()">
+      <input type="checkbox" id="chk-lgpd" onchange="document.getElementById('btn-aceitar-lgpd').disabled=!this.checked">
+      <label for="chk-lgpd">Li e compreendi as informações acima. Concordo com o tratamento dos meus dados para a finalidade indicada, de forma anônima, conforme a LGPD.</label>
+    </div>
+
+    <div class="consent-btns">
+      <button class="btn-consent-aceitar" id="btn-aceitar-lgpd" disabled onclick="aceitarConsentimento()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+        Concordo — Iniciar questionário
+      </button>
+      <button class="btn-consent-recusar" onclick="recusarConsentimento()">Não concordo — Encerrar participação</button>
+    </div>
+  </div>
 </div>
 
 <!-- FORMULÁRIO -->
@@ -201,6 +290,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     Enviar Respostas
   </button>
 
+</div>
+
+<!-- Footer LGPD -->
+<div class="lgpd-footer" id="lgpd-footer" style="display:none">
+  <div class="lgpd-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Conforme a LGPD — Lei 13.709/2018
+  </div><br>
+  Esta pesquisa coleta apenas respostas anônimas. Nenhum dado pessoal identificável é armazenado.<br>
+  Dúvidas: <a href="mailto:eleva.it.consultoria@gmail.com">eleva.it.consultoria@gmail.com</a>
 </div>
 
 <!-- Banner de respostas pendentes offline -->
@@ -312,11 +411,14 @@ const LABELS = ['Nunca','Às vezes','Frequente','Sempre'];
 // ══════════════════════════════════════════════════════════
 let empresaId     = null;
 let cicloId       = null;
-let linkToken     = null; // token do link — controle de 1 resposta por dispositivo
+let linkToken     = null;
 let empresaNome   = '';
 let setorNome     = '';
-let empresaSetores = []; // Setores cadastrados pela empresa no GHE
-let empresaFuncoes = []; // Funções cadastradas pela empresa no GHE
+let empresaSetores = [];
+let empresaFuncoes = [];
+// LGPD + rastreabilidade
+const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
+let _lgpdAceito   = false;
 
 // ══════════════════════════════════════════════════════════
 // INIT — valida token e carrega dados da empresa
@@ -379,7 +481,7 @@ async function init() {
     // Carregar setores e funções cadastrados para esta empresa
     await carregarGHEEmpresa(empresaId);
 
-    showForm();
+    mostrarConsentimento();
     verificarPendentes();
 
   } catch (e) {
@@ -520,6 +622,7 @@ function showForm() {
   if (!setorNome) popularMetaSetor();
 
   document.getElementById('form-screen').classList.add('active');
+  document.getElementById('lgpd-footer').style.display = 'block';
 }
 
 function showDevMode() {
@@ -535,7 +638,28 @@ function hideAll() {
   document.getElementById('loading-screen').classList.remove('active');
   document.getElementById('error-screen').classList.remove('active');
   document.getElementById('success-screen').classList.remove('active');
+  document.getElementById('consent-screen').classList.remove('active');
   document.getElementById('form-screen').classList.remove('active');
+}
+
+function mostrarConsentimento() {
+  hideAll();
+  document.getElementById('consent-screen').classList.add('active');
+}
+
+function aceitarConsentimento() {
+  _lgpdAceito = true;
+  showForm();
+}
+
+function recusarConsentimento() {
+  hideAll();
+  const sc = document.getElementById('success-screen');
+  sc.classList.add('active');
+  sc.querySelector('.screen-title').textContent  = 'Participação encerrada';
+  sc.querySelector('.screen-sub').textContent    = 'Você optou por não participar desta pesquisa. Nenhum dado foi coletado. Você pode fechar esta página.';
+  sc.querySelector('.screen-icon').style.background = '#f1f5f9';
+  sc.querySelector('.screen-icon svg').style.fill    = '#64748b';
 }
 
 function buildQuestoes() {
@@ -714,6 +838,8 @@ async function enviarResposta() {
     p_funcao:       funcaoVal || null,
     p_escolaridade: escolarVal || null,
     p_itens:        itens,
+    p_session_id:   _sessionId,
+    p_lgpd_aceito:  _lgpdAceito,
   };
 
   // ── Backup local ANTES do envio (chave inclui token para rastreabilidade) ──
