@@ -1743,8 +1743,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         Exportar CSV
       </button>
       <button class="btn btn-ghost" onclick="exportarResultados('pdf')" id="btn-export-pdf" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar PDF
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 15h3.5a1.5 1.5 0 000-3H7v6m7-6h1a2 2 0 010 4h-1m4-4v6"/></svg>
+        Imprimir / PDF
       </button>
       <button class="btn btn-ghost" onclick="exportarResultados('png')" id="btn-export-png" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -5194,143 +5194,198 @@ function _calcPageBreaks(canvasH, pageH, scale, breakHints) {
 }
 
 async function exportarResultados(fmt) {
+  if (fmt === 'pdf') { exportarResultadosPrint(); return; }
+
+  // ── PNG: mantém html2canvas com scale alto ──
   const vc = document.getElementById('view-content');
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
+  toast('Gerando PNG — aguarde...', 'g');
 
-  const m = document.getElementById('exp-menu');
-  if (m) m.style.display = 'none';
-
-  toast('Gerando exportação — aguarde...', 'g');
-
-  // 1. Forçar render completo dos gráficos Chart.js (cancela animação pendente)
-  if (typeof chartInstances !== 'undefined') {
-    Object.values(chartInstances).forEach(chart => {
-      try { chart.update('none'); } catch(e) {}
-    });
-  }
-
-  // 2. Expandir todas as seções colapsadas
   const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
     .filter(({ body }) => body && body.style.display === 'none');
-  wasHidden.forEach(({ arrow, body }) => {
-    body.style.display = 'block';
-    arrow.textContent  = '▼';
-  });
+  wasHidden.forEach(({ arrow, body }) => { body.style.display = 'block'; arrow.textContent = '▼'; });
   await new Promise(r => setTimeout(r, 120));
 
-  // 3. Capturar Y-offsets das seções ANTES de clonar (para quebras de página)
-  const vcRect    = vc.getBoundingClientRect();
-  const breakHints = [...vc.querySelectorAll('[style*="border-left:3px solid"],[style*="font-size:13px"][style*="font-weight:700"]')]
-    .map(el => el.getBoundingClientRect().top - vcRect.top)
-    .filter(y => y > 0);
-
-  // 4. Renderizar em largura fixa A4 (194mm @ 96dpi ≈ 733px)
-  const A4W  = 733;
-  const scale = fmt === 'png' ? 3 : 2;
-
+  const A4W = 794; // A4 @ 96dpi
   const wrap = document.createElement('div');
-  wrap.style.cssText =
-    'position:absolute;left:0;top:' + (document.documentElement.scrollHeight + 100) + 'px;' +
-    'width:' + A4W + 'px;background:#ffffff;overflow:visible;font-family:Inter,sans-serif';
-
+  wrap.style.cssText = 'position:absolute;left:0;top:' + (document.documentElement.scrollHeight + 100) + 'px;width:' + A4W + 'px;background:#fff;overflow:visible;font-family:Inter,sans-serif';
   const clone = vc.cloneNode(true);
   clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
 
-  // 5. Resolver CSS vars + copiar pixels dos canvas Chart.js ANTES do html2canvas
   await new Promise(r => setTimeout(r, 80));
   _resolveStyleVars(clone);
   _copiarCanvases(vc, clone);
   await new Promise(r => setTimeout(r, 60));
 
-  const today = new Date().toISOString().slice(0, 10);
   let canvas;
-
   try {
-    canvas = await html2canvas(wrap, {
-      scale,
-      useCORS:         true,
-      allowTaint:      true,
-      backgroundColor: '#ffffff',
-      logging:         false,
-      windowWidth:     A4W,
-      scrollX:         0,
-      scrollY:         0,
-    });
+    canvas = await html2canvas(wrap, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false });
   } finally {
     document.body.removeChild(wrap);
-    wasHidden.forEach(({ arrow, body }) => {
-      body.style.display = 'none';
-      arrow.textContent  = '▶';
-    });
+    wasHidden.forEach(({ arrow, body }) => { body.style.display = 'none'; arrow.textContent = '▶'; });
   }
 
-  try {
-    if (fmt === 'png') {
-      const a = Object.assign(document.createElement('a'), {
-        href:     canvas.toDataURL('image/png'),
-        download: `pseg-analise-${today}.png`,
-      });
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast('✓ PNG exportado (A4 300dpi).', 'g');
+  const today = new Date().toISOString().slice(0, 10);
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `pseg-analise-${today}.png` });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('✓ PNG exportado.', 'g');
+}
 
-    } else {
-      const { jsPDF } = window.jspdf;
-      const PW = 210, PH = 297;
-      const MX = 8, MY = 6, HDR = 11;
-      const imgW    = PW - MX * 2;
-      const mmPerPx = imgW / canvas.width;
-      const pageHpx = Math.floor((PH - HDR - MY * 2) / mmPerPx);  // pixels por página
+function exportarResultadosPrint() {
+  const vc = document.getElementById('view-content');
+  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
 
-      const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  // 1. Expandir todas as seções colapsadas para o print
+  vc.querySelectorAll('.qa-arr').forEach(arrow => {
+    const body = arrow.parentElement?.nextElementSibling;
+    if (body) { body.style.display = 'block'; arrow.textContent = '▼'; }
+  });
 
-      const addHdr = (isFirst) => {
-        doc.setFillColor(26, 95, 46);
-        doc.rect(0, 0, PW, HDR, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', isFirst ? 'bold' : 'normal');
-        doc.setFontSize(isFirst ? 8 : 7);
-        doc.text(
-          isFirst ? 'PSEG SafeSign — Análise de Riscos Psicossociais' : 'PSEG SafeSign — continuação',
-          MX, 7.5
-        );
-        doc.text(today, PW - MX, 7.5, { align: 'right' });
-      };
+  // 2. Capturar HTML já expandido
+  const contentHTML = vc.innerHTML;
 
-      // Quebras de página inteligentes: tenta cortar entre seções
-      const pageStarts = _calcPageBreaks(canvas.height, pageHpx, scale, breakHints);
-      pageStarts.push(canvas.height); // sentinela
+  // 3. Restaurar estado colapsado
+  vc.querySelectorAll('.qa-arr').forEach(arrow => {
+    const body = arrow.parentElement?.nextElementSibling;
+    if (body && body.style.display === 'block') { body.style.display = 'none'; arrow.textContent = '▶'; }
+  });
 
-      addHdr(true);
-      let firstPage = true;
+  // 4. Resolver CSS vars (mapa hardcoded = sem acesso ao DOM da janela filha)
+  const CV = {
+    '--bg':'#f8f9fa','--w':'#fff','--border':'#e5e7eb','--bs':'#f0f2f4',
+    '--tx':'#111827','--tm':'#6b7280','--tl':'#9ca3af',
+    '--g':'#16532d','--gd':'#0f3d21','--gl':'#f0fdf4','--gp':'#f7fdf9','--gm':'#22c55e',
+    '--red':'#dc2626','--redbg':'#fef2f2',
+    '--amber':'#d97706','--amberbg':'#fffbeb',
+    '--blue':'#2563eb','--bluebg':'#eff6ff',
+    '--purple':'#7c3aed','--purplebg':'#f5f3ff',
+    '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
+  };
+  const html = contentHTML.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
 
-      for (let pi = 0; pi < pageStarts.length - 1; pi++) {
-        if (!firstPage) { doc.addPage(); addHdr(false); }
-        firstPage = false;
+  // 5. Metadados do relatório
+  const empSel   = document.getElementById('gf-empresa');
+  const empNome  = empSel?.options[empSel?.selectedIndex]?.text || '';
+  const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  const viewMode = window._displayMode === 'tabela'
+    ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
+    : 'Visão Gráfica';
+  const adData  = window._analiseData;
+  const nResp   = adData?.filtrado?.length ?? 0;
+  const setores = adData?.setoresAtivos ?? [];
 
-        const srcY    = pageStarts[pi];
-        const slicePx = Math.min(pageStarts[pi + 1] - srcY, canvas.height - srcY);
-        if (slicePx <= 0) continue;
-
-        const tmp = Object.assign(document.createElement('canvas'),
-          { width: canvas.width, height: slicePx });
-        tmp.getContext('2d').drawImage(canvas, 0, -srcY);
-
-        doc.addImage(tmp.toDataURL('image/jpeg', 0.92), 'JPEG',
-          MX, HDR + MY, imgW, slicePx * mmPerPx);
-      }
-
-      doc.save(`pseg-analise-${today}.pdf`);
-      toast('✓ PDF exportado.', 'g');
-    }
-  } catch (e) {
-    console.error('[exportarResultados]', e);
-    toast('Erro ao exportar: ' + e.message, 'r');
+  // 6. Montar documento HTML autônomo
+  const doc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>PSEG SafeSign — Análise de Riscos${empNome ? ' · ' + empNome : ''}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 18mm 14mm 16mm 14mm;
   }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: #111827; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Cabeçalho do relatório */
+  .pseg-cover {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 3px solid #16532d; padding-bottom: 10px; margin-bottom: 22px;
+    page-break-after: avoid; break-after: avoid;
+  }
+  .pseg-cover-title { font-size: 18pt; font-weight: 800; color: #16532d; line-height: 1.1; }
+  .pseg-cover-sub   { font-size: 9pt; color: #6b7280; margin-top: 3px; }
+  .pseg-cover-meta  { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
+  .pseg-cover-meta strong { color: #374151; }
+
+  /* Tags de filtro */
+  .pseg-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
+  .pseg-tag  { font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: #f0f2f4; color: #374151; border: 1px solid #e5e7eb; }
+
+  /* Bloco de setor — nunca corta */
+  .pseg-setor { page-break-inside: avoid; break-inside: avoid; margin-bottom: 32px; }
+
+  /* Card de risco — nunca corta */
+  .pseg-card  { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Legenda escala — nunca corta do bloco que a precede */
+  .pseg-legenda { page-break-after: avoid; break-after: avoid; }
+
+  /* Seção colapsível sempre visível no print */
+  [style*="display:none"] { display: block !important; }
+  [style*="display: none"] { display: block !important; }
+
+  /* Remove cursor, sombras, transições */
+  * { cursor: default !important; transition: none !important; animation: none !important; box-shadow: none !important; }
+
+  /* Rodapé com número de página (Chrome suporta via @page counter) */
+  @page { @bottom-right { content: "Página " counter(page) " de " counter(pages); font-family: Inter, sans-serif; font-size: 7pt; color: #9ca3af; } }
+  @page :first { @bottom-right { content: "Página " counter(page) " de " counter(pages); } }
+</style>
+</head>
+<body>
+
+<!-- Cabeçalho -->
+<div class="pseg-cover">
+  <div>
+    <div class="pseg-cover-title">PSEG SafeSign</div>
+    <div class="pseg-cover-sub">Análise de Riscos Psicossociais — ${viewMode}</div>
+  </div>
+  <div class="pseg-cover-meta">
+    ${empNome ? '<div><strong>' + empNome + '</strong></div>' : ''}
+    <div>${hoje}</div>
+    ${nResp ? '<div>' + nResp + ' respondente' + (nResp !== 1 ? 's' : '') + '</div>' : ''}
+  </div>
+</div>
+
+${setores.length > 1 ? '<div class="pseg-tags">' + setores.map(s => '<span class="pseg-tag">' + s + '</span>').join('') + '</div>' : ''}
+
+<!-- Conteúdo da análise -->
+<div id="pseg-content">${html}</div>
+
+<script>
+// Adiciona classes de controle de quebra de página aos blocos gerados dinamicamente
+document.addEventListener('DOMContentLoaded', function() {
+  // Bloco de setor (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px)
+  document.querySelectorAll('#pseg-content > div').forEach(function(el) {
+    el.classList.add('pseg-setor');
+  });
+
+  // Card de risco individual
+  document.querySelectorAll('[style*="border-radius:8px"][style*="overflow:hidden"],' +
+    '[style*="border-radius: 8px"][style*="overflow: hidden"]').forEach(function(el) {
+    el.classList.add('pseg-card');
+  });
+
+  // Legenda escala (div imediatamente após o título de setor)
+  document.querySelectorAll('[style*="inline-flex"][style*="align-items:center"][style*="gap:8px"]').forEach(function(el) {
+    el.classList.add('pseg-legenda');
+  });
+
+  // Forçar exibição de seções colapsadas
+  document.querySelectorAll('[style]').forEach(function(el) {
+    var s = el.style.display;
+    if (s === 'none') el.style.display = 'block';
+  });
+
+  setTimeout(function() { window.print(); }, 400);
+});
+<\/script>
+</body>
+</html>`;
+
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('Popup bloqueado. Permita popups para este site.', 'w'); return; }
+  pw.document.open();
+  pw.document.write(doc);
+  pw.document.close();
+  toast('Janela de impressão aberta — use Salvar como PDF no diálogo.', 'g', 4000);
 }
 
 // ─── Toggle helpers ──────────────────────────────────────────────
