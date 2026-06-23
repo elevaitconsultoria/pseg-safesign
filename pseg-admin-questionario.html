@@ -1482,7 +1482,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-sub">Visão geral dos seus clientes, coleta ativa e respostas recebidas</div>
     </div>
     <div class="page-hdr-actions">
-      <button class="btn btn-g" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(abrirModalEmpresa,100)">
+      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova empresa
       </button>
@@ -1516,7 +1516,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <div class="empty-state-title">Nenhum cliente cadastrado</div>
       <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(abrirModalEmpresa,100)">Cadastrar empresa</button>
+      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">Cadastrar empresa</button>
     </div>
   </div>
 </div>
@@ -3061,21 +3061,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost" onclick="abrirModalEmpresa()">
+      <button class="btn btn-ghost" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Nova empresa
       </button>
       <button class="btn btn-g" onclick="abrirModalLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo link
-      </button>
-      <button class="btn btn-ghost" onclick="abrirModalGheBatch(null)" title="Gerar um link para cada GHE da empresa">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Gerar por GHE
-      </button>
-      <button class="btn btn-ghost" onclick="abrirModalGHE('')" title="Configurar setores e funções por empresa">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        Setores &amp; Funções
       </button>
     </div>
   </div>
@@ -3125,11 +3117,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-sub">Empresas atendidas pela sua consultoria — GHEs e ciclos de avaliação</div>
     </div>
     <div class="page-hdr-actions">
-      <button class="btn btn-ghost" onclick="abrirModalGHE('')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        GHE
-      </button>
-      <button class="btn btn-g" onclick="abrirModalEmpresa()">
+      <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova empresa
       </button>
@@ -3462,11 +3450,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
-<!-- MODAL NOVA EMPRESA -->
+<!-- MODAL EMPRESA (criação + edição) -->
 <div class="modal-bg" id="modal-cliente-perfil">
   <div class="modal" style="max-width:520px">
-    <div class="modal-title">Perfil do cliente</div>
-    <div class="modal-sub" id="cp-sub">Configure os dados e logo do cliente.</div>
+    <div class="modal-title" id="cp-title">Novo cliente</div>
+    <div class="modal-sub" id="cp-sub">Preencha os dados da empresa cliente.</div>
 
     <!-- Logo -->
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
@@ -3516,42 +3504,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div id="cp-erro" style="font-size:12px;color:var(--red);margin-bottom:8px;display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalClientePerfil()">Cancelar</button>
-      <button class="btn btn-g" style="flex:2" onclick="salvarPerfilCliente()">
+      <button class="btn btn-g" style="flex:2" id="cp-btn" onclick="salvarPerfilCliente()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Salvar perfil
+        Salvar
       </button>
     </div>
   </div>
 </div>
 
-<div class="modal-bg" id="modal-empresa">
-  <div class="modal">
-    <div class="modal-title" id="ne-title">Nova empresa</div>
-    <div class="modal-sub" id="ne-sub">Cadastre uma empresa para poder gerar links de coleta vinculados a ela.</div>
-    <div class="field" style="margin-bottom:12px">
-      <label>Razão social / Nome <span style="color:var(--red)">*</span></label>
-      <input type="text" id="ne-nome" placeholder="Ex: Construtora ABC Ltda."/>
-    </div>
-    <div class="g2" style="margin-bottom:12px">
-      <div class="field">
-        <label>CNPJ</label>
-        <input type="text" id="ne-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="mascaraCNPJ(this)"/>
-      </div>
-      <div class="field">
-        <label>Contato (e-mail ou telefone)</label>
-        <input type="text" id="ne-contato" placeholder="contato@empresa.com.br"/>
-      </div>
-    </div>
-    <div id="ne-erro" style="font-size:12px;color:var(--red);margin-bottom:8px;display:none"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalEmpresa()">Cancelar</button>
-      <button class="btn btn-g" style="flex:2" id="ne-btn" onclick="salvarNovaEmpresa()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Cadastrar empresa
-      </button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -4548,18 +4508,24 @@ async function salvarEdicaoInlineEmpresa(empId) {
 // ══════════════════════════════════════════
 
 function abrirModalClientePerfil(empId) {
-  const emp = _empresas.find(e => e.id === empId);
-  if (!emp) return;
-  _cpEmpresaId  = empId;
-  _cpLogoBase64 = emp.logo_base64 || '';
+  _cpEmpresaId  = empId || null;
+  _cpLogoBase64 = '';
 
-  document.getElementById('cp-nome').value        = emp.nome         || '';
-  document.getElementById('cp-razao-social').value = emp.razao_social || '';
-  document.getElementById('cp-cnpj').value         = emp.cnpj         || '';
-  document.getElementById('cp-contato').value      = emp.contato      || '';
-  document.getElementById('cp-endereco').value     = emp.endereco     || '';
+  const isNovo = !empId;
+  const emp = isNovo ? null : _empresas.find(e => e.id === empId);
+  if (!isNovo && !emp) return;
+
+  document.getElementById('cp-title').textContent = isNovo ? 'Nova empresa' : 'Configurar cliente';
+  document.getElementById('cp-sub').textContent   = isNovo ? 'Preencha os dados da empresa cliente.' : `Editando "${emp.nome}"`;
+  document.getElementById('cp-nome').value         = emp?.nome         || '';
+  document.getElementById('cp-razao-social').value = emp?.razao_social || '';
+  document.getElementById('cp-cnpj').value         = emp?.cnpj         || '';
+  document.getElementById('cp-contato').value      = emp?.contato      || '';
+  document.getElementById('cp-endereco').value     = emp?.endereco     || '';
   document.getElementById('cp-erro').style.display = 'none';
+  document.getElementById('cp-btn').textContent    = isNovo ? 'Cadastrar empresa' : 'Salvar';
 
+  if (!isNovo) _cpLogoBase64 = emp.logo_base64 || '';
   const prev = document.getElementById('cp-logo-preview');
   if (_cpLogoBase64) {
     prev.innerHTML = `<img src="${_cpLogoBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
@@ -4567,7 +4533,6 @@ function abrirModalClientePerfil(empId) {
     prev.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
   }
 
-  document.getElementById('cp-sub').textContent = `Perfil de "${emp.nome}"`;
   document.getElementById('modal-cliente-perfil').classList.add('open');
   setTimeout(() => document.getElementById('cp-nome').focus(), 50);
 }
@@ -4610,6 +4575,7 @@ async function salvarPerfilCliente() {
   const contato    = document.getElementById('cp-contato').value.trim();
   const endereco   = document.getElementById('cp-endereco').value.trim();
   const erroEl     = document.getElementById('cp-erro');
+  const btn        = document.getElementById('cp-btn');
 
   if (!nome) {
     erroEl.textContent = 'O nome comercial é obrigatório.';
@@ -4618,33 +4584,66 @@ async function salvarPerfilCliente() {
   }
   erroEl.style.display = 'none';
 
+  const isNovo = !_cpEmpresaId;
   const payload = {
     nome,
-    razao_social: razaoSoc  || null,
-    cnpj:         cnpj      || null,
-    contato:      contato   || null,
-    endereco:     endereco  || null,
-    logo_base64:  _cpLogoBase64 || null,
+    razao_social: razaoSoc       || null,
+    cnpj:         cnpj           || null,
+    contato:      contato        || null,
+    endereco:     endereco       || null,
+    logo_base64:  _cpLogoBase64  || null,
   };
 
-  if (!isDemoMode) {
-    try {
-      const { error } = await sbAdmin.from('empresas').update(payload).eq('id', _cpEmpresaId);
-      if (error) throw new Error(error.message);
-    } catch(e) {
-      erroEl.textContent = 'Erro ao salvar: ' + e.message;
-      erroEl.style.display = '';
-      return;
-    }
+  if (isNovo) {
+    // ── VERIFICAR LIMITE ──
+    const ok = await verificarLimiteTenant('empresas');
+    if (!ok) return;
   }
 
-  const emp = _empresas.find(e => e.id === _cpEmpresaId);
-  if (emp) Object.assign(emp, payload);
-  _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
-  popularSelectsEmpresas();
-  renderTelaEmpresas();
-  fecharModalClientePerfil();
-  toast('Perfil do cliente salvo!', 'g');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  if (isDemoMode) {
+    if (isNovo) {
+      const novaEmp = { id: 'emp_' + Date.now(), ...payload, ativo: true, setores: [], funcoes: [] };
+      _empresas.push(novaEmp);
+    } else {
+      const emp = _empresas.find(e => e.id === _cpEmpresaId);
+      if (emp) Object.assign(emp, payload);
+    }
+    _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+    popularSelectsEmpresas();
+    renderTelaEmpresas();
+    fecharModalClientePerfil();
+    toast(isNovo ? 'Empresa cadastrada (demo).' : 'Cliente atualizado (demo).', 'g');
+    return;
+  }
+
+  try {
+    if (isNovo) {
+      const { data, error } = await sbAdmin.from('empresas')
+        .insert({ ...payload, ativo: true, criado_por: currentUser?.id || null, tenant_id: currentTenantId })
+        .select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo')
+        .single();
+      if (error) throw error;
+      _empresas.push({ ...data, setores: [], funcoes: [] });
+    } else {
+      const { error } = await sbAdmin.from('empresas').update(payload).eq('id', _cpEmpresaId);
+      if (error) throw error;
+      const emp = _empresas.find(e => e.id === _cpEmpresaId);
+      if (emp) Object.assign(emp, payload);
+    }
+    _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+    popularSelectsEmpresas();
+    renderTelaEmpresas();
+    fecharModalClientePerfil();
+    toast(isNovo ? 'Empresa cadastrada com sucesso!' : 'Cliente atualizado com sucesso!', 'g');
+  } catch(e) {
+    erroEl.textContent = 'Erro ao salvar: ' + e.message;
+    erroEl.style.display = '';
+    btn.disabled = false;
+    btn.textContent = isNovo ? 'Cadastrar empresa' : 'Salvar';
+  }
 }
 
 async function excluirEmpresa(empresaId, nomeEsc, nLinks) {
@@ -9545,7 +9544,7 @@ function renderDashboard() {
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <div class="empty-state-title">Nenhum cliente cadastrado</div>
       <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(abrirModalEmpresa,100)">Cadastrar empresa</button>
+      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">Cadastrar empresa</button>
     </div>`;
     return;
   }
@@ -9640,8 +9639,7 @@ document.addEventListener('keydown', function(e) {
     'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
     'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
     'modal-ghe-batch':    typeof fecharModalGheBatch    !== 'undefined' ? fecharModalGheBatch    : null,
-    'modal-cliente-perfil':typeof fecharModalClientePerfil!== 'undefined' ? fecharModalClientePerfil: null,
-    'modal-empresa':       typeof fecharModalEmpresa     !== 'undefined' ? fecharModalEmpresa     : null,
+    'modal-cliente-perfil': typeof fecharModalClientePerfil !== 'undefined' ? fecharModalClientePerfil : null,
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
   };
@@ -9670,7 +9668,7 @@ function renderTelaEmpresas() {
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 12px;display:block"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente cadastrado</div>
       <div style="font-size:12px;margin-bottom:16px">Cadastre a primeira empresa cliente para iniciar.</div>
-      <button class="btn btn-g" onclick="abrirModalEmpresa()">Nova empresa</button>
+      <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Nova empresa</button>
     </div>`;
     return;
   }
@@ -9700,33 +9698,11 @@ function renderTelaEmpresas() {
     return `<div class="card" style="padding:0;overflow:hidden" id="emp-card-${emp.id}">
       <div style="padding:14px 16px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-          <div style="flex:1;min-width:0" id="emp-display-${emp.id}">
-            <div style="display:flex;align-items:center;gap:10px">
-              ${avatarHtml}
-              <div style="min-width:0">
-              <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            ${avatarHtml}
+            <div style="min-width:0;flex:1">
               <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
-              <button onclick="iniciarEdicaoInlineEmpresa('${emp.id}')" title="Editar nome/CNPJ"
-                style="background:none;border:none;cursor:pointer;padding:2px;color:var(--tl);flex-shrink:0;opacity:.5;transition:opacity .15s"
-                onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-            </div>
-            <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
-              </div></div><!-- /nome-wrap /avatar-row -->
-          </div>
-          <div id="emp-edit-${emp.id}" style="display:none;flex:1;min-width:0;padding-right:8px">
-            <input id="emp-nome-inp-${emp.id}" type="text" value="${emp.nome.replace(/"/g,'&quot;')}"
-              style="width:100%;border:1.5px solid var(--g);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600;color:var(--tx);font-family:inherit;margin-bottom:5px;outline:none"
-              onkeydown="if(event.key==='Enter')salvarEdicaoInlineEmpresa('${emp.id}');if(event.key==='Escape')cancelarEdicaoInlineEmpresa('${emp.id}')"/>
-            <input id="emp-cnpj-inp-${emp.id}" type="text" value="${(emp.cnpj||'').replace(/"/g,'&quot;')}" placeholder="CNPJ (opcional)"
-              style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--tx);font-family:inherit;outline:none"
-              onkeydown="if(event.key==='Enter')salvarEdicaoInlineEmpresa('${emp.id}');if(event.key==='Escape')cancelarEdicaoInlineEmpresa('${emp.id}')"/>
-            <div style="display:flex;gap:6px;margin-top:6px">
-              <button onclick="salvarEdicaoInlineEmpresa('${emp.id}')"
-                style="background:var(--g);color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">✓ Salvar</button>
-              <button onclick="cancelarEdicaoInlineEmpresa('${emp.id}')"
-                style="background:var(--bg);color:var(--tm);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>
+              <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
             </div>
           </div>
           <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0;margin-left:8px">${status}</span>
@@ -9753,12 +9729,12 @@ function renderTelaEmpresas() {
       </div>
       <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalClientePerfil('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Perfil
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Configurar
         </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalGHE('${emp.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          GHE
+          Setores
         </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalCiclo('${emp.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -9772,10 +9748,6 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Resultados
         </button>
-        ${nSetores ? `<button class="btn btn-g" style="font-size:11px;padding:5px 10px" onclick="abrirModalGheBatch('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Links por GHE
-        </button>` : ''}
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--red);border-color:transparent" onclick="excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           Excluir
