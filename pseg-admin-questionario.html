@@ -10178,8 +10178,9 @@ function mudarEmpresaGHE(empresaId) {
   const emp = _gheGetEmpresa(empresaId);
   const sub = document.getElementById('ghe-empresa-sub');
   if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : '';
-  _gheTempSetores = emp ? [...(emp.setores || [])] : [];
-  _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+  _gheTempSetores    = emp ? [...(emp.setores || [])] : [];
+  _gheTempFuncoes    = emp ? [...(emp.funcoes || [])] : [];
+  _gheTempCargoSetor = {};
   _ghePopularCopiarSel();
   renderGHEModal();
 }
@@ -10208,8 +10209,9 @@ function abrirModalGHE(empresaId) {
     ? `Empresa: ${emp.nome}`
     : 'Selecione a empresa acima para configurar seus GHEs.';
 
-  _gheTempSetores = emp ? [...(emp.setores || [])] : [];
-  _gheTempFuncoes = emp ? [...(emp.funcoes || [])] : [];
+  _gheTempSetores    = emp ? [...(emp.setores || [])] : [];
+  _gheTempFuncoes    = emp ? [...(emp.funcoes || [])] : [];
+  _gheTempCargoSetor = {};
 
   _gheRenderTemplateBtns();
   _ghePopularCopiarSel();
@@ -10338,6 +10340,10 @@ function adicionarGHEFuncao() {
 
 let _gheImportSetores = [];
 let _gheImportFuncoes = [];
+// Mapa cargo→setor vindo do CSV: { 'Operador': 'Produção', ... }
+// Cargos não presentes aqui terão setor_id = null (universais)
+let _gheImportCargoSetor = {};
+let _gheTempCargoSetor   = {};
 
 function importarGHEArquivo(input) {
   const file = input.files[0];
@@ -10413,6 +10419,16 @@ function _processarGHEImport(rows) {
     ? [...new Set(rows.map(r => (r[colCargo]||'').trim()).filter(Boolean))].sort()
     : [];
 
+  // Monta mapa cargo → setor a partir dos pares do CSV
+  _gheImportCargoSetor = {};
+  if (colSetor && colCargo) {
+    rows.forEach(r => {
+      const s = (r[colSetor]||'').trim();
+      const c = (r[colCargo]||'').trim();
+      if (c && s) _gheImportCargoSetor[c] = s;
+    });
+  }
+
   _gheImportSetores = setores;
   _gheImportFuncoes = funcoes;
 
@@ -10427,15 +10443,17 @@ function _processarGHEImport(rows) {
 }
 
 function confirmarGHEImport() {
-  // Mescla com o que já existe (deduplicado)
   const setMerge = [...new Set([..._gheTempSetores, ..._gheImportSetores])];
   const funMerge = [...new Set([..._gheTempFuncoes, ..._gheImportFuncoes])];
   _gheTempSetores = setMerge;
   _gheTempFuncoes = funMerge;
+  // Mescla mapa cargo→setor (importado prevalece sobre existente)
+  _gheTempCargoSetor = { ..._gheTempCargoSetor, ..._gheImportCargoSetor };
   renderGHELists();
   document.getElementById('ghe-import-preview').style.display = 'none';
   _gheImportSetores = [];
   _gheImportFuncoes = [];
+  _gheImportCargoSetor = {};
   toast(`GHE importado: ${setMerge.length} setor(es), ${funMerge.length} função(ões). Clique em Salvar para confirmar.`, 'g', 4000);
 }
 
@@ -10484,17 +10502,33 @@ async function salvarGHE() {
     try {
       const setRows = _gheTempSetores.map((nome, i) =>
         ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
-      const funRows = _gheTempFuncoes.map((nome, i) =>
-        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
 
       const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
       const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
       if (e1 || e2) throw e1 || e2;
+
+      // Inserir setores e capturar IDs para vincular aos cargos
+      let setorNomeParaId = {};
       if (setRows.length) {
-        const { error } = await sbAdmin.from('empresa_setores').insert(setRows);
+        const { data: setInseridos, error } = await sbAdmin
+          .from('empresa_setores').insert(setRows).select('id, nome');
         if (error) throw error;
+        (setInseridos || []).forEach(s => { setorNomeParaId[s.nome] = s.id; });
       }
-      if (funRows.length) {
+
+      // Inserir cargos com setor_id quando há vínculo do CSV
+      if (_gheTempFuncoes.length) {
+        const funRows = _gheTempFuncoes.map((nome, i) => {
+          const setorNome = _gheTempCargoSetor[nome] || null;
+          return {
+            empresa_id: _gheEmpresaId,
+            nome,
+            ordem: i,
+            ativo: true,
+            tenant_id: currentTenantId,
+            setor_id: setorNome ? (setorNomeParaId[setorNome] || null) : null,
+          };
+        });
         const { error } = await sbAdmin.from('empresa_funcoes').insert(funRows);
         if (error) throw error;
       }
