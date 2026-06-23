@@ -3221,10 +3221,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="field" style="margin-bottom:12px">
       <label>Validade do link</label>
       <select id="nl-validade">
-        <option value="0">Sem expiração</option>
+        <option value="0" selected>Sem expiração</option>
         <option value="7">7 dias</option>
         <option value="15">15 dias</option>
-        <option value="30" selected>30 dias</option>
+        <option value="30">30 dias</option>
         <option value="60">60 dias</option>
       </select>
     </div>
@@ -3268,10 +3268,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="field" style="margin-bottom:14px">
       <label>Validade dos links</label>
       <select id="gb-validade">
-        <option value="0">Sem expiração</option>
+        <option value="0" selected>Sem expiração</option>
         <option value="7">7 dias</option>
         <option value="15">15 dias</option>
-        <option value="30" selected>30 dias</option>
+        <option value="30">30 dias</option>
         <option value="60">60 dias</option>
       </select>
     </div>
@@ -4851,6 +4851,7 @@ function toggleComboItem(id, item) {
   else comboState[id].add(item);
   buildCombo(id);
   if (id.startsWith('combo-audit-')) renderTelaAuditoria();
+  if (id.startsWith('combo-ld-')) renderLaudo();
 }
 
 function filterCombo(id, q) { buildCombo(id, q); }
@@ -4859,12 +4860,14 @@ function selectAllCombo(id) {
   comboItems[id]().forEach(i => comboState[id].add(i));
   buildCombo(id);
   if (id.startsWith('combo-audit-')) renderTelaAuditoria();
+  if (id.startsWith('combo-ld-')) renderLaudo();
 }
 
 function clearCombo(id) {
   comboState[id].clear();
   buildCombo(id);
   if (id.startsWith('combo-audit-')) renderTelaAuditoria();
+  if (id.startsWith('combo-ld-')) renderLaudo();
 }
 
 function setComboNivel(arr) {
@@ -7376,7 +7379,8 @@ function renderBarChart(d) {
           if (segW < 18) return;
 
           ctx.save();
-          ctx.font = `${isMax ? '700' : '500'} ${isMax ? '11' : '10'}px "Plus Jakarta Sans", sans-serif`;
+          const _pfs = window._gfPrintMode ? (isMax ? 20 : 18) : (isMax ? 11 : 10);
+          ctx.font = `${isMax ? '700' : '500'} ${_pfs}px "Plus Jakarta Sans", sans-serif`;
           ctx.fillStyle = GF_CORES[ci(nivel)].text;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -7493,28 +7497,39 @@ function exportChartPNG(codigo) {
 }
 
 // ── EXPORT PDF / PRINT ──
-function exportGrafPDF() {
+async function exportGrafPDF() {
   const panel = document.getElementById('graficos-panel');
   if (!panel || !Object.keys(chartInstances).length) {
     toast('Gere os gráficos primeiro.', 'w'); return;
   }
 
-  // 1. Forçar render final + capturar cada canvas como PNG 2×
+  toast('Preparando PDF...', 'g', 2500);
+
+  // 1. Re-renderizar cada chart em 5× DPR e aguardar o frame de render
   const chartImgs = {};
-  Object.entries(chartInstances).forEach(([codigo, chart]) => {
-    try { chart.update('none'); } catch(e) {}
-    const canvas = chart.canvas;
-    if (!canvas) return;
-    const scale = 2;
-    const tmp = document.createElement('canvas');
-    tmp.width  = canvas.width  * scale;
-    tmp.height = canvas.height * scale;
-    const ctx = tmp.getContext('2d');
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, tmp.width, tmp.height);
-    ctx.drawImage(canvas, 0, 0, tmp.width, tmp.height);
-    chartImgs[codigo] = tmp.toDataURL('image/png');
-  });
+  for (const [codigo, chart] of Object.entries(chartInstances)) {
+    if (!chart.canvas) continue;
+    const origRatio = chart.currentDevicePixelRatio || chart.options.devicePixelRatio || 1;
+    const origW = chart.canvas.offsetWidth || 600;
+    const origH = chart.canvas.offsetHeight || 56;
+    const xTicks = chart.options.scales?.x?.ticks;
+    const origTickSize = xTicks?.font?.size;
+    try {
+      // Aumentar fontes para impressão
+      window._gfPrintMode = true;
+      if (xTicks?.font) xTicks.font.size = 16;
+      chart.options.devicePixelRatio = 4;
+      chart.resize(origW, 130);
+      await new Promise(r => requestAnimationFrame(r));
+      chartImgs[codigo] = chart.toBase64Image('image/png', 1.0);
+    } finally {
+      window._gfPrintMode = false;
+      if (xTicks?.font && origTickSize != null) xTicks.font.size = origTickSize;
+      chart.options.devicePixelRatio = origRatio;
+      chart.resize(origW, origH);
+    }
+  }
+  await new Promise(r => requestAnimationFrame(r)); // restaurar UI
 
   // 2. Expandir seções colapsadas
   panel.querySelectorAll('[id^="bsec-"]').forEach(s => { s.style.display = ''; });
@@ -7524,7 +7539,7 @@ function exportGrafPDF() {
   Object.keys(chartImgs).forEach(codigo => {
     html = html.replace(
       new RegExp(`<canvas id="canvas-${codigo}"[^>]*>\\s*<\\/canvas>`, 'g'),
-      `<img src="${chartImgs[codigo]}" style="width:100%;height:56px;object-fit:fill;display:block">`
+      `<img src="${chartImgs[codigo]}" style="width:100%;height:auto;display:block">`
     );
   });
 
@@ -7597,7 +7612,7 @@ function exportGrafPDF() {
   .chart-card-badges { display: flex; align-items: center; gap: 8px; font-size: 9px; }
   .moda-badge { padding: 2px 7px; border-radius: 4px; font-weight: 600; font-size: 9px; border: 1px solid; }
   .chart-canvas-wrap { padding: 4px 12px 8px; }
-  .chart-canvas-wrap img { width: 100%; height: 52px; object-fit: fill; display: block; }
+  .chart-canvas-wrap img { width: 100%; height: auto; display: block; }
 
   /* Esconder botões de download */
   .dl-btn { display: none !important; }
@@ -7964,6 +7979,7 @@ function toggleLaudoSecao(id) {
   if (laudoSecoesAtivas.has(id)) laudoSecoesAtivas.delete(id);
   else laudoSecoesAtivas.add(id);
   buildLaudoSecoesChecks();
+  renderLaudo(); // atualizar preview inline
 }
 
 async function onLaudoFiltro() {
@@ -7996,6 +8012,7 @@ async function onLaudoFiltro() {
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   renderCombo('combo-ld-setor');
+  renderLaudo();
 }
 
 // ── RENDER PREVIEW ──
@@ -8381,17 +8398,20 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6}
+body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+@page{size:A4 portrait;margin:18mm 18mm 14mm 18mm}
 @media print{
   body{background:white}
-  .page{width:100%;margin:0;padding:18mm 18mm 14mm;box-shadow:none;page-break-after:always}
-  .no-print{display:none}
-  tr{page-break-inside:avoid}
-  .acoes-grupo{page-break-inside:avoid}
-  .tbl-wrap{page-break-inside:avoid}
-  .highlight-box{page-break-inside:avoid}
-  div[style*="margin-bottom:10px"]{page-break-inside:avoid}
+  .page{width:100%;margin:0;padding:0;box-shadow:none;page-break-after:always;break-after:page}
+  .no-print{display:none!important}
+  tr{page-break-inside:avoid;break-inside:avoid}
+  .acoes-grupo{page-break-inside:avoid;break-inside:avoid}
+  .tbl-wrap{page-break-inside:avoid;break-inside:avoid}
+  .highlight-box{page-break-inside:avoid;break-inside:avoid}
+  .laudo-section{page-break-inside:avoid;break-inside:avoid}
+  div[style*="margin-bottom:10px"]{page-break-inside:avoid;break-inside:avoid}
+  h2,h3{page-break-after:avoid;break-after:avoid}
 }
 .toolbar{position:sticky;top:0;z-index:100;background:white;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:10px}
 .toolbar .logo-mini{display:flex;align-items:center;gap:8px;margin-right:auto}

@@ -226,7 +226,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <label>Setor / GHE</label>
         <!-- preenchido por popularMetaSetor() — pode ser <select> ou <input> livre -->
         <select id="meta-setor">
-          <option value="">Prefiro não informar</option>
+          <option value="">Selecione seu setor</option>
         </select>
         <input id="meta-setor-input" type="text" placeholder="Digite seu setor"
           style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
@@ -556,10 +556,10 @@ function popularMetaSetor() {
     // Empresa tem setores cadastrados → dropdown com "Outro" ao final
     if (sel) {
       sel.style.display = '';
-      sel.innerHTML = '<option value="">Prefiro não informar</option>';
+      sel.innerHTML = '<option value="">Selecione seu setor</option>';
       empresaSetores.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
+        opt.value = s.nome; opt.textContent = s.nome;
         sel.appendChild(opt);
       });
       // "Outro" sempre por último
