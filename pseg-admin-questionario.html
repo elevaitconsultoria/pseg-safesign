@@ -3370,68 +3370,29 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <button id="ghe-cola-toggle" class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="toggleColaLista()">Expandir</button>
         </div>
         <div id="ghe-cola-area" style="display:none">
-          <textarea id="ghe-cola-txt" rows="4" placeholder="Cole aqui — um item por linha&#10;Ex:&#10;Produção&#10;Manutenção"
+          <textarea id="ghe-cola-txt" rows="5"
+            placeholder="Dois formatos aceitos:&#10;&#10;1) Um setor por linha → adiciona setores&#10;   Produção&#10;   Administrativo&#10;&#10;2) Setor; Cargo → cria a hierarquia completa&#10;   Produção; Operador de máquina&#10;   Produção; Técnico de manutenção&#10;   Administrativo; Assistente"
             style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:var(--bg);color:var(--tx);resize:vertical;margin-bottom:8px"></textarea>
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;gap:14px;font-size:12px;color:var(--tx)">
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-                <input type="radio" name="cola-tipo" value="setor" checked style="accent-color:var(--g)"/> Setores
-              </label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-                <input type="radio" name="cola-tipo" value="funcao" style="accent-color:var(--g)"/> Funções
-              </label>
-            </div>
-            <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="processarColaLista()">Adicionar à lista</button>
-          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 14px;width:100%" onclick="processarColaLista()">Processar</button>
         </div>
       </div>
     </div>
 
-    <!-- ✏️ AJUSTAR MANUALMENTE -->
+    <!-- ✏️ ESTRUTURA HIERÁRQUICA -->
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">✏️ Ajustar manualmente</div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-
-        <!-- SETORES -->
-        <div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
-            Setores / GHEs <span id="ghe-set-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
-          </div>
-          <div id="ghe-setores-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:8px"></div>
-          <div style="position:relative">
-            <div style="display:flex;gap:6px">
-              <input id="ghe-novo-setor" type="text" placeholder="+ Novo setor..."
-                style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
-                oninput="renderSugestoesGHE('setor',this.value)"
-                onfocus="this.style.borderColor='var(--g)';renderSugestoesGHE('setor',this.value)"
-                onblur="setTimeout(()=>{fecharSugestoesGHE('setor');this.style.borderColor='var(--border)'},150)"
-                onkeydown="gheInputKeydown(event,'setor')"/>
-              <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHESetor()">+</button>
-            </div>
-            <div id="ghe-sug-setor" style="display:none;position:absolute;left:0;right:36px;top:100%;background:var(--bg);border:1.5px solid var(--g);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:200px;overflow-y:auto"></div>
-          </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">✏️ Estrutura de Setores e Cargos</div>
+      <div id="ghe-hierarquia-list" style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;margin-bottom:10px"></div>
+      <div style="position:relative">
+        <div style="display:flex;gap:6px">
+          <input id="ghe-novo-setor" type="text" placeholder="Novo setor / GHE..."
+            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
+            oninput="renderSugestoesGHE('setor',this.value)"
+            onfocus="this.style.borderColor='var(--g)';renderSugestoesGHE('setor',this.value)"
+            onblur="setTimeout(()=>{fecharSugestoesGHE('setor');this.style.borderColor='var(--border)'},200)"
+            onkeydown="gheInputKeydown(event,'setor')"/>
+          <button class="btn btn-g" style="padding:6px 14px;font-size:12px;white-space:nowrap" onclick="adicionarGHESetor()">+ Setor</button>
         </div>
-
-        <!-- FUNÇÕES -->
-        <div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">
-            Funções / Cargos <span id="ghe-fun-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
-          </div>
-          <div id="ghe-funcoes-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:8px"></div>
-          <div style="position:relative">
-            <div style="display:flex;gap:6px">
-              <input id="ghe-nova-funcao" type="text" placeholder="+ Nova função..."
-                style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none"
-                oninput="renderSugestoesGHE('funcao',this.value)"
-                onfocus="this.style.borderColor='var(--g)';renderSugestoesGHE('funcao',this.value)"
-                onblur="setTimeout(()=>{fecharSugestoesGHE('funcao');this.style.borderColor='var(--border)'},150)"
-                onkeydown="gheInputKeydown(event,'funcao')"/>
-              <button class="btn btn-g" style="padding:6px 12px;font-size:12px" onclick="adicionarGHEFuncao()">+</button>
-            </div>
-            <div id="ghe-sug-funcao" style="display:none;position:absolute;left:0;right:36px;top:100%;background:var(--bg);border:1.5px solid var(--g);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:200px;overflow-y:auto"></div>
-          </div>
-        </div>
+        <div id="ghe-sug-setor" style="display:none;position:absolute;left:0;right:90px;top:100%;background:white;border:1.5px solid var(--g);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:180px;overflow-y:auto"></div>
       </div>
     </div>
 
@@ -4362,18 +4323,31 @@ async function carregarEmpresas() {
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
       (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true)).order('nome'),
       (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
-      (tid ? sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
-      (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
+      (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
+      (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true)).order('empresa_id').order('ordem'),
     ]);
-    _empresas = (emps || []).map(emp => ({
-      ...emp,
-      razao_social: emp.razao_social || '',
-      endereco:     emp.endereco     || '',
-      contato:      emp.contato      || '',
-      logo_base64:  emp.logo_base64  || '',
-      setores: (setData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
-      funcoes: (funData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
-    }));
+    _empresas = (emps || []).map(emp => {
+      const empSetores = (setData || []).filter(r => r.empresa_id === emp.id);
+      const empFuncoes = (funData || []).filter(r => r.empresa_id === emp.id);
+      const setorIdToNome = {};
+      empSetores.forEach(s => { setorIdToNome[s.id] = s.nome; });
+      const hierarquia = empSetores.map(s => ({
+        nome: s.nome,
+        funcoes: empFuncoes.filter(f => f.setor_id === s.id).map(f => f.nome),
+      }));
+      const universais = empFuncoes.filter(f => !f.setor_id).map(f => f.nome);
+      return {
+        ...emp,
+        razao_social: emp.razao_social || '',
+        endereco:     emp.endereco     || '',
+        contato:      emp.contato      || '',
+        logo_base64:  emp.logo_base64  || '',
+        setores:    empSetores.map(s => s.nome),
+        funcoes:    empFuncoes.map(f => f.nome),
+        hierarquia,
+        universais,
+      };
+    });
     _ciclos = cics || [];
     popularSelectsEmpresas();
   } catch(e) {
@@ -10308,15 +10282,27 @@ function exportarAuditoriaCSV() {
 // GHE — GESTÃO DE SETORES & FUNÇÕES
 // ══════════════════════════════════════════
 
-let _gheEmpresaId   = null;
-let _gheTempSetores = [];
-let _gheTempFuncoes = [];
+// ══════════════════════════════════════════
+// GHE — estado hierárquico
+// ══════════════════════════════════════════
+let _gheEmpresaId      = null;
+let _gheTempHierarquia = []; // [{nome, funcoes:[]}]
+let _gheTempUniversais = []; // cargos sem setor definido
 
-function _gheGetEmpresa(id) {
-  return _empresas.find(e => e.id === id) || null;
+// compat aliases usados no salvar + sugestões
+function _gheAllSetores() { return _gheTempHierarquia.map(h => h.nome); }
+function _gheAllFuncoes() { return [..._gheTempHierarquia.flatMap(h => h.funcoes), ..._gheTempUniversais]; }
+
+function _gheGetEmpresa(id) { return _empresas.find(e => e.id === id) || null; }
+
+function _gheEmpToHier(emp) {
+  if (!emp) return { hier: [], uni: [] };
+  return {
+    hier: (emp.hierarquia || []).map(h => ({ nome: h.nome, funcoes: [...h.funcoes] })),
+    uni:  [...(emp.universais || [])],
+  };
 }
 
-/** Chamado ao trocar empresa no select do modal de Novo Link */
 function popularSetoresModal() {
   const empresaId = document.getElementById('nl-empresa').value;
   const sel = document.getElementById('nl-setor');
@@ -10331,23 +10317,20 @@ function popularSetoresModal() {
   });
 }
 
-/** Muda empresa dentro do modal GHE sem fechar */
 function mudarEmpresaGHE(empresaId) {
   if (!empresaId) return;
   _gheEmpresaId = empresaId;
   const emp = _gheGetEmpresa(empresaId);
   const sub = document.getElementById('ghe-empresa-sub');
   if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : '';
-  _gheTempSetores    = emp ? [...(emp.setores || [])] : [];
-  _gheTempFuncoes    = emp ? [...(emp.funcoes || [])] : [];
-  _gheTempCargoSetor = {};
+  const { hier, uni } = _gheEmpToHier(emp);
+  _gheTempHierarquia = hier;
+  _gheTempUniversais = uni;
   _ghePopularCopiarSel();
   renderGHEModal();
 }
 
-/** Abre o modal GHE, opcionalmente pré-selecionando uma empresa */
 function abrirModalGHE(empresaId) {
-  // Popular select de empresa no modal
   const empSel = document.getElementById('ghe-empresa-sel');
   if (empSel) {
     empSel.innerHTML = '<option value="">Selecione um cliente...</option>';
@@ -10358,28 +10341,18 @@ function abrirModalGHE(empresaId) {
       empSel.appendChild(opt);
     });
   }
-
-  const row = document.getElementById('ghe-empresa-row');
-  const sub = document.getElementById('ghe-empresa-sub');
-
   _gheEmpresaId = empresaId || null;
   const emp = empresaId ? _gheGetEmpresa(empresaId) : null;
-
-  if (sub) sub.textContent = emp
-    ? `Empresa: ${emp.nome}`
-    : 'Selecione a empresa acima para configurar seus GHEs.';
-
-  _gheTempSetores    = emp ? [...(emp.setores || [])] : [];
-  _gheTempFuncoes    = emp ? [...(emp.funcoes || [])] : [];
-  _gheTempCargoSetor = {};
-
+  const sub = document.getElementById('ghe-empresa-sub');
+  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa acima para configurar seus GHEs.';
+  const { hier, uni } = _gheEmpToHier(emp);
+  _gheTempHierarquia = hier;
+  _gheTempUniversais = uni;
   _gheRenderTemplateBtns();
   _ghePopularCopiarSel();
-  // Resetar cola
   const ct = document.getElementById('ghe-cola-txt'); if (ct) ct.value = '';
   const ca = document.getElementById('ghe-cola-area'); if (ca) ca.style.display = 'none';
   const ctg = document.getElementById('ghe-cola-toggle'); if (ctg) ctg.textContent = 'Expandir';
-
   renderGHEModal();
   document.getElementById('modal-ghe').classList.add('open');
 }
@@ -10389,120 +10362,228 @@ function fecharModalGHE() {
   _gheEmpresaId = null;
 }
 
-/** Renderiza chips de setores e funções no modal */
+// ── Render hierárquico ──
 function renderGHEModal() {
-  const setList = document.getElementById('ghe-setores-list');
-  const funList = document.getElementById('ghe-funcoes-list');
-  if (!setList || !funList) return;
+  const cont = document.getElementById('ghe-hierarquia-list');
+  if (!cont) return;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
 
-  const makeChip = (item, type, idx) =>
-    `<div id="ghe-chip-${type}-${idx}" style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;` +
-    `background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:12px;gap:6px">` +
-    `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.replace(/</g,'&lt;')}</span>` +
-    `<div style="display:flex;gap:2px;flex-shrink:0">` +
-    `<button onclick="editarGHEInline('${type}',${idx})" ` +
-    `style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;line-height:1;font-size:12px;width:20px;height:20px;border-radius:3px" ` +
-    `onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Editar">✏️</button>` +
-    `<button onclick="removerGHE('${type}',${idx})" ` +
-    `style="background:none;border:none;cursor:pointer;color:var(--tl);padding:0;line-height:1;` +
-    `font-size:16px;width:20px;height:20px;border-radius:3px" ` +
-    `onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Remover">&times;</button>` +
-    `</div></div>`;
-
-  setList.innerHTML = _gheTempSetores.length
-    ? _gheTempSetores.map((s, i) => makeChip(s, 'setor', i)).join('')
-    : '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhum setor cadastrado ainda.</div>';
-
-  funList.innerHTML = _gheTempFuncoes.length
-    ? _gheTempFuncoes.map((f, i) => makeChip(f, 'funcao', i)).join('')
-    : '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhuma função cadastrada ainda.</div>';
-
-  const sc = document.getElementById('ghe-set-count');
-  if (sc) sc.textContent = _gheTempSetores.length ? `(${_gheTempSetores.length})` : '';
-  const fc = document.getElementById('ghe-fun-count');
-  if (fc) fc.textContent = _gheTempFuncoes.length ? `(${_gheTempFuncoes.length})` : '';
-}
-
-function removerGHE(type, idx) {
-  if (type === 'setor') _gheTempSetores.splice(idx, 1);
-  else                  _gheTempFuncoes.splice(idx, 1);
-  renderGHEModal();
-}
-
-function editarGHEInline(type, idx) {
-  const chipId = `ghe-chip-${type}-${idx}`;
-  const chip = document.getElementById(chipId);
-  if (!chip) return;
-  const arr = type === 'setor' ? _gheTempSetores : _gheTempFuncoes;
-  const valAtual = arr[idx] || '';
-
-  chip.style.background = 'white';
-  chip.style.borderColor = 'var(--g)';
-  chip.innerHTML =
-    `<input id="ghe-edit-inp-${type}-${idx}" type="text" value="${valAtual.replace(/"/g,'&quot;')}"
-      style="flex:1;border:none;outline:none;font-size:12px;font-family:Inter,sans-serif;background:transparent;color:var(--tx);min-width:0"
-      onkeydown="if(event.key==='Enter')confirmarEditGHE('${type}',${idx});else if(event.key==='Escape')renderGHEModal()"/>` +
-    `<div style="display:flex;gap:2px;flex-shrink:0">` +
-    `<button onclick="confirmarEditGHE('${type}',${idx})"
-      style="background:var(--g);border:none;cursor:pointer;color:white;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600" title="Confirmar">✓</button>` +
-    `<button onclick="renderGHEModal()"
-      style="background:none;border:none;cursor:pointer;color:var(--tl);padding:0;font-size:16px;width:20px;height:20px;border-radius:3px"
-      onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'" title="Cancelar">&times;</button>` +
-    `</div>`;
-  setTimeout(() => {
-    const inp = document.getElementById(`ghe-edit-inp-${type}-${idx}`);
-    if (inp) { inp.focus(); inp.select(); }
-  }, 10);
-}
-
-function confirmarEditGHE(type, idx) {
-  const inp = document.getElementById(`ghe-edit-inp-${type}-${idx}`);
-  const novoVal = (inp?.value || '').trim();
-  if (!novoVal) { toast('O nome não pode ficar em branco.', 'w'); return; }
-  const arr = type === 'setor' ? _gheTempSetores : _gheTempFuncoes;
-  if (arr.some((x, i) => i !== idx && x.toLowerCase() === novoVal.toLowerCase())) {
-    toast('Já existe um item com esse nome.', 'w'); return;
+  const hasAny = _gheTempHierarquia.length || _gheTempUniversais.length;
+  if (!hasAny) {
+    cont.innerHTML = `<div style="text-align:center;padding:28px 16px;color:var(--tl);font-size:12px">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 8px;display:block;opacity:.4"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      Adicione setores com o campo abaixo, use um template ou importe um arquivo.
+    </div>`;
+    return;
   }
-  arr[idx] = novoVal;
-  renderGHEModal();
+
+  const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const btnStyle = `background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center`;
+
+  // blocos por setor
+  const setorBlocks = _gheTempHierarquia.map((g, si) => {
+    const chips = g.funcoes.map((f, fi) => `
+      <div id="ghe-cargo-${si}-${fi}" style="display:flex;align-items:center;gap:4px;padding:4px 6px 4px 24px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:12px">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+        <button onclick="editarGHECargo(${si},${fi})" style="${btnStyle}" onmouseover="this.style.background='var(--bs)'" onmouseout="this.style.background='none'" title="Editar">${iconEdit}</button>
+        <button onclick="removerGHECargo(${si},${fi})" style="${btnStyle};font-size:15px" onmouseover="this.style.background='var(--bs)'" onmouseout="this.style.background='none'" title="Remover">&times;</button>
+      </div>`).join('');
+
+    return `<div style="border:1.5px solid #bfdbfe;border-radius:var(--r);overflow:hidden">
+      <div id="ghe-setor-hdr-${si}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(90deg,#eff6ff,#f8fafc)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" width="12" height="12" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${esc(g.nome)}</span>
+        <span style="font-size:10px;color:var(--tl);flex-shrink:0">${g.funcoes.length} cargo(s)</span>
+        <button onclick="editarGHESetor(${si})" style="${btnStyle}" onmouseover="this.style.background='rgba(0,0,0,.06)'" onmouseout="this.style.background='none'" title="Renomear">${iconEdit}</button>
+        <button onclick="removerGHESetor(${si})" style="${btnStyle};font-size:15px;color:var(--red)" onmouseover="this.style.background='rgba(0,0,0,.06)'" onmouseout="this.style.background='none'" title="Remover setor">&times;</button>
+      </div>
+      <div style="padding:6px 8px;display:flex;flex-direction:column;gap:4px;background:var(--bg)">
+        ${chips || `<div style="font-size:11px;color:var(--tl);padding:2px 24px">Nenhum cargo neste setor.</div>`}
+        <div style="display:flex;gap:4px;margin-top:2px;padding-left:20px">
+          <input id="ghe-add-inp-${si}" type="text" placeholder="+ Cargo neste setor..."
+            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter'){adicionarGHECargo(${si});event.preventDefault()}"/>
+          <button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="adicionarGHECargo(${si})">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // bloco universal
+  const uniChips = _gheTempUniversais.map((f, i) => `
+    <div id="ghe-uni-${i}" style="display:flex;align-items:center;gap:4px;padding:4px 6px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:12px">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      <button onclick="editarGHEUniversal(${i})" style="${btnStyle}" onmouseover="this.style.background='var(--bs)'" onmouseout="this.style.background='none'" title="Editar">${iconEdit}</button>
+      <button onclick="removerGHEUniversal(${i})" style="${btnStyle};font-size:15px" onmouseover="this.style.background='var(--bs)'" onmouseout="this.style.background='none'" title="Remover">&times;</button>
+    </div>`).join('');
+
+  const uniBlock = `<div style="border:1.5px dashed var(--border);border-radius:var(--r);overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--tl)" stroke-width="2" width="12" height="12" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      <span style="font-size:12px;font-weight:600;color:var(--tm);flex:1">Universal <span style="font-weight:400;font-size:10px;color:var(--tl)">(aparece em todos os setores)</span></span>
+      <span style="font-size:10px;color:var(--tl)">${_gheTempUniversais.length} cargo(s)</span>
+    </div>
+    <div style="padding:6px 8px;display:flex;flex-direction:column;gap:4px;background:var(--bg)">
+      ${uniChips || `<div style="font-size:11px;color:var(--tl);padding:2px 0">Nenhum cargo universal.</div>`}
+      <div style="display:flex;gap:4px;margin-top:2px">
+        <input id="ghe-add-uni" type="text" placeholder="+ Cargo universal..."
+          style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+          onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter'){adicionarGHEUniversal();event.preventDefault()}"/>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="adicionarGHEUniversal()">+</button>
+      </div>
+    </div>
+  </div>`;
+
+  cont.innerHTML = setorBlocks + uniBlock;
 }
 
+const renderGHELists = renderGHEModal; // alias (compat)
+
+// ── Setores ──
 function adicionarGHESetor() {
   const inp = document.getElementById('ghe-novo-setor');
-  const val = (inp.value || '').trim();
+  const val = (inp?.value || '').trim();
   if (!val) return;
-  if (_gheTempSetores.some(s => s.toLowerCase() === val.toLowerCase())) {
+  if (_gheTempHierarquia.some(h => h.nome.toLowerCase() === val.toLowerCase())) {
     toast('Setor já cadastrado.', 'w'); return;
   }
-  _gheTempSetores.push(val);
+  _gheTempHierarquia.push({ nome: val, funcoes: [] });
   inp.value = '';
-  renderGHEModal();
-  inp.focus();
   fecharSugestoesGHE('setor');
+  renderGHEModal();
+  // focar input do novo setor
+  setTimeout(() => {
+    const last = _gheTempHierarquia.length - 1;
+    document.getElementById(`ghe-add-inp-${last}`)?.focus();
+  }, 60);
 }
 
-function adicionarGHEFuncao() {
-  const inp = document.getElementById('ghe-nova-funcao');
-  const val = (inp.value || '').trim();
-  if (!val) return;
-  if (_gheTempFuncoes.some(f => f.toLowerCase() === val.toLowerCase())) {
-    toast('Função já cadastrada.', 'w'); return;
+function removerGHESetor(si) {
+  const nome = _gheTempHierarquia[si]?.nome || '';
+  const nCargos = _gheTempHierarquia[si]?.funcoes.length || 0;
+  if (nCargos && !confirm(`Remover o setor "${nome}" e seus ${nCargos} cargo(s)?`)) return;
+  _gheTempHierarquia.splice(si, 1);
+  renderGHEModal();
+}
+
+function editarGHESetor(si) {
+  const hdr = document.getElementById(`ghe-setor-hdr-${si}`);
+  if (!hdr) return;
+  const valAtual = _gheTempHierarquia[si]?.nome || '';
+  const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  hdr.innerHTML = `
+    <input id="ghe-setor-edit-${si}" type="text" value="${valAtual.replace(/"/g,'&quot;')}"
+      style="flex:1;border:1.5px solid var(--g);border-radius:4px;padding:3px 7px;font-size:12px;font-weight:700;font-family:Inter,sans-serif;outline:none;background:white;color:var(--tx)"
+      onkeydown="if(event.key==='Enter')confirmarEditSetor(${si});if(event.key==='Escape')renderGHEModal()"/>
+    <button onclick="confirmarEditSetor(${si})" style="background:var(--g);border:none;cursor:pointer;color:white;padding:3px 8px;border-radius:3px;font-size:11px;font-weight:600">✓</button>
+    <button onclick="renderGHEModal()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:15px;width:20px;height:20px;border-radius:3px">&times;</button>`;
+  setTimeout(() => { const i = document.getElementById(`ghe-setor-edit-${si}`); if(i){i.focus();i.select();} }, 10);
+}
+
+function confirmarEditSetor(si) {
+  const inp = document.getElementById(`ghe-setor-edit-${si}`);
+  const val = (inp?.value || '').trim();
+  if (!val) { toast('Nome não pode ficar vazio.', 'w'); return; }
+  if (_gheTempHierarquia.some((h, i) => i !== si && h.nome.toLowerCase() === val.toLowerCase())) {
+    toast('Já existe um setor com esse nome.', 'w'); return;
   }
-  _gheTempFuncoes.push(val);
+  _gheTempHierarquia[si].nome = val;
+  renderGHEModal();
+}
+
+// ── Cargos por setor ──
+function adicionarGHECargo(si) {
+  const inp = document.getElementById(`ghe-add-inp-${si}`);
+  const val = (inp?.value || '').trim();
+  if (!val) return;
+  const grupo = _gheTempHierarquia[si];
+  if (!grupo) return;
+  const jaExiste = grupo.funcoes.some(f => f.toLowerCase() === val.toLowerCase())
+    || _gheTempUniversais.some(f => f.toLowerCase() === val.toLowerCase());
+  if (jaExiste) { toast('Cargo já existe neste setor ou nos universais.', 'w'); return; }
+  grupo.funcoes.push(val);
   inp.value = '';
   renderGHEModal();
-  inp.focus();
-  fecharSugestoesGHE('funcao');
+  setTimeout(() => document.getElementById(`ghe-add-inp-${si}`)?.focus(), 40);
 }
 
-/** Persiste setores/funções (demo: atualiza _empresas; prod: upserta tabelas) */
-// ── IMPORTAÇÃO CSV / EXCEL PARA GHE ──────────────────────────────────────
+function removerGHECargo(si, fi) {
+  _gheTempHierarquia[si]?.funcoes.splice(fi, 1);
+  renderGHEModal();
+}
 
-let _gheImportSetores = [];
-let _gheImportFuncoes = [];
-// Mapa cargo→setor vindo do CSV: { 'Operador': 'Produção', ... }
-// Cargos não presentes aqui terão setor_id = null (universais)
-let _gheImportCargoSetor = {};
+function editarGHECargo(si, fi) {
+  const el = document.getElementById(`ghe-cargo-${si}-${fi}`);
+  if (!el) return;
+  const val = _gheTempHierarquia[si]?.funcoes[fi] || '';
+  el.innerHTML = `
+    <input id="ghe-cargo-edit-${si}-${fi}" type="text" value="${val.replace(/"/g,'&quot;')}"
+      style="flex:1;border:none;outline:none;font-size:12px;font-family:Inter,sans-serif;background:transparent;color:var(--tx);min-width:0"
+      onkeydown="if(event.key==='Enter')confirmarEditCargo(${si},${fi});if(event.key==='Escape')renderGHEModal()"/>
+    <button onclick="confirmarEditCargo(${si},${fi})" style="background:var(--g);border:none;cursor:pointer;color:white;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600">✓</button>
+    <button onclick="renderGHEModal()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:15px;width:20px;height:20px">&times;</button>`;
+  el.style.background = 'white';
+  el.style.borderColor = 'var(--g)';
+  setTimeout(() => { const i = document.getElementById(`ghe-cargo-edit-${si}-${fi}`); if(i){i.focus();i.select();} }, 10);
+}
+
+function confirmarEditCargo(si, fi) {
+  const inp = document.getElementById(`ghe-cargo-edit-${si}-${fi}`);
+  const val = (inp?.value || '').trim();
+  if (!val) { toast('Nome não pode ficar vazio.', 'w'); return; }
+  if (_gheTempHierarquia[si]) _gheTempHierarquia[si].funcoes[fi] = val;
+  renderGHEModal();
+}
+
+// ── Universais ──
+function adicionarGHEUniversal() {
+  const inp = document.getElementById('ghe-add-uni');
+  const val = (inp?.value || '').trim();
+  if (!val) return;
+  const jaExiste = _gheTempUniversais.some(f => f.toLowerCase() === val.toLowerCase())
+    || _gheTempHierarquia.some(h => h.funcoes.some(f => f.toLowerCase() === val.toLowerCase()));
+  if (jaExiste) { toast('Cargo já existe.', 'w'); return; }
+  _gheTempUniversais.push(val);
+  inp.value = '';
+  renderGHEModal();
+  setTimeout(() => document.getElementById('ghe-add-uni')?.focus(), 40);
+}
+
+function removerGHEUniversal(i) {
+  _gheTempUniversais.splice(i, 1);
+  renderGHEModal();
+}
+
+function editarGHEUniversal(i) {
+  const el = document.getElementById(`ghe-uni-${i}`);
+  if (!el) return;
+  const val = _gheTempUniversais[i] || '';
+  el.innerHTML = `
+    <input id="ghe-uni-edit-${i}" type="text" value="${val.replace(/"/g,'&quot;')}"
+      style="flex:1;border:none;outline:none;font-size:12px;font-family:Inter,sans-serif;background:transparent;color:var(--tx);min-width:0"
+      onkeydown="if(event.key==='Enter')confirmarEditUniversal(${i});if(event.key==='Escape')renderGHEModal()"/>
+    <button onclick="confirmarEditUniversal(${i})" style="background:var(--g);border:none;cursor:pointer;color:white;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600">✓</button>
+    <button onclick="renderGHEModal()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:15px;width:20px;height:20px">&times;</button>`;
+  el.style.background = 'white';
+  el.style.borderColor = 'var(--g)';
+  setTimeout(() => { const inp = document.getElementById(`ghe-uni-edit-${i}`); if(inp){inp.focus();inp.select();} }, 10);
+}
+
+function confirmarEditUniversal(i) {
+  const inp = document.getElementById(`ghe-uni-edit-${i}`);
+  const val = (inp?.value || '').trim();
+  if (!val) { toast('Nome não pode ficar vazio.', 'w'); return; }
+  _gheTempUniversais[i] = val;
+  renderGHEModal();
+}
+
+// ── IMPORTAÇÃO CSV / EXCEL ──
+let _gheImportCargoSetor = {}; // cargo → setor (do CSV)
+let _gheImportSetores    = [];
+let _gheImportFuncoes    = [];
+// compat
 let _gheTempCargoSetor   = {};
 
 function importarGHEArquivo(input) {
@@ -10603,18 +10684,32 @@ function _processarGHEImport(rows) {
 }
 
 function confirmarGHEImport() {
-  const setMerge = [...new Set([..._gheTempSetores, ..._gheImportSetores])];
-  const funMerge = [...new Set([..._gheTempFuncoes, ..._gheImportFuncoes])];
-  _gheTempSetores = setMerge;
-  _gheTempFuncoes = funMerge;
-  // Mescla mapa cargo→setor (importado prevalece sobre existente)
-  _gheTempCargoSetor = { ..._gheTempCargoSetor, ..._gheImportCargoSetor };
-  renderGHELists();
+  // Constrói hierarquia a partir do mapa cargo→setor
+  const novaHier = {};
+  _gheImportSetores.forEach(s => { if (!novaHier[s]) novaHier[s] = []; });
+  Object.entries(_gheImportCargoSetor).forEach(([cargo, setor]) => {
+    if (!novaHier[setor]) novaHier[setor] = [];
+    if (!novaHier[setor].includes(cargo)) novaHier[setor].push(cargo);
+  });
+  // Cargos sem setor → universais
+  const novosUniversais = _gheImportFuncoes.filter(f => !_gheImportCargoSetor[f]);
+
+  // Mescla com hierarquia existente
+  Object.entries(novaHier).forEach(([setorNome, cargos]) => {
+    let grupo = _gheTempHierarquia.find(h => h.nome.toLowerCase() === setorNome.toLowerCase());
+    if (!grupo) { grupo = { nome: setorNome, funcoes: [] }; _gheTempHierarquia.push(grupo); }
+    cargos.forEach(c => { if (!grupo.funcoes.some(f => f.toLowerCase() === c.toLowerCase())) grupo.funcoes.push(c); });
+  });
+  novosUniversais.forEach(f => {
+    if (!_gheTempUniversais.some(u => u.toLowerCase() === f.toLowerCase())) _gheTempUniversais.push(f);
+  });
+
+  renderGHEModal();
   document.getElementById('ghe-import-preview').style.display = 'none';
-  _gheImportSetores = [];
-  _gheImportFuncoes = [];
-  _gheImportCargoSetor = {};
-  toast(`GHE importado: ${setMerge.length} setor(es), ${funMerge.length} função(ões). Clique em Salvar para confirmar.`, 'g', 4000);
+  const totalSet = _gheTempHierarquia.length;
+  const totalFun = _gheAllFuncoes().length;
+  _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
+  toast(`Importado: ${totalSet} setor(es), ${totalFun} cargo(s). Clique em Salvar para confirmar.`, 'g', 4000);
 }
 
 function cancelarGHEImport() {
@@ -10637,63 +10732,69 @@ async function salvarGHE() {
   const emp = _gheGetEmpresa(_gheEmpresaId);
   if (!emp) { toast('Empresa não encontrada.', 'w'); return; }
 
-  if (isDemoMode) {
-    emp.setores = [..._gheTempSetores];
-    emp.funcoes = [..._gheTempFuncoes];
+  const setorNomes  = _gheTempHierarquia.map(h => h.nome);
+  const todosCargos = [
+    ..._gheTempHierarquia.flatMap(h => h.funcoes.map(f => ({ nome: f, setorNome: h.nome }))),
+    ..._gheTempUniversais.map(f => ({ nome: f, setorNome: null })),
+  ];
 
-    // Atualizar comboItems para refletir novos valores
+  if (isDemoMode) {
+    emp.setores    = setorNomes;
+    emp.funcoes    = todosCargos.map(c => c.nome);
+    emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes] }));
+    emp.universais = [..._gheTempUniversais];
+
     const setores = emp.setores;
     const funcoes = emp.funcoes;
-    comboItems['combo-setor']        = () => setores;
-    comboItems['combo-gf-setor']     = () => setores;
-    comboItems['combo-ld-setor']     = () => setores;
-    comboItems['combo-audit-setor']  = () => setores;
-    comboItems['combo-funcao']       = () => funcoes;
-    comboItems['combo-gf-funcao']    = () => funcoes;
-    comboState['combo-setor']        = new Set(setores);
-    comboState['combo-gf-setor']     = new Set(setores);
-    comboState['combo-ld-setor']     = new Set(setores);
-    comboState['combo-audit-setor']  = new Set(setores);
-    comboState['combo-funcao']       = new Set(funcoes);
-    comboState['combo-gf-funcao']    = new Set(funcoes);
+    comboItems['combo-setor']       = () => setores;
+    comboItems['combo-gf-setor']    = () => setores;
+    comboItems['combo-ld-setor']    = () => setores;
+    comboItems['combo-audit-setor'] = () => setores;
+    comboItems['combo-funcao']      = () => funcoes;
+    comboItems['combo-gf-funcao']   = () => funcoes;
+    comboState['combo-setor']       = new Set(setores);
+    comboState['combo-gf-setor']    = new Set(setores);
+    comboState['combo-ld-setor']    = new Set(setores);
+    comboState['combo-audit-setor'] = new Set(setores);
+    comboState['combo-funcao']      = new Set(funcoes);
+    comboState['combo-gf-funcao']   = new Set(funcoes);
 
-    toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} função(ões).`, 'g');
+    toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} cargo(s).`, 'g');
   } else {
     try {
-      const setRows = _gheTempSetores.map((nome, i) =>
-        ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
-
       const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
       const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
       if (e1 || e2) throw e1 || e2;
 
-      // Inserir setores e capturar IDs para vincular aos cargos
+      // Inserir setores e capturar IDs
       let setorNomeParaId = {};
-      if (setRows.length) {
+      if (setorNomes.length) {
+        const setRows = setorNomes.map((nome, i) =>
+          ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
         const { data: setInseridos, error } = await sbAdmin
-          .from('empresa_setores').insert(setRows).select('id, nome');
+          .from('empresa_setores').insert(setRows).select('id,nome');
         if (error) throw error;
         (setInseridos || []).forEach(s => { setorNomeParaId[s.nome] = s.id; });
       }
 
-      // Inserir cargos com setor_id quando há vínculo do CSV
-      if (_gheTempFuncoes.length) {
-        const funRows = _gheTempFuncoes.map((nome, i) => {
-          const setorNome = _gheTempCargoSetor[nome] || null;
-          return {
-            empresa_id: _gheEmpresaId,
-            nome,
-            ordem: i,
-            ativo: true,
-            tenant_id: currentTenantId,
-            setor_id: setorNome ? (setorNomeParaId[setorNome] || null) : null,
-          };
-        });
+      // Inserir cargos com setor_id derivado da hierarquia
+      if (todosCargos.length) {
+        const funRows = todosCargos.map((c, i) => ({
+          empresa_id: _gheEmpresaId,
+          nome:       c.nome,
+          ordem:      i,
+          ativo:      true,
+          tenant_id:  currentTenantId,
+          setor_id:   c.setorNome ? (setorNomeParaId[c.setorNome] || null) : null,
+        }));
         const { error } = await sbAdmin.from('empresa_funcoes').insert(funRows);
         if (error) throw error;
       }
-      emp.setores = [..._gheTempSetores];
-      emp.funcoes = [..._gheTempFuncoes];
+
+      emp.setores    = setorNomes;
+      emp.funcoes    = todosCargos.map(c => c.nome);
+      emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes] }));
+      emp.universais = [..._gheTempUniversais];
       toast('GHE salvo com sucesso!', 'g');
     } catch(e) {
       toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
@@ -10731,22 +10832,23 @@ function aplicarTemplateGHE(key) {
   const tpl = GHE_TEMPLATES[key];
   if (!tpl) return;
   let addedS = 0, addedF = 0;
+  // Adiciona setores como grupos vazios
   tpl.setores.forEach(s => {
-    if (!_gheTempSetores.some(x => x.toLowerCase() === s.toLowerCase())) {
-      _gheTempSetores.push(s); addedS++;
+    if (!_gheTempHierarquia.some(h => h.nome.toLowerCase() === s.toLowerCase())) {
+      _gheTempHierarquia.push({ nome: s, funcoes: [] }); addedS++;
     }
   });
+  // Funções do template → universais (sem vínculo de setor definido no template)
   tpl.funcoes.forEach(f => {
-    if (!_gheTempFuncoes.some(x => x.toLowerCase() === f.toLowerCase())) {
-      _gheTempFuncoes.push(f); addedF++;
-    }
+    const jaExiste = _gheTempUniversais.some(x => x.toLowerCase() === f.toLowerCase())
+      || _gheTempHierarquia.some(h => h.funcoes.some(x => x.toLowerCase() === f.toLowerCase()));
+    if (!jaExiste) { _gheTempUniversais.push(f); addedF++; }
   });
-  // Destacar botão ativo
   document.querySelectorAll('[id^=ghe-tpl-]').forEach(b => b.style.borderColor = '');
   const btn = document.getElementById('ghe-tpl-' + key);
   if (btn) btn.style.borderColor = 'var(--g)';
   renderGHEModal();
-  toast(`Template aplicado: +${addedS} setor(es), +${addedF} função(ões).`, 'g');
+  toast(`Template aplicado: +${addedS} setor(es), +${addedF} cargo(s) universais.`, 'g');
 }
 
 // ── GHE: Copiar de empresa ──
@@ -10764,18 +10866,20 @@ function copiarDeEmpresaGHE() {
   const src = _empresas.find(e => e.id === srcId);
   if (!src) return;
   let addedS = 0, addedF = 0;
-  (src.setores || []).forEach(s => {
-    if (!_gheTempSetores.some(x => x.toLowerCase() === s.toLowerCase())) {
-      _gheTempSetores.push(s); addedS++;
-    }
+  // Copia hierarquia da empresa de origem
+  (src.hierarquia || []).forEach(h => {
+    let grupo = _gheTempHierarquia.find(g => g.nome.toLowerCase() === h.nome.toLowerCase());
+    if (!grupo) { grupo = { nome: h.nome, funcoes: [] }; _gheTempHierarquia.push(grupo); addedS++; }
+    h.funcoes.forEach(f => {
+      if (!grupo.funcoes.some(x => x.toLowerCase() === f.toLowerCase())) { grupo.funcoes.push(f); addedF++; }
+    });
   });
-  (src.funcoes || []).forEach(f => {
-    if (!_gheTempFuncoes.some(x => x.toLowerCase() === f.toLowerCase())) {
-      _gheTempFuncoes.push(f); addedF++;
-    }
+  // Copia universais da origem
+  (src.universais || []).forEach(f => {
+    if (!_gheTempUniversais.some(x => x.toLowerCase() === f.toLowerCase())) { _gheTempUniversais.push(f); addedF++; }
   });
   renderGHEModal();
-  toast(`Copiado de "${src.nome}": +${addedS} setor(es), +${addedF} função(ões).`, 'g');
+  toast(`Copiado de "${src.nome}": +${addedS} setor(es), +${addedF} cargo(s).`, 'g');
 }
 
 // ── GHE: Colar lista ──
@@ -10789,84 +10893,102 @@ function toggleColaLista() {
 }
 
 function processarColaLista() {
-  const txt  = (document.getElementById('ghe-cola-txt')?.value || '').trim();
-  const tipo = document.querySelector('input[name="cola-tipo"]:checked')?.value || 'setor';
-  if (!txt) { toast('Cole algum conteúdo antes de adicionar.', 'w'); return; }
-  const itens = txt.split('\n').map(s => s.trim()).filter(Boolean);
-  let added = 0;
-  itens.forEach(item => {
-    const arr = tipo === 'setor' ? _gheTempSetores : _gheTempFuncoes;
-    if (!arr.some(x => x.toLowerCase() === item.toLowerCase())) {
-      arr.push(item); added++;
-    }
-  });
+  const txt = (document.getElementById('ghe-cola-txt')?.value || '').trim();
+  if (!txt) { toast('Cole algum conteúdo antes de processar.', 'w'); return; }
+
+  const linhas = txt.split('\n').map(l => l.trim()).filter(Boolean);
+  // Detecta formato: se alguma linha tem separador, trata tudo como pares Setor;Cargo
+  const temPar = linhas.some(l => l.includes(';') || l.includes('\t') || l.includes('→'));
+  let addedS = 0, addedF = 0;
+
+  if (temPar) {
+    // Formato hierárquico: "Setor; Cargo" por linha
+    linhas.forEach(linha => {
+      const sep = linha.includes(';') ? ';' : linha.includes('→') ? '→' : '\t';
+      const partes = linha.split(sep).map(p => p.trim());
+      const setorNome = partes[0];
+      const cargoNome = partes[1] || '';
+      if (!setorNome) return;
+      let grupo = _gheTempHierarquia.find(h => h.nome.toLowerCase() === setorNome.toLowerCase());
+      if (!grupo) { grupo = { nome: setorNome, funcoes: [] }; _gheTempHierarquia.push(grupo); addedS++; }
+      if (cargoNome && !grupo.funcoes.some(f => f.toLowerCase() === cargoNome.toLowerCase())) {
+        grupo.funcoes.push(cargoNome); addedF++;
+      }
+    });
+    toast(`Estrutura criada: ${addedS} setor(es) novo(s), ${addedF} cargo(s).`, 'g');
+  } else {
+    // Formato simples: um setor por linha
+    linhas.forEach(nome => {
+      if (!_gheTempHierarquia.some(h => h.nome.toLowerCase() === nome.toLowerCase())) {
+        _gheTempHierarquia.push({ nome, funcoes: [] }); addedS++;
+      }
+    });
+    toast(`${addedS} setor(es) adicionado(s).`, 'g');
+  }
+
   renderGHEModal();
   document.getElementById('ghe-cola-txt').value = '';
-  toast(`${added} item(ns) adicionado(s) como ${tipo === 'setor' ? 'setor(es)' : 'função(ões)'}.`, 'g');
 }
 
 // ── GHE: Autocomplete ──
 function _gheTodasSugestoes(tipo) {
-  // Agrega sugestões dos templates + das outras empresas
   const set = new Set();
   Object.values(GHE_TEMPLATES).forEach(t => {
     (tipo === 'setor' ? t.setores : t.funcoes).forEach(x => set.add(x));
   });
   _empresas.forEach(e => {
-    (tipo === 'setor' ? (e.setores||[]) : (e.funcoes||[])).forEach(x => set.add(x));
+    if (tipo === 'setor') {
+      (e.setores || []).forEach(x => set.add(x));
+    } else {
+      (e.funcoes || []).forEach(x => set.add(x));
+    }
   });
   return [...set];
 }
 
 function renderSugestoesGHE(tipo, val) {
-  const id  = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
-  const div = document.getElementById(id);
+  if (tipo !== 'setor') return; // só autocomplete no campo de setor
+  const div = document.getElementById('ghe-sug-setor');
   if (!div) return;
-  const q   = (val || '').trim().toLowerCase();
-  const arr = tipo === 'setor' ? _gheTempSetores : _gheTempFuncoes;
+  const q = (val || '').trim().toLowerCase();
   if (!q) { div.style.display = 'none'; return; }
-  const sugs = _gheTodasSugestoes(tipo)
-    .filter(s => s.toLowerCase().includes(q) && !arr.some(x => x.toLowerCase() === s.toLowerCase()))
+  const jaExiste = _gheAllSetores();
+  const sugs = _gheTodasSugestoes('setor')
+    .filter(s => s.toLowerCase().includes(q) && !jaExiste.some(x => x.toLowerCase() === s.toLowerCase()))
     .slice(0, 8);
   if (!sugs.length) { div.style.display = 'none'; return; }
   div.style.display = 'block';
   div.innerHTML = sugs.map(s =>
     `<div style="padding:7px 12px;font-size:12px;cursor:pointer;color:var(--tx)"
       onmouseover="this.style.background='var(--gl)'" onmouseout="this.style.background=''"
-      onmousedown="adicionarGHESugestao('${tipo}','${s.replace(/'/g,"\\'")}')">
+      onmousedown="adicionarGHESugestao('setor','${s.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
       ${s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>')}
     </div>`
   ).join('');
-  // Sincronizar border do input
-  const inp = document.getElementById(tipo === 'setor' ? 'ghe-novo-setor' : 'ghe-nova-funcao');
+  const inp = document.getElementById('ghe-novo-setor');
   if (inp) inp.style.borderRadius = 'var(--r) var(--r) 0 0';
 }
 
 function fecharSugestoesGHE(tipo) {
-  const id  = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
-  const div = document.getElementById(id);
+  const div = document.getElementById('ghe-sug-setor');
   if (div) div.style.display = 'none';
-  const inp = document.getElementById(tipo === 'setor' ? 'ghe-novo-setor' : 'ghe-nova-funcao');
+  const inp = document.getElementById(tipo === 'setor' ? 'ghe-novo-setor' : 'ghe-novo-setor');
   if (inp) inp.style.borderRadius = 'var(--r)';
 }
 
 function adicionarGHESugestao(tipo, val) {
-  if (tipo === 'setor') {
-    if (!_gheTempSetores.some(x => x.toLowerCase() === val.toLowerCase())) _gheTempSetores.push(val);
-    const inp = document.getElementById('ghe-novo-setor');
-    if (inp) { inp.value = ''; inp.style.borderRadius = 'var(--r)'; }
-  } else {
-    if (!_gheTempFuncoes.some(x => x.toLowerCase() === val.toLowerCase())) _gheTempFuncoes.push(val);
-    const inp = document.getElementById('ghe-nova-funcao');
-    if (inp) { inp.value = ''; inp.style.borderRadius = 'var(--r)'; }
+  // só setores têm sugestão agora
+  if (!_gheTempHierarquia.some(h => h.nome.toLowerCase() === val.toLowerCase())) {
+    _gheTempHierarquia.push({ nome: val, funcoes: [] });
   }
-  fecharSugestoesGHE(tipo);
+  const inp = document.getElementById('ghe-novo-setor');
+  if (inp) { inp.value = ''; inp.style.borderRadius = 'var(--r)'; }
+  fecharSugestoesGHE('setor');
   renderGHEModal();
 }
 
 function gheInputKeydown(e, tipo) {
-  const sugId = tipo === 'setor' ? 'ghe-sug-setor' : 'ghe-sug-funcao';
-  const sug   = document.getElementById(sugId);
+  const sug = document.getElementById('ghe-sug-setor');
   if (e.key === 'Escape') { fecharSugestoesGHE(tipo); return; }
   if (e.key === 'ArrowDown' && sug?.style.display !== 'none') {
     e.preventDefault();
@@ -10878,8 +11000,7 @@ function gheInputKeydown(e, tipo) {
       const first = sug.querySelector('div');
       if (first) { first.dispatchEvent(new MouseEvent('mousedown')); return; }
     }
-    if (tipo === 'setor') adicionarGHESetor();
-    else adicionarGHEFuncao();
+    adicionarGHESetor();
   }
 }
 
