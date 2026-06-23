@@ -396,8 +396,8 @@ let cicloId       = null;
 let linkToken     = null;
 let empresaNome   = '';
 let setorNome     = '';
-let empresaSetores = [];
-let empresaFuncoes = [];
+let empresaSetores = []; // [{id, nome}]
+let empresaFuncoes = []; // [{id, nome, setor_id}]
 // LGPD + rastreabilidade
 const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
 let _lgpdAceito   = false;
@@ -476,43 +476,58 @@ async function init() {
 // ══════════════════════════════════════════════════════════
 async function carregarGHEEmpresa(empId) {
   if (!empId || empId === 'dev-mode') return;
-  // Tenta carregar GHE de empresa_setores/empresa_funcoes se existirem
-  // Caso contrário, form usa campo livre (setores=[]) e lista padrão de funções
   try {
     const [resSet, resFun] = await Promise.all([
-      sb.from('empresa_setores').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
-      sb.from('empresa_funcoes').select('nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
+      sb.from('empresa_setores').select('id, nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
+      sb.from('empresa_funcoes').select('id, nome, setor_id').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
     ]);
-    empresaSetores = (resSet.data || []).map(r => r.nome);
-    empresaFuncoes = (resFun.data || []).map(r => r.nome);
+    empresaSetores = (resSet.data || []).map(r => ({ id: r.id, nome: r.nome }));
+    empresaFuncoes = (resFun.data || []).map(r => ({ id: r.id, nome: r.nome, setor_id: r.setor_id || null }));
   } catch(e) {
-    // Tabelas GHE não existem ainda → usa defaults
     empresaSetores = [];
     empresaFuncoes = [];
   }
 }
 
-function popularMetaFuncao() {
+function popularMetaFuncao(setorId) {
   const sel = document.getElementById('meta-funcao');
   const inp = document.getElementById('meta-funcao-input');
   if (!sel) return;
 
-  const base = empresaFuncoes.length
-    ? empresaFuncoes.filter(f => f.toLowerCase() !== 'outro')
-    : ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)'];
+  // Filtra cargos pelo setor selecionado quando há vínculo no banco.
+  // setor_id === null em um cargo significa "universal" — aparece em todos os setores.
+  // Se setorId não foi passado (Outro, link pré-definido, sem setores) → exibe todos.
+  let base;
+  if (empresaFuncoes.length) {
+    const lista = (setorId)
+      ? empresaFuncoes.filter(f => f.setor_id === setorId || f.setor_id === null)
+      : empresaFuncoes;
+    base = lista.map(f => f.nome).filter(n => n.toLowerCase() !== 'outro');
+  } else {
+    base = ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)'];
+  }
+
+  // Preserva seleção atual se o cargo ainda aparece na lista filtrada
+  const valorAtual = sel.value;
 
   sel.innerHTML = '<option value="">Selecione seu cargo</option>';
-  base.forEach(f => {
+  base.forEach(nome => {
     const opt = document.createElement('option');
-    opt.value = f; opt.textContent = f;
+    opt.value = nome; opt.textContent = nome;
     sel.appendChild(opt);
   });
-
-  // "Outro" sempre por último
   const optOutro = document.createElement('option');
   optOutro.value = '__outro__';
   optOutro.textContent = 'Outro (especificar)';
   sel.appendChild(optOutro);
+
+  // Restaura seleção anterior se ainda válida
+  if (valorAtual && [...sel.options].some(o => o.value === valorAtual)) {
+    sel.value = valorAtual;
+  } else {
+    sel.value = '';
+    if (inp) { inp.style.display = 'none'; inp.value = ''; }
+  }
 
   sel.onchange = function() {
     if (!inp) return;
@@ -557,9 +572,14 @@ function popularMetaSetor() {
           inp.style.display = '';
           inp.placeholder = 'Digite o nome do seu setor';
           inp.focus();
+          // Setor livre → mostra todos os cargos sem filtro
+          popularMetaFuncao(null);
         } else {
           inp.style.display = 'none';
           inp.value = '';
+          // Filtra cargos pelo setor selecionado (ou todos se vazio)
+          const setorObj = empresaSetores.find(s => s.nome === this.value);
+          popularMetaFuncao(setorObj ? setorObj.id : null);
         }
       };
     }
