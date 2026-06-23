@@ -3463,6 +3463,67 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- MODAL NOVA EMPRESA -->
+<div class="modal-bg" id="modal-cliente-perfil">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">Perfil do cliente</div>
+    <div class="modal-sub" id="cp-sub">Configure os dados e logo do cliente.</div>
+
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
+      <div id="cp-logo-preview" style="width:72px;height:72px;border-radius:10px;background:#f0fdf4;border:2px dashed #86efac;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;font-size:26px;font-weight:800;color:#6b7280">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:3px">Logo do cliente</div>
+        <div style="font-size:11px;color:var(--tl);margin-bottom:8px">PNG ou JPG. Aparece no formulário de respostas no lugar da letra inicial.</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:white;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;color:var(--tm)" onmouseenter="this.style.borderColor='var(--tx)'" onmouseleave="this.style.borderColor='var(--border)'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Escolher imagem
+            <input type="file" id="cp-logo-input" accept="image/*" style="display:none" onchange="previewLogoCliente(this)">
+          </label>
+          <button onclick="removerLogoCliente()" style="padding:6px 10px;background:none;border:none;font-size:11px;color:var(--tl);cursor:pointer">Remover</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campos -->
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div class="field">
+        <label>Nome comercial <span style="color:var(--red)">*</span></label>
+        <input type="text" id="cp-nome" placeholder="Ex: Construtora ABC"/>
+      </div>
+      <div class="field">
+        <label>Razão social</label>
+        <input type="text" id="cp-razao-social" placeholder="Ex: Construtora ABC Ltda. ME"/>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>CNPJ</label>
+          <input type="text" id="cp-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="mascaraCNPJ(this)"/>
+        </div>
+        <div class="field">
+          <label>Contato</label>
+          <input type="text" id="cp-contato" placeholder="e-mail ou telefone"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Endereço</label>
+        <input type="text" id="cp-endereco" placeholder="Rua, número, cidade — UF"/>
+      </div>
+    </div>
+
+    <div id="cp-erro" style="font-size:12px;color:var(--red);margin-bottom:8px;display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalClientePerfil()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarPerfilCliente()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar perfil
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-empresa">
   <div class="modal">
     <div class="modal-title" id="ne-title">Nova empresa</div>
@@ -4313,7 +4374,9 @@ const SETORES_DEMO  = ['Administrativo','Produção A','Produção B','Engenhari
 const FUNCOES_DEMO  = ['Operador','Técnico','Assistente','Supervisor','Engenheiro','Analista','Gerente'];
 
 // Cache de empresas carregadas do Supabase
-let _empresas = []; // [{id, nome, cnpj, ativo}]
+let _empresas = []; // [{id, nome, cnpj, razao_social, endereco, contato, logo_base64, ativo}]
+let _cpEmpresaId = null; // empresa sendo editada no modal de perfil
+let _cpLogoBase64 = '';  // logo carregado no modal de perfil
 let _ciclos   = []; // [{id, nome, empresa_id}]
 
 async function carregarEmpresas() {
@@ -4337,13 +4400,17 @@ async function carregarEmpresas() {
   try {
     const tid = _supportMode && _supportTenant?.id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
-      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,ativo').eq('ativo',true)).order('nome'),
+      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true)).order('nome'),
       (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
       (tid ? sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
       (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
     ]);
     _empresas = (emps || []).map(emp => ({
       ...emp,
+      razao_social: emp.razao_social || '',
+      endereco:     emp.endereco     || '',
+      contato:      emp.contato      || '',
+      logo_base64:  emp.logo_base64  || '',
       setores: (setData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
       funcoes: (funData || []).filter(r => r.empresa_id === emp.id).map(r => r.nome),
     }));
@@ -4474,6 +4541,110 @@ async function salvarEdicaoInlineEmpresa(empId) {
   popularSelectsEmpresas();
   renderTelaEmpresas();
   toast('Empresa atualizada!', 'g');
+}
+
+// ══════════════════════════════════════════
+// PERFIL DO CLIENTE (logo, razão social, endereço)
+// ══════════════════════════════════════════
+
+function abrirModalClientePerfil(empId) {
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+  _cpEmpresaId  = empId;
+  _cpLogoBase64 = emp.logo_base64 || '';
+
+  document.getElementById('cp-nome').value        = emp.nome         || '';
+  document.getElementById('cp-razao-social').value = emp.razao_social || '';
+  document.getElementById('cp-cnpj').value         = emp.cnpj         || '';
+  document.getElementById('cp-contato').value      = emp.contato      || '';
+  document.getElementById('cp-endereco').value     = emp.endereco     || '';
+  document.getElementById('cp-erro').style.display = 'none';
+
+  const prev = document.getElementById('cp-logo-preview');
+  if (_cpLogoBase64) {
+    prev.innerHTML = `<img src="${_cpLogoBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+  } else {
+    prev.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  }
+
+  document.getElementById('cp-sub').textContent = `Perfil de "${emp.nome}"`;
+  document.getElementById('modal-cliente-perfil').classList.add('open');
+  setTimeout(() => document.getElementById('cp-nome').focus(), 50);
+}
+
+function fecharModalClientePerfil() {
+  document.getElementById('modal-cliente-perfil').classList.remove('open');
+  _cpEmpresaId  = null;
+  _cpLogoBase64 = '';
+  document.getElementById('cp-logo-input').value = '';
+}
+
+function previewLogoCliente(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) {
+    toast('Imagem muito grande. Máximo 500 KB.', 'w');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _cpLogoBase64 = e.target.result;
+    const prev = document.getElementById('cp-logo-preview');
+    prev.innerHTML = `<img src="${_cpLogoBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerLogoCliente() {
+  _cpLogoBase64 = '';
+  document.getElementById('cp-logo-input').value = '';
+  document.getElementById('cp-logo-preview').innerHTML =
+    `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+}
+
+async function salvarPerfilCliente() {
+  const nome       = document.getElementById('cp-nome').value.trim();
+  const razaoSoc   = document.getElementById('cp-razao-social').value.trim();
+  const cnpj       = document.getElementById('cp-cnpj').value.trim();
+  const contato    = document.getElementById('cp-contato').value.trim();
+  const endereco   = document.getElementById('cp-endereco').value.trim();
+  const erroEl     = document.getElementById('cp-erro');
+
+  if (!nome) {
+    erroEl.textContent = 'O nome comercial é obrigatório.';
+    erroEl.style.display = '';
+    return;
+  }
+  erroEl.style.display = 'none';
+
+  const payload = {
+    nome,
+    razao_social: razaoSoc  || null,
+    cnpj:         cnpj      || null,
+    contato:      contato   || null,
+    endereco:     endereco  || null,
+    logo_base64:  _cpLogoBase64 || null,
+  };
+
+  if (!isDemoMode) {
+    try {
+      const { error } = await sbAdmin.from('empresas').update(payload).eq('id', _cpEmpresaId);
+      if (error) throw new Error(error.message);
+    } catch(e) {
+      erroEl.textContent = 'Erro ao salvar: ' + e.message;
+      erroEl.style.display = '';
+      return;
+    }
+  }
+
+  const emp = _empresas.find(e => e.id === _cpEmpresaId);
+  if (emp) Object.assign(emp, payload);
+  _empresas.sort((a, b) => a.nome.localeCompare(b.nome));
+  popularSelectsEmpresas();
+  renderTelaEmpresas();
+  fecharModalClientePerfil();
+  toast('Perfil do cliente salvo!', 'g');
 }
 
 async function excluirEmpresa(empresaId, nomeEsc, nLinks) {
@@ -9469,6 +9640,7 @@ document.addEventListener('keydown', function(e) {
     'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
     'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
     'modal-ghe-batch':    typeof fecharModalGheBatch    !== 'undefined' ? fecharModalGheBatch    : null,
+    'modal-cliente-perfil':typeof fecharModalClientePerfil!== 'undefined' ? fecharModalClientePerfil: null,
     'modal-empresa':       typeof fecharModalEmpresa     !== 'undefined' ? fecharModalEmpresa     : null,
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
@@ -9517,11 +9689,22 @@ function renderTelaEmpresas() {
     else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
     else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
 
+    const avatarHtml = emp.logo_base64
+      ? `<div style="width:40px;height:40px;border-radius:8px;background:white;border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:3px">
+           <img src="${emp.logo_base64}" style="width:100%;height:100%;object-fit:contain;display:block">
+         </div>`
+      : `<div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:800;color:white">
+           ${emp.nome.charAt(0).toUpperCase()}
+         </div>`;
+
     return `<div class="card" style="padding:0;overflow:hidden" id="emp-card-${emp.id}">
       <div style="padding:14px 16px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div style="flex:1;min-width:0" id="emp-display-${emp.id}">
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              ${avatarHtml}
+              <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:6px">
               <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
               <button onclick="iniciarEdicaoInlineEmpresa('${emp.id}')" title="Editar nome/CNPJ"
                 style="background:none;border:none;cursor:pointer;padding:2px;color:var(--tl);flex-shrink:0;opacity:.5;transition:opacity .15s"
@@ -9529,7 +9712,8 @@ function renderTelaEmpresas() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             </div>
-            <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}</div>
+            <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
+              </div></div><!-- /nome-wrap /avatar-row -->
           </div>
           <div id="emp-edit-${emp.id}" style="display:none;flex:1;min-width:0;padding-right:8px">
             <input id="emp-nome-inp-${emp.id}" type="text" value="${emp.nome.replace(/"/g,'&quot;')}"
@@ -9568,6 +9752,10 @@ function renderTelaEmpresas() {
         ${nSetores ? `<div style="font-size:10px;color:#6b7280;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
       </div>
       <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalClientePerfil('${emp.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Perfil
+        </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalGHE('${emp.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           GHE

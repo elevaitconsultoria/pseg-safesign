@@ -398,6 +398,7 @@ let empresaNome   = '';
 let setorNome     = '';
 let empresaSetores = []; // [{id, nome}]
 let empresaFuncoes = []; // [{id, nome, setor_id}]
+let empresaLogo    = ''; // base64 do logo do cliente (exibido no formulário)
 // LGPD + rastreabilidade
 const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
 let _lgpdAceito   = false;
@@ -436,7 +437,7 @@ async function init() {
     // Buscar link pelo token na tabela links_coleta (schema v3)
     const { data: linkData, error } = await sb
       .from('links_coleta')
-      .select('empresa_id, setor_sugerido, ciclo_id, ativo, expira_em, empresas(id, nome)')
+      .select('empresa_id, setor_sugerido, ciclo_id, ativo, expira_em, empresas(id, nome, logo_base64)')
       .eq('token', token)
       .single();
 
@@ -458,6 +459,7 @@ async function init() {
     empresaId   = linkData.empresa_id;
     cicloId     = linkData.ciclo_id || null;
     empresaNome = linkData.empresas?.nome || 'Empresa';
+    empresaLogo = linkData.empresas?.logo_base64 || '';
     setorNome   = linkData.setor_sugerido || '';
 
     // Carregar setores e funções cadastrados para esta empresa
@@ -603,7 +605,17 @@ function showError(msg) {
 function showForm() {
   hideAll();
   // Header
-  document.getElementById('emp-av').textContent  = empresaNome.charAt(0).toUpperCase();
+  const avEl = document.getElementById('emp-av');
+  if (empresaLogo) {
+    avEl.textContent = '';
+    avEl.style.background = 'white';
+    avEl.style.padding = '4px';
+    avEl.innerHTML = `<img src="${empresaLogo}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block">`;
+  } else {
+    avEl.textContent = empresaNome.charAt(0).toUpperCase();
+    avEl.style.background = '';
+    avEl.style.padding = '';
+  }
   document.getElementById('emp-nome').textContent = empresaNome;
   document.getElementById('emp-setor').textContent = setorNome
     ? `Setor: ${setorNome}`
