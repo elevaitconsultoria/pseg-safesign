@@ -7492,68 +7492,153 @@ function exportChartPNG(codigo) {
   toast(`${codigo} exportado como PNG.`, 'g');
 }
 
-// ── EXPORT PDF COMPLETO ──
+// ── EXPORT PDF / PRINT ──
 function exportGrafPDF() {
-  if (!Object.keys(chartInstances).length) {
+  const panel = document.getElementById('graficos-panel');
+  if (!panel || !Object.keys(chartInstances).length) {
     toast('Gere os gráficos primeiro.', 'w'); return;
   }
-  // Forçar render final de todos os gráficos (evita canvas em branco por animação pendente)
-  Object.values(chartInstances).forEach(chart => {
+
+  // 1. Forçar render final + capturar cada canvas como PNG 2×
+  const chartImgs = {};
+  Object.entries(chartInstances).forEach(([codigo, chart]) => {
     try { chart.update('none'); } catch(e) {}
-  });
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const PW = 210, PH = 297, M = 14, CW = PW - M*2;
-  let y = M;
-
-  // Cabeçalho
-  doc.setFillColor(26,122,60); doc.rect(0,0,PW,22,'F');
-  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
-  doc.text('PSEG — Análise Gráfica de Respostas', PW/2, 9, {align:'center'});
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toTimeString().slice(0,5)}`, PW/2, 16, {align:'center'});
-  y = 28;
-
-  // Legenda
-  doc.setFontSize(7); doc.setTextColor(90,122,101);
-  doc.text('Legenda: Nunca=verde (meta) · Às vezes=azul · Frequente=laranja · Sempre=vermelho | Barra destacada = nível predominante', M, y);
-  y += 8;
-
-  const codigos = Object.keys(chartInstances);
-  codigos.forEach((codigo, i) => {
-    const chart = chartInstances[codigo];
-    const canvas = chart?.canvas;
+    const canvas = chart.canvas;
     if (!canvas) return;
-
-    const q = QS_OFICIAIS.find(q=>q.c===codigo);
-    if (!q) return;
-
-    if (y > 255) { doc.addPage(); y = M; }
-
-    // Texto da questão
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(26,46,34);
-    const label = `${q.c} (${q.f}${q.inv?' ↺':''}) — ${q.t}`;
-    const wrapped = doc.splitTextToSize(label, CW-2);
-    doc.text(wrapped, M, y);
-    y += wrapped.length * 4 + 1;
-
-    // Imagem do gráfico
+    const scale = 2;
     const tmp = document.createElement('canvas');
-    tmp.width  = canvas.width;
-    tmp.height = canvas.height;
-    const ctx  = tmp.getContext('2d');
+    tmp.width  = canvas.width  * scale;
+    tmp.height = canvas.height * scale;
+    const ctx = tmp.getContext('2d');
     ctx.fillStyle = 'white';
-    ctx.fillRect(0,0,tmp.width,tmp.height);
-    ctx.drawImage(canvas,0,0);
-    const img = tmp.toDataURL('image/png');
-    const GH  = 14; // altura no PDF
-    doc.addImage(img, 'PNG', M, y, CW, GH);
-    y += GH + 5;
+    ctx.fillRect(0, 0, tmp.width, tmp.height);
+    ctx.drawImage(canvas, 0, 0, tmp.width, tmp.height);
+    chartImgs[codigo] = tmp.toDataURL('image/png');
   });
 
-  const dt = new Date().toISOString().split('T')[0].replace(/-/g,'');
-  doc.save(`PSEG_Analise_Grafica_${dt}.pdf`);
-  toast('PDF exportado!', 'g');
+  // 2. Expandir seções colapsadas
+  panel.querySelectorAll('[id^="bsec-"]').forEach(s => { s.style.display = ''; });
+
+  // 3. Clonar HTML e substituir cada <canvas> por <img>
+  let html = panel.innerHTML;
+  Object.keys(chartImgs).forEach(codigo => {
+    html = html.replace(
+      new RegExp(`<canvas id="canvas-${codigo}"[^>]*>\\s*<\\/canvas>`, 'g'),
+      `<img src="${chartImgs[codigo]}" style="width:100%;height:56px;object-fit:fill;display:block">`
+    );
+  });
+
+  // 4. Resolver CSS vars
+  const CV = {
+    '--bg':'#f8f9fa','--w':'#fff','--border':'#e5e7eb','--bs':'#f0f2f4',
+    '--tx':'#111827','--tm':'#6b7280','--tl':'#9ca3af',
+    '--g':'#16532d','--gd':'#0f3d21','--gl':'#f0fdf4','--gp':'#f7fdf9','--gm':'#22c55e',
+    '--red':'#dc2626','--redbg':'#fef2f2',
+    '--amber':'#d97706','--amberbg':'#fffbeb',
+    '--blue':'#2563eb','--bluebg':'#eff6ff',
+    '--purple':'#7c3aed','--purplebg':'#f5f3ff',
+    '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
+  };
+  html = html.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+
+  // 5. Metadados
+  const empSel  = document.getElementById('gf-empresa');
+  const empNome = empSel?.options[empSel?.selectedIndex]?.text || '';
+  const hoje    = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+
+  // 6. Montar documento autônomo com print CSS
+  const doc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>PSEG SafeSign — Distribuição de Respostas${empNome ? ' · ' + empNome : ''}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 16mm 13mm 14mm 13mm;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: #111827; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11px; }
+
+  /* Cabeçalho */
+  .pseg-cover {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 3px solid #16532d; padding-bottom: 10px; margin-bottom: 16px;
+    page-break-after: avoid; break-after: avoid;
+  }
+
+  /* Summary strip */
+  .summary-strip { display: flex; gap: 10px; margin-bottom: 14px; page-break-after: avoid; break-after: avoid; }
+  .sum-card { flex: 1; text-align: center; background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 6px; }
+  .sum-val  { font-size: 20px; font-weight: 700; color: #111827; }
+  .sum-lbl  { font-size: 9px; color: #9ca3af; margin-top: 2px; }
+
+  /* Seção de bloco (Demandas / Relações / Organizacionais) */
+  .bloco-section { margin-bottom: 8px; }
+  .bloco-section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+    padding: 7px 12px; border-radius: 4px; display: flex; align-items: center; gap: 6px;
+    page-break-after: avoid; break-after: avoid; cursor: default !important;
+  }
+  .bloco-section-title svg { display: none; }
+
+  /* Card por questão — nunca corta */
+  .chart-card {
+    page-break-inside: avoid; break-inside: avoid;
+    margin-bottom: 8px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;
+    background: white;
+  }
+  .chart-card-hdr { padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #e5e7eb; }
+  .chart-card-meta { flex: 1; }
+  .chart-card-code { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 9px; }
+  .chart-card-text { font-size: 11px; color: #111827; line-height: 1.45; margin-bottom: 5px; }
+  .chart-card-badges { display: flex; align-items: center; gap: 8px; font-size: 9px; }
+  .moda-badge { padding: 2px 7px; border-radius: 4px; font-weight: 600; font-size: 9px; border: 1px solid; }
+  .chart-canvas-wrap { padding: 4px 12px 8px; }
+  .chart-canvas-wrap img { width: 100%; height: 52px; object-fit: fill; display: block; }
+
+  /* Esconder botões de download */
+  .dl-btn { display: none !important; }
+
+  /* Remover transições e sombras */
+  * { transition: none !important; animation: none !important; box-shadow: none !important; cursor: default !important; }
+</style>
+</head>
+<body>
+
+<div class="pseg-cover">
+  <div>
+    <div style="font-size:18pt;font-weight:800;color:#16532d;line-height:1.1">PSEG SafeSign</div>
+    <div style="font-size:9pt;color:#6b7280;margin-top:3px">Distribuição de Respostas por Questão</div>
+  </div>
+  <div style="text-align:right;font-size:8pt;color:#9ca3af;line-height:1.7">
+    ${empNome ? '<div><strong style="color:#374151">' + empNome + '</strong></div>' : ''}
+    <div>${hoje}</div>
+  </div>
+</div>
+
+<div id="pseg-dist-content">${html}</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Garantir que todas as seções estejam visíveis
+  document.querySelectorAll('[id^="bsec-"]').forEach(function(s) {
+    s.style.display = '';
+  });
+  setTimeout(function() { window.print(); }, 400);
+});
+<\/script>
+</body>
+</html>`;
+
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('Popup bloqueado. Permita popups para este site.', 'w'); return; }
+  pw.document.open();
+  pw.document.write(doc);
+  pw.document.close();
+  toast('Janela de impressão aberta — use Salvar como PDF no diálogo.', 'g', 4000);
 }
 
 // ══════════════════════════════════════════
