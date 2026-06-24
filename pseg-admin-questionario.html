@@ -607,6 +607,51 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   .screen{padding:16px 14px 80px}
   .menu-btn{display:flex}
   .brand-module{display:none}
+  /* Topbar: encolhe empresa-chip e esconde e-mail */
+  .user-pill{display:none}
+  .empresa-chip{max-width:160px}
+  /* Cards: padding menor */
+  .card{padding:14px 16px}
+  /* Page header: ações quebram para nova linha */
+  .page-header:has(.page-hdr-actions){flex-wrap:wrap}
+  .page-hdr-actions{flex-wrap:wrap;margin-top:0}
+  /* Filtros */
+  .emp-bar select{min-width:unset;flex:1}
+  /* Modais: garantir que caibam na tela */
+  .modal-bg{padding:12px}
+  .tutorial-modal,.upgrade-modal{max-height:96vh}
+  .modal-footer{flex-wrap:wrap}
+}
+
+/* Tabelas: scroll horizontal em mobile para não transbordar */
+@media(max-width:768px){
+  #resultado-panel table,
+  #audit-table-panel table,
+  #comparativo-panel table,
+  #comp-panel table,
+  .met-card-text table,
+  .card table{
+    display:block;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    max-width:100%;
+    white-space:nowrap
+  }
+  /* exceção: tabelas muito simples de 2 cols ficam normais */
+  .card table.no-scroll{display:table;overflow-x:visible;white-space:normal}
+}
+
+@media(max-width:480px){
+  /* Topbar compacta: esconde brand-name, chip vira só ícone+seta */
+  .brand-name{display:none}
+  .topbar{padding:0 12px;gap:8px}
+  #empresa-chip-nome{display:none}
+  .empresa-chip{max-width:none;padding:4px 8px}
+  .screen{padding:12px 12px 80px}
+  /* Grids de 2 colunas viram 1 */
+  .g2{grid-template-columns:1fr}
+  /* Botões de ação: tamanho menor */
+  .page-hdr-actions .btn{font-size:11px;padding:6px 10px}
 }
 
 /* ── NAV BADGE ── */
