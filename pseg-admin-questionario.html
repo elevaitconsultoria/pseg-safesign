@@ -615,8 +615,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .nav-badge.alert{background:var(--redbg);color:var(--red)}
 
 /* ── EMPRESA CHIP (topbar) ── */
-.empresa-chip{display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--g);background:var(--gl);padding:3px 10px 3px 7px;border-radius:20px;border:1px solid #bbf7d0;max-width:180px;overflow:hidden;cursor:default;flex-shrink:0}
+.empresa-chip{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px 3px 8px;border-radius:20px;max-width:220px;overflow:hidden;cursor:pointer;flex-shrink:0;position:relative;transition:all .15s;user-select:none}
+.empresa-chip.chip-empty{color:#92400e;background:#fef9c3;border:1px solid #fde68a}
+.empresa-chip.chip-empty:hover{background:#fef08a}
+.empresa-chip.chip-ativa{color:var(--g);background:var(--gl);border:1px solid #bbf7d0}
+.empresa-chip.chip-ativa:hover{background:#d1fae5}
 .empresa-chip svg{flex-shrink:0;opacity:.7}
+.empresa-chip .chip-trocar{font-size:9px;font-weight:500;opacity:.6;margin-left:2px;white-space:nowrap}
+/* dropdown do chip */
+.chip-dropdown{position:absolute;top:calc(100% + 8px);left:0;min-width:220px;max-width:320px;background:white;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:9999;overflow:hidden;display:none}
+.chip-dropdown.open{display:block}
+.chip-dd-header{padding:10px 14px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;border-bottom:1px solid var(--border)}
+.chip-dd-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:12px;font-weight:500;color:var(--tx);transition:background .1s}
+.chip-dd-item:hover{background:var(--gl)}
+.chip-dd-item.active{background:#f0fdf4;color:var(--g);font-weight:700}
+.chip-dd-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chip-dd-nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── DASHBOARD ── */
 .dash-kpi{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;text-align:center}
@@ -1060,11 +1074,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="brand-icon" style="background:#1d4ed8;font-size:14px;font-weight:800;color:white;font-family:'DM Sans',sans-serif;letter-spacing:-.5px">E</div>
     <span class="brand-name">Eleva IT</span>
     <span class="brand-module">Módulo Psicossocial — NR-17 / NR-01</span>
-    <div class="empresa-chip" id="empresa-chip">
+    <div class="empresa-chip chip-empty" id="empresa-chip" onclick="toggleChipDropdown(event)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      <span style="opacity:.55;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Cliente</span>
-      <span style="opacity:.4;font-size:10px">·</span>
-      <span id="empresa-chip-nome" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <span id="empresa-chip-nome" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Selecionar cliente</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink:0;opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="chip-dropdown" id="chip-dropdown">
+        <div class="chip-dd-header">Empresa cliente</div>
+        <div id="chip-dd-list"></div>
+      </div>
     </div>
     <div class="topbar-right">
       <!-- Hamburger menu -->
@@ -1509,8 +1526,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
   </div>
 
+  <!-- Banner boas-vindas / contexto -->
+  <div id="dash-welcome"></div>
+
   <!-- Lista empresas -->
-  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Empresas em coleta</div>
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Selecione o cliente para iniciar</div>
   <div id="dash-empresas-list">
     <div class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
@@ -9480,24 +9500,113 @@ let _empresaAtiva = (() => {
 
 function setEmpresaAtiva(id, nome) {
   _empresaAtiva = { id: id || '', nome: nome || '' };
-  // Persistir na sessão para sobreviver a F5
   try { sessionStorage.setItem('pseg_empresa_ativa', JSON.stringify(_empresaAtiva)); } catch(e) {}
   ['sel-emp','f-empresa','gf-empresa','ld-empresa'].forEach(sid => {
     const el = document.getElementById(sid);
     if (el && el.value !== id) el.value = id;
   });
+  // Chip topbar
   const chip = document.getElementById('empresa-chip');
   const chipNome = document.getElementById('empresa-chip-nome');
   if (chip && chipNome) {
-    if (id) { chipNome.textContent = nome; chip.style.display = 'flex'; }
-    else chip.style.display = 'none';
+    if (id) {
+      chipNome.textContent = nome;
+      chip.classList.replace('chip-empty', 'chip-ativa');
+    } else {
+      chipNome.textContent = 'Selecionar cliente';
+      chip.classList.replace('chip-ativa', 'chip-empty');
+    }
   }
+  renderChipDropdown();
+  // Banner no questionário
   const banner = document.getElementById('q-empresa-banner');
   const bannerNome = document.getElementById('q-empresa-banner-nome');
   if (banner) {
     if (id) { if (bannerNome) bannerNome.textContent = nome; banner.style.display = 'flex'; }
     else banner.style.display = 'none';
   }
+}
+
+function renderChipDropdown() {
+  const list = document.getElementById('chip-dd-list');
+  if (!list) return;
+  if (!_empresas.length) {
+    list.innerHTML = `<div style="padding:12px 14px;font-size:12px;color:#9ca3af;font-style:italic">Nenhum cliente cadastrado</div>`;
+    return;
+  }
+  list.innerHTML = _empresas.map(e => {
+    const isAtiva = e.id === _empresaAtiva?.id;
+    const linksEmp = _links.filter(l => l.empresa_id === e.id);
+    const resp = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
+    const dot = resp > 0 ? '#16a34a' : (linksEmp.some(l=>l.ativo) ? '#d97706' : '#9ca3af');
+    return `<div class="chip-dd-item${isAtiva?' active':''}" onclick="selecionarEmpresaDoChip('${e.id}','${(e.nome||'').replace(/'/g,"\\'")}')">
+      <div class="chip-dd-dot" style="background:${dot}"></div>
+      <span class="chip-dd-nome">${e.nome||'—'}</span>
+      ${resp ? `<span style="font-size:10px;color:#6b7280">${resp} resp.</span>` : ''}
+      ${isAtiva ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="color:var(--g);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function selecionarEmpresaDoChip(id, nome) {
+  setEmpresaAtiva(id, nome);
+  fecharChipDropdown();
+  // Re-renderizar a tela atual com a nova empresa
+  const tela = document.querySelector('.screen[style*="display: block"], .screen[style*="display:block"]');
+  const telaId = tela?.id?.replace('s-','');
+  if (telaId && ['analise','graficos','laudo','auditoria','comparativo'].includes(telaId)) {
+    goScreen(telaId, document.getElementById('nb-'+telaId));
+  } else {
+    renderDashboard();
+  }
+}
+
+function toggleChipDropdown(e) {
+  e.stopPropagation();
+  renderChipDropdown();
+  const dd = document.getElementById('chip-dropdown');
+  if (!dd) return;
+  const isOpen = dd.classList.contains('open');
+  fecharChipDropdown();
+  if (!isOpen) dd.classList.add('open');
+}
+
+function fecharChipDropdown() {
+  document.getElementById('chip-dropdown')?.classList.remove('open');
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', e => {
+  if (!document.getElementById('empresa-chip')?.contains(e.target)) fecharChipDropdown();
+});
+
+function _hideNudge(screenId) {
+  const nudge = document.getElementById(screenId + '-nudge');
+  if (nudge) nudge.style.display = 'none';
+}
+
+function _nudgeEmpresa(screenId) {
+  const sc = document.getElementById(screenId);
+  if (!sc) return;
+  // Oculta o conteúdo real e mostra apenas o nudge
+  const inner = sc.querySelector('.screen-inner, .card, [id$="-content"], .results-wrap, .graficos-wrap, .laudo-wrap, .audit-wrap, .comparativo-wrap, .plano-wrap');
+  const nudgeId = screenId + '-nudge';
+  let nudge = document.getElementById(nudgeId);
+  if (!nudge) {
+    nudge = document.createElement('div');
+    nudge.id = nudgeId;
+    nudge.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:18px;text-align:center';
+    nudge.innerHTML = `
+      <div style="width:56px;height:56px;background:#fef9c3;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px">🏢</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px">Nenhuma empresa selecionada</div>
+        <div style="font-size:13px;color:#6b7280;max-width:320px;line-height:1.6">Selecione uma empresa cliente na aba Início para visualizar esta análise.</div>
+      </div>
+      <button onclick="goScreen('dashboard')" style="padding:9px 22px;background:#1a5e2a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Ir para o Início</button>
+    `;
+    sc.appendChild(nudge);
+  }
+  nudge.style.display = 'flex';
 }
 
 // ══════════════════════════════════════════
@@ -9776,6 +9885,39 @@ function renderDashboard() {
   setKpi('dash-n-links',     nLinks);
   setKpi('dash-n-sem-resp',  nAlert);
 
+  // ── Banner de boas-vindas / contexto ────────────────────────
+  const welcome = document.getElementById('dash-welcome');
+  if (welcome) {
+    const userName = (currentUser?.email || '').split('@')[0] || 'usuário';
+    const temEmpresa = !!_empresaAtiva?.id;
+    if (temEmpresa) {
+      welcome.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:13px;font-weight:700;color:var(--tx)">Trabalhando em: <span style="color:var(--g)">${_empresaAtiva.nome}</span></div>
+            <div style="font-size:12px;color:var(--tm);margin-top:2px">Todos os módulos de análise estão filtrados para esta empresa.</div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:11px;flex-shrink:0" onclick="setEmpresaAtiva('','');renderDashboard()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            Trocar empresa
+          </button>
+        </div>`;
+      welcome.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:20px';
+    } else {
+      welcome.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="width:40px;height:40px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">Bem-vindo, ${userName}!</div>
+            <div style="font-size:13px;color:var(--tm);line-height:1.6">Para iniciar, <strong>selecione a empresa cliente</strong> abaixo. Todos os módulos de análise, relatórios e distribuição serão carregados automaticamente para a empresa escolhida.</div>
+          </div>
+        </div>`;
+      welcome.style.cssText = 'background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:16px 18px;margin-bottom:20px';
+    }
+  }
+
   const list = document.getElementById('dash-empresas-list');
   if (!list) return;
 
@@ -9794,8 +9936,8 @@ function renderDashboard() {
     const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
     const linksAtiv = linksEmp.filter(l => l.ativo).length;
     const nomeEsc   = (e.nome || '').replace(/'/g, "\\'");
+    const isAtiva   = e.id === _empresaAtiva?.id;
 
-    // Status visual
     let statusTag, statusDot;
     if (!linksAtiv) {
       statusTag = '<span class="tag tgr">Sem links ativos</span>';
@@ -9811,11 +9953,14 @@ function renderDashboard() {
       statusDot = '#16a34a';
     }
 
-    return `<div class="dash-empresa-card">
+    return `<div class="dash-empresa-card" style="${isAtiva ? 'border-color:#86efac;background:#f0fdf4' : ''}">
       <div style="display:flex;align-items:center;gap:10px;min-width:0">
         <div style="width:8px;height:8px;border-radius:50%;background:${statusDot};flex-shrink:0"></div>
         <div style="min-width:0">
-          <div class="dash-empresa-nome">${e.nome || '—'}</div>
+          <div class="dash-empresa-nome" style="${isAtiva ? 'color:var(--g)' : ''}">
+            ${e.nome || '—'}
+            ${isAtiva ? '<span style="font-size:10px;font-weight:600;background:var(--g);color:white;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle">ativo</span>' : ''}
+          </div>
           <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${statusTag}
             <span style="font-size:10px;color:#6b7280">${linksAtiv} link(s) ativo(s)</span>
@@ -9824,9 +9969,8 @@ function renderDashboard() {
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">
-          Links
-        </button>
+        ${!isAtiva ? `<button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');renderDashboard()">Selecionar</button>` : ''}
+        <button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">Links</button>
         <button class="btn btn-g" style="font-size:11px"
           onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
           Analisar
@@ -11910,35 +12054,33 @@ function goScreen(id, btn) {
           renderLinks();
           break;
         case 'analise':
-          // Aguardar onEmpresaChange() async antes de rodar análise
           if (temEmpresa || _links.length) {
+            _hideNudge('sc-analise');
             onEmpresaChange().then(() => rodarAnalise());
-          }
+          } else { _nudgeEmpresa('sc-analise'); }
           break;
         case 'graficos':
-          // Reconstruir combos de setores/funções e gerar gráficos
           if (temEmpresa || _links.length) {
+            _hideNudge('sc-graficos');
             onGrafFiltroChange().then(() => renderGraficos());
-          } else {
-            buildCombo('combo-gf-setor');
-            buildCombo('combo-gf-funcao');
-          }
+          } else { _nudgeEmpresa('sc-graficos'); }
           break;
         case 'auditoria':
-          buildCombo('combo-audit-setor');
-          setTimeout(renderTelaAuditoria, 50);
+          if (temEmpresa || _links.length) {
+            _hideNudge('sc-auditoria');
+            buildCombo('combo-audit-setor');
+            setTimeout(renderTelaAuditoria, 50);
+          } else { _nudgeEmpresa('sc-auditoria'); }
           break;
         case 'laudo':
-          // Pré-preencher responsável com perfil da EST se campo vazio
           const ldResp = document.getElementById('ld-responsavel');
           if (ldResp && !ldResp.value && _estPerfil?.responsavel_padrao) {
             ldResp.value = _estPerfil.responsavel_padrao;
           }
           if (temEmpresa || _links.length) {
+            _hideNudge('sc-laudo');
             onLaudoFiltro();
-          } else {
-            buildCombo('combo-ld-setor');
-          }
+          } else { _nudgeEmpresa('sc-laudo'); }
           break;
         case 'riscos':
           renderTelaRiscos();
