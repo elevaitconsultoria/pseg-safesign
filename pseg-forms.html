@@ -127,12 +127,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 </head>
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-  <div><div class="brand-name">PSEG</div><div class="brand-sub">Segurança do Trabalho</div></div>
-  <div class="topbar-right"><div class="empresa-badge" id="empresa-badge"></div></div>
-</div>
+<!-- TOPBAR removida temporariamente -->
 
 <!-- LOADING -->
 <div class="screen active" id="loading-screen">
@@ -179,7 +174,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <p>Suas respostas são <strong>completamente anônimas</strong>. Nenhum dado que permita sua identificação (nome, CPF, e-mail) é coletado ou armazenado.</p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Controlador e operador</div>
-        <p><strong>Controlador:</strong> seu empregador (empresa contratante).<br><strong>Operador:</strong> Eleva IT Consultoria — plataforma PSEG SafeSign.</p>
+        <p><strong>Controlador:</strong> seu empregador (empresa contratante).<br><strong>Operador:</strong> Eleva IT Consultoria — plataforma Eleva IT.</p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Seus direitos (Art. 17–22 LGPD)</div>
         <ul><li>Acesso, correção ou exclusão dos dados</li><li>Portabilidade e revogação do consentimento</li><li>Oposição ao tratamento</li></ul>
@@ -226,7 +221,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <label>Setor / GHE</label>
         <!-- preenchido por popularMetaSetor() — pode ser <select> ou <input> livre -->
         <select id="meta-setor">
-          <option value="">Prefiro não informar</option>
+          <option value="">Selecione seu setor</option>
         </select>
         <input id="meta-setor-input" type="text" placeholder="Digite seu setor"
           style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
@@ -556,10 +551,10 @@ function popularMetaSetor() {
     // Empresa tem setores cadastrados → dropdown com "Outro" ao final
     if (sel) {
       sel.style.display = '';
-      sel.innerHTML = '<option value="">Prefiro não informar</option>';
+      sel.innerHTML = '<option value="">Selecione seu setor</option>';
       empresaSetores.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
+        opt.value = s.nome; opt.textContent = s.nome;
         sel.appendChild(opt);
       });
       // "Outro" sempre por último
@@ -620,8 +615,8 @@ function showForm() {
   document.getElementById('emp-setor').textContent = setorNome
     ? `Setor: ${setorNome}`
     : 'Setor: a definir no formulário';
-  document.getElementById('empresa-badge').textContent = empresaNome;
-  document.getElementById('empresa-badge').style.display = 'block';
+  const badge = document.getElementById('empresa-badge');
+  if (badge) { badge.textContent = empresaNome; badge.style.display = 'block'; }
 
   buildQuestoes();
 
