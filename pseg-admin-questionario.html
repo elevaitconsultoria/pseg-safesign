@@ -3698,7 +3698,7 @@ const QS_OFICIAIS = [
   {id:18,c:'Q18',t:'Tenho conflitos frequentes com meu líder, chefia?',          b:'B',cd:6, inv:false,anc:true, oficial:true,ve:1},
   {id:19,c:'Q19',t:'Estou satisfeito com o meu salário (remuneração)?',          b:'C',cd:8, inv:true, anc:false,oficial:true,ve:1},
   {id:20,c:'Q20',t:'Mudanças frequentes não planejadas?',                        b:'C',cd:7, inv:false,anc:false,oficial:true,ve:1},
-  {id:21,c:'Q21',t:'Trabalho em ambiente inadequado, desconfortos físicos e emocionais?',b:'C',cd:11,inv:false,anc:true, oficial:true,ve:1},
+  {id:21,c:'Q21',t:'Trabalho em ambiente inadequado, com desconfortos físicos e emocionais?',b:'C',cd:11,inv:false,anc:true, oficial:true,ve:1},
   {id:22,c:'Q22',t:'Quando ocorrem mudanças no trabalho, sou esclarecido de como elas funcionarão na prática?',b:'C',cd:7, inv:true, anc:false,oficial:true,ve:1},
   {id:23,c:'Q23',t:'No meu setor acontecem mudanças repentinas sem aviso prévio?',b:'C',cd:7, inv:false,anc:false,oficial:true,ve:1},
   {id:24,c:'Q24',t:'As informações de que preciso para executar minhas tarefas são claras?',b:'C',cd:6, inv:true, anc:false,oficial:true,ve:1},
@@ -8016,10 +8016,13 @@ async function onLaudoFiltro() {
 }
 
 // ── RENDER PREVIEW ──
+let _laudoRenderSeq = 0;
 async function renderLaudo() {
+  const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
   const dados   = await getLinhasParaAnalise(emp);
+  if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
   const linhas  = dados.filter(r => setores.length === 0 || setores.includes(r.setor));
   const panel   = document.getElementById('laudo-preview-panel');
@@ -8399,19 +8402,26 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
-@page{size:A4 portrait;margin:18mm 18mm 14mm 18mm}
+.page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.page-footer{margin-top:auto}
+@page{size:A4 portrait;margin:0}
 @media print{
-  body{background:white}
-  .page{width:100%;margin:0;padding:0;box-shadow:none;page-break-after:always;break-after:page}
+  html,body{background:white;margin:0;padding:0}
   .no-print{display:none!important}
-  tr{page-break-inside:avoid;break-inside:avoid}
-  .acoes-grupo{page-break-inside:avoid;break-inside:avoid}
-  .tbl-wrap{page-break-inside:avoid;break-inside:avoid}
-  .highlight-box{page-break-inside:avoid;break-inside:avoid}
-  .laudo-section{page-break-inside:avoid;break-inside:avoid}
-  div[style*="margin-bottom:10px"]{page-break-inside:avoid;break-inside:avoid}
-  h2,h3{page-break-after:avoid;break-after:avoid}
+  .page{width:210mm;margin:0;padding:18mm 18mm 14mm;box-shadow:none;page-break-before:always;break-before:page;display:block}
+  .page:first-of-type{page-break-before:auto;break-before:auto}
+  .page-footer{margin-top:0}
+  .no-break{page-break-inside:avoid;break-inside:avoid}
+  tr,
+  .acoes-grupo,
+  .tbl-wrap,
+  .highlight-box,
+  .laudo-section,
+  div[style*="margin-bottom:10px"],
+  div[style*="margin-bottom:14px"],
+  div[style*="margin-bottom:18px"],
+  div[style*="margin-bottom:8px"]{page-break-inside:avoid;break-inside:avoid}
+  h2,h3,.sec-title,.sec-title.sub{page-break-after:avoid;break-after:avoid}
 }
 .toolbar{position:sticky;top:0;z-index:100;background:white;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:10px}
 .toolbar .logo-mini{display:flex;align-items:center;gap:8px;margin-right:auto}
@@ -8563,6 +8573,70 @@ tr:last-child td{border-bottom:none}
     });
   }
 
+  // ── Numeração dinâmica de seções e páginas ───────────────────
+  const _hasAR  = laudoSecoesAtivas.has('analise_risco');
+  const _hasGF  = laudoSecoesAtivas.has('graficos');
+  const _hasAC  = laudoSecoesAtivas.has('acoes');
+  let _sn = 2; // seção 2 = Resultados
+  const _snAR  = _hasAR ? ++_sn : null;
+  const _snGF  = _hasGF ? ++_sn : null;
+  const _snAC  = _hasAC ? ++_sn : null;
+  const _snRef = ++_sn;
+  let _pn = 4; // página 4 = Resultados
+  const _pnAR  = _hasAR ? ++_pn : null;
+  const _pnGF  = _hasGF ? ++_pn : null;
+  const _pnAC  = _hasAC ? ++_pn : null;
+
+  // ── ANÁLISE GRÁFICA POR RISCO (nova página) ──────────────────
+  let analiseRiscoHTML = '';
+  if (_hasAR) {
+    const NCP = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
+    const NTP = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
+    const fatoresAR = calcFatores(linhas).filter(f=>f.nivel!=='IRRELEVANTE')
+      .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
+    if (fatoresAR.length) {
+      const legAR =
+        '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
+        '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Ideal</span>'+
+        '<div><div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
+        ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
+        '</div><div style="display:flex;margin-top:2px">'+
+        ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
+        '</div></div>'+
+        '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Crítico</span></div>';
+      const corposAR = fatoresAR.map(f => {
+        const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
+        const detalhe = (f.distQuestoes||[]).length
+          ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
+            (f.distQuestoes||[]).map(q=>
+              '<div style="margin-bottom:8px">'+
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+              '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
+              (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
+              '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
+              '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
+            ).join('')+'</div>'
+          : '';
+        return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
+            <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
+          </div>
+          ${_barPrint(f.avgDist,f.p)}${detalhe}
+        </div>`;
+      }).join('');
+      analiseRiscoHTML = `
+<!-- ── ANÁLISE GRÁFICA POR RISCO ─────────────────────────── -->
+<div class="page">
+  <div class="sec-title">${_snAR}. Análise Gráfica por Fator de Risco</div>
+  <p>Distribuição percentual das respostas agregadas por fator de risco. A barra superior é a média de todas as questões do fator; abaixo, o detalhe por questão. ↺ indica questão inversa (meta = Sempre).</p>
+  ${legAR}${corposAR}
+  ${footer('Análise por Risco — Página ' + _pnAR)}
+</div>`;
+    }
+  }
+
   // ── HTML COMPLETO ─────────────────────────────────────────────
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -8663,6 +8737,7 @@ tr:last-child td{border-bottom:none}
     <tr><td style="font-style:italic">Risco Ergonômico</td><td><span class="nivel-badge nb-alt">ALTO</span></td><td>Situações consideradas como potencialmente causadoras de lesões.</td></tr>
     <tr><td style="font-style:italic">Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>Situações consideradas como potencialmente causadoras de lesões graves e afastamentos.</td></tr>
   </tbody></table></div>
+  <div class="no-break">
   <div class="sec-title sub" style="margin-top:18px">1.5 Conduta Administrativa (BS 8800 / NR-01)</div>
   <div class="tbl-wrap"><table class="tbl-conduta"><thead><tr><th>Classificação Ergonômica</th><th style="text-align:center">Nível</th><th>Conduta Administrativa</th></tr></thead><tbody>
     <tr><td>Ação técnica normal ou sem risco</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>Nenhuma ação é requerida e nenhum registro documental precisa ser mantido.</td></tr>
@@ -8672,6 +8747,7 @@ tr:last-child td{border-bottom:none}
     <tr><td>Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>O trabalho não deve ser iniciado nem continuado até que o risco seja reduzido. Se não for possível reduzir o risco, o trabalho deve permanecer proibido.</td></tr>
   </tbody></table></div>
   <div class="highlight-box mt14"><strong>Importante:</strong> Os riscos significativos identificados devem compor, junto aos demais riscos, o <strong>Inventário de Riscos Ocupacionais</strong> estabelecido no Programa de Gerenciamento de Riscos — PGR da NR-01.</div>
+  </div>
   ${footer('Metodologia — Página 3')}
 </div>
 
@@ -8684,28 +8760,30 @@ tr:last-child td{border-bottom:none}
   ${footer('Resultados — Página 4')}
 </div>
 
-${laudoSecoesAtivas.has('graficos') && graficosHTML ? `
-<!-- ── PÁGINA 5: GRÁFICOS ─────────────────────────────────────── -->
+${analiseRiscoHTML}
+
+${_hasGF && graficosHTML ? `
+<!-- ── GRÁFICOS ─────────────────────────────────────────────── -->
 <div class="page">
-  <div class="sec-title">3. Distribuição de Respostas por Questão</div>
+  <div class="sec-title">${_snGF}. Distribuição de Respostas por Questão</div>
   <p>Distribuição percentual das respostas por questão. A barra destacada representa o nível predominante (moda). Questões inversas (↺) têm score ajustado: meta = "Sempre".</p>
   ${graficosHTML}
-  ${footer('Distribuição — Página 5')}
+  ${footer('Distribuição — Página ' + _pnGF)}
 </div>` : ''}
 
-${laudoSecoesAtivas.has('acoes') && acoesHTML ? `
-<!-- ── PÁGINA 6: AÇÕES RECOMENDADAS ─────────────────────────── -->
+${_hasAC && acoesHTML ? `
+<!-- ── AÇÕES RECOMENDADAS ────────────────────────────────────── -->
 <div class="page">
-  <div class="sec-title">${laudoSecoesAtivas.has('graficos') ? '4' : '3'}. Ações Recomendadas por Fator de Risco</div>
+  <div class="sec-title">${_snAC}. Ações Recomendadas por Fator de Risco</div>
   <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
   ${acoesHTML}
   <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na planilha de Riscos Psicossociais e Fontes Geradoras (PSEG) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
-  ${footer('Ações Recomendadas — Página ' + (laudoSecoesAtivas.has('graficos') ? '6' : '5'))}
+  ${footer('Ações Recomendadas — Página ' + _pnAC)}
 </div>` : ''}
 
-<!-- ── ÚLTIMA PÁGINA: REFERÊNCIAS ────────────────────────────── -->
+<!-- ── REFERÊNCIAS ────────────────────────────────────────────── -->
 <div class="page">
-  <div class="sec-title">${(laudoSecoesAtivas.has('acoes') ? (laudoSecoesAtivas.has('graficos') ? 5 : 4) : (laudoSecoesAtivas.has('graficos') ? 4 : 3))}. Referências</div>
+  <div class="sec-title">${_snRef}. Referências</div>
   <div class="ref-item"><span class="ref-tag">Norma</span><div>BRASIL. <strong>NR-01 — Disposições Gerais e Gerenciamento de Riscos Ocupacionais.</strong> Portaria MTE nº 1.419, de 28 de novembro de 2024. Inclui expressamente os fatores de riscos psicossociais no GRO.</div></div>
   <div class="ref-item"><span class="ref-tag">Norma</span><div>BRASIL. <strong>NR-17 — Ergonomia.</strong> MTE, 2021. Estabelece parâmetros para adaptação das condições de trabalho às características psicofisiológicas dos trabalhadores.</div></div>
   <div class="ref-item"><span class="ref-tag">Padrão</span><div>BSI. <strong>BS 8800:1996 — Guide to Occupational Health and Safety Management Systems.</strong> British Standards Institution, 1996. Define a Matriz P×S utilizada neste laudo.</div></div>
@@ -11857,7 +11935,7 @@ function goScreen(id, btn) {
             ldResp.value = _estPerfil.responsavel_padrao;
           }
           if (temEmpresa || _links.length) {
-            onLaudoFiltro().then(() => renderLaudo());
+            onLaudoFiltro();
           } else {
             buildCombo('combo-ld-setor');
           }
