@@ -73,7 +73,10 @@ if (env.APP_ENV?.trim().toLowerCase() === 'development') {
 ">
   ⚙ AMBIENTE DE DESENVOLVIMENTO — ${new Date().toISOString().split('T')[0]}
 </div>`;
-  html = html.replace('</body>', devBanner + '\n</body>');
+  const lastBody = html.lastIndexOf('</body>');
+  if (lastBody !== -1) {
+    html = html.slice(0, lastBody) + devBanner + '\n</body>' + html.slice(lastBody + 7);
+  }
 }
 
 // ── Escrever output ────────────────────────────────────────────
