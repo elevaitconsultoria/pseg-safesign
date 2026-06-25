@@ -63,7 +63,7 @@ html = html.replace(
 );
 
 // 3. Injetar banner de ambiente em dev (visível apenas no develop)
-if (env.APP_ENV === 'development') {
+if (env.APP_ENV?.trim().toLowerCase() === 'development') {
   const devBanner = `
 <div id="dev-env-banner" style="
   position:fixed;bottom:0;left:0;right:0;z-index:9999;
