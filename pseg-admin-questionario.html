@@ -8909,8 +8909,10 @@ async function gerarLaudoPDF() {
 
 // CONFIGURAÇÃO — substitua pelos valores do seu projeto Supabase
 // NUNCA use a service_role key aqui. Apenas a chave anon.
-const SUPA_URL  = typeof __SUPA_URL__  !== 'undefined' ? __SUPA_URL__  : 'https://vftyiildukrpgmnbcnao.supabase.co';
-const SUPA_ANON = typeof __SUPA_ANON__ !== 'undefined' ? __SUPA_ANON__ : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdHlpaWxkdWtycGdtbmJjbmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQ3MTAsImV4cCI6MjA4OTg4MDcxMH0.2t_HSq52rHbNq-IgwyiTSo2lnxJj2KqW8UcDoL9zZ_A';
+// Credenciais injetadas pelo build.js via variáveis de ambiente do Cloudflare Pages.
+// Em desenvolvimento local: execute `node build.js` com .env preenchido.
+const SUPA_URL  = typeof __SUPA_URL__  !== 'undefined' ? __SUPA_URL__  : '';
+const SUPA_ANON = typeof __SUPA_ANON__ !== 'undefined' ? __SUPA_ANON__ : '';
 
 let sbAdmin = null;
 let currentUser = null;

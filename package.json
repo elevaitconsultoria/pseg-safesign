@@ -1,0 +1,13 @@
+{
+  "name": "pseg-safesign",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "build:dev": "APP_ENV=development node build.js",
+    "build:prod": "APP_ENV=production node build.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
