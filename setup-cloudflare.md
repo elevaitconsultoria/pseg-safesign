@@ -35,8 +35,8 @@ No painel do Cloudflare Pages → seu projeto → **Settings → Builds & deploy
 | Variável | Valor |
 |----------|-------|
 | `APP_ENV` | `development` |
-| `SUPA_URL` | `https://SEU_PROJETO_DEV.supabase.co` ← projeto dev |
-| `SUPA_ANON` | `eyJhbGci...` ← chave anon do projeto DEV |
+| `SUPA_URL` | `https://szqatgvgghxvyyncsjxl.supabase.co` |
+| `SUPA_ANON` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6cWF0Z3ZnZ2h4dnl5bmNzanhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTc1MjksImV4cCI6MjA5Nzk5MzUyOX0.svoU5xRbookipSKjHPmAIakx11r_phcA_b6qnl0wlQk` |
 | `STRIPE_MODE` | `test` |
 | `STRIPE_STARTER` | `https://buy.stripe.com/test_dRm00lgJA9lGfk2fEH57W00` |
 | `STRIPE_PRO` | `https://buy.stripe.com/test_bJe6oJbpggO8fk2eAD57W01` |
