@@ -593,9 +593,14 @@ function popularMetaSetor() {
     }
     if (inp) inp.style.display = 'none';
   } else {
-    // Sem setores cadastrados → campo livre
+    // Sem setores cadastrados → campo livre; funcao habilita ao digitar
     if (sel) sel.style.display = 'none';
-    if (inp) inp.style.display = '';
+    if (inp) {
+      inp.style.display = '';
+      inp.addEventListener('input', function() {
+        if (this.value.trim()) popularMetaFuncao(null);
+      });
+    }
   }
 }
 
@@ -637,8 +642,12 @@ function showForm() {
   if (elTotal) elTotal.textContent = totalQ;
 
   // Popula metadados dinâmicos
-  popularMetaFuncao();
-  // Mostrar campo setor apenas se não há setor pré-definido no link
+  // Se o setor já vem pré-definido no link, popula funções imediatamente.
+  // Caso contrário, a função só é habilitada após o setor ser escolhido.
+  if (setorNome) {
+    const setorObj = empresaSetores.find(s => s.nome === setorNome);
+    popularMetaFuncao(setorObj ? setorObj.id : null);
+  }
   if (!setorNome) popularMetaSetor();
 
   document.getElementById('form-screen').classList.add('active');
