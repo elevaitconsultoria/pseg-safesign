@@ -37,19 +37,45 @@ if (missing.length) {
 }
 
 // ── Ler HTML fonte ─────────────────────────────────────────────
-const src  = path.join(__dirname, 'pseg-admin-questionario.html');
 const dist = path.join(__dirname, 'dist');
-const out  = path.join(dist, 'pseg-admin-questionario.html');
-
 if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
 
-let html = fs.readFileSync(src, 'utf8');
+// Arquivos HTML que recebem injeção de credenciais
+const htmlTargets = [
+  'pseg-admin-questionario.html',
+  'pseg-forms.html',
+];
 
-// ── Substituições ──────────────────────────────────────────────
-// 1. Credenciais Supabase — substitui os placeholders __VAR__
-html = html
-  .replace(/__SUPA_URL__/g,   JSON.stringify(env.SUPA_URL))
-  .replace(/__SUPA_ANON__/g,  JSON.stringify(env.SUPA_ANON));
+htmlTargets.forEach(filename => {
+  const srcPath = path.join(__dirname, filename);
+  if (!fs.existsSync(srcPath)) return;
+  let html = fs.readFileSync(srcPath, 'utf8');
+
+  // Substituir credenciais hardcoded (forms usa strings literais, admin usa __placeholders__)
+  html = html
+    .replace(/__SUPA_URL__/g,  JSON.stringify(env.SUPA_URL))
+    .replace(/__SUPA_ANON__/g, JSON.stringify(env.SUPA_ANON))
+    // Credenciais hardcoded no pseg-forms.html
+    .replace(
+      /const SUPABASE_URL\s*=\s*'https:\/\/[^']+'/g,
+      `const SUPABASE_URL  = ${JSON.stringify(env.SUPA_URL)}`
+    )
+    .replace(
+      /const SUPABASE_ANON\s*=\s*'[^']+'/g,
+      `const SUPABASE_ANON = ${JSON.stringify(env.SUPA_ANON)}`
+    );
+
+  fs.writeFileSync(path.join(dist, filename), html, 'utf8');
+  console.log(`[build] processado: ${filename}`);
+});
+
+// Manter referência para o arquivo principal (usado abaixo para Stripe e banner)
+const src = path.join(__dirname, 'pseg-admin-questionario.html');
+const out = path.join(dist, 'pseg-admin-questionario.html');
+let html  = fs.readFileSync(out, 'utf8'); // já foi escrito acima
+
+// ── Substituições adicionais (só admin) ───────────────────────
+// Credenciais já foram substituídas no loop acima; continua com Stripe e banner
 
 // 2. Stripe payment links — substitui o objeto hardcoded
 const stripeLinks = `const STRIPE_PAYMENT_LINKS = {
@@ -83,7 +109,7 @@ if (env.APP_ENV?.trim().toLowerCase() === 'development') {
 fs.writeFileSync(out, html, 'utf8');
 
 // ── Copiar arquivos estáticos ──────────────────────────────────
-const staticFiles = ['404.html', 'index.html', 'pseg-forms.html', 'login-bg.jpg', 'favicon.ico'];
+const staticFiles = ['404.html', 'index.html', 'login-bg.jpg', 'favicon.ico'];
 staticFiles.forEach(file => {
   const srcPath = path.join(__dirname, file);
   if (fs.existsSync(srcPath)) {
