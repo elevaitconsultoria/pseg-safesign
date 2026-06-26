@@ -5110,9 +5110,10 @@ async function rodarAnalise() {
   window._displayMode      = window._displayMode      || 'grafica';
   window._viewMode         = window._viewMode         || 'risco';
   window._detalhesVisiveis = window._detalhesVisiveis ?? false;   // default: oculto
+  window._segMode          = window._segMode          || 'segregado'; // segregado | consolidado
   const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
   const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
-  const _dm = window._displayMode, _vm = window._viewMode, _dv = window._detalhesVisiveis;
+  const _dm = window._displayMode, _vm = window._viewMode, _dv = window._detalhesVisiveis, _sg = window._segMode;
 
   let html = `
   <div style="margin-bottom:14px">
@@ -5122,6 +5123,13 @@ async function rodarAnalise() {
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <!-- Toggle Segregado / Consolidado -->
+        <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button id="sgbtn-seg"  onclick="_setSegMode('segregado')"
+            style="${_sg==='segregado'   ? _TA : _TH}">Por setor</button>
+          <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
+            style="${_sg==='consolidado' ? _TA : _TH}">Consolidado</button>
+        </div>
         <!-- Toggle Gráfica / Tabela -->
         <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
@@ -5551,6 +5559,22 @@ function _setViewMode(mode) {
   else                    renderViewRisco(window._analiseData);
 }
 
+function _setSegMode(mode) {
+  window._segMode = mode;
+  const bs = document.getElementById('sgbtn-seg');
+  const bc = document.getElementById('sgbtn-cons');
+  if (bs) bs.style.cssText = mode === 'segregado'   ? _TABA : _TABH;
+  if (bc) bc.style.cssText = mode === 'consolidado' ? _TABA : _TABH;
+  if (!window._analiseData) return;
+  const dm = window._displayMode, vm = window._viewMode;
+  if (dm === 'tabela') {
+    if (vm === 'questao') renderViewQuestao(window._analiseData);
+    else                  renderViewRisco(window._analiseData);
+  } else {
+    renderViewGrafica(window._analiseData);
+  }
+}
+
 // ─── VIEW GRÁFICA ─────────────────────────────────────────────────
 const _GF_BORDA = {
   IRRELEVANTE:'#bbf7d0', BAIXO:'#86efac', MÉDIO:'#fde68a',
@@ -5562,19 +5586,24 @@ const _GF_HDR = {
 };
 
 function renderViewGrafica({grupos, filtrado, niveis}) {
-  const todosSetores = [...new Set(filtrado.map(r => r.setor))].sort();
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Pré-partição O(L) — elimina O(S×L) de filter dentro do loop
-  const linhasPorSetor = new Map();
-  filtrado.forEach(r => {
-    const arr = linhasPorSetor.get(r.setor);
-    if (arr) arr.push(r); else linhasPorSetor.set(r.setor, [r]);
-  });
+  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
+  const segmentos = window._segMode === 'consolidado'
+    ? [{label: null, linhas: filtrado}]
+    : (() => {
+        const map = new Map();
+        filtrado.forEach(r => {
+          const arr = map.get(r.setor);
+          if (arr) arr.push(r); else map.set(r.setor, [r]);
+        });
+        return [...new Set(filtrado.map(r => r.setor))].sort()
+          .map(s => ({label: s, linhas: map.get(s) || []}));
+      })();
 
-  todosSetores.forEach(setor => {
-    const linhasSetor = linhasPorSetor.get(setor) || [];
+  segmentos.forEach(({label, linhas}) => {
+    const linhasSetor = linhas;
     if (!linhasSetor.length) return;
 
     const fatores = calcFatores(linhasSetor);
@@ -5583,9 +5612,10 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       .sort((a,b) => NIVEIS_ORDEM.indexOf(b.nivel) - NIVEIS_ORDEM.indexOf(a.nivel));
     if (!resultado.length) return;
 
-    const setorLabel = setor
-      ? setor
-      : '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>';
+    const setor = label;
+    const setorLabel = window._segMode === 'consolidado'
+      ? `<span style="color:var(--tl);font-weight:500">Todos os setores filtrados</span> <span style="font-size:11px;color:var(--tl);font-weight:400">(${linhasSetor.length} respondentes)</span>`
+      : (setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
     // Usa constante pré-calculada (sem realocação por iteração)
     html += '<div style="margin-bottom:44px">' +
@@ -5672,19 +5702,20 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
 function renderViewRisco({grupos, filtrado, niveis}) {
-  const todosSetores = [...new Set(filtrado.map(r => r.setor))].sort();
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Pré-partição O(L) — elimina O(S×L) de filter dentro do loop
-  const linhasPorSetor = new Map();
-  filtrado.forEach(r => {
-    const arr = linhasPorSetor.get(r.setor);
-    if (arr) arr.push(r); else linhasPorSetor.set(r.setor, [r]);
-  });
+  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
+  const segmentos = window._segMode === 'consolidado'
+    ? [{label: null, linhas: filtrado}]
+    : (() => {
+        const map = new Map();
+        filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
+        return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
+      })();
 
-  todosSetores.forEach(setor => {
-    const linhasSetor = linhasPorSetor.get(setor) || [];
+  segmentos.forEach(({label, linhas}) => {
+    const linhasSetor = linhas;
     if (!linhasSetor.length) return;
 
     const todosRiscos = calcFatores(linhasSetor);
@@ -5694,10 +5725,14 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
     if (!resultado.length) return;
 
+    const blocoLabel = window._segMode === 'consolidado'
+      ? `Todos os setores filtrados <span style="font-size:11px;font-weight:400;color:var(--tl)">(${linhasSetor.length} respondentes)</span>`
+      : (label || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
+
     html += `<div style="margin-bottom:40px">
       <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:14px;
         padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);
-        border-radius:0 6px 6px 0">${setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>'}</div>
+        border-radius:0 6px 6px 0">${blocoLabel}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#1a5e2a">
           <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Risco</th>
@@ -5731,7 +5766,12 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 }
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
-function renderViewQuestao({grupos, filtrado}) {
+function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
+  // Consolidado: substituir grupos por um único bloco com todos os setores filtrados
+  if (window._segMode === 'consolidado') {
+    const todosSetores = setoresAtivos || [...new Set(filtrado.map(r => r.setor))];
+    grupos = [{nome: `Todos os setores filtrados (${filtrado.length} respondentes)`, setores: todosSetores}];
+  }
   const catCores = {
     'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
     'RELAÇÕES INTERPESSOAIS':  {cor:'#2d6e9e',bg:'#f0f6fb'},
