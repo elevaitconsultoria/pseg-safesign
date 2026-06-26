@@ -968,6 +968,44 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
+     DEFINIR SENHA — exibido quando o usuário chega via convite
+     ══════════════════════════════════════════════════════════ -->
+<div id="set-password-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:#0d111c;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:400px">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px">
+      <div style="width:34px;height:34px;background:#1d4ed8;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PSEG SafeSign</span>
+    </div>
+
+    <h2 style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
+    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
+      Bem-vindo ao PSEG SafeSign. Crie uma senha para ativar sua conta.
+    </p>
+
+    <label style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px">Nova senha</label>
+    <input id="sp-senha" type="password" placeholder="Mínimo 8 caracteres"
+      style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid #334155;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:#f1f5f9;padding:10px 13px;outline:none;margin-bottom:14px"
+      onkeydown="if(event.key==='Enter') document.getElementById('sp-confirmar').focus()"/>
+
+    <label style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px">Confirmar senha</label>
+    <input id="sp-confirmar" type="password" placeholder="Repita a senha"
+      style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid #334155;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:#f1f5f9;padding:10px 13px;outline:none;margin-bottom:20px"
+      onkeydown="if(event.key==='Enter') definirSenha()"/>
+
+    <div id="sp-err" style="display:none;margin-bottom:14px;padding:10px 13px;border-radius:7px;font-size:12px;line-height:1.5;background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;font-family:'DM Sans',sans-serif"></div>
+
+    <button id="sp-btn" onclick="definirSenha()"
+      style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:12px;cursor:pointer">
+      Ativar conta
+    </button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
      ONBOARDING OVERLAY — exibido para novos usuários sem tenant
      Dois caminhos: criar espaço (admin) ou aguardar convite (membro)
      ══════════════════════════════════════════════════════════ -->
@@ -8970,11 +9008,23 @@ async function checkSession() {
     return;
   }
 
+  // Detectar fluxo de convite ANTES de o Supabase processar o hash
+  const _inviteParams = new URLSearchParams(window.location.hash.substring(1));
+  const _isInviteFlow = _inviteParams.get('type') === 'invite';
+  if (_isInviteFlow) {
+    // Limpar hash da URL sem recarregar (estético)
+    history.replaceState(null, '', window.location.pathname);
+  }
+
   // Registrar listener ANTES de getSession (captura INITIAL_SESSION)
   sbAdmin.auth.onAuthStateChange((event, session) => {
     console.log('[PSEG Auth]', event);
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
+      if (_isInviteFlow) {
+        showSetPassword();
+        return;
+      }
       if (document.getElementById('login-overlay').classList.contains('show')) {
         showApp();
       }
@@ -8984,6 +9034,9 @@ async function checkSession() {
       showLogin();
     }
     if (event === 'TOKEN_REFRESHED' && session?.user) {
+      currentUser = session.user;
+    }
+    if (event === 'USER_UPDATED' && session?.user) {
       currentUser = session.user;
     }
   });
@@ -10423,6 +10476,48 @@ async function fazerLogin() {
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     console.error('[PSEG Login] fetch também falhou:', e2);
     _loginErro('Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
+  }
+}
+
+function showSetPassword() {
+  document.getElementById('login-overlay').classList.remove('show');
+  document.getElementById('set-password-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('sp-senha').focus(), 100);
+}
+
+async function definirSenha() {
+  const senha    = document.getElementById('sp-senha').value;
+  const confirma = document.getElementById('sp-confirmar').value;
+  const errEl    = document.getElementById('sp-err');
+  const btn      = document.getElementById('sp-btn');
+
+  errEl.style.display = 'none';
+
+  if (senha.length < 8) {
+    errEl.textContent = 'A senha precisa ter pelo menos 8 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (senha !== confirma) {
+    errEl.textContent = 'As senhas não coincidem.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Ativando...';
+
+  try {
+    const { error } = await sbAdmin.auth.updateUser({ password: senha });
+    if (error) throw error;
+
+    document.getElementById('set-password-overlay').style.display = 'none';
+    await showApp();
+  } catch (e) {
+    errEl.textContent = 'Erro ao definir senha: ' + (e.message || e);
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Ativar conta';
   }
 }
 

@@ -16,18 +16,14 @@ Deno.serve(async (req) => {
     const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const anonKey      = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Verificar se o chamador é super_admin
+    // Verificar identidade e role via RPC — auth_role() é SECURITY DEFINER,
+    // usa auth.uid() do JWT e retorna o role sem acionar RLS.
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: perfil } = await callerClient
-      .from('perfis')
-      .select('role')
-      .eq('id', (await callerClient.auth.getUser()).data.user?.id ?? '')
-      .single();
-
-    if (perfil?.role !== 'super_admin') {
-      return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders });
+    const { data: roleDoCallerDB, error: rpcError } = await callerClient.rpc('auth_role');
+    if (rpcError || roleDoCallerDB !== 'super_admin') {
+      return new Response(JSON.stringify({ error: 'Acesso negado', rpcError: rpcError?.message, role: roleDoCallerDB }), { status: 403, headers: corsHeaders });
     }
 
     const { email, nome_empresa, nome_responsavel } = await req.json();
