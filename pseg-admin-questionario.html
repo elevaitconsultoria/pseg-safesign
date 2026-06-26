@@ -7134,7 +7134,7 @@ async function loadRespostasParaEmpresa(empresaId) {
     let rq = sbAdmin
       .from('respostas')
       .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
-        session_id, lgpd_aceito, lgpd_aceito_em,
+        session_id, lgpd_aceito, lgpd_aceito_em, device_info,
         resposta_itens ( questao_id, valor )`)
       .eq('empresa_id', empresaId)
       .order('respondido_em', { ascending: false });
@@ -7153,6 +7153,7 @@ async function loadRespostasParaEmpresa(empresaId) {
       session_id:     r.session_id || null,
       lgpd_aceito:    r.lgpd_aceito ?? true,
       lgpd_aceito_em: r.lgpd_aceito_em || null,
+      device_info:    r.device_info || null,
       q: Object.fromEntries(
         (r.resposta_itens || [])
           .map(i => [codigoParaId[i.questao_id], i.valor])
@@ -10712,13 +10713,14 @@ async function renderTelaAuditoria() {
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:80px">DATA</th>
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:80px">ID</th>
             <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:100px" title="UUID de sessão gerado no browser — rastreia tentativas sem identificar o respondente">SESSION ID</th>
+            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:120px" title="Tipo de dispositivo, sistema operacional e navegador">DISPOSITIVO</th>
             <th style="text-align:center;padding:8px 10px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;min-width:60px" title="Consentimento LGPD registrado">LGPD</th>
             ${qs.map(q => `<th style="text-align:center;padding:6px 3px;border-bottom:2px solid var(--border);border-left:1px solid var(--bs);white-space:nowrap;font-size:9px;color:var(--tm);font-weight:600;min-width:38px" title="${q.t}">${q.c}${q.inv?'<br><span style="font-weight:400;color:var(--tl);font-size:8px">↺</span>':''}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
           ${filtrado.map((r, i) => {
-            const data   = r.data_registro ? new Date(r.data_registro).toLocaleDateString('pt-BR') : _auditDataDemo(r._idx, total);
+            const data   = r.data_registro ? new Date(r.data_registro).toLocaleString('pt-BR') : _auditDataDemo(r._idx, total);
             const idResp = r.id_respondente || r.respondente_id || ('R-' + String(r._idx+1).padStart(3,'0'));
             const rowBg  = i % 2 === 0 ? '' : 'background:#f9fafb';
             return `<tr style="${rowBg}" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='${i%2===0?'':'#f9fafb'}'">
@@ -10729,6 +10731,7 @@ async function renderTelaAuditoria() {
               <td style="padding:6px 10px;color:var(--tl);white-space:nowrap">${data}</td>
               <td style="padding:6px 10px;color:var(--tl);font-family:monospace;font-size:10px">${idResp}</td>
               <td style="padding:6px 10px;color:var(--tl);font-family:monospace;font-size:9px;max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${r.session_id||''}">${r.session_id ? r.session_id.slice(0,8)+'…' : '—'}</td>
+              <td style="padding:6px 10px;color:var(--tl);font-size:10px;white-space:nowrap" title="${r.device_info||''}">${r.device_info ? r.device_info.split(' | ').slice(0,2).join(' · ') : '—'}</td>
               <td style="padding:6px 10px;text-align:center;font-size:11px">${r.lgpd_aceito ? '<span title="Consentimento registrado em '+(r.lgpd_aceito_em?new Date(r.lgpd_aceito_em).toLocaleString('pt-BR'):'?')+'" style="color:#16a34a">✓</span>' : '<span style="color:#dc2626">✗</span>'}</td>
               ${qs.map(q => {
                 const v = r.q?.[q.id];
@@ -10811,15 +10814,16 @@ function exportarAuditoriaCSV() {
   const qs    = window._auditQs || QS_OFICIAIS;
   if (!dados?.length) return;
 
-  const header = ['#','Empresa','Setor/GHE','Função','Data','ID Respondente','Session ID','LGPD Aceito','LGPD Aceito Em', ...qs.map(q=>q.c)].join(';');
+  const header = ['#','Empresa','Setor/GHE','Função','Data/Hora','ID Respondente','Session ID','Dispositivo','LGPD Aceito','LGPD Aceito Em', ...qs.map(q=>q.c)].join(';');
   const rows = dados.map((r, i) => {
-    const data        = r.data_registro ? new Date(r.data_registro).toLocaleDateString('pt-BR') : _auditDataDemo(r._idx, dados.length);
+    const data        = r.data_registro ? new Date(r.data_registro).toLocaleString('pt-BR') : _auditDataDemo(r._idx, dados.length);
     const idResp      = r.id_respondente || r.respondente_id || ('RESP-'+String(r._idx+1).padStart(3,'0'));
     const sessionId   = r.session_id || '';
+    const deviceInfo  = r.device_info || '';
     const lgpdAceito  = r.lgpd_aceito ? 'Sim' : 'Não';
     const lgpdAceitoEm = r.lgpd_aceito_em ? new Date(r.lgpd_aceito_em).toLocaleString('pt-BR') : '';
     const scores = qs.map(q => r.q?.[q.id] ?? '');
-    return [i+1, r._empNome||'—', r.setor||'—', r.funcao||'—', data, idResp, sessionId, lgpdAceito, lgpdAceitoEm, ...scores].join(';');
+    return [i+1, r._empNome||'—', r.setor||'—', r.funcao||'—', data, idResp, sessionId, deviceInfo, lgpdAceito, lgpdAceitoEm, ...scores].join(';');
   });
 
   const csv  = '\uFEFF' + [header, ...rows].join('\r\n');

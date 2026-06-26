@@ -47,7 +47,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .empresa-nome{font-size:16px;font-weight:800;color:var(--tx)}
 .empresa-setor{font-size:12px;color:var(--tm);margin-top:2px}
 
-.instrucoes{background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--tx);line-height:1.6}
+.instrucoes{background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:15px;color:var(--tx);line-height:1.6}
 .instrucoes strong{color:var(--g)}
 
 /* ── CARD / BLOCO ── */
@@ -165,20 +165,46 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
     <div style="font-size:12px;color:var(--tx);line-height:1.7">
       <div class="consent-section"><div class="consent-section-title">Finalidade</div>
-        <p>Levantamento de riscos psicossociais exigido pelas normas <strong>NR-17</strong> e <strong>NR-01</strong> do MTE. Os resultados subsidiam ações de melhoria das condições de trabalho.</p>
+        <p>Avaliação de riscos psicossociais exigida pelas normas <strong>NR-01</strong> (atualização 2024 — gerenciamento de riscos psicossociais) e <strong>NR-17</strong> (Ergonomia) do MTE. Os resultados integram o Programa de Gerenciamento de Riscos (PGR) e subsidiam ações de melhoria das condições de trabalho.</p>
+      </div>
+      <div class="consent-section"><div class="consent-section-title">Base legal (Art. 7º, LGPD)</div>
+        <p>O tratamento fundamenta-se no <strong>Art. 7º, II</strong> da LGPD — cumprimento de obrigação legal e regulatória decorrente das NR-01 e NR-17 do Ministério do Trabalho e Emprego. A ciência do titular é coletada adicionalmente como boa prática de transparência.</p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Dados coletados</div>
-        <ul><li>Respostas numéricas (escala 1–4)</li><li>Setor, função e escolaridade <em>(opcionais)</em></li><li>Identificador anônimo de sessão (sem dados pessoais)</li><li>Data e hora do envio</li></ul>
+        <ul>
+          <li>Respostas numéricas (escala 1–4) para cada questão</li>
+          <li>Setor/GHE, função e escolaridade <em>(opcionais)</em></li>
+          <li>Código de sessão gerado automaticamente pelo navegador (pseudônimo — sem nome, CPF ou e-mail)</li>
+          <li>Data e hora do envio</li>
+          <li>Dispositivo: tipo (mobile/desktop), sistema operacional, navegador e resolução de tela</li>
+        </ul>
       </div>
-      <div class="consent-section"><div class="consent-section-title">Anonimidade</div>
-        <p>Suas respostas são <strong>completamente anônimas</strong>. Nenhum dado que permita sua identificação (nome, CPF, e-mail) é coletado ou armazenado.</p>
+      <div class="consent-section"><div class="consent-section-title">Proteção da identidade</div>
+        <p>Nenhum dado <strong>diretamente identificável</strong> (nome, CPF, matrícula ou e-mail) é coletado. As respostas são vinculadas apenas a um código gerado aleatoriamente pelo navegador. O conjunto de informações coletadas não permite, isoladamente, a identificação individual do respondente.</p>
       </div>
-      <div class="consent-section"><div class="consent-section-title">Controlador e operador</div>
-        <p><strong>Controlador:</strong> seu empregador (empresa contratante).<br><strong>Operador:</strong> Eleva IT Consultoria — plataforma Eleva IT.</p>
+      <div class="consent-section"><div class="consent-section-title">Prazo de retenção</div>
+        <p>Os dados serão mantidos pelo período necessário ao cumprimento das obrigações legais das NR-01/NR-17, <strong>não superior a 5 (cinco) anos</strong>, salvo obrigação legal de guarda por prazo superior ou determinação da ANPD.</p>
       </div>
-      <div class="consent-section"><div class="consent-section-title">Seus direitos (Art. 17–22 LGPD)</div>
-        <ul><li>Acesso, correção ou exclusão dos dados</li><li>Portabilidade e revogação do consentimento</li><li>Oposição ao tratamento</li></ul>
-        <p style="margin-top:6px">Contato: <strong>eleva.it.consultoria@gmail.com</strong></p>
+      <div class="consent-section"><div class="consent-section-title">Armazenamento e transferência internacional</div>
+        <p>Os dados são armazenados em servidores da <strong>Supabase Inc.</strong> (Estados Unidos), com criptografia em trânsito (TLS 1.2+) e em repouso. A transferência internacional é realizada com base no <strong>Art. 33, V da LGPD</strong> (cláusulas contratuais de proteção de dados). Os dados não são compartilhados com terceiros para fins comerciais.</p>
+      </div>
+      <div class="consent-section"><div class="consent-section-title">Controlador, operador e encarregado</div>
+        <p><strong>Controlador:</strong> seu empregador (empresa contratante do serviço de avaliação).<br>
+        <strong>Operador:</strong> Eleva IT Consultoria — plataforma PSEG SafeSign.<br>
+        <strong>Encarregado (DPO) — Art. 41 LGPD:</strong> <a href="mailto:eleva.it.consultoria@gmail.com" style="color:var(--g)">eleva.it.consultoria@gmail.com</a></p>
+      </div>
+      <div class="consent-section"><div class="consent-section-title">Seus direitos (Art. 18 LGPD)</div>
+        <ul>
+          <li>Confirmação da existência e acesso aos dados tratados</li>
+          <li>Correção de dados incompletos ou desatualizados</li>
+          <li>Anonimização, bloqueio ou eliminação de dados desnecessários</li>
+          <li>Portabilidade dos dados a outro fornecedor</li>
+          <li>Eliminação dos dados tratados e revogação do consentimento</li>
+          <li>Informação sobre compartilhamento com terceiros</li>
+          <li>Oposição ao tratamento em caso de descumprimento da LGPD</li>
+          <li><strong>Peticionar à ANPD</strong> (Autoridade Nacional de Proteção de Dados)</li>
+        </ul>
+        <p style="margin-top:6px">Para exercer seus direitos: <strong><a href="mailto:eleva.it.consultoria@gmail.com" style="color:var(--g)">eleva.it.consultoria@gmail.com</a></strong></p>
       </div>
     </div>
     <button onclick="fecharModalLGPD()" style="width:100%;margin-top:16px;background:var(--g);color:white;border:none;border-radius:8px;padding:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Fechar</button>
@@ -258,7 +284,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <input type="checkbox" id="chk-lgpd" style="width:17px;height:17px;flex-shrink:0;margin-top:2px;accent-color:var(--g);cursor:pointer" onchange="toggleLGPDConsent(this.checked)">
     <div style="font-size:12px;color:var(--tx);line-height:1.6">
       <label for="chk-lgpd" style="cursor:pointer">
-        Estou de acordo com o tratamento anônimo dos meus dados para fins de pesquisa psicossocial, conforme a <strong>LGPD</strong>.
+        Estou ciente do tratamento dos meus dados para avaliação de riscos psicossociais, conforme a <strong>LGPD (Lei 13.709/2018)</strong> e as normas <strong>NR-01/NR-17</strong> do MTE.
       </label>
       <button onclick="abrirModalLGPD()" style="background:none;border:none;color:var(--g);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-family:'Plus Jakarta Sans',sans-serif;margin-left:4px">Saiba mais</button>
     </div>
@@ -277,8 +303,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     Conforme a LGPD — Lei 13.709/2018
   </div><br>
-  Esta pesquisa coleta apenas respostas anônimas. Nenhum dado pessoal identificável é armazenado.<br>
-  Dúvidas: <a href="mailto:eleva.it.consultoria@gmail.com">eleva.it.consultoria@gmail.com</a>
+  Esta pesquisa não coleta dados diretamente identificáveis (nome, CPF ou e-mail). As respostas são pseudoanônimas e tratadas com base no Art. 7º, II da LGPD (obrigação legal — NR-01/NR-17).<br>
+  Encarregado (DPO): <a href="mailto:eleva.it.consultoria@gmail.com">eleva.it.consultoria@gmail.com</a>
 </div>
 
 <!-- Banner de respostas pendentes offline -->
@@ -894,6 +920,7 @@ async function enviarResposta() {
     p_itens:        itens,
     p_session_id:   _sessionId,
     p_lgpd_aceito:  _lgpdAceito,
+    p_device_info:  _getDeviceInfo(),
   };
 
   // ── Backup local ANTES do envio (chave inclui token para rastreabilidade) ──
@@ -951,6 +978,27 @@ async function enviarResposta() {
   // Mostrar tela de confirmação
   hideAll();
   document.getElementById('success-screen').classList.add('active');
+}
+
+// ── Info de dispositivo para auditoria ──
+function _getDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  let tipo = 'Desktop';
+  if (/Mobi|Android|iPhone|iPod/i.test(ua))  tipo = 'Mobile';
+  else if (/iPad|Tablet/i.test(ua))           tipo = 'Tablet';
+  let os = 'Outro';
+  if (/Android/i.test(ua))      os = 'Android';
+  else if (/iPhone|iPad/i.test(ua)) os = 'iOS';
+  else if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Mac OS/i.test(ua))  os = 'macOS';
+  else if (/Linux/i.test(ua))   os = 'Linux';
+  let browser = 'Outro';
+  if (/Edg\//i.test(ua))        browser = 'Edge';
+  else if (/Chrome/i.test(ua))  browser = 'Chrome';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Safari/i.test(ua))  browser = 'Safari';
+  const w = window.screen?.width || 0;
+  return `${tipo} | ${os} | ${browser} | ${w}px`;
 }
 
 // ── Verificar e reenviar respostas pendentes ──
