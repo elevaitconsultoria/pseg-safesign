@@ -167,8 +167,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="consent-section"><div class="consent-section-title">Finalidade</div>
         <p>Avaliação de riscos psicossociais exigida pelas normas <strong>NR-01</strong> (atualização 2024 — gerenciamento de riscos psicossociais) e <strong>NR-17</strong> (Ergonomia) do MTE. Os resultados integram o Programa de Gerenciamento de Riscos (PGR) e subsidiam ações de melhoria das condições de trabalho.</p>
       </div>
-      <div class="consent-section"><div class="consent-section-title">Base legal (Art. 7º, LGPD)</div>
-        <p>O tratamento fundamenta-se no <strong>Art. 7º, II</strong> da LGPD — cumprimento de obrigação legal e regulatória decorrente das NR-01 e NR-17 do Ministério do Trabalho e Emprego. A ciência do titular é coletada adicionalmente como boa prática de transparência.</p>
+      <div class="consent-section"><div class="consent-section-title">Base legal</div>
+        <p>Por se tratar de dado pessoal de saúde (sensível — art. 5º, II, LGPD), o tratamento fundamenta-se no <strong>Art. 11, II, "a"</strong> da LGPD — cumprimento de obrigação legal e regulatória decorrente das <strong>NR-01</strong> (Portaria MTE 1.419/2024 — gerenciamento de riscos psicossociais) e <strong>NR-17</strong> do Ministério do Trabalho e Emprego.</p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Dados coletados</div>
         <ul>
@@ -182,16 +182,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="consent-section"><div class="consent-section-title">Proteção da identidade</div>
         <p>Nenhum dado <strong>diretamente identificável</strong> (nome, CPF, matrícula ou e-mail) é coletado. As respostas são vinculadas apenas a um código gerado aleatoriamente pelo navegador. O conjunto de informações coletadas não permite, isoladamente, a identificação individual do respondente.</p>
       </div>
-      <div class="consent-section"><div class="consent-section-title">Prazo de retenção</div>
-        <p>Os dados serão mantidos pelo período necessário ao cumprimento das obrigações legais das NR-01/NR-17, <strong>não superior a 5 (cinco) anos</strong>, salvo obrigação legal de guarda por prazo superior ou determinação da ANPD.</p>
-      </div>
-      <div class="consent-section"><div class="consent-section-title">Armazenamento e transferência internacional</div>
-        <p>Os dados são armazenados em servidores da <strong>Supabase Inc.</strong> (Estados Unidos), com criptografia em trânsito (TLS 1.2+) e em repouso. A transferência internacional é realizada com base no <strong>Art. 33, V da LGPD</strong> (cláusulas contratuais de proteção de dados). Os dados não são compartilhados com terceiros para fins comerciais.</p>
+      <div class="consent-section"><div class="consent-section-title">Armazenamento</div>
+        <p>Os dados são armazenados com criptografia em trânsito (TLS 1.2+) e em repouso, pelo período necessário ao cumprimento das obrigações legais. Não são compartilhados com terceiros para fins comerciais.</p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Controlador, operador e encarregado</div>
         <p><strong>Controlador:</strong> seu empregador (empresa contratante do serviço de avaliação).<br>
-        <strong>Operador:</strong> Eleva IT Consultoria — plataforma PSEG SafeSign.<br>
-        <strong>Encarregado (DPO) — Art. 41 LGPD:</strong> <a href="mailto:eleva.it.consultoria@gmail.com" style="color:var(--g)">eleva.it.consultoria@gmail.com</a></p>
+        <strong>Operador:</strong> P R BARBOSA - PSEG Engenharia de Segurança do Trabalho.<br>
+        <strong>Encarregado (DPO) — Art. 41 LGPD:</strong> <a href="mailto:contato@psegsst.com.br" style="color:var(--g)">contato@psegsst.com.br</a></p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Seus direitos (Art. 18 LGPD)</div>
         <ul>
@@ -199,12 +196,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           <li>Correção de dados incompletos ou desatualizados</li>
           <li>Anonimização, bloqueio ou eliminação de dados desnecessários</li>
           <li>Portabilidade dos dados a outro fornecedor</li>
-          <li>Eliminação dos dados tratados e revogação do consentimento</li>
+          <li>Eliminação de dados desnecessários ao cumprimento da finalidade</li>
           <li>Informação sobre compartilhamento com terceiros</li>
           <li>Oposição ao tratamento em caso de descumprimento da LGPD</li>
           <li><strong>Peticionar à ANPD</strong> (Autoridade Nacional de Proteção de Dados)</li>
         </ul>
-        <p style="margin-top:6px">Para exercer seus direitos: <strong><a href="mailto:eleva.it.consultoria@gmail.com" style="color:var(--g)">eleva.it.consultoria@gmail.com</a></strong></p>
+        <p style="margin-top:6px">Para exercer seus direitos: <strong><a href="mailto:contato@psegsst.com.br" style="color:var(--g)">contato@psegsst.com.br</a></strong></p>
       </div>
     </div>
     <button onclick="fecharModalLGPD()" style="width:100%;margin-top:16px;background:var(--g);color:white;border:none;border-radius:8px;padding:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Fechar</button>
@@ -279,18 +276,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
   </div>
 
-  <!-- Consentimento LGPD inline -->
+  <!-- Aviso LGPD inline (sem checkbox — base legal é obrigação legal, art. 11, II, "a") -->
   <div style="background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-top:8px;display:flex;align-items:flex-start;gap:10px">
-    <input type="checkbox" id="chk-lgpd" style="width:17px;height:17px;flex-shrink:0;margin-top:2px;accent-color:var(--g);cursor:pointer" onchange="toggleLGPDConsent(this.checked)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2" width="16" height="16" style="flex-shrink:0;margin-top:2px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     <div style="font-size:12px;color:var(--tx);line-height:1.6">
-      <label for="chk-lgpd" style="cursor:pointer">
-        Estou ciente do tratamento dos meus dados para avaliação de riscos psicossociais, conforme a <strong>LGPD (Lei 13.709/2018)</strong> e as normas <strong>NR-01/NR-17</strong> do MTE.
-      </label>
+      Esta avaliação é realizada com base na <strong>LGPD (Lei 13.709/2018)</strong>, Art. 11, II, "a" — cumprimento de obrigação legal (NR-01/NR-17). Suas respostas são pseudoanônimas e utilizadas exclusivamente para fins de diagnóstico de riscos psicossociais.
       <button onclick="abrirModalLGPD()" style="background:none;border:none;color:var(--g);font-size:12px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-family:'Plus Jakarta Sans',sans-serif;margin-left:4px">Saiba mais</button>
     </div>
   </div>
 
-  <button class="btn-enviar" id="btn-enviar" onclick="enviarResposta()" disabled style="opacity:.5;cursor:not-allowed">
+  <button class="btn-enviar" id="btn-enviar" onclick="enviarResposta()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
     Enviar Respostas
   </button>
@@ -303,8 +298,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     Conforme a LGPD — Lei 13.709/2018
   </div><br>
-  Esta pesquisa não coleta dados diretamente identificáveis (nome, CPF ou e-mail). As respostas são pseudoanônimas e tratadas com base no Art. 7º, II da LGPD (obrigação legal — NR-01/NR-17).<br>
-  Encarregado (DPO): <a href="mailto:eleva.it.consultoria@gmail.com">eleva.it.consultoria@gmail.com</a>
+  Esta pesquisa não coleta dados diretamente identificáveis (nome, CPF ou e-mail). As respostas são pseudoanônimas e tratadas com base no Art. 11, II, "a" da LGPD (obrigação legal — NR-01/NR-17).<br>
+  Encarregado (DPO): <a href="mailto:contato@psegsst.com.br">contato@psegsst.com.br</a>
 </div>
 
 <!-- Banner de respostas pendentes offline -->
@@ -424,7 +419,7 @@ let empresaFuncoes = []; // [{id, nome, setor_id}]
 let empresaLogo    = ''; // base64 do logo do cliente (exibido no formulário)
 // LGPD + rastreabilidade
 const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
-let _lgpdAceito   = false;
+let _lgpdAceito   = true; // base legal: obrigação legal (art. 11, II, "a") — não depende de consentimento
 
 // ══════════════════════════════════════════════════════════
 // INIT — valida token e carrega dados da empresa
@@ -696,13 +691,6 @@ function hideAll() {
   document.getElementById('form-screen').classList.remove('active');
 }
 
-function toggleLGPDConsent(checked) {
-  _lgpdAceito = checked;
-  const btn = document.getElementById('btn-enviar');
-  btn.disabled = !checked;
-  btn.style.opacity = checked ? '1' : '.5';
-  btn.style.cursor  = checked ? 'pointer' : 'not-allowed';
-}
 
 function abrirModalLGPD() {
   document.getElementById('lgpd-modal-bg').style.display = 'flex';
