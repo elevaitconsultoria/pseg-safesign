@@ -215,15 +215,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
   <!-- Metadados opcionais -->
   <div class="card">
-    <div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">Informações opcionais</div>
+    <div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">Identificação <span style="font-size:10px;font-weight:500;color:#dc2626">* obrigatório</span></div>
     <div class="meta-grid">
       <div class="field" id="meta-setor-field" style="display:none">
-        <label>Setor / GHE</label>
+        <label>Setor / GHE <span style="color:#dc2626">*</span></label>
         <!-- preenchido por popularMetaSetor() — pode ser <select> ou <input> livre -->
         <select id="meta-setor">
           <option value="">Selecione seu setor</option>
         </select>
-        <input id="meta-setor-input" type="text" placeholder="Digite seu setor"
+        <input id="meta-setor-input" type="text" placeholder="Digite o nome do seu setor"
           style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
           background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;
           font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s"
@@ -231,8 +231,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           onblur="this.style.borderColor='var(--border)';this.style.background='#f7f9f8'"/>
       </div>
       <div class="field">
-        <label>Função / Cargo</label>
-        <select id="meta-funcao"></select>
+        <label>Função / Cargo <span style="color:#dc2626">*</span></label>
+        <select id="meta-funcao" disabled style="opacity:.5;cursor:not-allowed">
+          <option value="">Selecione primeiro o setor</option>
+        </select>
         <input id="meta-funcao-input" type="text" placeholder="Digite sua função / cargo"
           style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
           background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;
@@ -507,6 +509,9 @@ function popularMetaFuncao(setorId) {
   // Preserva seleção atual se o cargo ainda aparece na lista filtrada
   const valorAtual = sel.value;
 
+  sel.disabled = false;
+  sel.style.opacity = '';
+  sel.style.cursor = '';
   sel.innerHTML = '<option value="">Selecione seu cargo</option>';
   base.forEach(nome => {
     const opt = document.createElement('option');
@@ -565,16 +570,22 @@ function popularMetaSetor() {
 
       sel.onchange = function() {
         if (!inp) return;
+        if (this.value === '') {
+          // Nenhum setor → desabilita funcao
+          inp.style.display = 'none';
+          inp.value = '';
+          const selFuncao = document.getElementById('meta-funcao');
+          if (selFuncao) { selFuncao.disabled = true; selFuncao.style.opacity = '.5'; selFuncao.style.cursor = 'not-allowed'; selFuncao.innerHTML = '<option value="">Selecione primeiro o setor</option>'; }
+          return;
+        }
         if (this.value === '__outro__') {
           inp.style.display = '';
           inp.placeholder = 'Digite o nome do seu setor';
           inp.focus();
-          // Setor livre → mostra todos os cargos sem filtro
           popularMetaFuncao(null);
         } else {
           inp.style.display = 'none';
           inp.value = '';
-          // Filtra cargos pelo setor selecionado (ou todos se vazio)
           const setorObj = empresaSetores.find(s => s.nome === this.value);
           popularMetaFuncao(setorObj ? setorObj.id : null);
         }
@@ -788,6 +799,7 @@ async function enviarResposta() {
   }
 
   const btn = document.getElementById('btn-enviar');
+  const originalBtnHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></div>Enviando...`;
 
@@ -817,6 +829,35 @@ async function enviarResposta() {
     ? (setorInput ? `Outro: ${setorInput}` : 'Outro')
     : (setorSelect || setorInput);
   const setorVal = _sanitizeMeta(setorNome || setorRaw) || 'Não informado';
+
+  // ── Validação obrigatória de setor e função ──────────────
+  if (!setorNome) {
+    // Setor não pré-definido no link → obrigar seleção
+    if (!setorRaw) {
+      btn.disabled = false; btn.innerHTML = originalBtnHtml;
+      toast('Selecione seu setor antes de enviar.', 'warn');
+      document.getElementById('meta-setor')?.focus();
+      return;
+    }
+    if (setorSelect === '__outro__' && !setorInput) {
+      btn.disabled = false; btn.innerHTML = originalBtnHtml;
+      toast('Digite o nome do seu setor.', 'warn');
+      document.getElementById('meta-setor-input')?.focus();
+      return;
+    }
+  }
+  if (!funcaoVal) {
+    btn.disabled = false; btn.innerHTML = originalBtnHtml;
+    toast('Selecione sua função / cargo antes de enviar.', 'warn');
+    document.getElementById('meta-funcao')?.focus();
+    return;
+  }
+  if (funcaoSelect === '__outro__' && !funcaoInput) {
+    btn.disabled = false; btn.innerHTML = originalBtnHtml;
+    toast('Digite sua função / cargo.', 'warn');
+    document.getElementById('meta-funcao-input')?.focus();
+    return;
+  }
 
   // Montar itens com UUIDs — apenas valores válidos 1-4
   const itens = Object.entries(respostas)
