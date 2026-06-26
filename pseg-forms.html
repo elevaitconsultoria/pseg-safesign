@@ -47,7 +47,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .empresa-nome{font-size:16px;font-weight:800;color:var(--tx)}
 .empresa-setor{font-size:12px;color:var(--tm);margin-top:2px}
 
-.instrucoes{background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--tx);line-height:1.6}
+.instrucoes{background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;font-size:15px;color:var(--tx);line-height:1.6}
 .instrucoes strong{color:var(--g)}
 
 /* ── CARD / BLOCO ── */
@@ -894,6 +894,7 @@ async function enviarResposta() {
     p_itens:        itens,
     p_session_id:   _sessionId,
     p_lgpd_aceito:  _lgpdAceito,
+    p_device_info:  _getDeviceInfo(),
   };
 
   // ── Backup local ANTES do envio (chave inclui token para rastreabilidade) ──
@@ -951,6 +952,27 @@ async function enviarResposta() {
   // Mostrar tela de confirmação
   hideAll();
   document.getElementById('success-screen').classList.add('active');
+}
+
+// ── Info de dispositivo para auditoria ──
+function _getDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  let tipo = 'Desktop';
+  if (/Mobi|Android|iPhone|iPod/i.test(ua))  tipo = 'Mobile';
+  else if (/iPad|Tablet/i.test(ua))           tipo = 'Tablet';
+  let os = 'Outro';
+  if (/Android/i.test(ua))      os = 'Android';
+  else if (/iPhone|iPad/i.test(ua)) os = 'iOS';
+  else if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Mac OS/i.test(ua))  os = 'macOS';
+  else if (/Linux/i.test(ua))   os = 'Linux';
+  let browser = 'Outro';
+  if (/Edg\//i.test(ua))        browser = 'Edge';
+  else if (/Chrome/i.test(ua))  browser = 'Chrome';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Safari/i.test(ua))  browser = 'Safari';
+  const w = window.screen?.width || 0;
+  return `${tipo} | ${os} | ${browser} | ${w}px`;
 }
 
 // ── Verificar e reenviar respostas pendentes ──
