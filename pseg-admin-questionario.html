@@ -4653,6 +4653,13 @@ function abrirModalClientePerfil(empId) {
   const emp = isNovo ? null : _empresas.find(e => e.id === empId);
   if (!isNovo && !emp) return;
 
+  // Antes de criar um novo cliente, a EST precisa ter pelo menos o nome configurado
+  if (isNovo && !_estPerfil?.nome_empresa) {
+    toast('Configure o Perfil da EST antes de cadastrar clientes — preencha pelo menos o nome.', 'w', 5000);
+    goScreen('est-perfil', document.getElementById('nb-est-perfil'));
+    return;
+  }
+
   document.getElementById('cp-title').textContent = isNovo ? 'Nova empresa' : 'Configurar cliente';
   document.getElementById('cp-sub').textContent   = isNovo ? 'Preencha os dados da empresa cliente.' : `Editando "${emp.nome}"`;
   document.getElementById('cp-nome').value         = emp?.nome         || '';

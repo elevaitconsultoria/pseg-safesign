@@ -21,6 +21,11 @@ BEGIN
   -- service_role (auth.uid() IS NULL) → operação administrativa, permitir tudo
   IF auth.uid() IS NULL THEN RETURN NEW; END IF;
 
+  -- super_admin tem permissão total sobre qualquer perfil
+  IF EXISTS (SELECT 1 FROM public.perfis WHERE id = auth.uid() AND role = 'super_admin') THEN
+    RETURN NEW;
+  END IF;
+
   -- ── Regra 0: Nenhum usuário pode alterar o próprio role ───────────────
   -- Garante que, mesmo sendo admin, não se pode auto-promover nem auto-rebaixar.
   -- A elevação de perfil é prerrogativa exclusiva de um terceiro com permissão.
