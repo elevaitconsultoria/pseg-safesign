@@ -9976,7 +9976,12 @@ async function carregarUsuarios() {
           ? `<span style="font-size:11px;color:var(--tl);padding:4px 8px;border:1px solid var(--bs);border-radius:var(--r)">Você — edição bloqueada</span>`
           : `<span style="font-size:11px;color:var(--tl);padding:4px 8px;border:1px solid var(--bs);border-radius:var(--r)">${ROLE_LABEL[u.role]||u.role} — sem permissão</span>`;
       const btnReconf = isSuperAdmin && !isSelf
-        ? `<button class="btn btn-ghost" style="font-size:11px" onclick="abrirModalReconfVinculo('${u.id}','${u.nome||''}','${u.tenant_id||''}','${u.empresa_id||''}')">Reconfigurar</button>`
+        ? `<button class="btn btn-ghost" style="font-size:11px"
+             data-reconf-id="${u.id}"
+             data-reconf-nome="${(u.nome||'').replace(/"/g,'&quot;')}"
+             data-reconf-tenant="${u.tenant_id||''}"
+             data-reconf-empresa="${u.empresa_id||''}"
+             onclick="abrirModalReconfVinculo(this.dataset.reconfId,this.dataset.reconfNome,this.dataset.reconfTenant,this.dataset.reconfEmpresa)">Reconfigurar</button>`
         : '';
       return `
       <div class="card" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
@@ -10003,6 +10008,11 @@ async function carregarUsuarios() {
         const label = u.tenants?.nome || null;
         if (!grupos[key]) grupos[key] = { nome: label, users: [] };
         grupos[key].users.push(u);
+      });
+      // Garantir que ESTs sem usuários também apareçam
+      const { data: allTenants } = await sbAdmin.from('tenants').select('id, nome').order('nome');
+      (allTenants || []).forEach(t => {
+        if (!grupos[t.id]) grupos[t.id] = { nome: t.nome, users: [] };
       });
 
       // Ordenar: ESTs com nome primeiro (alfabético), sem tenant por último
@@ -10073,23 +10083,28 @@ async function alterarRoleUsuario(id, novoRole) {
 // ── Modal reconfigurar vínculo (super_admin) ──────────────────────────────
 async function abrirModalReconfVinculo(userId, nomeUsuario, tenantId, empresaId) {
   if (currentUser?.role !== 'super_admin') return;
-  document.getElementById('reconf-user-id').value   = userId;
-  document.getElementById('reconf-modal-sub').textContent = `Usuário: ${nomeUsuario || userId}`;
+  try {
+    document.getElementById('reconf-user-id').value = userId;
+    document.getElementById('reconf-modal-sub').textContent = `Usuário: ${nomeUsuario || userId}`;
 
-  // Carregar tenants
-  const sel = document.getElementById('reconf-tenant-id');
-  sel.innerHTML = '<option value="">— Sem EST —</option>';
-  const { data: tenants } = await sbAdmin.from('tenants').select('id, nome').eq('ativo', true).order('nome');
-  (tenants || []).forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.id; opt.textContent = t.nome;
-    if (t.id === tenantId) opt.selected = true;
-    sel.appendChild(opt);
-  });
+    // Carregar tenants
+    const sel = document.getElementById('reconf-tenant-id');
+    sel.innerHTML = '<option value="">— Sem EST —</option>';
+    const { data: tenants, error: errT } = await sbAdmin.from('tenants').select('id, nome').eq('ativo', true).order('nome');
+    if (errT) throw errT;
+    (tenants || []).forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = t.nome;
+      if (t.id === tenantId) opt.selected = true;
+      sel.appendChild(opt);
+    });
 
-  // Carregar empresas do tenant atual
-  await reconfCarregarEmpresas(empresaId);
-  document.getElementById('modal-reconf-vinculo').classList.add('on');
+    // Carregar empresas do tenant atual
+    await reconfCarregarEmpresas(empresaId);
+    document.getElementById('modal-reconf-vinculo').classList.add('on');
+  } catch(e) {
+    toast('Erro ao abrir reconfiguração: ' + e.message, 'r');
+  }
 }
 
 async function reconfCarregarEmpresas(preSelectEmpresaId) {
