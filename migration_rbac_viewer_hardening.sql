@@ -122,72 +122,51 @@ CREATE TRIGGER tg_guard_perfil_update
 -- empresas
 DROP POLICY IF EXISTS "viewer_readonly_empresas" ON empresas;
 CREATE POLICY "viewer_readonly_empresas" ON empresas
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- ciclos
 DROP POLICY IF EXISTS "viewer_readonly_ciclos" ON ciclos;
 CREATE POLICY "viewer_readonly_ciclos" ON ciclos
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- links_coleta
 DROP POLICY IF EXISTS "viewer_readonly_links_coleta" ON links_coleta;
 CREATE POLICY "viewer_readonly_links_coleta" ON links_coleta
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- laudos
 DROP POLICY IF EXISTS "viewer_readonly_laudos" ON laudos;
 CREATE POLICY "viewer_readonly_laudos" ON laudos
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- planos_config
 DROP POLICY IF EXISTS "viewer_readonly_planos_config" ON planos_config;
 CREATE POLICY "viewer_readonly_planos_config" ON planos_config
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- est_perfil
 DROP POLICY IF EXISTS "viewer_readonly_est_perfil" ON est_perfil;
 CREATE POLICY "viewer_readonly_est_perfil" ON est_perfil
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis WHERE id = auth.uid()) <> 'cliente_viewer');
 
 -- perfis (viewer não pode alterar perfis de ninguém — nem o próprio role)
 DROP POLICY IF EXISTS "viewer_readonly_perfis" ON perfis;
 CREATE POLICY "viewer_readonly_perfis" ON perfis
-  AS RESTRICTIVE
-  FOR ALL
-  TO authenticated
-  USING (
-    (SELECT role FROM public.perfis p2 WHERE p2.id = auth.uid()) <> 'cliente_viewer'
-  );
+  AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING ((SELECT role FROM public.perfis p2 WHERE p2.id = auth.uid()) <> 'cliente_viewer')
+  WITH CHECK ((SELECT role FROM public.perfis p2 WHERE p2.id = auth.uid()) <> 'cliente_viewer');
 
 
 -- ──────────────────────────────────────────────────────────────────────
@@ -197,4 +176,9 @@ CREATE POLICY "viewer_readonly_perfis" ON perfis
 --    filtram apenas por tenant_id = get_my_tenant_id() — viewer com
 --    tenant_id configurado herda o acesso de leitura automaticamente.
 --    Não é necessário criar novas políticas SELECT.
+--
+--    IMPORTANTE: as policies viewer_readonly_* são FOR UPDATE (não FOR ALL).
+--    FOR ALL bloquearia SELECT, impedindo loadPerfil() de ler o próprio perfil
+--    e carregamento de dados nas telas de análise. INSERT e DELETE já são
+--    bloqueados pela ausência de policies permissivas de escrita para viewer.
 -- ──────────────────────────────────────────────────────────────────────
