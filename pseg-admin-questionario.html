@@ -1548,6 +1548,33 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
+<!-- Modal reconfigurar vínculo de usuário (super_admin) -->
+<div class="modal-bg" id="modal-reconf-vinculo">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">Reconfigurar vínculo</div>
+    <div class="modal-sub" id="reconf-modal-sub">Altere a EST e/ou empresa associada ao usuário.</div>
+    <input type="hidden" id="reconf-user-id"/>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div class="field">
+        <label>EST (Tenant)</label>
+        <select id="reconf-tenant-id" onchange="reconfCarregarEmpresas()">
+          <option value="">— Sem EST (super_admin / autônomo) —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Empresa vinculada <span style="font-size:10px;color:var(--tl)">(obrigatório para Viewer)</span></label>
+        <select id="reconf-empresa-id">
+          <option value="">— Nenhuma —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalReconfVinculo()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarReconfVinculo()">Salvar vínculo</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal novo usuário -->
 <div class="modal-bg" id="modal-novo-usuario">
   <div class="modal" style="max-width:420px">
@@ -9618,8 +9645,8 @@ function aplicarRestricoesPorRole() {
     // Consultor: coleta + análise + relatórios — sem gestão de equipe, plano ou configurações
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
 
-    // Ocultar itens restritos
-    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos']);
+    // Ocultar itens restritos ao consultor (plano de ação é só admin)
+    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos', 'nb-plano']);
     restritos.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -9632,23 +9659,24 @@ function aplicarRestricoesPorRole() {
 
     // Se estiver numa tela restrita, redirecionar ao dashboard
     const telaAtiva = document.querySelector('.screen.on')?.id;
-    if (['sc-usuarios','sc-assinatura','sc-riscos'].includes(telaAtiva)) {
+    if (['sc-usuarios','sc-assinatura','sc-riscos','sc-plano'].includes(telaAtiva)) {
       goScreen('dashboard', document.getElementById('nb-dashboard'));
     }
     return;
   }
 
-  // cliente_viewer (Viewer EST): apenas Resultados, Distribuição e Auditoria
-  const permitidosViewer = new Set(['nb-analise','nb-graficos','nb-auditoria']);
+  // cliente_viewer: Dashboard + Links de coleta + Análise + Comparativo + Relatório
+  const permitidosViewer = new Set(['nb-dashboard','nb-links','nb-analise','nb-graficos','nb-comparativo','nb-auditoria','nb-laudo']);
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.style.display = permitidosViewer.has(btn.id) ? '' : 'none';
   });
-  // Ocultar todas as seções do sidebar (viewer não precisa de agrupamentos)
+  // Mostrar apenas seções relevantes ao viewer
   document.querySelectorAll('.sidebar-section').forEach(sec => {
-    sec.style.display = 'none';
+    const txt = sec.textContent.trim();
+    sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
   });
-  // Tela inicial: Resultados
-  goScreen('analise', document.getElementById('nb-analise'));
+  // Tela inicial: Dashboard
+  goScreen('dashboard', document.getElementById('nb-dashboard'));
 }
 
 async function sincronizarQuestoes() {
@@ -9913,7 +9941,7 @@ async function carregarUsuarios() {
   try {
     const { data, error } = await sbAdmin
       .from('perfis')
-      .select('id, nome, role, ativo, empresa_id, created_at, empresas(nome)')
+      .select('id, nome, role, ativo, empresa_id, tenant_id, created_at, empresas(id,nome), tenants(id,nome)')
       .neq('role', 'super_admin')
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -9928,6 +9956,7 @@ async function carregarUsuarios() {
     function renderUserRow(u) {
       const isSelf      = u.id === currentUser?.id;
       const canEdit     = callerIsAdmin && !isSelf && u.role !== 'super_admin';
+      const empresaNome = u.empresas?.nome || null;
       const roleSelect  = canEdit ? `
         <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
           <option value="consultor"      ${u.role==='consultor'     ?'selected':''}>Consultor</option>
@@ -9939,6 +9968,9 @@ async function carregarUsuarios() {
         </button>` : isSelf
           ? `<span style="font-size:11px;color:var(--tl);padding:4px 8px;border:1px solid var(--bs);border-radius:var(--r)">Você — edição bloqueada</span>`
           : `<span style="font-size:11px;color:var(--tl);padding:4px 8px;border:1px solid var(--bs);border-radius:var(--r)">${ROLE_LABEL[u.role]||u.role} — sem permissão</span>`;
+      const btnReconf = isSuperAdmin && !isSelf
+        ? `<button class="btn btn-ghost" style="font-size:11px" onclick="abrirModalReconfVinculo('${u.id}','${u.nome||''}','${u.tenant_id||''}','${u.empresa_id||''}')">Reconfigurar</button>`
+        : '';
       return `
       <div class="card" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
         <div>
@@ -9946,9 +9978,10 @@ async function carregarUsuarios() {
           <div style="font-size:11px;color:#374151;margin-top:2px">
             <span class="tag ${ROLE_TAG[u.role] || 'tgr'}">${ROLE_LABEL[u.role] || u.role}</span>
             ${!u.ativo ? '<span class="tag tgr" style="margin-left:4px">Inativo</span>' : ''}
+            ${empresaNome ? `<span style="margin-left:6px;color:var(--tl)">· ${empresaNome}</span>` : ''}
           </div>
         </div>
-        <div style="display:flex;gap:6px">${roleSelect}</div>
+        <div style="display:flex;gap:6px">${roleSelect}${btnReconf}</div>
       </div>`;
     }
 
@@ -9956,16 +9989,16 @@ async function carregarUsuarios() {
       // Admin/consultor: lista plana (só veem a própria EST)
       el.innerHTML = data.map(renderUserRow).join('');
     } else {
-      // super_admin: agrupar por EST
+      // super_admin: agrupar por EST (tenant_id)
       const grupos = {};
       data.forEach(u => {
-        const key   = u.empresa_id || '__orphan__';
-        const label = u.empresas?.nome || (u.empresa_id ? u.empresa_id : null);
+        const key   = u.tenant_id || '__orphan__';
+        const label = u.tenants?.nome || null;
         if (!grupos[key]) grupos[key] = { nome: label, users: [] };
         grupos[key].users.push(u);
       });
 
-      // Ordenar: ESTs com nome primeiro (alfabético), órfãos por último
+      // Ordenar: ESTs com nome primeiro (alfabético), sem tenant por último
       const keys = Object.keys(grupos).sort((a, b) => {
         if (a === '__orphan__') return 1;
         if (b === '__orphan__') return -1;
@@ -9978,7 +10011,8 @@ async function carregarUsuarios() {
         const header   = isOrphan
           ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:8px">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-               <span style="font-size:12px;font-weight:700;color:var(--amber)">Sem empresa associada</span>
+               <span style="font-size:12px;font-weight:700;color:var(--amber)">Sem EST associada</span>
+               <span style="font-size:11px;color:var(--tl)">${g.users.length} usuário(s)</span>
              </div>`
           : `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:8px">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
@@ -10028,6 +10062,59 @@ async function alterarRoleUsuario(id, novoRole) {
   toast('Perfil atualizado.', 'g');
   carregarUsuarios();
 }
+
+// ── Modal reconfigurar vínculo (super_admin) ──────────────────────────────
+async function abrirModalReconfVinculo(userId, nomeUsuario, tenantId, empresaId) {
+  if (currentUser?.role !== 'super_admin') return;
+  document.getElementById('reconf-user-id').value   = userId;
+  document.getElementById('reconf-modal-sub').textContent = `Usuário: ${nomeUsuario || userId}`;
+
+  // Carregar tenants
+  const sel = document.getElementById('reconf-tenant-id');
+  sel.innerHTML = '<option value="">— Sem EST —</option>';
+  const { data: tenants } = await sbAdmin.from('tenants').select('id, nome').eq('ativo', true).order('nome');
+  (tenants || []).forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.nome;
+    if (t.id === tenantId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Carregar empresas do tenant atual
+  await reconfCarregarEmpresas(empresaId);
+  document.getElementById('modal-reconf-vinculo').classList.add('on');
+}
+
+async function reconfCarregarEmpresas(preSelectEmpresaId) {
+  const tenantId = document.getElementById('reconf-tenant-id').value;
+  const sel = document.getElementById('reconf-empresa-id');
+  sel.innerHTML = '<option value="">— Nenhuma —</option>';
+  if (!tenantId) return;
+  const { data: emps } = await sbAdmin.from('empresas').select('id, nome').eq('tenant_id', tenantId).eq('ativo', true).order('nome');
+  (emps || []).forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id; opt.textContent = e.nome;
+    if (e.id === (preSelectEmpresaId || '')) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function fecharModalReconfVinculo() {
+  document.getElementById('modal-reconf-vinculo').classList.remove('on');
+}
+
+async function salvarReconfVinculo() {
+  if (currentUser?.role !== 'super_admin') return;
+  const userId    = document.getElementById('reconf-user-id').value;
+  const tenantId  = document.getElementById('reconf-tenant-id').value  || null;
+  const empresaId = document.getElementById('reconf-empresa-id').value || null;
+  const { error } = await sbAdmin.from('perfis').update({ tenant_id: tenantId, empresa_id: empresaId }).eq('id', userId);
+  if (error) { toast('Erro ao salvar: ' + error.message, 'r'); return; }
+  toast('Vínculo atualizado com sucesso.', 'g');
+  fecharModalReconfVinculo();
+  carregarUsuarios();
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function toggleAtivoUsuario(id, ativo) {
   if (!sbAdmin) return;
@@ -12253,10 +12340,10 @@ function goScreen(id, btn) {
   // Controle de acesso por role
   const role = currentUser?.role;
   const restritos = {
-    consultor:      new Set(['usuarios','assinatura','riscos','gestao-ests']),
+    consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests']),
     admin:          new Set(['gestao-ests']),
-    // viewer vê APENAS analise + graficos + auditoria — tudo mais bloqueado
-    cliente_viewer: new Set(['dashboard','empresas','links','q','comparativo','laudo','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil']),
+    // viewer: leitura + links + análise + relatório — sem gestão EST, clientes ou configurações
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
