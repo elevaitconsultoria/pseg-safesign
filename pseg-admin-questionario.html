@@ -3564,6 +3564,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
     </div>
 
+    <!-- ── Quadro de funcionários (headcount) ── -->
+    <div style="padding:10px 22px;border-top:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);display:flex;align-items:center;gap:6px">
+          Quadro de funcionários
+          <span id="ghe-hc-total" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+        </div>
+        <button id="ghe-hc-clear" onclick="limparHeadcount()" style="display:none;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">Limpar</button>
+      </div>
+      <div id="ghe-hc-panel" style="font-size:11px;color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</div>
+    </div>
+
     <!-- ── Rodapé fixo ── -->
     <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="fecharModalGHE()">Fechar</button>
@@ -11235,13 +11247,84 @@ function abrirModalGHE(empresaId) {
   const ca = document.getElementById('ghe-cola-area'); if (ca) ca.style.display = 'none';
   _gheRenderTemplateBtns();
   renderGHEModal();
+  carregarHeadcountGHE(empresaId);
   document.getElementById('modal-ghe').classList.add('open');
 }
 
 function fecharModalGHE() {
   document.getElementById('modal-ghe').classList.remove('open');
   _gheEmpresaId = null;
-  _gheImportHeadcount = []; // garantir que headcount de import anterior não vaze
+  _gheImportHeadcount = [];
+}
+
+async function carregarHeadcountGHE(empresaId) {
+  const panel  = document.getElementById('ghe-hc-panel');
+  const total  = document.getElementById('ghe-hc-total');
+  const btnClr = document.getElementById('ghe-hc-clear');
+  if (!panel) return;
+
+  if (!empresaId || isDemoMode || !sbAdmin) {
+    panel.innerHTML = '<span style="color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</span>';
+    if (total)  total.textContent = '';
+    if (btnClr) btnClr.style.display = 'none';
+    return;
+  }
+
+  panel.innerHTML = '<span style="color:var(--tl)">Carregando…</span>';
+  const { data } = await sbAdmin
+    .from('empresa_headcount')
+    .select('setor, funcao, quantidade')
+    .eq('empresa_id', empresaId)
+    .order('setor').order('funcao');
+
+  _renderHeadcountGHE(data || []);
+}
+
+function _renderHeadcountGHE(rows) {
+  const panel  = document.getElementById('ghe-hc-panel');
+  const total  = document.getElementById('ghe-hc-total');
+  const btnClr = document.getElementById('ghe-hc-clear');
+  if (!panel) return;
+
+  if (!rows.length) {
+    panel.innerHTML = '<span style="color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</span>';
+    if (total)  total.textContent = '';
+    if (btnClr) btnClr.style.display = 'none';
+    return;
+  }
+
+  const totalFunc = rows.reduce((s, r) => s + r.quantidade, 0);
+  if (total)  total.textContent = `— ${totalFunc} funcionário(s)`;
+  if (btnClr) btnClr.style.display = 'inline';
+
+  const linhas = rows.map(r =>
+    `<tr>
+      <td style="padding:3px 8px;font-size:11px;color:var(--tx)">${r.setor||'—'}</td>
+      <td style="padding:3px 8px;font-size:11px;color:var(--tx)">${r.funcao||'—'}</td>
+      <td style="padding:3px 8px;font-size:11px;text-align:right;font-weight:600;color:var(--tx)">${r.quantidade}</td>
+    </tr>`
+  ).join('');
+
+  panel.innerHTML = `
+    <div style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:4px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:3px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Setor</th>
+          <th style="padding:3px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Função</th>
+          <th style="padding:3px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Qtd</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
+}
+
+async function limparHeadcount() {
+  if (!_gheEmpresaId || !sbAdmin) return;
+  if (!confirm('Remover o quadro de funcionários desta empresa?')) return;
+  await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+  _gheImportHeadcount = [];
+  _renderHeadcountGHE([]);
+  toast('Quadro de funcionários removido.', 'g');
 }
 
 // ── Render dois painéis ──
@@ -11701,6 +11784,7 @@ function confirmarGHEImport() {
   // _gheImportHeadcount é preservado até salvarGHE() — limpo lá
   const totalFunc = _gheImportHeadcount.reduce((s, h) => s + h.quantidade, 0);
   const hcMsg = totalFunc > 0 ? `, ${totalFunc} funcionário(s) no quadro` : '';
+  if (_gheImportHeadcount.length) _renderHeadcountGHE(_gheImportHeadcount);
   toast(`Importado: ${totalSet} setor(es), ${totalFun} cargo(s)${hcMsg}. Clique em Salvar para confirmar.`, 'g', 5000);
 }
 
