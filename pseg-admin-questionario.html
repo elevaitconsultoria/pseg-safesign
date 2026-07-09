@@ -6660,13 +6660,14 @@ async function carregarLinks() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
-    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)');
+    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
     const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
     _links = (data || []).map(l => ({
       id:            l.id,
       empresa_id:    l.empresa_id,
+      ciclo_id:      l.ciclo_id || null,
       nomeEmpresa:   l.empresas?.nome || '—',
       setor_sugerido: l.setor_sugerido || '',
       ciclo:         l.ciclos?.nome || '',
@@ -6841,17 +6842,126 @@ function renderLinks() {
           🗑 Excluir
         </button>
       </div>
-      <div style="padding:6px 16px 8px;font-size:10px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap">
+      <div style="padding:6px 16px 8px;font-size:10px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
         <span>Criado: ${l.criado}</span>
         <span>Expira: ${l.expira}</span>
         <span>Token: <code style="font-size:10px">${l.token}</code></span>
+        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;margin-left:auto;flex-shrink:0" onclick="verAdesaoLink('${l.id}')">
+          📊 Ver adesão
+        </button>
       </div>
+      <div id="adesao-${l.id}" style="display:none;border-top:1px solid var(--border);padding:12px 16px;background:var(--bg)"></div>
     </div>`;
   }).join('');
 }
 
 function copiarLink(url) {
   navigator.clipboard.writeText(url).then(() => toast('Link copiado!', 'g'));
+}
+
+async function calcRepresentatividade(empId, cicloId) {
+  // Busca headcount cadastrado para a empresa
+  const { data: hcRows } = await sbAdmin
+    .from('empresa_headcount')
+    .select('setor, funcao, quantidade')
+    .eq('empresa_id', empId);
+  if (!hcRows || !hcRows.length) return null;
+
+  // Busca respostas filtradas por empresa (e ciclo se informado)
+  let q = sbAdmin.from('respostas').select('setor, funcao').eq('empresa_id', empId);
+  if (cicloId) q = q.eq('ciclo_id', cicloId);
+  const { data: resps } = await q;
+
+  // Conta respostas por (setor normalizado × funcao normalizada)
+  const contagem = new Map();
+  (resps || []).forEach(r => {
+    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
+    contagem.set(k, (contagem.get(k) || 0) + 1);
+  });
+
+  // Monta resultado final usando os labels originais do headcount
+  return hcRows.map(h => {
+    const k = `${_gheNorm(h.setor||'')}|||${_gheNorm(h.funcao||'')}`;
+    const respostas = contagem.get(k) || 0;
+    const pct = h.quantidade > 0 ? Math.round(respostas / h.quantidade * 100) : 0;
+    return { setor: h.setor, funcao: h.funcao, respostas, total: h.quantidade, pct };
+  }).sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''));
+}
+
+async function verAdesaoLink(linkId) {
+  const painel = document.getElementById(`adesao-${linkId}`);
+  if (!painel) return;
+
+  // Toggle: se já aberto, fechar
+  if (painel.style.display !== 'none') {
+    painel.style.display = 'none';
+    return;
+  }
+
+  const link = _links.find(l => l.id === linkId);
+  if (!link) return;
+
+  painel.style.display = 'block';
+  painel.innerHTML = '<div style="font-size:11px;color:var(--tl)">Carregando adesão…</div>';
+
+  try {
+    const dados = await calcRepresentatividade(link.empresa_id, link.ciclo_id);
+
+    if (!dados) {
+      painel.innerHTML = `
+        <div style="font-size:11px;color:var(--tl);display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Sem quadro de funcionários cadastrado para esta empresa.
+          <span style="color:var(--g);cursor:pointer;text-decoration:underline" onclick="goScreen('empresas',document.getElementById('nb-empresas'))">Importar via GHE</span>
+        </div>`;
+      return;
+    }
+
+    const totalResp  = dados.reduce((s, d) => s + d.respostas, 0);
+    const totalFunc  = dados.reduce((s, d) => s + d.total, 0);
+    const totalPct   = totalFunc > 0 ? Math.round(totalResp / totalFunc * 100) : 0;
+    const corTotal   = totalPct >= 70 ? '#16a34a' : totalPct >= 30 ? '#b45309' : '#dc2626';
+    const bgTotal    = totalPct >= 70 ? '#f0fdf4' : totalPct >= 30 ? '#fffbeb' : '#fef2f2';
+
+    const linhas = dados.map(d => {
+      const cor = d.pct >= 70 ? '#16a34a' : d.pct >= 30 ? '#b45309' : '#dc2626';
+      const bg  = d.pct >= 70 ? '#f0fdf4' : d.pct >= 30 ? '#fffbeb' : '#fef2f2';
+      return `<tr>
+        <td style="padding:4px 8px;font-size:11px;color:var(--tx)">${d.setor||'—'}</td>
+        <td style="padding:4px 8px;font-size:11px;color:var(--tx)">${d.funcao||'—'}</td>
+        <td style="padding:4px 8px;font-size:11px;text-align:right;color:var(--tx)">${d.respostas}</td>
+        <td style="padding:4px 8px;font-size:11px;text-align:right;color:var(--tl)">${d.total}</td>
+        <td style="padding:4px 8px;text-align:right">
+          <span style="font-size:10px;font-weight:700;color:${cor};background:${bg};border:1px solid ${cor};border-radius:4px;padding:1px 6px">${d.pct}%</span>
+        </td>
+      </tr>`;
+    }).join('');
+
+    painel.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx)">Adesão à pesquisa${link.ciclo ? ` — ${link.ciclo}` : ''}</div>
+        <span style="font-size:11px;font-weight:700;color:${corTotal};background:${bgTotal};border:1px solid ${corTotal};border-radius:4px;padding:2px 10px">
+          Total: ${totalResp} / ${totalFunc} = ${totalPct}%
+        </span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:360px">
+          <thead><tr style="background:var(--bg2,var(--bg))">
+            <th style="padding:4px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Setor</th>
+            <th style="padding:4px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Função</th>
+            <th style="padding:4px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Respostas</th>
+            <th style="padding:4px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Total</th>
+            <th style="padding:4px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Adesão</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--tl)">
+        Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%
+      </div>`;
+  } catch(e) {
+    painel.innerHTML = `<div style="font-size:11px;color:#dc2626">Erro ao carregar adesão: ${e.message}</div>`;
+  }
 }
 
 function abrirModalQR(url, nomeEmpresa) {
@@ -11401,6 +11511,7 @@ function confirmarEditUniversal(i) {
 let _gheImportCargoSetor = {}; // cargo → setor (do CSV)
 let _gheImportSetores    = [];
 let _gheImportFuncoes    = [];
+let _gheImportHeadcount  = []; // [{setor, funcao, quantidade}] — calculado no import
 // compat
 let _gheTempCargoSetor   = {};
 
@@ -11456,6 +11567,10 @@ function _detectarColuna(headers, candidatos) {
   return null;
 }
 
+// Normalização conservadora: apenas trim + colapso de espaços duplos + lowercase para agrupamento.
+// Não remove acentos nem expande abreviações — "ADM" e "Administrativo" são setores distintos.
+function _gheNorm(s) { return (s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+
 function _processarGHEImport(rows) {
   if (!rows || rows.length === 0) {
     return _gheImportErro('O arquivo está vazio ou sem dados válidos.');
@@ -11463,6 +11578,7 @@ function _processarGHEImport(rows) {
   const headers = Object.keys(rows[0]);
   const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','area','grupo','sector','unidade']);
   const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação']);
+  const colQtd    = _detectarColuna(headers, ['quantidade','qtd','total','headcount','funcionarios','funcionários','qtde']);
 
   if (!colSetor && !colCargo) {
     return _gheImportErro(
@@ -11471,6 +11587,7 @@ function _processarGHEImport(rows) {
     );
   }
 
+  // ── Deduplicar setores e cargos (comportamento existente) ──
   const setores = colSetor
     ? [...new Set(rows.map(r => (r[colSetor]||'').trim()).filter(Boolean))].sort()
     : [];
@@ -11491,11 +11608,63 @@ function _processarGHEImport(rows) {
   _gheImportSetores = setores;
   _gheImportFuncoes = funcoes;
 
+  // ── Calcular headcount por (setor × funcao) ──
+  // Chave: valor normalizado (lowercase+trim) → agrupar variações de capitalização/espaço
+  // Label: primeiro valor original encontrado (capitalização preservada)
+  const hcMap = new Map(); // normKey → {setor, funcao, quantidade}
+  _gheImportHeadcount = [];
+
+  if (colSetor || colCargo) {
+    rows.forEach(r => {
+      const setor = colSetor ? (r[colSetor]||'').trim() : '';
+      const cargo = colCargo ? (r[colCargo]||'').trim() : '';
+      if (!setor && !cargo) return;
+      const key = `${_gheNorm(setor)}|||${_gheNorm(cargo)}`;
+      if (colQtd) {
+        // Lista pré-agregada: somar valores da coluna Quantidade
+        const qtd = parseInt((r[colQtd]||'0').toString().replace(/\D/g,''), 10) || 0;
+        if (hcMap.has(key)) { hcMap.get(key).quantidade += qtd; }
+        else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: qtd }); }
+      } else {
+        // Lista nominal (1 linha = 1 funcionário): contar linhas
+        if (hcMap.has(key)) { hcMap.get(key).quantidade++; }
+        else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: 1 }); }
+      }
+    });
+    _gheImportHeadcount = [...hcMap.values()].filter(h => h.setor || h.funcao);
+  }
+
+  const totalFunc = _gheImportHeadcount.reduce((s, h) => s + h.quantidade, 0);
+
+  // ── Preview ──
+  let tabelaHC = '';
+  if (_gheImportHeadcount.length) {
+    const linhas = _gheImportHeadcount
+      .sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''))
+      .map(h => `<tr><td style="padding:2px 8px;color:var(--tx)">${h.setor||'—'}</td><td style="padding:2px 8px;color:var(--tx)">${h.funcao||'—'}</td><td style="padding:2px 8px;text-align:right;font-weight:600;color:var(--tx)">${h.quantidade}</td></tr>`)
+      .join('');
+    tabelaHC = `
+      <div style="margin-top:8px;font-size:11px;font-weight:700;color:var(--tm);margin-bottom:4px">
+        Quadro de funcionários detectado — <strong>${totalFunc}</strong> funcionário(s) total
+        ${colQtd ? `<span style="color:var(--tl);font-weight:400"> · coluna "${colQtd}"</span>` : `<span style="color:var(--tl);font-weight:400"> · contagem automática por linha</span>`}
+      </div>
+      <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:4px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="background:var(--bg)">
+            <th style="padding:4px 8px;text-align:left;color:var(--tl);font-weight:600;border-bottom:1px solid var(--border)">Setor</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tl);font-weight:600;border-bottom:1px solid var(--border)">Função</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tl);font-weight:600;border-bottom:1px solid var(--border)">Qtd</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`;
+  }
+
   const info = [
-    colSetor  ? `<strong>${setores.length}</strong> setor(es) na coluna "<em>${colSetor}</em>"` : '⚠️ Coluna de setor não identificada',
-    colCargo  ? `<strong>${funcoes.length}</strong> função(ões) na coluna "<em>${colCargo}</em>"` : '⚠️ Coluna de cargo não identificada',
+    colSetor ? `<strong>${setores.length}</strong> setor(es) na coluna "<em>${colSetor}</em>"` : '⚠️ Coluna de setor não identificada',
+    colCargo ? `<strong>${funcoes.length}</strong> função(ões) na coluna "<em>${colCargo}</em>"` : '⚠️ Coluna de cargo não identificada',
     `<strong>${rows.length}</strong> linha(s) lida(s)`,
-  ].join('<br>');
+  ].join('<br>') + tabelaHC;
 
   document.getElementById('ghe-import-info').innerHTML = info;
   document.getElementById('ghe-import-preview').style.display = 'block';
@@ -11528,12 +11697,16 @@ function confirmarGHEImport() {
   const totalSet = _gheTempHierarquia.length;
   const totalFun = _gheAllFuncoes().length;
   _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
-  toast(`Importado: ${totalSet} setor(es), ${totalFun} cargo(s). Clique em Salvar para confirmar.`, 'g', 4000);
+  // _gheImportHeadcount é preservado até salvarGHE() — limpo lá
+  const totalFunc = _gheImportHeadcount.reduce((s, h) => s + h.quantidade, 0);
+  const hcMsg = totalFunc > 0 ? `, ${totalFunc} funcionário(s) no quadro` : '';
+  toast(`Importado: ${totalSet} setor(es), ${totalFun} cargo(s)${hcMsg}. Clique em Salvar para confirmar.`, 'g', 5000);
 }
 
 function cancelarGHEImport() {
   _gheImportSetores = [];
   _gheImportFuncoes = [];
+  _gheImportHeadcount = [];
   document.getElementById('ghe-import-preview').style.display = 'none';
 }
 
@@ -11614,6 +11787,22 @@ async function salvarGHE() {
       emp.funcoes    = todosCargos.map(c => c.nome);
       emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes] }));
       emp.universais = [..._gheTempUniversais];
+
+      // Salvar headcount se veio do import
+      if (_gheImportHeadcount.length > 0) {
+        await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+        const hcRows = _gheImportHeadcount.map(h => ({
+          empresa_id: _gheEmpresaId,
+          tenant_id:  currentTenantId,
+          setor:      h.setor,
+          funcao:     h.funcao || null,
+          quantidade: h.quantidade,
+        }));
+        const { error: hcErr } = await sbAdmin.from('empresa_headcount').insert(hcRows);
+        if (hcErr) console.warn('[PSEG] headcount save:', hcErr.message);
+        _gheImportHeadcount = [];
+      }
+
       toast('GHE salvo com sucesso!', 'g');
     } catch(e) {
       toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
