@@ -11241,6 +11241,7 @@ function abrirModalGHE(empresaId) {
 function fecharModalGHE() {
   document.getElementById('modal-ghe').classList.remove('open');
   _gheEmpresaId = null;
+  _gheImportHeadcount = []; // garantir que headcount de import anterior não vaze
 }
 
 // ── Render dois painéis ──
@@ -11578,7 +11579,7 @@ function _processarGHEImport(rows) {
   const headers = Object.keys(rows[0]);
   const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','area','grupo','sector','unidade']);
   const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação']);
-  const colQtd    = _detectarColuna(headers, ['quantidade','qtd','total','headcount','funcionarios','funcionários','qtde']);
+  const colQtd    = _detectarColuna(headers, ['quantidade','qtd','headcount','funcionarios','funcionários','qtde','num_func','n_func']);
 
   if (!colSetor && !colCargo) {
     return _gheImportErro(
