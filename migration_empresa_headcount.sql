@@ -12,8 +12,10 @@ CREATE TABLE IF NOT EXISTS empresa_headcount (
   funcao      text,                           -- NULL = headcount total do setor (sem distinção de função)
   quantidade  int  NOT NULL CHECK (quantidade >= 0),
   criado_em   timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (empresa_id, setor, COALESCE(funcao, ''))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_empresa_headcount
+  ON empresa_headcount (empresa_id, setor, COALESCE(funcao, ''));
 
 -- RLS
 ALTER TABLE empresa_headcount ENABLE ROW LEVEL SECURITY;

@@ -3577,7 +3577,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
 
     <!-- ── Rodapé fixo ── -->
-    <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;justify-content:flex-end">
+    <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;align-items:center">
+      <button class="btn" style="font-size:12px;padding:6px 12px;background:var(--redbg,#fef2f2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:var(--r)" onclick="limparGHELocal()" title="Remove setores e cargos da tela (não salva)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Limpar tudo
+      </button>
+      <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="fecharModalGHE()">Fechar</button>
       <button class="btn btn-g" onclick="salvarGHE()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
@@ -11211,7 +11216,7 @@ function popularSetoresModal() {
 }
 
 function mudarEmpresaGHE(empresaId) {
-  if (!empresaId) return;
+  if (!empresaId || empresaId === 'null') return;
   _gheEmpresaId = empresaId;
   const emp = _gheGetEmpresa(empresaId);
   const sub = document.getElementById('ghe-empresa-sub');
@@ -11225,6 +11230,7 @@ function mudarEmpresaGHE(empresaId) {
 }
 
 function abrirModalGHE(empresaId) {
+  if (!empresaId || empresaId === 'null') empresaId = null;
   const empSel = document.getElementById('ghe-empresa-sel');
   if (empSel) {
     empSel.innerHTML = '<option value="">Selecione um cliente...</option>';
@@ -11316,6 +11322,19 @@ function _renderHeadcountGHE(rows) {
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
+}
+
+function limparGHELocal() {
+  const totalSet = _gheTempHierarquia.length;
+  const totalUni = _gheTempUniversais.length;
+  if (totalSet + totalUni === 0) { toast('Nenhum setor ou cargo para limpar.', 'w'); return; }
+  if (!confirm(`Remover ${totalSet} setor(es) e ${totalUni} cargo(s) universal(is) da tela?\n\nEsta ação não salva — você ainda precisará clicar em "Salvar estrutura" para confirmar a exclusão no banco.`)) return;
+  _gheTempHierarquia = [];
+  _gheTempUniversais = [];
+  _gheSetorAtivo = null;
+  _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
+  renderGHEModal();
+  toast('Estrutura limpa. Clique em "Salvar estrutura" para confirmar.', 'w');
 }
 
 async function limparHeadcount() {
@@ -11803,7 +11822,7 @@ function _gheImportErro(msg) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 async function salvarGHE() {
-  if (!_gheEmpresaId) {
+  if (!_gheEmpresaId || _gheEmpresaId === 'null') {
     toast('Selecione um cliente antes de salvar.', 'w'); return;
   }
   const emp = _gheGetEmpresa(_gheEmpresaId);
