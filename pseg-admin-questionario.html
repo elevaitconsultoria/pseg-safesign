@@ -3441,18 +3441,34 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
 <div class="modal-bg" id="modal-ghe">
-  <div class="modal" style="max-width:660px;padding:0;display:flex;flex-direction:column;max-height:88vh">
+  <div class="modal" style="max-width:920px;width:min(920px,94vw);padding:0;display:flex;flex-direction:column;max-height:88vh">
 
     <!-- ── Cabeçalho fixo ── -->
     <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
       <div class="modal-title" style="margin-bottom:2px">Setores &amp; Funções</div>
       <div class="modal-sub" id="ghe-empresa-sub" style="margin-bottom:12px">Configure os grupos homogêneos de exposição do cliente.</div>
 
-      <div class="field" id="ghe-empresa-row" style="margin-bottom:10px">
+      <div class="field" id="ghe-empresa-row" style="margin-bottom:8px">
         <label>Cliente</label>
         <select id="ghe-empresa-sel" onchange="mudarEmpresaGHE(this.value)">
           <option value="">Selecione um cliente...</option>
         </select>
+      </div>
+
+      <!-- KPIs -->
+      <div id="ghe-kpis" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:110px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-setores" style="font-size:16px;font-weight:800;color:var(--tx)">0</span>
+          <span style="font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">setores</span>
+        </div>
+        <div style="flex:1;min-width:110px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-funcoes" style="font-size:16px;font-weight:800;color:var(--tx)">0</span>
+          <span style="font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">funções</span>
+        </div>
+        <div style="flex:1;min-width:110px;background:var(--gl,#f0fdf4);border:1px solid var(--g);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-funcionarios" style="font-size:16px;font-weight:800;color:var(--g)">—</span>
+          <span style="font-size:10px;color:var(--g);text-transform:uppercase;letter-spacing:.4px">funcionários</span>
+        </div>
       </div>
 
       <!-- ⚡ Auto-fill — linha compacta -->
@@ -3500,13 +3516,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <!-- ── Painel hierárquico (scrollável) ── -->
     <div style="flex:1;overflow-y:auto;padding:14px 22px">
-      <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;min-height:260px">
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;min-height:min(46vh,420px)">
 
         <!-- Coluna Setores -->
         <div style="display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
           <div style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
             Setores / GHEs
             <span id="ghe-set-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+          </div>
+          <div style="padding:5px 6px;border-bottom:1px solid var(--border);background:var(--bg)">
+            <input id="ghe-busca-setor" type="text" placeholder="🔍 Buscar setor..."
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroSetor=this.value;_renderGHESetoresPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroSetor='';_renderGHESetoresPanel()}"/>
           </div>
           <div id="ghe-setores-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column"></div>
           <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg)">
@@ -3524,8 +3546,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
         <!-- Coluna Cargos -->
         <div style="display:flex;flex-direction:column;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
-          <div id="ghe-cargos-header" style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div id="ghe-cargos-header" style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span id="ghe-cargos-titulo">Cargos</span>
+            <input id="ghe-busca-cargo" type="text" placeholder="🔍 Buscar..."
+              style="flex:1;max-width:170px;border:1px solid var(--border);border-radius:var(--r);padding:3px 8px;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroCargo=this.value;_renderGHECargosPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroCargo='';_renderGHECargosPanel()}"/>
             <span id="ghe-fun-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
           </div>
           <div id="ghe-cargos-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:6px 8px;gap:4px">
@@ -3545,21 +3571,32 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Universais -->
       <div style="margin-top:10px;border:1.5px dashed var(--border);border-radius:var(--r);overflow:hidden">
-        <div style="background:var(--bg);padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--tl)" stroke-width="2" width="11" height="11"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        <div id="ghe-uni-header" onclick="toggleGHEUniversais()" style="background:var(--bg);padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+          <svg id="ghe-uni-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2.5" width="11" height="11" style="transition:transform .15s"><polyline points="9 18 15 12 9 6"/></svg>
           Cargo universal
           <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl);font-size:10px">— aparece em todos os setores</span>
           <span id="ghe-uni-count" style="margin-left:auto;color:var(--tl);font-weight:400;text-transform:none;letter-spacing:0"></span>
         </div>
-        <div style="padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center" id="ghe-universais-panel">
-          <div style="color:var(--tl);font-size:11px;padding:4px 2px">Nenhum cargo universal.</div>
-        </div>
-        <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg);display:flex;gap:4px">
-          <input id="ghe-add-uni" type="text" placeholder="+ Cargo universal..."
-            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
-            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter'){adicionarGHEUniversal();event.preventDefault()}"/>
-          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="adicionarGHEUniversal()">+</button>
+        <div id="ghe-uni-body" style="display:none">
+          <div id="ghe-uni-aviso" style="display:none;padding:6px 10px;background:var(--amberbg,#fffbeb);border-bottom:1px solid var(--border);font-size:10px;color:var(--amber,#b45309)">
+            ⚠️ Muitos cargos aqui geralmente vieram de um import sem setor identificado. Use <b>Mover</b> para reatribuí-los ao setor correto.
+          </div>
+          <div id="ghe-uni-busca-row" style="display:none;padding:5px 8px;border-bottom:1px solid var(--border);background:var(--bg)">
+            <input id="ghe-busca-uni" type="text" placeholder="🔍 Buscar cargo universal..."
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroUni=this.value;_renderGHEUniversaisPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroUni='';_renderGHEUniversaisPanel()}"/>
+          </div>
+          <div style="padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;max-height:180px;overflow-y:auto" id="ghe-universais-panel">
+            <div style="color:var(--tl);font-size:11px;padding:4px 2px">Nenhum cargo universal.</div>
+          </div>
+          <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg);display:flex;gap:4px">
+            <input id="ghe-add-uni" type="text" placeholder="+ Cargo universal..."
+              style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter'){adicionarGHEUniversal();event.preventDefault()}"/>
+            <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="adicionarGHEUniversal()">+</button>
+          </div>
         </div>
       </div>
     </div>
@@ -11225,8 +11262,19 @@ function mudarEmpresaGHE(empresaId) {
   _gheTempHierarquia = hier;
   _gheTempUniversais = uni;
   _gheSetorAtivo = hier.length ? 0 : null;
+  _gheResetFiltros();
   _gheRenderTemplateBtns();
   renderGHEModal();
+  carregarHeadcountGHE(empresaId);
+}
+
+function _gheResetFiltros() {
+  _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = '';
+  _gheUniAberto = null;
+  _gheHcCache = [];
+  ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
 }
 
 function abrirModalGHE(empresaId) {
@@ -11251,6 +11299,7 @@ function abrirModalGHE(empresaId) {
   _gheSetorAtivo = hier.length ? 0 : null;
   const ct = document.getElementById('ghe-cola-txt'); if (ct) ct.value = '';
   const ca = document.getElementById('ghe-cola-area'); if (ca) ca.style.display = 'none';
+  _gheResetFiltros();
   _gheRenderTemplateBtns();
   renderGHEModal();
   carregarHeadcountGHE(empresaId);
@@ -11261,6 +11310,7 @@ function fecharModalGHE() {
   document.getElementById('modal-ghe').classList.remove('open');
   _gheEmpresaId = null;
   _gheImportHeadcount = [];
+  _gheResetFiltros();
 }
 
 async function carregarHeadcountGHE(empresaId) {
@@ -11270,9 +11320,7 @@ async function carregarHeadcountGHE(empresaId) {
   if (!panel) return;
 
   if (!empresaId || isDemoMode || !sbAdmin) {
-    panel.innerHTML = '<span style="color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</span>';
-    if (total)  total.textContent = '';
-    if (btnClr) btnClr.style.display = 'none';
+    _renderHeadcountGHE([]);
     return;
   }
 
@@ -11292,16 +11340,29 @@ function _renderHeadcountGHE(rows) {
   const btnClr = document.getElementById('ghe-hc-clear');
   if (!panel) return;
 
+  _gheHcCache = rows || [];
+
   if (!rows.length) {
     panel.innerHTML = '<span style="color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</span>';
     if (total)  total.textContent = '';
     if (btnClr) btnClr.style.display = 'none';
+    _atualizarGHEKpis();
+    _renderGHECargosPanel();
     return;
   }
 
   const totalFunc = rows.reduce((s, r) => s + r.quantidade, 0);
   if (total)  total.textContent = `— ${totalFunc} funcionário(s)`;
   if (btnClr) btnClr.style.display = 'inline';
+
+  // Divergência: linhas do quadro cujo setor não existe na estrutura cadastrada
+  const setoresNorm = new Set(_gheTempHierarquia.map(g => _gheNorm(g.nome)));
+  const orfaos = setoresNorm.size
+    ? rows.filter(r => !setoresNorm.has(_gheNorm(r.setor || ''))).length
+    : 0;
+  const alerta = orfaos > 0
+    ? `<div style="margin-top:5px;font-size:10px;color:var(--amber,#b45309)">⚠️ ${orfaos} linha(s) do quadro com setor que não está na estrutura acima.</div>`
+    : '';
 
   const linhas = rows.map(r =>
     `<tr>
@@ -11312,7 +11373,7 @@ function _renderHeadcountGHE(rows) {
   ).join('');
 
   panel.innerHTML = `
-    <div style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:4px">
+    <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:4px">
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:var(--bg)">
           <th style="padding:3px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Setor</th>
@@ -11321,7 +11382,10 @@ function _renderHeadcountGHE(rows) {
         </tr></thead>
         <tbody>${linhas}</tbody>
       </table>
-    </div>`;
+    </div>${alerta}`;
+
+  _atualizarGHEKpis();
+  _renderGHECargosPanel(); // atualiza badges de qtd por função
 }
 
 function limparGHELocal() {
@@ -11347,12 +11411,55 @@ async function limparHeadcount() {
 }
 
 // ── Render dois painéis ──
-let _gheSetorAtivo = null; // índice do setor selecionado no painel esquerdo
+let _gheSetorAtivo  = null; // índice do setor selecionado no painel esquerdo
+let _gheFiltroSetor = '';
+let _gheFiltroCargo = '';
+let _gheFiltroUni   = '';
+let _gheUniAberto   = null;  // null = auto (aberto se poucos itens)
+let _gheHcCache     = [];    // último headcount carregado/importado (para badges e KPI)
 
 function renderGHEModal() {
   _renderGHESetoresPanel();
   _renderGHECargosPanel();
   _renderGHEUniversaisPanel();
+  _atualizarGHEKpis();
+}
+
+function _atualizarGHEKpis() {
+  const kSet = document.getElementById('ghe-kpi-setores');
+  const kFun = document.getElementById('ghe-kpi-funcoes');
+  const kHc  = document.getElementById('ghe-kpi-funcionarios');
+  if (kSet) kSet.textContent = _gheTempHierarquia.length;
+  if (kFun) kFun.textContent = _gheAllFuncoes().length;
+  if (kHc)  kHc.textContent  = _gheHcCache.length
+    ? _gheHcCache.reduce((s, r) => s + (r.quantidade || 0), 0)
+    : '—';
+}
+
+function toggleGHEUniversais() {
+  const body = document.getElementById('ghe-uni-body');
+  if (!body) return;
+  const aberto = body.style.display !== 'none';
+  _gheUniAberto = !aberto;
+  body.style.display = aberto ? 'none' : '';
+  const chev = document.getElementById('ghe-uni-chevron');
+  if (chev) chev.style.transform = aberto ? '' : 'rotate(90deg)';
+}
+
+function moverGHEUniversal(i) {
+  if (!_gheTempHierarquia.length) { toast('Cadastre um setor primeiro.', 'w'); return; }
+  const cargo = _gheTempUniversais[i];
+  if (!cargo) return;
+  const opcoes = _gheTempHierarquia.map((g, si) => `${si + 1} - ${g.nome}`).join('\n');
+  const resp = prompt(`Mover "${cargo}" para qual setor?\n\n${opcoes}\n\nDigite o número:`);
+  if (resp === null) return;
+  const si = parseInt(resp.trim(), 10) - 1;
+  if (isNaN(si) || si < 0 || si >= _gheTempHierarquia.length) { toast('Setor inválido.', 'w'); return; }
+  const grupo = _gheTempHierarquia[si];
+  if (!grupo.funcoes.some(f => f.toLowerCase() === cargo.toLowerCase())) grupo.funcoes.push(cargo);
+  _gheTempUniversais.splice(i, 1);
+  renderGHEModal();
+  toast(`"${cargo}" movido para ${grupo.nome}.`, 'g');
 }
 
 const renderGHELists = renderGHEModal; // alias (compat)
@@ -11361,24 +11468,39 @@ function _renderGHESetoresPanel() {
   const panel = document.getElementById('ghe-setores-panel');
   if (!panel) return;
   const count = document.getElementById('ghe-set-count');
-  if (count) count.textContent = _gheTempHierarquia.length ? `${_gheTempHierarquia.length}` : '';
 
   if (!_gheTempHierarquia.length) {
+    if (count) count.textContent = '';
     panel.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:var(--tl);font-size:11px">Nenhum setor.<br>Adicione abaixo.</div>`;
+    return;
+  }
+
+  // Filtro por busca — preserva índice ORIGINAL (si) para os handlers
+  const filtro = _gheNorm(_gheFiltroSetor);
+  const itens = _gheTempHierarquia
+    .map((g, si) => ({ g, si }))
+    .filter(({ g }) => !filtro || _gheNorm(g.nome).includes(filtro));
+
+  if (count) count.textContent = filtro
+    ? `${itens.length} de ${_gheTempHierarquia.length}`
+    : `${_gheTempHierarquia.length}`;
+
+  if (!itens.length) {
+    panel.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:var(--tl);font-size:11px">Nenhum setor encontrado.<br>Esc limpa a busca.</div>`;
     return;
   }
 
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
   const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
-  panel.innerHTML = _gheTempHierarquia.map((g, si) => {
+  panel.innerHTML = itens.map(({ g, si }) => {
     const isAtivo = si === _gheSetorAtivo;
-    const bg = isAtivo ? 'background:#eff6ff;border-left:3px solid #2563eb' : 'background:white;border-left:3px solid transparent';
+    const bg = isAtivo ? 'background:var(--gl,#f0fdf4);border-left:3px solid var(--g)' : 'background:white;border-left:3px solid transparent';
     return `<div id="ghe-setor-row-${si}" onclick="selecionarGHESetor(${si})"
         style="display:flex;align-items:center;gap:6px;padding:7px 8px;cursor:pointer;border-bottom:1px solid var(--border);${bg};transition:background .1s"
         onmouseover="if(${si}!==_gheSetorAtivo)this.style.background='var(--bg)'" onmouseout="if(${si}!==_gheSetorAtivo)this.style.background='white'">
       <div style="flex:1;min-width:0">
-        <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'#1d4ed8':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
+        <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
         <div style="font-size:10px;color:var(--tl)">${g.funcoes.length} cargo(s)</div>
       </div>
       <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.6;flex-shrink:0" title="Renomear">${iconEdit}</button>
@@ -11414,40 +11536,96 @@ function _renderGHECargosPanel() {
   const si = _gheSetorAtivo;
   const grupo = _gheTempHierarquia[si];
   if (titulo) titulo.textContent = grupo.nome;
-  if (funCount) funCount.textContent = grupo.funcoes.length ? `${grupo.funcoes.length}` : '';
   if (addBar) addBar.style.display = '';
+
+  // Filtro por busca — preserva índice ORIGINAL (fi) para os handlers
+  const filtro = _gheNorm(_gheFiltroCargo);
+  const itens = grupo.funcoes
+    .map((f, fi) => ({ f, fi }))
+    .filter(({ f }) => !filtro || _gheNorm(f).includes(filtro));
+
+  if (funCount) funCount.textContent = filtro
+    ? `${itens.length} de ${grupo.funcoes.length}`
+    : (grupo.funcoes.length ? `${grupo.funcoes.length}` : '');
 
   if (!grupo.funcoes.length) {
     panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:16px 12px;text-align:center">Nenhum cargo neste setor.<br>Adicione abaixo.</div>`;
     return;
   }
+  if (!itens.length) {
+    panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:16px 12px;text-align:center">Nenhum cargo encontrado.<br>Esc limpa a busca.</div>`;
+    return;
+  }
 
-  panel.innerHTML = grupo.funcoes.map((f, fi) =>
-    `<div id="ghe-cargo-${si}-${fi}" style="display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">
+  // Headcount por função deste setor (badge)
+  const setorNorm = _gheNorm(grupo.nome);
+  const hcPorFuncao = new Map();
+  _gheHcCache.forEach(r => {
+    if (_gheNorm(r.setor || '') === setorNorm) hcPorFuncao.set(_gheNorm(r.funcao || ''), r.quantidade);
+  });
+
+  panel.innerHTML = itens.map(({ f, fi }) => {
+    const qtd = hcPorFuncao.get(_gheNorm(f));
+    const badge = qtd !== undefined
+      ? `<span title="Funcionários (quadro importado)" style="flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600;color:var(--tm)">${qtd}</span>`
+      : '';
+    return `<div id="ghe-cargo-${si}-${fi}" style="display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      ${badge}
       <button onclick="editarGHECargo(${si},${fi})" style="${btnStyle}" title="Editar">${iconEdit}</button>
       <button onclick="removerGHECargo(${si},${fi})" style="${btnStyle};font-size:14px;opacity:.7" title="Remover">&times;</button>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 }
 
 function _renderGHEUniversaisPanel() {
   const panel = document.getElementById('ghe-universais-panel');
   const count = document.getElementById('ghe-uni-count');
   if (!panel) return;
-  if (count) count.textContent = _gheTempUniversais.length ? `${_gheTempUniversais.length}` : '';
+
+  const n = _gheTempUniversais.length;
+
+  // Acordeão: aberto se poucos itens (ou se o usuário abriu/fechou manualmente)
+  const body    = document.getElementById('ghe-uni-body');
+  const chevron = document.getElementById('ghe-uni-chevron');
+  const aberto  = _gheUniAberto !== null ? _gheUniAberto : n <= 12;
+  if (body)    body.style.display = aberto ? '' : 'none';
+  if (chevron) chevron.style.transform = aberto ? 'rotate(90deg)' : '';
+
+  // Aviso + busca só quando a lista é grande (típico de import sem setor)
+  const aviso    = document.getElementById('ghe-uni-aviso');
+  const buscaRow = document.getElementById('ghe-uni-busca-row');
+  if (aviso)    aviso.style.display    = n > 12 ? '' : 'none';
+  if (buscaRow) buscaRow.style.display = n > 12 ? '' : 'none';
 
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
   const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const iconMove = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
   const btnStyle = `background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;opacity:.7;flex-shrink:0`;
 
-  if (!_gheTempUniversais.length) {
+  if (!n) {
+    if (count) count.textContent = '';
     panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:4px 2px;flex-basis:100%">Nenhum cargo universal.</div>`;
     return;
   }
-  panel.innerHTML = _gheTempUniversais.map((f, i) =>
+
+  // Filtro por busca — preserva índice ORIGINAL (i) para os handlers
+  const filtro = _gheNorm(_gheFiltroUni);
+  const itens = _gheTempUniversais
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => !filtro || _gheNorm(f).includes(filtro));
+
+  if (count) count.textContent = filtro ? `${itens.length} de ${n}` : `${n}`;
+
+  if (!itens.length) {
+    panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:4px 2px;flex-basis:100%">Nenhum cargo encontrado. Esc limpa a busca.</div>`;
+    return;
+  }
+
+  panel.innerHTML = itens.map(({ f, i }) =>
     `<div id="ghe-uni-${i}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 6px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:11px">
-      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      <button onclick="moverGHEUniversal(${i})" style="${btnStyle}" title="Mover para um setor">${iconMove}</button>
       <button onclick="editarGHEUniversal(${i})" style="${btnStyle}" title="Editar">${iconEdit}</button>
       <button onclick="removerGHEUniversal(${i})" style="${btnStyle};font-size:14px;opacity:.7" title="Remover">&times;</button>
     </div>`
