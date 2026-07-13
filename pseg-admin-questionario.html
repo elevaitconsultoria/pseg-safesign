@@ -11543,20 +11543,37 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     hcMap.set(`${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`, r.quantidade);
   });
+  const consumidas = new Set(); // chaves do headcount já representadas por uma linha do catálogo
+
   const linhas = [];
   _gheTempHierarquia.forEach(g => {
+    const setorKey = _gheNorm(g.nome);
     if (!g.funcoes.length) {
-      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(`${_gheNorm(g.nome)}|||`) });
+      const k = `${setorKey}|||`;
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k) });
+      consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
-        const qtd = hcMap.get(`${_gheNorm(g.nome)}|||${_gheNorm(f)}`);
-        linhas.push({ setor: g.nome, funcao: f, qtd });
+        const k = `${setorKey}|||${_gheNorm(f)}`;
+        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k) });
+        consumidas.add(k);
       });
     }
   });
   _gheTempUniversais.forEach(f => {
     linhas.push({ setor: '(universal)', funcao: f, qtd: undefined });
   });
+
+  // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
+  // agregado por setor (função nula) importado junto com linhas por função
+  // no mesmo arquivo. Sem isso a quantidade some da auditoria silenciosamente.
+  _gheHcCache.forEach(r => {
+    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
+    if (consumidas.has(k)) return;
+    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade });
+    consumidas.add(k);
+  });
+
   return linhas;
 }
 
