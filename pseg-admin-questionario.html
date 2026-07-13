@@ -6925,21 +6925,55 @@ async function calcRepresentatividade(empId, cicloId) {
   let q = sbAdmin.from('respostas').select('setor, funcao').eq('empresa_id', empId);
   if (cicloId) q = q.eq('ciclo_id', cicloId);
   const { data: resps } = await q;
+  const respList = resps || [];
 
-  // Conta respostas por (setor normalizado × funcao normalizada)
-  const contagem = new Map();
-  (resps || []).forEach(r => {
-    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
-    contagem.set(k, (contagem.get(k) || 0) + 1);
+  // Índices de contagem de respostas: por (setor×funcao) e por setor
+  const porSetorFuncao = new Map();
+  const porSetor       = new Map();
+  respList.forEach(r => {
+    const sK  = _gheNorm(r.setor || '');
+    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    porSetor.set(sK, (porSetor.get(sK) || 0) + 1);
+    porSetorFuncao.set(sfK, (porSetorFuncao.get(sfK) || 0) + 1);
   });
 
-  // Monta resultado final usando os labels originais do headcount
-  return hcRows.map(h => {
-    const k = `${_gheNorm(h.setor||'')}|||${_gheNorm(h.funcao||'')}`;
-    const respostas = contagem.get(k) || 0;
+  // Conjuntos de chaves do quadro (para classificar respostas)
+  const hcSetorFuncao = new Set(); // 'setor|||funcao'
+  const hcSetorNull   = new Set(); // 'setor' (linha de quadro agregada por setor, funcao NULL)
+  hcRows.forEach(h => {
+    const sK = _gheNorm(h.setor || '');
+    if (h.funcao) hcSetorFuncao.add(`${sK}|||${_gheNorm(h.funcao)}`);
+    else          hcSetorNull.add(sK);
+  });
+
+  // Linhas: quadro por função casa em (setor×funcao); quadro por setor (funcao NULL)
+  // agrega todas as respostas daquele setor.
+  const linhas = hcRows.map(h => {
+    const sK = _gheNorm(h.setor || '');
+    const respostas = h.funcao
+      ? (porSetorFuncao.get(`${sK}|||${_gheNorm(h.funcao)}`) || 0)
+      : (porSetor.get(sK) || 0);
     const pct = h.quantidade > 0 ? Math.round(respostas / h.quantidade * 100) : 0;
     return { setor: h.setor, funcao: h.funcao, respostas, total: h.quantidade, pct };
   }).sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''));
+
+  // Respostas fora do quadro (setor/função não cadastrados, "Outro", cargo universal etc.)
+  let naoClassificadas = 0;
+  respList.forEach(r => {
+    const sK  = _gheNorm(r.setor || '');
+    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    if (!hcSetorFuncao.has(sfK) && !hcSetorNull.has(sK)) naoClassificadas++;
+  });
+
+  const totalRespostas = respList.length;
+  const totalHeadcount = hcRows.reduce((s, h) => s + (h.quantidade || 0), 0);
+  return {
+    linhas,
+    totalRespostas,
+    classificadas: totalRespostas - naoClassificadas,
+    naoClassificadas,
+    totalHeadcount,
+  };
 }
 
 async function verAdesaoLink(linkId) {
@@ -6971,13 +7005,14 @@ async function verAdesaoLink(linkId) {
       return;
     }
 
-    const totalResp  = dados.reduce((s, d) => s + d.respostas, 0);
-    const totalFunc  = dados.reduce((s, d) => s + d.total, 0);
+    const totalResp  = dados.classificadas;
+    const totalFunc  = dados.totalHeadcount;
     const totalPct   = totalFunc > 0 ? Math.round(totalResp / totalFunc * 100) : 0;
     const corTotal   = totalPct >= 70 ? '#16a34a' : totalPct >= 30 ? '#b45309' : '#dc2626';
     const bgTotal    = totalPct >= 70 ? '#f0fdf4' : totalPct >= 30 ? '#fffbeb' : '#fef2f2';
+    const naoClass   = dados.naoClassificadas;
 
-    const linhas = dados.map(d => {
+    const linhas = dados.linhas.map(d => {
       const cor = d.pct >= 70 ? '#16a34a' : d.pct >= 30 ? '#b45309' : '#dc2626';
       const bg  = d.pct >= 70 ? '#f0fdf4' : d.pct >= 30 ? '#fffbeb' : '#fef2f2';
       return `<tr>
@@ -7010,6 +7045,10 @@ async function verAdesaoLink(linkId) {
           <tbody>${linhas}</tbody>
         </table>
       </div>
+      ${naoClass > 0 ? `<div style="margin-top:6px;font-size:10px;color:var(--amber,#b45309);display:flex;align-items:center;gap:5px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ${naoClass} resposta(s) com setor/função fora do quadro (ex.: "Outro" ou não cadastrado) — não contam na adesão.
+      </div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--tl)">
         Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%
       </div>`;
@@ -12005,6 +12044,10 @@ async function salvarGHE() {
   }
   const emp = _gheGetEmpresa(_gheEmpresaId);
   if (!emp) { toast('Empresa não encontrada.', 'w'); return; }
+
+  if (!isDemoMode && !currentTenantId) {
+    toast('Sessão sem tenant identificado. Recarregue a página e faça login novamente.', 'w'); return;
+  }
 
   const setorNomes  = _gheTempHierarquia.map(h => h.nome);
   const todosCargos = [
