@@ -12049,6 +12049,13 @@ async function salvarGHE() {
     toast('Sessão sem tenant identificado. Recarregue a página e faça login novamente.', 'w'); return;
   }
 
+  // Snapshot imutável: a função é async e faz vários await; ler os globais
+  // _gheEmpresaId/currentTenantId ao longo do save permitiria que um handler
+  // concorrente (ex.: fecharModalGHE, troca de cliente) os zerasse no meio,
+  // gerando insert com empresa_id/tenant_id NULL. Fixamos aqui.
+  const empId    = _gheEmpresaId;
+  const tenantId = currentTenantId;
+
   const setorNomes  = _gheTempHierarquia.map(h => h.nome);
   const todosCargos = [
     ..._gheTempHierarquia.flatMap(h => h.funcoes.map(f => ({ nome: f, setorNome: h.nome }))),
@@ -12085,7 +12092,7 @@ async function salvarGHE() {
       if (setorNomes.length === 0 && todosCargos.length > 0) {
         const { count: setoresDB } = await sbAdmin
           .from('empresa_setores').select('id', { count: 'exact', head: true })
-          .eq('empresa_id', _gheEmpresaId);
+          .eq('empresa_id', empId);
         if ((setoresDB || 0) > 0) {
           const ok = confirm(
             `Atenção: esta empresa já tem ${setoresDB} setor(es) cadastrado(s), mas a estrutura atual não tem nenhum setor — ` +
@@ -12097,15 +12104,15 @@ async function salvarGHE() {
         }
       }
 
-      const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
-      const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
+      const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', empId);
+      const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', empId);
       if (e1 || e2) throw e1 || e2;
 
       // Inserir setores e capturar IDs
       let setorNomeParaId = {};
       if (setorNomes.length) {
         const setRows = setorNomes.map((nome, i) =>
-          ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
+          ({ empresa_id: empId, nome, ordem: i, ativo: true, tenant_id: tenantId }));
         const { data: setInseridos, error } = await sbAdmin
           .from('empresa_setores').insert(setRows).select('id,nome');
         if (error) throw error;
@@ -12115,11 +12122,11 @@ async function salvarGHE() {
       // Inserir cargos com setor_id derivado da hierarquia
       if (todosCargos.length) {
         const funRows = todosCargos.map((c, i) => ({
-          empresa_id: _gheEmpresaId,
+          empresa_id: empId,
           nome:       c.nome,
           ordem:      i,
           ativo:      true,
-          tenant_id:  currentTenantId,
+          tenant_id:  tenantId,
           setor_id:   c.setorNome ? (setorNomeParaId[c.setorNome] || null) : null,
         }));
         const { error } = await sbAdmin.from('empresa_funcoes').insert(funRows);
@@ -12134,11 +12141,11 @@ async function salvarGHE() {
       // Salvar headcount se veio do import
       let hcSalvo = 0;
       if (_gheImportHeadcount.length > 0) {
-        const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+        const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', empId);
         if (hcDelErr) throw new Error('Quadro de funcionários (limpeza): ' + hcDelErr.message);
         const hcRows = _gheImportHeadcount.map(h => ({
-          empresa_id: _gheEmpresaId,
-          tenant_id:  currentTenantId,
+          empresa_id: empId,
+          tenant_id:  tenantId,
           setor:      h.setor,
           funcao:     h.funcao || null,
           quantidade: h.quantidade,
