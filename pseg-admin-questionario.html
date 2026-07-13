@@ -3441,7 +3441,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
 <div class="modal-bg" id="modal-ghe">
-  <div class="modal" style="max-width:920px;width:min(920px,94vw);padding:0;display:flex;flex-direction:column;max-height:88vh">
+  <div class="modal" style="max-width:1400px;width:96vw;padding:0;display:flex;flex-direction:column;height:92vh;max-height:92vh">
 
     <!-- ── Cabeçalho fixo ── -->
     <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
@@ -3468,6 +3468,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div style="flex:1;min-width:110px;background:var(--gl,#f0fdf4);border:1px solid var(--g);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
           <span id="ghe-kpi-funcionarios" style="font-size:16px;font-weight:800;color:var(--g)">—</span>
           <span style="font-size:10px;color:var(--g);text-transform:uppercase;letter-spacing:.4px">funcionários</span>
+        </div>
+        <div id="ghe-view-toggle" style="display:flex;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;flex-shrink:0">
+          <button id="ghe-view-btn-tree" onclick="setGHEViewMode('tree')" style="padding:0 14px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--tx);color:white;display:flex;align-items:center;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="3" y1="6" x2="9" y2="6"/><line x1="3" y1="12" x2="13" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
+            Árvore
+          </button>
+          <button id="ghe-view-btn-table" onclick="setGHEViewMode('table')" style="padding:0 14px;font-size:11px;font-weight:700;border:none;border-left:1.5px solid var(--border);cursor:pointer;background:white;color:var(--tm);display:flex;align-items:center;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            Tabela
+          </button>
         </div>
       </div>
 
@@ -3516,7 +3526,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <!-- ── Painel hierárquico (scrollável) ── -->
     <div style="flex:1;overflow-y:auto;padding:14px 22px">
-      <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;min-height:min(46vh,420px)">
+    <div id="ghe-tree-view">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:10px;min-height:min(60vh,600px)">
 
         <!-- Coluna Setores -->
         <div style="display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
@@ -3600,6 +3611,34 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
     </div>
+    <!-- /ghe-tree-view -->
+
+    <!-- ── Modo Tabela: auditoria plana Setor|Função|Qtd ── -->
+    <div id="ghe-table-view" style="display:none">
+      <div style="margin-bottom:10px;position:relative;max-width:340px">
+        <input id="ghe-busca-tabela" type="text" placeholder="🔍 Buscar setor ou função..."
+          style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white"
+          oninput="_gheFiltroTabela=this.value;_renderGHETabela()"
+          onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroTabela='';_renderGHETabela()}"/>
+      </div>
+      <div style="border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div style="max-height:min(62vh,640px);overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
+                <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
+                <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
+              </tr>
+            </thead>
+            <tbody id="ghe-tabela-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- /ghe-table-view -->
+    </div>
+    <!-- /painel hierárquico (scrollável) -->
 
     <!-- ── Quadro de funcionários (headcount) ── -->
     <div style="padding:10px 22px;border-top:1px solid var(--border);flex-shrink:0">
@@ -11308,9 +11347,10 @@ function mudarEmpresaGHE(empresaId) {
 }
 
 function _gheResetFiltros() {
-  _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = '';
+  _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = ''; _gheFiltroTabela = '';
   _gheUniAberto = null;
   _gheHcCache = [];
+  _gheSortTabelaKey = 'setor'; _gheSortTabelaDir = 1;
   // Descarta qualquer import ainda não salvo — evita que o quadro de
   // funcionários previsualizado para uma empresa seja gravado em outra
   // se o cliente for trocado no dropdown antes de clicar em Salvar.
@@ -11320,9 +11360,10 @@ function _gheResetFiltros() {
   if (preview) preview.style.display = 'none';
   const erro = document.getElementById('ghe-import-erro');
   if (erro) erro.style.display = 'none';
-  ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni'].forEach(id => {
+  ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni','ghe-busca-tabela'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  setGHEViewMode('tree');
 }
 
 function abrirModalGHE(empresaId) {
@@ -11396,6 +11437,7 @@ function _renderHeadcountGHE(rows) {
     if (btnClr) btnClr.style.display = 'none';
     _atualizarGHEKpis();
     _renderGHECargosPanel();
+    if (_gheViewMode === 'table') _renderGHETabela();
     return;
   }
 
@@ -11434,6 +11476,7 @@ function _renderHeadcountGHE(rows) {
 
   _atualizarGHEKpis();
   _renderGHECargosPanel(); // atualiza badges de qtd por função
+  if (_gheViewMode === 'table') _renderGHETabela();
 }
 
 function limparGHELocal() {
@@ -11465,12 +11508,99 @@ let _gheFiltroCargo = '';
 let _gheFiltroUni   = '';
 let _gheUniAberto   = null;  // null = auto (aberto se poucos itens)
 let _gheHcCache     = [];    // último headcount carregado/importado (para badges e KPI)
+let _gheViewMode     = 'tree'; // 'tree' | 'table'
+let _gheFiltroTabela = '';
+let _gheSortTabelaKey = 'setor';
+let _gheSortTabelaDir = 1;
 
 function renderGHEModal() {
   _renderGHESetoresPanel();
   _renderGHECargosPanel();
   _renderGHEUniversaisPanel();
   _atualizarGHEKpis();
+  if (_gheViewMode === 'table') _renderGHETabela();
+}
+
+// ── Modo de visualização: Árvore (editar) vs Tabela (auditar) ──
+function setGHEViewMode(mode) {
+  _gheViewMode = mode;
+  const treeView  = document.getElementById('ghe-tree-view');
+  const tableView = document.getElementById('ghe-table-view');
+  const btnTree   = document.getElementById('ghe-view-btn-tree');
+  const btnTable  = document.getElementById('ghe-view-btn-table');
+  if (treeView)  treeView.style.display  = mode === 'tree'  ? '' : 'none';
+  if (tableView) tableView.style.display = mode === 'table' ? '' : 'none';
+  if (btnTree)  { btnTree.style.background  = mode === 'tree'  ? 'var(--tx)' : 'white'; btnTree.style.color  = mode === 'tree'  ? 'white' : 'var(--tm)'; }
+  if (btnTable) { btnTable.style.background = mode === 'table' ? 'var(--tx)' : 'white'; btnTable.style.color = mode === 'table' ? 'white' : 'var(--tm)'; }
+  if (mode === 'table') _renderGHETabela();
+}
+
+// Achata setores+cargos+universais em linhas {setor, funcao, qtd}, cruzando
+// com o headcount carregado (_gheHcCache) por nome normalizado — somente
+// leitura, não dispara nenhuma chamada ao banco.
+function _gheLinhasTabela() {
+  const hcMap = new Map(); // 'setorNorm|||funcaoNorm' -> quantidade
+  _gheHcCache.forEach(r => {
+    hcMap.set(`${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`, r.quantidade);
+  });
+  const linhas = [];
+  _gheTempHierarquia.forEach(g => {
+    if (!g.funcoes.length) {
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(`${_gheNorm(g.nome)}|||`) });
+    } else {
+      g.funcoes.forEach(f => {
+        const qtd = hcMap.get(`${_gheNorm(g.nome)}|||${_gheNorm(f)}`);
+        linhas.push({ setor: g.nome, funcao: f, qtd });
+      });
+    }
+  });
+  _gheTempUniversais.forEach(f => {
+    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined });
+  });
+  return linhas;
+}
+
+function _gheSortTabela(key) {
+  if (_gheSortTabelaKey === key) _gheSortTabelaDir *= -1;
+  else { _gheSortTabelaKey = key; _gheSortTabelaDir = 1; }
+  _renderGHETabela();
+}
+
+function _renderGHETabela() {
+  const tbody = document.getElementById('ghe-tabela-body');
+  if (!tbody) return;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+
+  const filtro = _gheNorm(_gheFiltroTabela);
+  let linhas = _gheLinhasTabela().filter(l =>
+    !filtro || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
+  );
+
+  const key = _gheSortTabelaKey, dir = _gheSortTabelaDir;
+  linhas.sort((a, b) => {
+    if (key === 'qtd') {
+      const av = a.qtd === undefined ? -1 : a.qtd, bv = b.qtd === undefined ? -1 : b.qtd;
+      return (av - bv) * dir;
+    }
+    return String(a[key]||'').localeCompare(String(b[key]||'')) * dir;
+  });
+
+  document.querySelectorAll('#ghe-table-view .ghe-sort-ind').forEach(el => {
+    el.textContent = el.dataset.k === key ? (dir > 0 ? '▲' : '▼') : '';
+  });
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
+      <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
+      <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
+    </tr>`
+  ).join('');
 }
 
 function _atualizarGHEKpis() {
