@@ -11311,6 +11311,15 @@ function _gheResetFiltros() {
   _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = '';
   _gheUniAberto = null;
   _gheHcCache = [];
+  // Descarta qualquer import ainda não salvo — evita que o quadro de
+  // funcionários previsualizado para uma empresa seja gravado em outra
+  // se o cliente for trocado no dropdown antes de clicar em Salvar.
+  _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
+  _gheImportHeadcount = [];
+  const preview = document.getElementById('ghe-import-preview');
+  if (preview) preview.style.display = 'none';
+  const erro = document.getElementById('ghe-import-erro');
+  if (erro) erro.style.display = 'none';
   ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
