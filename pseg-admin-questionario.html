@@ -11896,7 +11896,7 @@ function _processarGHEImport(rows) {
     return _gheImportErro('O arquivo está vazio ou sem dados válidos.');
   }
   const headers = Object.keys(rows[0]);
-  const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','area','grupo','sector','unidade']);
+  const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','depto','area','área','grupo','sector','unidade','lotacao','lotação','centro de custo','estabelecimento','local de trabalho','filial']);
   const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação']);
   const colQtd    = _detectarColuna(headers, ['quantidade','qtd','headcount','funcionarios','funcionários','qtde','num_func','n_func']);
 
@@ -12079,6 +12079,24 @@ async function salvarGHE() {
     toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} cargo(s).`, 'g');
   } else {
     try {
+      // Salvaguarda: não apagar um catálogo de setores existente ao salvar uma
+      // estrutura sem setores (tudo universal) — causa comum de "cargos caírem
+      // no universal" quando a coluna de setor do arquivo não foi reconhecida.
+      if (setorNomes.length === 0 && todosCargos.length > 0) {
+        const { count: setoresDB } = await sbAdmin
+          .from('empresa_setores').select('id', { count: 'exact', head: true })
+          .eq('empresa_id', _gheEmpresaId);
+        if ((setoresDB || 0) > 0) {
+          const ok = confirm(
+            `Atenção: esta empresa já tem ${setoresDB} setor(es) cadastrado(s), mas a estrutura atual não tem nenhum setor — ` +
+            `todos os ${todosCargos.length} cargo(s) ficariam como "universais".\n\n` +
+            `Isso costuma acontecer quando a lista importada não teve a coluna de setor reconhecida.\n\n` +
+            `Deseja realmente substituir e deixar tudo universal?`
+          );
+          if (!ok) { toast('Save cancelado — catálogo de setores preservado.', 'w'); return; }
+        }
+      }
+
       const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
       const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
       if (e1 || e2) throw e1 || e2;
