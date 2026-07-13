@@ -12071,8 +12071,10 @@ async function salvarGHE() {
       emp.universais = [..._gheTempUniversais];
 
       // Salvar headcount se veio do import
+      let hcSalvo = 0;
       if (_gheImportHeadcount.length > 0) {
-        await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+        const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+        if (hcDelErr) throw new Error('Quadro de funcionários (limpeza): ' + hcDelErr.message);
         const hcRows = _gheImportHeadcount.map(h => ({
           empresa_id: _gheEmpresaId,
           tenant_id:  currentTenantId,
@@ -12081,11 +12083,13 @@ async function salvarGHE() {
           quantidade: h.quantidade,
         }));
         const { error: hcErr } = await sbAdmin.from('empresa_headcount').insert(hcRows);
-        if (hcErr) console.warn('[PSEG] headcount save:', hcErr.message);
+        if (hcErr) throw new Error('Quadro de funcionários: ' + hcErr.message);
+        hcSalvo = hcRows.length;
         _gheImportHeadcount = [];
       }
 
-      toast('GHE salvo com sucesso!', 'g');
+      const hcMsg = hcSalvo > 0 ? ` + quadro de ${hcSalvo} linha(s)` : '';
+      toast(`GHE salvo com sucesso!${hcMsg}`, 'g');
     } catch(e) {
       toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
     }
