@@ -1227,6 +1227,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-badge" id="nb-empresas-badge" style="display:none"></span>
     </button>
 
+    <button class="nav-item" id="nb-ghe" data-label="Setores & Funções" onclick="goScreen('ghe',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span class="nav-label">Setores &amp; Funções</span>
+    </button>
+
     <button class="nav-item" id="nb-links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <span class="nav-label">Links de Coleta</span>
@@ -3462,9 +3467,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
-<!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
-<div class="modal-bg" id="modal-ghe">
-  <div class="modal" style="max-width:1400px;width:96vw;padding:0;display:flex;flex-direction:column;height:92vh;max-height:92vh">
+<!-- TELA GESTÃO DE GHEs (Setores & Funções) -->
+<div class="screen" id="sc-ghe" style="padding:0;display:flex;flex-direction:column;height:calc(100vh - 52px)">
 
     <!-- ── Cabeçalho fixo ── -->
     <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
@@ -3515,15 +3519,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <span id="ghe-adesao-total" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
       </div>
 
-      <!-- ⚡ Auto-fill — linha compacta -->
+      <!-- Importar / colar -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <select id="ghe-autopreench-sel"
-          style="flex:1;min-width:180px;border:1.5px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white;color:var(--tx)">
-          <option value="">⚡ Preencher automaticamente...</option>
-          <optgroup label="Templates por segmento" id="ghe-tpl-optgroup"></optgroup>
-          <optgroup label="Copiar de cliente" id="ghe-copiar-optgroup"></optgroup>
-        </select>
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;flex-shrink:0" onclick="aplicarAutoPreench()">Aplicar</button>
         <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 10px;flex-shrink:0;display:flex;align-items:center;gap:5px" onclick="document.getElementById('ghe-import-input').click()" title="Importar CSV ou Excel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3679,13 +3676,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         Limpar tudo
       </button>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost" onclick="fecharModalGHE()">Fechar</button>
       <button class="btn btn-g" onclick="salvarGHE()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
         Salvar estrutura
       </button>
     </div>
-  </div>
 </div>
 
 <!-- MODAL EMPRESA (criação + edição) -->
@@ -11392,7 +11387,7 @@ function _gheResetFiltros() {
   setGHEViewMode('tree');
 }
 
-function abrirModalGHE(empresaId) {
+function _setupTelaGHE(empresaId) {
   if (!empresaId || empresaId === 'null') empresaId = null;
   const empSel = document.getElementById('ghe-empresa-sel');
   if (empSel) {
@@ -11420,11 +11415,14 @@ function abrirModalGHE(empresaId) {
   carregarHeadcountGHE(empresaId);
   _gheRenderCicloSel();
   carregarAdesaoGHE(empresaId, _gheCicloSelecionado);
-  document.getElementById('modal-ghe').classList.add('open');
+}
+
+function abrirModalGHE(empresaId) {
+  goScreen('ghe', document.getElementById('nb-ghe'));
+  _setupTelaGHE(empresaId);
 }
 
 function fecharModalGHE() {
-  document.getElementById('modal-ghe').classList.remove('open');
   _gheEmpresaId = null;
   _gheImportHeadcount = [];
   _gheResetFiltros();
@@ -12537,7 +12535,7 @@ async function salvarGHE() {
     }
   }
 
-  fecharModalGHE();
+  _gheResetFiltros();
 
   // Atualizar nl-setor se a empresa afetada estiver no modal de Novo Link
   const nlEmp = document.getElementById('nl-empresa');
@@ -13282,7 +13280,7 @@ function goScreen(id, btn) {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests']),
     admin:          new Set(['gestao-ests']),
     // viewer: leitura + links + análise + relatório — sem gestão EST, clientes ou configurações
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog']),
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -13300,7 +13298,7 @@ function goScreen(id, btn) {
   // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
   const map = {
-    dashboard:'nb-dashboard', empresas:'nb-empresas', links:'nb-links', q:'nb-q',
+    dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
@@ -13331,6 +13329,9 @@ function goScreen(id, btn) {
           break;
         case 'empresas':
           renderTelaEmpresas();
+          break;
+        case 'ghe':
+          _setupTelaGHE(_empresaAtiva?.id || null);
           break;
         case 'links':
           renderLinks();
