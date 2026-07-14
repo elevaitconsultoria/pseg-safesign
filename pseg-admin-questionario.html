@@ -3504,6 +3504,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Adesão à pesquisa (respostas × quadro), por ciclo -->
+      <div id="ghe-adesao-row" style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <label for="ghe-ciclo-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm)">Ciclo</label>
+        <select id="ghe-ciclo-sel"
+          onchange="_gheCicloSelecionado=this.value;carregarAdesaoGHE(_gheEmpresaId,_gheCicloSelecionado)"
+          style="border:1.5px solid var(--border);border-radius:var(--r);padding:5px 9px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white;color:var(--tx);max-width:220px">
+          <option value="">Todos os ciclos</option>
+        </select>
+        <span id="ghe-adesao-total" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
+      </div>
+
       <!-- ⚡ Auto-fill — linha compacta -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <select id="ghe-autopreench-sel"
@@ -3636,6 +3647,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
                 <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
                 <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
                 <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
+                <th data-k="respostas" onclick="_gheSortTabela('respostas')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Respostas <span class="ghe-sort-ind" data-k="respostas"></span></th>
+                <th data-k="pct" onclick="_gheSortTabela('pct')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Adesão <span class="ghe-sort-ind" data-k="pct"></span></th>
               </tr>
             </thead>
             <tbody id="ghe-tabela-body"></tbody>
@@ -11351,12 +11364,16 @@ function mudarEmpresaGHE(empresaId) {
   _gheRenderTemplateBtns();
   renderGHEModal();
   carregarHeadcountGHE(empresaId);
+  _gheRenderCicloSel();
+  carregarAdesaoGHE(empresaId, _gheCicloSelecionado);
 }
 
 function _gheResetFiltros() {
   _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = ''; _gheFiltroTabela = '';
   _gheUniAberto = null;
   _gheHcCache = [];
+  _gheAdesaoData = null;
+  _gheCicloSelecionado = '';
   _gheSortTabelaKey = 'setor'; _gheSortTabelaDir = 1;
   // Descarta qualquer import ainda não salvo — evita que o quadro de
   // funcionários previsualizado para uma empresa seja gravado em outra
@@ -11370,6 +11387,8 @@ function _gheResetFiltros() {
   ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni','ghe-busca-tabela'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const adesaoBadge = document.getElementById('ghe-adesao-total');
+  if (adesaoBadge) adesaoBadge.style.display = 'none';
   setGHEViewMode('tree');
 }
 
@@ -11399,6 +11418,8 @@ function abrirModalGHE(empresaId) {
   _gheRenderTemplateBtns();
   renderGHEModal();
   carregarHeadcountGHE(empresaId);
+  _gheRenderCicloSel();
+  carregarAdesaoGHE(empresaId, _gheCicloSelecionado);
   document.getElementById('modal-ghe').classList.add('open');
 }
 
@@ -11428,6 +11449,52 @@ async function carregarHeadcountGHE(empresaId) {
     .order('setor').order('funcao');
 
   _renderHeadcountGHE(data || []);
+}
+
+// Preenche o seletor de ciclo com os ciclos da empresa aberta na GHE.
+// _ciclos já é carregado globalmente por carregarEmpresas() — nenhum fetch novo.
+function _gheRenderCicloSel() {
+  const sel = document.getElementById('ghe-ciclo-sel');
+  if (!sel) return;
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const ciclosEmp = _ciclos.filter(c => c.empresa_id === _gheEmpresaId);
+  sel.innerHTML = '<option value="">Todos os ciclos</option>' +
+    ciclosEmp.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  sel.value = _gheCicloSelecionado || '';
+  sel.disabled = ciclosEmp.length === 0;
+}
+
+// Carrega adesão (respostas × quadro) para a empresa/ciclo atual da GHE,
+// reaproveitando calcRepresentatividade — a mesma função já usada em
+// "Ver adesão" na tela de Links. cicloId vazio = agregado de todos os ciclos.
+async function carregarAdesaoGHE(empresaId, cicloId) {
+  const totalBadge = document.getElementById('ghe-adesao-total');
+  if (!empresaId || isDemoMode || !sbAdmin) {
+    _gheAdesaoData = null;
+    if (totalBadge) totalBadge.style.display = 'none';
+    _renderGHEDetailPane();
+    if (_gheViewMode === 'table') _renderGHETabela();
+    return;
+  }
+  try {
+    _gheAdesaoData = await calcRepresentatividade(empresaId, cicloId || undefined);
+  } catch (e) {
+    console.warn('[PSEG] adesão GHE:', e.message);
+    _gheAdesaoData = null;
+  }
+  if (totalBadge) {
+    if (_gheAdesaoData && _gheAdesaoData.totalHeadcount > 0) {
+      const pct = Math.round(_gheAdesaoData.classificadas / _gheAdesaoData.totalHeadcount * 100);
+      const { cor, bg } = _gheCorAdesao(pct);
+      totalBadge.style.display = 'inline-block';
+      totalBadge.style.color = cor; totalBadge.style.background = bg; totalBadge.style.border = `1px solid ${cor}`;
+      totalBadge.textContent = `Adesão: ${_gheAdesaoData.classificadas}/${_gheAdesaoData.totalHeadcount} = ${pct}%`;
+    } else {
+      totalBadge.style.display = 'none';
+    }
+  }
+  _renderGHEDetailPane();
+  if (_gheViewMode === 'table') _renderGHETabela();
 }
 
 function _renderHeadcountGHE(rows) {
@@ -11519,6 +11586,16 @@ let _gheViewMode     = 'tree'; // 'tree' | 'table'
 let _gheFiltroTabela = '';
 let _gheSortTabelaKey = 'setor';
 let _gheSortTabelaDir = 1;
+let _gheAdesaoData      = null; // retorno de calcRepresentatividade(empresaId, cicloId) ou null
+let _gheCicloSelecionado = '';  // id do ciclo filtrado no seletor da GHE; '' = todos os ciclos
+
+// Mesmos limiares/cores usados em verAdesaoLink — evita repetir os ternários
+// em cada lugar que mostra um badge de adesão (detalhe, tabela, total).
+function _gheCorAdesao(pct) {
+  if (pct >= 70) return { cor: '#16a34a', bg: '#f0fdf4' };
+  if (pct >= 30) return { cor: '#b45309', bg: '#fffbeb' };
+  return { cor: '#dc2626', bg: '#fef2f2' };
+}
 
 function renderGHEModal() {
   _renderGHESetoresPanel();
@@ -11550,6 +11627,14 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     hcMap.set(`${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`, r.quantidade);
   });
+  // Adesão (respostas × total) por chave setor|||funcao — mesma normalização
+  // usada pelo headcount, alimentada por calcRepresentatividade via carregarAdesaoGHE.
+  const adesaoMap = new Map();
+  if (_gheAdesaoData) {
+    _gheAdesaoData.linhas.forEach(l => {
+      adesaoMap.set(`${_gheNorm(l.setor||'')}|||${_gheNorm(l.funcao||'')}`, { respostas: l.respostas, pct: l.pct });
+    });
+  }
   const consumidas = new Set(); // chaves do headcount já representadas por uma linha do catálogo
 
   const linhas = [];
@@ -11557,18 +11642,18 @@ function _gheLinhasTabela() {
     const setorKey = _gheNorm(g.nome);
     if (!g.funcoes.length) {
       const k = `${setorKey}|||`;
-      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k) });
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
       consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
         const k = `${setorKey}|||${_gheNorm(f)}`;
-        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k) });
+        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
         consumidas.add(k);
       });
     }
   });
   _gheTempUniversais.forEach(f => {
-    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined });
+    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
   });
 
   // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
@@ -11577,7 +11662,7 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
     if (consumidas.has(k)) return;
-    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade });
+    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
     consumidas.add(k);
   });
 
@@ -11606,6 +11691,14 @@ function _renderGHETabela() {
       const av = a.qtd === undefined ? -1 : a.qtd, bv = b.qtd === undefined ? -1 : b.qtd;
       return (av - bv) * dir;
     }
+    if (key === 'respostas') {
+      const av = a.adesao ? a.adesao.respostas : -1, bv = b.adesao ? b.adesao.respostas : -1;
+      return (av - bv) * dir;
+    }
+    if (key === 'pct') {
+      const av = a.adesao ? a.adesao.pct : -1, bv = b.adesao ? b.adesao.pct : -1;
+      return (av - bv) * dir;
+    }
     return String(a[key]||'').localeCompare(String(b[key]||'')) * dir;
   });
 
@@ -11614,17 +11707,22 @@ function _renderGHETabela() {
   });
 
   if (!linhas.length) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = linhas.map(l => `
+  tbody.innerHTML = linhas.map(l => {
+    const ad = l.adesao;
+    const { cor: corAd } = ad ? _gheCorAdesao(ad.pct) : { cor: 'var(--tl)' };
+    return `
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
       <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
-    </tr>`
-  ).join('');
+      <td style="padding:8px 14px;text-align:right;color:${ad?'var(--tx)':'var(--tl)'}">${ad ? ad.respostas : '—'}</td>
+      <td style="padding:8px 14px;text-align:right;font-weight:${ad?'700':'400'};color:${corAd}">${ad ? ad.pct+'%' : '—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 function _atualizarGHEKpis() {
@@ -11769,6 +11867,41 @@ function _renderGHEDetailPane() {
   const pct = grupo.funcoes.length ? Math.round(cargosComHc / grupo.funcoes.length * 100) : null;
   const cor = pct === null ? 'var(--tl)' : pct >= 70 ? 'var(--g)' : pct >= 30 ? 'var(--amber,#d97706)' : 'var(--red,#dc2626)';
 
+  // Adesão à pesquisa (respostas × quadro) — drill-down por cargo dentro do
+  // setor selecionado. Só aparece quando _gheAdesaoData já foi carregado
+  // (carregarAdesaoGHE) e há linhas de quadro para este setor específico.
+  let adesaoHtml = '';
+  if (_gheAdesaoData) {
+    const linhasSetor = _gheAdesaoData.linhas.filter(l => _gheNorm(l.setor || '') === setorNorm);
+    if (linhasSetor.length) {
+      const respSetor  = linhasSetor.reduce((s, l) => s + l.respostas, 0);
+      const totalSetor = linhasSetor.reduce((s, l) => s + l.total, 0);
+      const pctSetor   = totalSetor > 0 ? Math.round(respSetor / totalSetor * 100) : 0;
+      const { cor: corAd, bg: bgAd } = _gheCorAdesao(pctSetor);
+      const linhasHtml = linhasSetor
+        .slice()
+        .sort((a, b) => (a.funcao || '').localeCompare(b.funcao || ''))
+        .map(l => {
+          const { cor: corLinha } = _gheCorAdesao(l.pct);
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)">
+            <span style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(l.funcao || '(agregado do setor)')}</span>
+            <span style="color:var(--tm);margin:0 8px;flex-shrink:0">${l.respostas}/${l.total}</span>
+            <span style="font-weight:700;color:${corLinha};flex-shrink:0">${l.pct}%</span>
+          </div>`;
+        }).join('');
+      adesaoHtml = `
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm)">Adesão do setor</span>
+            <span style="font-size:11px;font-weight:700;color:${corAd};background:${bgAd};border:1px solid ${corAd};border-radius:4px;padding:1px 8px">${respSetor}/${totalSetor} = ${pctSetor}%</span>
+          </div>
+          <div>${linhasHtml}</div>
+        </div>`;
+    } else {
+      adesaoHtml = `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">Sem quadro de funcionários cadastrado para este setor — adesão não pode ser calculada aqui.</div>`;
+    }
+  }
+
   el.innerHTML = `
     <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:2px;overflow-wrap:break-word">${esc(grupo.nome)}</div>
     <div style="font-size:11px;color:var(--tm);margin-bottom:14px">${grupo.funcoes.length} cargo(s) cadastrado(s)</div>
@@ -11789,6 +11922,7 @@ function _renderGHEDetailPane() {
     <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tm)">
       <span>Cargos com quadro mapeado</span><span style="font-weight:700;color:${cor}">${pct}%</span>
     </div>` : `<div style="font-size:11px;color:var(--tl)">Adicione cargos a este setor para ver a cobertura do quadro.</div>`}
+    ${adesaoHtml}
   `;
 }
 
