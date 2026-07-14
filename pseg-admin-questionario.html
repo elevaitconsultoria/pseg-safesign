@@ -3441,18 +3441,44 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL GESTÃO DE GHEs (Setores & Funções) -->
 <div class="modal-bg" id="modal-ghe">
-  <div class="modal" style="max-width:660px;padding:0;display:flex;flex-direction:column;max-height:88vh">
+  <div class="modal" style="max-width:1400px;width:96vw;padding:0;display:flex;flex-direction:column;height:92vh;max-height:92vh">
 
     <!-- ── Cabeçalho fixo ── -->
     <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
       <div class="modal-title" style="margin-bottom:2px">Setores &amp; Funções</div>
       <div class="modal-sub" id="ghe-empresa-sub" style="margin-bottom:12px">Configure os grupos homogêneos de exposição do cliente.</div>
 
-      <div class="field" id="ghe-empresa-row" style="margin-bottom:10px">
+      <div class="field" id="ghe-empresa-row" style="margin-bottom:8px">
         <label>Cliente</label>
         <select id="ghe-empresa-sel" onchange="mudarEmpresaGHE(this.value)">
           <option value="">Selecione um cliente...</option>
         </select>
+      </div>
+
+      <!-- KPIs -->
+      <div id="ghe-kpis" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:110px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-setores" style="font-size:16px;font-weight:800;color:var(--tx)">0</span>
+          <span style="font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">setores</span>
+        </div>
+        <div style="flex:1;min-width:110px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-funcoes" style="font-size:16px;font-weight:800;color:var(--tx)">0</span>
+          <span style="font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">funções</span>
+        </div>
+        <div style="flex:1;min-width:110px;background:var(--gl,#f0fdf4);border:1px solid var(--g);border-radius:var(--r);padding:6px 12px;display:flex;align-items:baseline;gap:6px">
+          <span id="ghe-kpi-funcionarios" style="font-size:16px;font-weight:800;color:var(--g)">—</span>
+          <span style="font-size:10px;color:var(--g);text-transform:uppercase;letter-spacing:.4px">funcionários</span>
+        </div>
+        <div id="ghe-view-toggle" style="display:flex;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;flex-shrink:0">
+          <button id="ghe-view-btn-tree" onclick="setGHEViewMode('tree')" style="padding:0 14px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--tx);color:white;display:flex;align-items:center;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="3" y1="6" x2="9" y2="6"/><line x1="3" y1="12" x2="13" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
+            Árvore
+          </button>
+          <button id="ghe-view-btn-table" onclick="setGHEViewMode('table')" style="padding:0 14px;font-size:11px;font-weight:700;border:none;border-left:1.5px solid var(--border);cursor:pointer;background:white;color:var(--tm);display:flex;align-items:center;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            Tabela
+          </button>
+        </div>
       </div>
 
       <!-- ⚡ Auto-fill — linha compacta -->
@@ -3500,13 +3526,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <!-- ── Painel hierárquico (scrollável) ── -->
     <div style="flex:1;overflow-y:auto;padding:14px 22px">
-      <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;min-height:260px">
+    <div id="ghe-tree-view">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:10px;min-height:min(60vh,600px)">
 
         <!-- Coluna Setores -->
         <div style="display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
           <div style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
             Setores / GHEs
             <span id="ghe-set-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+          </div>
+          <div style="padding:5px 6px;border-bottom:1px solid var(--border);background:var(--bg)">
+            <input id="ghe-busca-setor" type="text" placeholder="🔍 Buscar setor..."
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroSetor=this.value;_renderGHESetoresPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroSetor='';_renderGHESetoresPanel()}"/>
           </div>
           <div id="ghe-setores-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column"></div>
           <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg)">
@@ -3524,8 +3557,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
         <!-- Coluna Cargos -->
         <div style="display:flex;flex-direction:column;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
-          <div id="ghe-cargos-header" style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div id="ghe-cargos-header" style="background:var(--bg);padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span id="ghe-cargos-titulo">Cargos</span>
+            <input id="ghe-busca-cargo" type="text" placeholder="🔍 Buscar..."
+              style="flex:1;max-width:170px;border:1px solid var(--border);border-radius:var(--r);padding:3px 8px;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroCargo=this.value;_renderGHECargosPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroCargo='';_renderGHECargosPanel()}"/>
             <span id="ghe-fun-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
           </div>
           <div id="ghe-cargos-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:6px 8px;gap:4px">
@@ -3545,27 +3582,83 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Universais -->
       <div style="margin-top:10px;border:1.5px dashed var(--border);border-radius:var(--r);overflow:hidden">
-        <div style="background:var(--bg);padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--tl)" stroke-width="2" width="11" height="11"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        <div id="ghe-uni-header" onclick="toggleGHEUniversais()" style="background:var(--bg);padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+          <svg id="ghe-uni-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2.5" width="11" height="11" style="transition:transform .15s"><polyline points="9 18 15 12 9 6"/></svg>
           Cargo universal
           <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl);font-size:10px">— aparece em todos os setores</span>
           <span id="ghe-uni-count" style="margin-left:auto;color:var(--tl);font-weight:400;text-transform:none;letter-spacing:0"></span>
         </div>
-        <div style="padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center" id="ghe-universais-panel">
-          <div style="color:var(--tl);font-size:11px;padding:4px 2px">Nenhum cargo universal.</div>
-        </div>
-        <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg);display:flex;gap:4px">
-          <input id="ghe-add-uni" type="text" placeholder="+ Cargo universal..."
-            style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
-            onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter'){adicionarGHEUniversal();event.preventDefault()}"/>
-          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="adicionarGHEUniversal()">+</button>
+        <div id="ghe-uni-body" style="display:none">
+          <div id="ghe-uni-aviso" style="display:none;padding:6px 10px;background:var(--amberbg,#fffbeb);border-bottom:1px solid var(--border);font-size:10px;color:var(--amber,#b45309)">
+            ⚠️ Muitos cargos aqui geralmente vieram de um import sem setor identificado. Use <b>Mover</b> para reatribuí-los ao setor correto.
+          </div>
+          <div id="ghe-uni-busca-row" style="display:none;padding:5px 8px;border-bottom:1px solid var(--border);background:var(--bg)">
+            <input id="ghe-busca-uni" type="text" placeholder="🔍 Buscar cargo universal..."
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              oninput="_gheFiltroUni=this.value;_renderGHEUniversaisPanel()"
+              onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroUni='';_renderGHEUniversaisPanel()}"/>
+          </div>
+          <div style="padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;max-height:180px;overflow-y:auto" id="ghe-universais-panel">
+            <div style="color:var(--tl);font-size:11px;padding:4px 2px">Nenhum cargo universal.</div>
+          </div>
+          <div style="padding:6px 8px;border-top:1px solid var(--border);background:var(--bg);display:flex;gap:4px">
+            <input id="ghe-add-uni" type="text" placeholder="+ Cargo universal..."
+              style="flex:1;border:1.5px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+              onfocus="this.style.borderColor='var(--g)'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter'){adicionarGHEUniversal();event.preventDefault()}"/>
+            <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="adicionarGHEUniversal()">+</button>
+          </div>
         </div>
       </div>
     </div>
+    <!-- /ghe-tree-view -->
+
+    <!-- ── Modo Tabela: auditoria plana Setor|Função|Qtd ── -->
+    <div id="ghe-table-view" style="display:none">
+      <div style="margin-bottom:10px;position:relative;max-width:340px">
+        <input id="ghe-busca-tabela" type="text" placeholder="🔍 Buscar setor ou função..."
+          style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white"
+          oninput="_gheFiltroTabela=this.value;_renderGHETabela()"
+          onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroTabela='';_renderGHETabela()}"/>
+      </div>
+      <div style="border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div style="max-height:min(62vh,640px);overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
+                <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
+                <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
+              </tr>
+            </thead>
+            <tbody id="ghe-tabela-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- /ghe-table-view -->
+    </div>
+    <!-- /painel hierárquico (scrollável) -->
+
+    <!-- ── Quadro de funcionários (headcount) ── -->
+    <div style="padding:10px 22px;border-top:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);display:flex;align-items:center;gap:6px">
+          Quadro de funcionários
+          <span id="ghe-hc-total" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
+        </div>
+        <button id="ghe-hc-clear" onclick="limparHeadcount()" style="display:none;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">Limpar</button>
+      </div>
+      <div id="ghe-hc-panel" style="font-size:11px;color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</div>
+    </div>
 
     <!-- ── Rodapé fixo ── -->
-    <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;justify-content:flex-end">
+    <div style="padding:12px 22px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;align-items:center">
+      <button class="btn" style="font-size:12px;padding:6px 12px;background:var(--redbg,#fef2f2);color:var(--red,#dc2626);border:1px solid var(--red,#dc2626);border-radius:var(--r)" onclick="limparGHELocal()" title="Remove setores e cargos da tela (não salva)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Limpar tudo
+      </button>
+      <div style="flex:1"></div>
       <button class="btn btn-ghost" onclick="fecharModalGHE()">Fechar</button>
       <button class="btn btn-g" onclick="salvarGHE()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
@@ -6871,21 +6964,55 @@ async function calcRepresentatividade(empId, cicloId) {
   let q = sbAdmin.from('respostas').select('setor, funcao').eq('empresa_id', empId);
   if (cicloId) q = q.eq('ciclo_id', cicloId);
   const { data: resps } = await q;
+  const respList = resps || [];
 
-  // Conta respostas por (setor normalizado × funcao normalizada)
-  const contagem = new Map();
-  (resps || []).forEach(r => {
-    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
-    contagem.set(k, (contagem.get(k) || 0) + 1);
+  // Índices de contagem de respostas: por (setor×funcao) e por setor
+  const porSetorFuncao = new Map();
+  const porSetor       = new Map();
+  respList.forEach(r => {
+    const sK  = _gheNorm(r.setor || '');
+    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    porSetor.set(sK, (porSetor.get(sK) || 0) + 1);
+    porSetorFuncao.set(sfK, (porSetorFuncao.get(sfK) || 0) + 1);
   });
 
-  // Monta resultado final usando os labels originais do headcount
-  return hcRows.map(h => {
-    const k = `${_gheNorm(h.setor||'')}|||${_gheNorm(h.funcao||'')}`;
-    const respostas = contagem.get(k) || 0;
+  // Conjuntos de chaves do quadro (para classificar respostas)
+  const hcSetorFuncao = new Set(); // 'setor|||funcao'
+  const hcSetorNull   = new Set(); // 'setor' (linha de quadro agregada por setor, funcao NULL)
+  hcRows.forEach(h => {
+    const sK = _gheNorm(h.setor || '');
+    if (h.funcao) hcSetorFuncao.add(`${sK}|||${_gheNorm(h.funcao)}`);
+    else          hcSetorNull.add(sK);
+  });
+
+  // Linhas: quadro por função casa em (setor×funcao); quadro por setor (funcao NULL)
+  // agrega todas as respostas daquele setor.
+  const linhas = hcRows.map(h => {
+    const sK = _gheNorm(h.setor || '');
+    const respostas = h.funcao
+      ? (porSetorFuncao.get(`${sK}|||${_gheNorm(h.funcao)}`) || 0)
+      : (porSetor.get(sK) || 0);
     const pct = h.quantidade > 0 ? Math.round(respostas / h.quantidade * 100) : 0;
     return { setor: h.setor, funcao: h.funcao, respostas, total: h.quantidade, pct };
   }).sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''));
+
+  // Respostas fora do quadro (setor/função não cadastrados, "Outro", cargo universal etc.)
+  let naoClassificadas = 0;
+  respList.forEach(r => {
+    const sK  = _gheNorm(r.setor || '');
+    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    if (!hcSetorFuncao.has(sfK) && !hcSetorNull.has(sK)) naoClassificadas++;
+  });
+
+  const totalRespostas = respList.length;
+  const totalHeadcount = hcRows.reduce((s, h) => s + (h.quantidade || 0), 0);
+  return {
+    linhas,
+    totalRespostas,
+    classificadas: totalRespostas - naoClassificadas,
+    naoClassificadas,
+    totalHeadcount,
+  };
 }
 
 async function verAdesaoLink(linkId) {
@@ -6917,13 +7044,14 @@ async function verAdesaoLink(linkId) {
       return;
     }
 
-    const totalResp  = dados.reduce((s, d) => s + d.respostas, 0);
-    const totalFunc  = dados.reduce((s, d) => s + d.total, 0);
+    const totalResp  = dados.classificadas;
+    const totalFunc  = dados.totalHeadcount;
     const totalPct   = totalFunc > 0 ? Math.round(totalResp / totalFunc * 100) : 0;
     const corTotal   = totalPct >= 70 ? '#16a34a' : totalPct >= 30 ? '#b45309' : '#dc2626';
     const bgTotal    = totalPct >= 70 ? '#f0fdf4' : totalPct >= 30 ? '#fffbeb' : '#fef2f2';
+    const naoClass   = dados.naoClassificadas;
 
-    const linhas = dados.map(d => {
+    const linhas = dados.linhas.map(d => {
       const cor = d.pct >= 70 ? '#16a34a' : d.pct >= 30 ? '#b45309' : '#dc2626';
       const bg  = d.pct >= 70 ? '#f0fdf4' : d.pct >= 30 ? '#fffbeb' : '#fef2f2';
       return `<tr>
@@ -6956,6 +7084,10 @@ async function verAdesaoLink(linkId) {
           <tbody>${linhas}</tbody>
         </table>
       </div>
+      ${naoClass > 0 ? `<div style="margin-top:6px;font-size:10px;color:var(--amber,#b45309);display:flex;align-items:center;gap:5px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ${naoClass} resposta(s) com setor/função fora do quadro (ex.: "Outro" ou não cadastrado) — não contam na adesão.
+      </div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--tl)">
         Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%
       </div>`;
@@ -11199,7 +11331,7 @@ function popularSetoresModal() {
 }
 
 function mudarEmpresaGHE(empresaId) {
-  if (!empresaId) return;
+  if (!empresaId || empresaId === 'null') return;
   _gheEmpresaId = empresaId;
   const emp = _gheGetEmpresa(empresaId);
   const sub = document.getElementById('ghe-empresa-sub');
@@ -11208,11 +11340,34 @@ function mudarEmpresaGHE(empresaId) {
   _gheTempHierarquia = hier;
   _gheTempUniversais = uni;
   _gheSetorAtivo = hier.length ? 0 : null;
+  _gheResetFiltros();
   _gheRenderTemplateBtns();
   renderGHEModal();
+  carregarHeadcountGHE(empresaId);
+}
+
+function _gheResetFiltros() {
+  _gheFiltroSetor = ''; _gheFiltroCargo = ''; _gheFiltroUni = ''; _gheFiltroTabela = '';
+  _gheUniAberto = null;
+  _gheHcCache = [];
+  _gheSortTabelaKey = 'setor'; _gheSortTabelaDir = 1;
+  // Descarta qualquer import ainda não salvo — evita que o quadro de
+  // funcionários previsualizado para uma empresa seja gravado em outra
+  // se o cliente for trocado no dropdown antes de clicar em Salvar.
+  _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
+  _gheImportHeadcount = [];
+  const preview = document.getElementById('ghe-import-preview');
+  if (preview) preview.style.display = 'none';
+  const erro = document.getElementById('ghe-import-erro');
+  if (erro) erro.style.display = 'none';
+  ['ghe-busca-setor','ghe-busca-cargo','ghe-busca-uni','ghe-busca-tabela'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  setGHEViewMode('tree');
 }
 
 function abrirModalGHE(empresaId) {
+  if (!empresaId || empresaId === 'null') empresaId = null;
   const empSel = document.getElementById('ghe-empresa-sel');
   if (empSel) {
     empSel.innerHTML = '<option value="">Selecione um cliente...</option>';
@@ -11233,23 +11388,273 @@ function abrirModalGHE(empresaId) {
   _gheSetorAtivo = hier.length ? 0 : null;
   const ct = document.getElementById('ghe-cola-txt'); if (ct) ct.value = '';
   const ca = document.getElementById('ghe-cola-area'); if (ca) ca.style.display = 'none';
+  _gheResetFiltros();
   _gheRenderTemplateBtns();
   renderGHEModal();
+  carregarHeadcountGHE(empresaId);
   document.getElementById('modal-ghe').classList.add('open');
 }
 
 function fecharModalGHE() {
   document.getElementById('modal-ghe').classList.remove('open');
   _gheEmpresaId = null;
+  _gheImportHeadcount = [];
+  _gheResetFiltros();
+}
+
+async function carregarHeadcountGHE(empresaId) {
+  const panel  = document.getElementById('ghe-hc-panel');
+  const total  = document.getElementById('ghe-hc-total');
+  const btnClr = document.getElementById('ghe-hc-clear');
+  if (!panel) return;
+
+  if (!empresaId || isDemoMode || !sbAdmin) {
+    _renderHeadcountGHE([]);
+    return;
+  }
+
+  panel.innerHTML = '<span style="color:var(--tl)">Carregando…</span>';
+  const { data } = await sbAdmin
+    .from('empresa_headcount')
+    .select('setor, funcao, quantidade')
+    .eq('empresa_id', empresaId)
+    .order('setor').order('funcao');
+
+  _renderHeadcountGHE(data || []);
+}
+
+function _renderHeadcountGHE(rows) {
+  const panel  = document.getElementById('ghe-hc-panel');
+  const total  = document.getElementById('ghe-hc-total');
+  const btnClr = document.getElementById('ghe-hc-clear');
+  if (!panel) return;
+
+  _gheHcCache = rows || [];
+
+  if (!rows.length) {
+    panel.innerHTML = '<span style="color:var(--tl)">Nenhum quadro importado. Use CSV/Excel acima para importar com uma coluna de quantidade.</span>';
+    if (total)  total.textContent = '';
+    if (btnClr) btnClr.style.display = 'none';
+    _atualizarGHEKpis();
+    _renderGHECargosPanel();
+    if (_gheViewMode === 'table') _renderGHETabela();
+    return;
+  }
+
+  const totalFunc = rows.reduce((s, r) => s + r.quantidade, 0);
+  if (total)  total.textContent = `— ${totalFunc} funcionário(s)`;
+  if (btnClr) btnClr.style.display = 'inline';
+
+  // Divergência: linhas do quadro cujo setor não existe na estrutura cadastrada
+  const setoresNorm = new Set(_gheTempHierarquia.map(g => _gheNorm(g.nome)));
+  const orfaos = setoresNorm.size
+    ? rows.filter(r => !setoresNorm.has(_gheNorm(r.setor || ''))).length
+    : 0;
+  const alerta = orfaos > 0
+    ? `<div style="margin-top:5px;font-size:10px;color:var(--amber,#b45309)">⚠️ ${orfaos} linha(s) do quadro com setor que não está na estrutura acima.</div>`
+    : '';
+
+  const linhas = rows.map(r =>
+    `<tr>
+      <td style="padding:3px 8px;font-size:11px;color:var(--tx)">${r.setor||'—'}</td>
+      <td style="padding:3px 8px;font-size:11px;color:var(--tx)">${r.funcao||'—'}</td>
+      <td style="padding:3px 8px;font-size:11px;text-align:right;font-weight:600;color:var(--tx)">${r.quantidade}</td>
+    </tr>`
+  ).join('');
+
+  panel.innerHTML = `
+    <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:4px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:3px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Setor</th>
+          <th style="padding:3px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Função</th>
+          <th style="padding:3px 8px;text-align:right;font-size:10px;font-weight:600;color:var(--tl);border-bottom:1px solid var(--border)">Qtd</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>${alerta}`;
+
+  _atualizarGHEKpis();
+  _renderGHECargosPanel(); // atualiza badges de qtd por função
+  if (_gheViewMode === 'table') _renderGHETabela();
+}
+
+function limparGHELocal() {
+  const totalSet = _gheTempHierarquia.length;
+  const totalUni = _gheTempUniversais.length;
+  if (totalSet + totalUni === 0) { toast('Nenhum setor ou cargo para limpar.', 'w'); return; }
+  if (!confirm(`Remover ${totalSet} setor(es) e ${totalUni} cargo(s) universal(is) da tela?\n\nEsta ação não salva — você ainda precisará clicar em "Salvar estrutura" para confirmar a exclusão no banco.`)) return;
+  _gheTempHierarquia = [];
+  _gheTempUniversais = [];
+  _gheSetorAtivo = null;
+  _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
+  renderGHEModal();
+  toast('Estrutura limpa. Clique em "Salvar estrutura" para confirmar.', 'w');
+}
+
+async function limparHeadcount() {
+  if (!_gheEmpresaId || !sbAdmin) return;
+  if (!confirm('Remover o quadro de funcionários desta empresa?')) return;
+  await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+  _gheImportHeadcount = [];
+  _renderHeadcountGHE([]);
+  toast('Quadro de funcionários removido.', 'g');
 }
 
 // ── Render dois painéis ──
-let _gheSetorAtivo = null; // índice do setor selecionado no painel esquerdo
+let _gheSetorAtivo  = null; // índice do setor selecionado no painel esquerdo
+let _gheFiltroSetor = '';
+let _gheFiltroCargo = '';
+let _gheFiltroUni   = '';
+let _gheUniAberto   = null;  // null = auto (aberto se poucos itens)
+let _gheHcCache     = [];    // último headcount carregado/importado (para badges e KPI)
+let _gheViewMode     = 'tree'; // 'tree' | 'table'
+let _gheFiltroTabela = '';
+let _gheSortTabelaKey = 'setor';
+let _gheSortTabelaDir = 1;
 
 function renderGHEModal() {
   _renderGHESetoresPanel();
   _renderGHECargosPanel();
   _renderGHEUniversaisPanel();
+  _atualizarGHEKpis();
+  if (_gheViewMode === 'table') _renderGHETabela();
+}
+
+// ── Modo de visualização: Árvore (editar) vs Tabela (auditar) ──
+function setGHEViewMode(mode) {
+  _gheViewMode = mode;
+  const treeView  = document.getElementById('ghe-tree-view');
+  const tableView = document.getElementById('ghe-table-view');
+  const btnTree   = document.getElementById('ghe-view-btn-tree');
+  const btnTable  = document.getElementById('ghe-view-btn-table');
+  if (treeView)  treeView.style.display  = mode === 'tree'  ? '' : 'none';
+  if (tableView) tableView.style.display = mode === 'table' ? '' : 'none';
+  if (btnTree)  { btnTree.style.background  = mode === 'tree'  ? 'var(--tx)' : 'white'; btnTree.style.color  = mode === 'tree'  ? 'white' : 'var(--tm)'; }
+  if (btnTable) { btnTable.style.background = mode === 'table' ? 'var(--tx)' : 'white'; btnTable.style.color = mode === 'table' ? 'white' : 'var(--tm)'; }
+  if (mode === 'table') _renderGHETabela();
+}
+
+// Achata setores+cargos+universais em linhas {setor, funcao, qtd}, cruzando
+// com o headcount carregado (_gheHcCache) por nome normalizado — somente
+// leitura, não dispara nenhuma chamada ao banco.
+function _gheLinhasTabela() {
+  const hcMap = new Map(); // 'setorNorm|||funcaoNorm' -> quantidade
+  _gheHcCache.forEach(r => {
+    hcMap.set(`${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`, r.quantidade);
+  });
+  const consumidas = new Set(); // chaves do headcount já representadas por uma linha do catálogo
+
+  const linhas = [];
+  _gheTempHierarquia.forEach(g => {
+    const setorKey = _gheNorm(g.nome);
+    if (!g.funcoes.length) {
+      const k = `${setorKey}|||`;
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k) });
+      consumidas.add(k);
+    } else {
+      g.funcoes.forEach(f => {
+        const k = `${setorKey}|||${_gheNorm(f)}`;
+        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k) });
+        consumidas.add(k);
+      });
+    }
+  });
+  _gheTempUniversais.forEach(f => {
+    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined });
+  });
+
+  // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
+  // agregado por setor (função nula) importado junto com linhas por função
+  // no mesmo arquivo. Sem isso a quantidade some da auditoria silenciosamente.
+  _gheHcCache.forEach(r => {
+    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
+    if (consumidas.has(k)) return;
+    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade });
+    consumidas.add(k);
+  });
+
+  return linhas;
+}
+
+function _gheSortTabela(key) {
+  if (_gheSortTabelaKey === key) _gheSortTabelaDir *= -1;
+  else { _gheSortTabelaKey = key; _gheSortTabelaDir = 1; }
+  _renderGHETabela();
+}
+
+function _renderGHETabela() {
+  const tbody = document.getElementById('ghe-tabela-body');
+  if (!tbody) return;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+
+  const filtro = _gheNorm(_gheFiltroTabela);
+  let linhas = _gheLinhasTabela().filter(l =>
+    !filtro || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
+  );
+
+  const key = _gheSortTabelaKey, dir = _gheSortTabelaDir;
+  linhas.sort((a, b) => {
+    if (key === 'qtd') {
+      const av = a.qtd === undefined ? -1 : a.qtd, bv = b.qtd === undefined ? -1 : b.qtd;
+      return (av - bv) * dir;
+    }
+    return String(a[key]||'').localeCompare(String(b[key]||'')) * dir;
+  });
+
+  document.querySelectorAll('#ghe-table-view .ghe-sort-ind').forEach(el => {
+    el.textContent = el.dataset.k === key ? (dir > 0 ? '▲' : '▼') : '';
+  });
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(l => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
+      <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
+      <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
+    </tr>`
+  ).join('');
+}
+
+function _atualizarGHEKpis() {
+  const kSet = document.getElementById('ghe-kpi-setores');
+  const kFun = document.getElementById('ghe-kpi-funcoes');
+  const kHc  = document.getElementById('ghe-kpi-funcionarios');
+  if (kSet) kSet.textContent = _gheTempHierarquia.length;
+  if (kFun) kFun.textContent = _gheAllFuncoes().length;
+  if (kHc)  kHc.textContent  = _gheHcCache.length
+    ? _gheHcCache.reduce((s, r) => s + (r.quantidade || 0), 0)
+    : '—';
+}
+
+function toggleGHEUniversais() {
+  const body = document.getElementById('ghe-uni-body');
+  if (!body) return;
+  const aberto = body.style.display !== 'none';
+  _gheUniAberto = !aberto;
+  body.style.display = aberto ? 'none' : '';
+  const chev = document.getElementById('ghe-uni-chevron');
+  if (chev) chev.style.transform = aberto ? '' : 'rotate(90deg)';
+}
+
+function moverGHEUniversal(i) {
+  if (!_gheTempHierarquia.length) { toast('Cadastre um setor primeiro.', 'w'); return; }
+  const cargo = _gheTempUniversais[i];
+  if (!cargo) return;
+  const opcoes = _gheTempHierarquia.map((g, si) => `${si + 1} - ${g.nome}`).join('\n');
+  const resp = prompt(`Mover "${cargo}" para qual setor?\n\n${opcoes}\n\nDigite o número:`);
+  if (resp === null) return;
+  const si = parseInt(resp.trim(), 10) - 1;
+  if (isNaN(si) || si < 0 || si >= _gheTempHierarquia.length) { toast('Setor inválido.', 'w'); return; }
+  const grupo = _gheTempHierarquia[si];
+  if (!grupo.funcoes.some(f => f.toLowerCase() === cargo.toLowerCase())) grupo.funcoes.push(cargo);
+  _gheTempUniversais.splice(i, 1);
+  renderGHEModal();
+  toast(`"${cargo}" movido para ${grupo.nome}.`, 'g');
 }
 
 const renderGHELists = renderGHEModal; // alias (compat)
@@ -11258,24 +11663,39 @@ function _renderGHESetoresPanel() {
   const panel = document.getElementById('ghe-setores-panel');
   if (!panel) return;
   const count = document.getElementById('ghe-set-count');
-  if (count) count.textContent = _gheTempHierarquia.length ? `${_gheTempHierarquia.length}` : '';
 
   if (!_gheTempHierarquia.length) {
+    if (count) count.textContent = '';
     panel.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:var(--tl);font-size:11px">Nenhum setor.<br>Adicione abaixo.</div>`;
+    return;
+  }
+
+  // Filtro por busca — preserva índice ORIGINAL (si) para os handlers
+  const filtro = _gheNorm(_gheFiltroSetor);
+  const itens = _gheTempHierarquia
+    .map((g, si) => ({ g, si }))
+    .filter(({ g }) => !filtro || _gheNorm(g.nome).includes(filtro));
+
+  if (count) count.textContent = filtro
+    ? `${itens.length} de ${_gheTempHierarquia.length}`
+    : `${_gheTempHierarquia.length}`;
+
+  if (!itens.length) {
+    panel.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;color:var(--tl);font-size:11px">Nenhum setor encontrado.<br>Esc limpa a busca.</div>`;
     return;
   }
 
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
   const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
-  panel.innerHTML = _gheTempHierarquia.map((g, si) => {
+  panel.innerHTML = itens.map(({ g, si }) => {
     const isAtivo = si === _gheSetorAtivo;
-    const bg = isAtivo ? 'background:#eff6ff;border-left:3px solid #2563eb' : 'background:white;border-left:3px solid transparent';
+    const bg = isAtivo ? 'background:var(--gl,#f0fdf4);border-left:3px solid var(--g)' : 'background:white;border-left:3px solid transparent';
     return `<div id="ghe-setor-row-${si}" onclick="selecionarGHESetor(${si})"
         style="display:flex;align-items:center;gap:6px;padding:7px 8px;cursor:pointer;border-bottom:1px solid var(--border);${bg};transition:background .1s"
         onmouseover="if(${si}!==_gheSetorAtivo)this.style.background='var(--bg)'" onmouseout="if(${si}!==_gheSetorAtivo)this.style.background='white'">
       <div style="flex:1;min-width:0">
-        <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'#1d4ed8':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
+        <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
         <div style="font-size:10px;color:var(--tl)">${g.funcoes.length} cargo(s)</div>
       </div>
       <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.6;flex-shrink:0" title="Renomear">${iconEdit}</button>
@@ -11311,40 +11731,96 @@ function _renderGHECargosPanel() {
   const si = _gheSetorAtivo;
   const grupo = _gheTempHierarquia[si];
   if (titulo) titulo.textContent = grupo.nome;
-  if (funCount) funCount.textContent = grupo.funcoes.length ? `${grupo.funcoes.length}` : '';
   if (addBar) addBar.style.display = '';
+
+  // Filtro por busca — preserva índice ORIGINAL (fi) para os handlers
+  const filtro = _gheNorm(_gheFiltroCargo);
+  const itens = grupo.funcoes
+    .map((f, fi) => ({ f, fi }))
+    .filter(({ f }) => !filtro || _gheNorm(f).includes(filtro));
+
+  if (funCount) funCount.textContent = filtro
+    ? `${itens.length} de ${grupo.funcoes.length}`
+    : (grupo.funcoes.length ? `${grupo.funcoes.length}` : '');
 
   if (!grupo.funcoes.length) {
     panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:16px 12px;text-align:center">Nenhum cargo neste setor.<br>Adicione abaixo.</div>`;
     return;
   }
+  if (!itens.length) {
+    panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:16px 12px;text-align:center">Nenhum cargo encontrado.<br>Esc limpa a busca.</div>`;
+    return;
+  }
 
-  panel.innerHTML = grupo.funcoes.map((f, fi) =>
-    `<div id="ghe-cargo-${si}-${fi}" style="display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">
+  // Headcount por função deste setor (badge)
+  const setorNorm = _gheNorm(grupo.nome);
+  const hcPorFuncao = new Map();
+  _gheHcCache.forEach(r => {
+    if (_gheNorm(r.setor || '') === setorNorm) hcPorFuncao.set(_gheNorm(r.funcao || ''), r.quantidade);
+  });
+
+  panel.innerHTML = itens.map(({ f, fi }) => {
+    const qtd = hcPorFuncao.get(_gheNorm(f));
+    const badge = qtd !== undefined
+      ? `<span title="Funcionários (quadro importado)" style="flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600;color:var(--tm)">${qtd}</span>`
+      : '';
+    return `<div id="ghe-cargo-${si}-${fi}" style="display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px">
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      ${badge}
       <button onclick="editarGHECargo(${si},${fi})" style="${btnStyle}" title="Editar">${iconEdit}</button>
       <button onclick="removerGHECargo(${si},${fi})" style="${btnStyle};font-size:14px;opacity:.7" title="Remover">&times;</button>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 }
 
 function _renderGHEUniversaisPanel() {
   const panel = document.getElementById('ghe-universais-panel');
   const count = document.getElementById('ghe-uni-count');
   if (!panel) return;
-  if (count) count.textContent = _gheTempUniversais.length ? `${_gheTempUniversais.length}` : '';
+
+  const n = _gheTempUniversais.length;
+
+  // Acordeão: aberto se poucos itens (ou se o usuário abriu/fechou manualmente)
+  const body    = document.getElementById('ghe-uni-body');
+  const chevron = document.getElementById('ghe-uni-chevron');
+  const aberto  = _gheUniAberto !== null ? _gheUniAberto : n <= 12;
+  if (body)    body.style.display = aberto ? '' : 'none';
+  if (chevron) chevron.style.transform = aberto ? 'rotate(90deg)' : '';
+
+  // Aviso + busca só quando a lista é grande (típico de import sem setor)
+  const aviso    = document.getElementById('ghe-uni-aviso');
+  const buscaRow = document.getElementById('ghe-uni-busca-row');
+  if (aviso)    aviso.style.display    = n > 12 ? '' : 'none';
+  if (buscaRow) buscaRow.style.display = n > 12 ? '' : 'none';
 
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
   const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const iconMove = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
   const btnStyle = `background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;opacity:.7;flex-shrink:0`;
 
-  if (!_gheTempUniversais.length) {
+  if (!n) {
+    if (count) count.textContent = '';
     panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:4px 2px;flex-basis:100%">Nenhum cargo universal.</div>`;
     return;
   }
-  panel.innerHTML = _gheTempUniversais.map((f, i) =>
+
+  // Filtro por busca — preserva índice ORIGINAL (i) para os handlers
+  const filtro = _gheNorm(_gheFiltroUni);
+  const itens = _gheTempUniversais
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => !filtro || _gheNorm(f).includes(filtro));
+
+  if (count) count.textContent = filtro ? `${itens.length} de ${n}` : `${n}`;
+
+  if (!itens.length) {
+    panel.innerHTML = `<div style="color:var(--tl);font-size:11px;padding:4px 2px;flex-basis:100%">Nenhum cargo encontrado. Esc limpa a busca.</div>`;
+    return;
+  }
+
+  panel.innerHTML = itens.map(({ f, i }) =>
     `<div id="ghe-uni-${i}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 6px;background:white;border:1px solid var(--border);border-radius:var(--r);font-size:11px">
-      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span>
+      <button onclick="moverGHEUniversal(${i})" style="${btnStyle}" title="Mover para um setor">${iconMove}</button>
       <button onclick="editarGHEUniversal(${i})" style="${btnStyle}" title="Editar">${iconEdit}</button>
       <button onclick="removerGHEUniversal(${i})" style="${btnStyle};font-size:14px;opacity:.7" title="Remover">&times;</button>
     </div>`
@@ -11576,9 +12052,9 @@ function _processarGHEImport(rows) {
     return _gheImportErro('O arquivo está vazio ou sem dados válidos.');
   }
   const headers = Object.keys(rows[0]);
-  const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','area','grupo','sector','unidade']);
+  const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','depto','area','área','grupo','sector','unidade','lotacao','lotação','centro de custo','estabelecimento','local de trabalho','filial']);
   const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação']);
-  const colQtd    = _detectarColuna(headers, ['quantidade','qtd','total','headcount','funcionarios','funcionários','qtde']);
+  const colQtd    = _detectarColuna(headers, ['quantidade','qtd','headcount','funcionarios','funcionários','qtde','num_func','n_func']);
 
   if (!colSetor && !colCargo) {
     return _gheImportErro(
@@ -11700,6 +12176,7 @@ function confirmarGHEImport() {
   // _gheImportHeadcount é preservado até salvarGHE() — limpo lá
   const totalFunc = _gheImportHeadcount.reduce((s, h) => s + h.quantidade, 0);
   const hcMsg = totalFunc > 0 ? `, ${totalFunc} funcionário(s) no quadro` : '';
+  if (_gheImportHeadcount.length) _renderHeadcountGHE(_gheImportHeadcount);
   toast(`Importado: ${totalSet} setor(es), ${totalFun} cargo(s)${hcMsg}. Clique em Salvar para confirmar.`, 'g', 5000);
 }
 
@@ -11718,11 +12195,22 @@ function _gheImportErro(msg) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 async function salvarGHE() {
-  if (!_gheEmpresaId) {
+  if (!_gheEmpresaId || _gheEmpresaId === 'null') {
     toast('Selecione um cliente antes de salvar.', 'w'); return;
   }
   const emp = _gheGetEmpresa(_gheEmpresaId);
   if (!emp) { toast('Empresa não encontrada.', 'w'); return; }
+
+  if (!isDemoMode && !currentTenantId) {
+    toast('Sessão sem tenant identificado. Recarregue a página e faça login novamente.', 'w'); return;
+  }
+
+  // Snapshot imutável: a função é async e faz vários await; ler os globais
+  // _gheEmpresaId/currentTenantId ao longo do save permitiria que um handler
+  // concorrente (ex.: fecharModalGHE, troca de cliente) os zerasse no meio,
+  // gerando insert com empresa_id/tenant_id NULL. Fixamos aqui.
+  const empId    = _gheEmpresaId;
+  const tenantId = currentTenantId;
 
   const setorNomes  = _gheTempHierarquia.map(h => h.nome);
   const todosCargos = [
@@ -11754,15 +12242,33 @@ async function salvarGHE() {
     toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} cargo(s).`, 'g');
   } else {
     try {
-      const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', _gheEmpresaId);
-      const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', _gheEmpresaId);
+      // Salvaguarda: não apagar um catálogo de setores existente ao salvar uma
+      // estrutura sem setores (tudo universal) — causa comum de "cargos caírem
+      // no universal" quando a coluna de setor do arquivo não foi reconhecida.
+      if (setorNomes.length === 0 && todosCargos.length > 0) {
+        const { count: setoresDB } = await sbAdmin
+          .from('empresa_setores').select('id', { count: 'exact', head: true })
+          .eq('empresa_id', empId);
+        if ((setoresDB || 0) > 0) {
+          const ok = confirm(
+            `Atenção: esta empresa já tem ${setoresDB} setor(es) cadastrado(s), mas a estrutura atual não tem nenhum setor — ` +
+            `todos os ${todosCargos.length} cargo(s) ficariam como "universais".\n\n` +
+            `Isso costuma acontecer quando a lista importada não teve a coluna de setor reconhecida.\n\n` +
+            `Deseja realmente substituir e deixar tudo universal?`
+          );
+          if (!ok) { toast('Save cancelado — catálogo de setores preservado.', 'w'); return; }
+        }
+      }
+
+      const { error: e1 } = await sbAdmin.from('empresa_setores').delete().eq('empresa_id', empId);
+      const { error: e2 } = await sbAdmin.from('empresa_funcoes').delete().eq('empresa_id', empId);
       if (e1 || e2) throw e1 || e2;
 
       // Inserir setores e capturar IDs
       let setorNomeParaId = {};
       if (setorNomes.length) {
         const setRows = setorNomes.map((nome, i) =>
-          ({ empresa_id: _gheEmpresaId, nome, ordem: i, ativo: true, tenant_id: currentTenantId }));
+          ({ empresa_id: empId, nome, ordem: i, ativo: true, tenant_id: tenantId }));
         const { data: setInseridos, error } = await sbAdmin
           .from('empresa_setores').insert(setRows).select('id,nome');
         if (error) throw error;
@@ -11772,11 +12278,11 @@ async function salvarGHE() {
       // Inserir cargos com setor_id derivado da hierarquia
       if (todosCargos.length) {
         const funRows = todosCargos.map((c, i) => ({
-          empresa_id: _gheEmpresaId,
+          empresa_id: empId,
           nome:       c.nome,
           ordem:      i,
           ativo:      true,
-          tenant_id:  currentTenantId,
+          tenant_id:  tenantId,
           setor_id:   c.setorNome ? (setorNomeParaId[c.setorNome] || null) : null,
         }));
         const { error } = await sbAdmin.from('empresa_funcoes').insert(funRows);
@@ -11789,21 +12295,25 @@ async function salvarGHE() {
       emp.universais = [..._gheTempUniversais];
 
       // Salvar headcount se veio do import
+      let hcSalvo = 0;
       if (_gheImportHeadcount.length > 0) {
-        await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+        const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', empId);
+        if (hcDelErr) throw new Error('Quadro de funcionários (limpeza): ' + hcDelErr.message);
         const hcRows = _gheImportHeadcount.map(h => ({
-          empresa_id: _gheEmpresaId,
-          tenant_id:  currentTenantId,
+          empresa_id: empId,
+          tenant_id:  tenantId,
           setor:      h.setor,
           funcao:     h.funcao || null,
           quantidade: h.quantidade,
         }));
         const { error: hcErr } = await sbAdmin.from('empresa_headcount').insert(hcRows);
-        if (hcErr) console.warn('[PSEG] headcount save:', hcErr.message);
+        if (hcErr) throw new Error('Quadro de funcionários: ' + hcErr.message);
+        hcSalvo = hcRows.length;
         _gheImportHeadcount = [];
       }
 
-      toast('GHE salvo com sucesso!', 'g');
+      const hcMsg = hcSalvo > 0 ? ` + quadro de ${hcSalvo} linha(s)` : '';
+      toast(`GHE salvo com sucesso!${hcMsg}`, 'g');
     } catch(e) {
       toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
     }
