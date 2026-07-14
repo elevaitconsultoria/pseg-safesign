@@ -2969,6 +2969,29 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
   </div>
 
+  <div class="card" style="margin-top:12px">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Agrupamento de Setores Pequenos</div>
+        <div class="card-sub">Prioridade: Média · Próxima versão</div>
+      </div>
+      <span style="background:var(--bluebg);color:var(--blue);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">🔬 Especificado</span>
+    </div>
+    <div style="font-size:13px;color:var(--tm);line-height:1.7">
+      <p style="margin-bottom:8px">Empresas com dezenas de setores pequenos (caso real: 53 setores, muitos com 0–1 cargo) ficam difíceis de analisar — cada setor vira uma fatia estatisticamente irrelevante nos gráficos de distribuição. Precisa de um jeito de agrupar setores correlatos (ex. várias linhas de produção → "Produção") sem perder o setor original no cadastro/formulário.</p>
+      <p style="margin-bottom:8px"><strong>Recomendação: cadastrar o agrupamento em Setores &amp; Funções (GHE), não em Resultados.</strong></p>
+      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
+        <li>Setor continua sendo a unidade atômica no formulário, no <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_headcount</code> e no cálculo de representatividade (calcRepresentatividade) — nada muda aí</li>
+        <li>Novo campo opcional <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_setores.grupo</code> (texto livre) — o consultor marca "Produção A", "Produção B", "Produção C" como pertencentes ao grupo "Produção" direto na árvore do GHE</li>
+        <li>Cadastrado uma vez, o agrupamento reaparece automaticamente em todas as telas que consomem setor: Distribuição, Comparativo, Auditoria, Laudo/PDF — sem precisar reconfigurar em cada uma</li>
+        <li>Resultados/Distribuição ganha um toggle "Ver por: Setor | Grupo" que só troca a dimensão de agregação da query — não duplica a definição do agrupamento</li>
+      </ul>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
+      ℹ️ Por que não em Resultados: se o agrupamento existisse só na tela de análise, cada tela (Distribuição, Comparativo, Laudo) teria que reimplementar/reconfigurar o mesmo agrupamento — risco real de o consultor agrupar diferente na tela e no laudo exportado, gerando inconsistência. Definir uma vez no cadastro (GHE) mantém uma única fonte de verdade.
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════════════════════════════
