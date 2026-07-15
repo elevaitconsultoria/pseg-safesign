@@ -3519,8 +3519,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <span id="ghe-adesao-total" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
       </div>
 
-      <!-- Importar / colar -->
+      <!-- Importar / colar / sugerir grupos -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 10px;flex-shrink:0;display:flex;align-items:center;gap:5px" onclick="_gheSugerirGrupos()" title="Sugerir agrupamentos por similaridade de nome">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Sugerir grupos
+        </button>
         <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 10px;flex-shrink:0;display:flex;align-items:center;gap:5px" onclick="document.getElementById('ghe-import-input').click()" title="Importar CSV ou Excel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3641,6 +3645,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <table style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead>
               <tr style="background:var(--bg)">
+                <th data-k="grupo" onclick="_gheSortTabela('grupo')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Grupo <span class="ghe-sort-ind" data-k="grupo"></span></th>
                 <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
                 <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
                 <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
@@ -4595,7 +4600,7 @@ async function carregarEmpresas() {
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
       (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true)).order('nome'),
       (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
-      (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem').eq('ativo',true)).order('empresa_id').order('ordem'),
+      (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true)).order('empresa_id').order('ordem'),
       (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true)).order('empresa_id').order('ordem'),
     ]);
     _empresas = (emps || []).map(emp => {
@@ -4606,6 +4611,7 @@ async function carregarEmpresas() {
       const hierarquia = empSetores.map(s => ({
         nome: s.nome,
         funcoes: empFuncoes.filter(f => f.setor_id === s.id).map(f => f.nome),
+        grupo: s.grupo || '',
       }));
       const universais = empFuncoes.filter(f => !f.setor_id).map(f => f.nome);
       return {
@@ -11314,7 +11320,8 @@ function exportarAuditoriaCSV() {
 // GHE — estado hierárquico
 // ══════════════════════════════════════════
 let _gheEmpresaId      = null;
-let _gheTempHierarquia = []; // [{nome, funcoes:[]}]
+let _gheTempHierarquia = []; // [{nome, funcoes:[], grupo:''}]
+let _gheGruposAbertos  = new Set(); // nomes de grupos colapsáveis abertos
 let _gheTempUniversais = []; // cargos sem setor definido
 
 // compat aliases usados no salvar + sugestões
@@ -11326,7 +11333,7 @@ function _gheGetEmpresa(id) { return _empresas.find(e => e.id === id) || null; }
 function _gheEmpToHier(emp) {
   if (!emp) return { hier: [], uni: [] };
   return {
-    hier: (emp.hierarquia || []).map(h => ({ nome: h.nome, funcoes: [...h.funcoes] })),
+    hier: (emp.hierarquia || []).map(h => ({ nome: h.nome, funcoes: [...h.funcoes], grupo: h.grupo || '' })),
     uni:  [...(emp.universais || [])],
   };
 }
@@ -11373,6 +11380,7 @@ function _gheResetFiltros() {
   // Descarta qualquer import ainda não salvo — evita que o quadro de
   // funcionários previsualizado para uma empresa seja gravado em outra
   // se o cliente for trocado no dropdown antes de clicar em Salvar.
+  _gheGruposAbertos = new Set();
   _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
   _gheImportHeadcount = [];
   const preview = document.getElementById('ghe-import-preview');
@@ -11638,20 +11646,21 @@ function _gheLinhasTabela() {
   const linhas = [];
   _gheTempHierarquia.forEach(g => {
     const setorKey = _gheNorm(g.nome);
+    const grupo = g.grupo || '';
     if (!g.funcoes.length) {
       const k = `${setorKey}|||`;
-      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+      linhas.push({ grupo, setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
       consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
         const k = `${setorKey}|||${_gheNorm(f)}`;
-        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+        linhas.push({ grupo, setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
         consumidas.add(k);
       });
     }
   });
   _gheTempUniversais.forEach(f => {
-    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
+    linhas.push({ grupo: '', setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
   });
 
   // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
@@ -11660,7 +11669,7 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
     if (consumidas.has(k)) return;
-    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
+    linhas.push({ grupo: '', setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
     consumidas.add(k);
   });
 
@@ -11705,7 +11714,7 @@ function _renderGHETabela() {
   });
 
   if (!linhas.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
     return;
   }
 
@@ -11714,6 +11723,7 @@ function _renderGHETabela() {
     const { cor: corAd } = ad ? _gheCorAdesao(ad.pct) : { cor: 'var(--tl)' };
     return `
     <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 14px;color:${l.grupo?'var(--tx)':'var(--tl)'};font-size:11px">${l.grupo ? esc(l.grupo) : '—'}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
       <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
@@ -11761,6 +11771,66 @@ function moverGHEUniversal(i) {
 }
 
 const renderGHELists = renderGHEModal; // alias (compat)
+
+function _gheToggleGrupo(nome) {
+  if (_gheGruposAbertos.has(nome)) _gheGruposAbertos.delete(nome);
+  else _gheGruposAbertos.add(nome);
+  _renderGHESetoresPanel();
+}
+
+function _gheEditarGrupoSetor(si) {
+  const h = _gheTempHierarquia[si];
+  if (!h) return;
+  const novo = prompt(`Grupo do setor "${h.nome}" (deixe em branco para remover):`, h.grupo || '');
+  if (novo === null) return; // cancelou
+  h.grupo = novo.trim();
+  _renderGHESetoresPanel();
+  _renderGHEDetailPane();
+}
+
+function _gheSugerirGrupos() {
+  // Tokeniza nomes de setor e encontra tokens comuns (≥4 chars) entre pares
+  const norm = s => s.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').trim();
+  const tokenize = s => norm(s).split(/\s+/).filter(t => t.length >= 4);
+
+  const nomes = _gheTempHierarquia.map(h => h.nome);
+  const tokens = nomes.map(tokenize);
+
+  // Contar frequência de cada token
+  const freq = new Map();
+  tokens.forEach(ts => {
+    const uniq = new Set(ts);
+    uniq.forEach(t => freq.set(t, (freq.get(t) || 0) + 1));
+  });
+
+  // Tokens que aparecem em ≥2 setores são candidatos a grupo
+  const candidatos = [...freq.entries()]
+    .filter(([, c]) => c >= 2)
+    .sort((a, b) => b[1] - a[1]);
+
+  if (!candidatos.length) { toast('Nenhum padrão encontrado para sugerir grupos.', 'w'); return; }
+
+  let preenchidos = 0;
+  _gheTempHierarquia.forEach((h, i) => {
+    if (h.grupo) return; // não sobrescreve edições manuais
+    // Pega o token candidato de maior frequência que aparece neste setor
+    const ts = new Set(tokens[i]);
+    for (const [tok] of candidatos) {
+      if (ts.has(tok)) {
+        // Capitalizar primeira letra
+        h.grupo = tok.charAt(0).toUpperCase() + tok.slice(1);
+        preenchidos++;
+        break;
+      }
+    }
+  });
+
+  _renderGHESetoresPanel();
+  _renderGHEDetailPane();
+  toast(`${preenchidos} setor(es) agrupados — revise e ajuste antes de salvar.`, preenchidos ? 'g' : 'w');
+}
 
 function _renderGHESetoresPanel() {
   const panel = document.getElementById('ghe-setores-panel');
@@ -11816,24 +11886,88 @@ function _renderGHESetoresPanel() {
       </div>
     </div>`;
 
-  panel.innerHTML = itens.map(({ g, si }) => {
-    const isAtivo = si === _gheSetorAtivo;
-    const bg = isAtivo ? 'background:var(--gl,#f0fdf4)' : 'background:white';
-    return `<div id="ghe-setor-row-${si}" style="border-bottom:1px solid var(--border)">
-      <div onclick="selecionarGHESetor(${si})"
-          style="display:flex;align-items:center;gap:6px;padding:7px 8px;cursor:pointer;${bg};transition:background .1s"
-          onmouseover="if(${si}!==_gheSetorAtivo)this.style.background='var(--bg)'" onmouseout="if(${si}!==_gheSetorAtivo)this.style.background='white'">
-        ${iconChevron(isAtivo)}
-        <div style="flex:1;min-width:0">
-          <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
-          <div style="font-size:10px;color:var(--tl)">${g.funcoes.length} cargo(s)</div>
+  // Verificar se há grupos definidos para habilitar visualização agrupada
+  const temGrupos = itens.some(({ g }) => g.grupo);
+
+  if (temGrupos && !_gheFiltroSetor) {
+    // Modo agrupado: agrupar por g.grupo, sem grupo vai para bucket especial
+    const buckets = new Map(); // grupo → [{g,si}]
+    const semGrupo = [];
+    itens.forEach(item => {
+      const grp = item.g.grupo || '';
+      if (!grp) { semGrupo.push(item); return; }
+      if (!buckets.has(grp)) buckets.set(grp, []);
+      buckets.get(grp).push(item);
+    });
+
+    const renderSetor = ({ g, si }) => {
+      const isAtivo = si === _gheSetorAtivo;
+      const bg = isAtivo ? 'background:var(--gl,#f0fdf4)' : 'background:white';
+      return `<div id="ghe-setor-row-${si}" style="border-bottom:1px solid var(--border)">
+        <div onclick="selecionarGHESetor(${si})"
+            style="display:flex;align-items:center;gap:6px;padding:7px 8px 4px 20px;cursor:pointer;${bg};transition:background .1s"
+            onmouseover="if(${si}!==_gheSetorAtivo)this.style.background='var(--bg)'" onmouseout="if(${si}!==_gheSetorAtivo)this.style.background='white'">
+          ${iconChevron(isAtivo)}
+          <div style="flex:1;min-width:0">
+            <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
+            <div style="font-size:10px;color:var(--tl)">${g.funcoes.length} cargo(s)</div>
+          </div>
+          <button onclick="event.stopPropagation();_gheEditarGrupoSetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.5;flex-shrink:0;font-size:10px" title="Editar grupo">⊞</button>
+          <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.6;flex-shrink:0" title="Renomear">${iconEdit}</button>
+          <button onclick="event.stopPropagation();removerGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--red,#dc2626);font-size:14px;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1" title="Remover">&times;</button>
         </div>
-        <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.6;flex-shrink:0" title="Renomear">${iconEdit}</button>
-        <button onclick="event.stopPropagation();removerGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--red,#dc2626);font-size:14px;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1" title="Remover">&times;</button>
-      </div>
-      ${isAtivo ? flyoutAberto(si) : ''}
-    </div>`;
-  }).join('');
+        ${isAtivo ? flyoutAberto(si) : ''}
+      </div>`;
+    };
+
+    let html = '';
+    buckets.forEach((items, grp) => {
+      const aberto = _gheGruposAbertos.has(grp);
+      html += `<div style="border-bottom:1px solid var(--border)">
+        <div onclick="_gheToggleGrupo('${esc(grp)}')" style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink:0;transition:transform .15s;transform:${aberto?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx);flex:1">${esc(grp)}</span>
+          <span style="font-size:10px;color:var(--tl)">${items.length} setor(es)</span>
+        </div>
+        ${aberto ? `<div>${items.map(renderSetor).join('')}</div>` : ''}
+      </div>`;
+    });
+
+    if (semGrupo.length) {
+      const abert = _gheGruposAbertos.has('__sem_grupo__');
+      html += `<div style="border-bottom:1px solid var(--border)">
+        <div onclick="_gheToggleGrupo('__sem_grupo__')" style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink:0;transition:transform .15s;transform:${abert?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);flex:1">Sem grupo</span>
+          <span style="font-size:10px;color:var(--tl)">${semGrupo.length} setor(es)</span>
+        </div>
+        ${abert ? `<div>${semGrupo.map(renderSetor).join('')}</div>` : ''}
+      </div>`;
+    }
+
+    panel.innerHTML = html;
+  } else {
+    // Modo simples (sem grupos ou com filtro de busca ativo)
+    panel.innerHTML = itens.map(({ g, si }) => {
+      const isAtivo = si === _gheSetorAtivo;
+      const bg = isAtivo ? 'background:var(--gl,#f0fdf4)' : 'background:white';
+      return `<div id="ghe-setor-row-${si}" style="border-bottom:1px solid var(--border)">
+        <div onclick="selecionarGHESetor(${si})"
+            style="display:flex;align-items:center;gap:6px;padding:7px 8px;cursor:pointer;${bg};transition:background .1s"
+            onmouseover="if(${si}!==_gheSetorAtivo)this.style.background='var(--bg)'" onmouseout="if(${si}!==_gheSetorAtivo)this.style.background='white'">
+          ${iconChevron(isAtivo)}
+          <div style="flex:1;min-width:0">
+            <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${isAtivo?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
+            <div style="font-size:10px;color:var(--tl)">${g.funcoes.length} cargo(s)${g.grupo ? ` · <span style="color:var(--tm)">${esc(g.grupo)}</span>` : ''}</div>
+          </div>
+          <button onclick="event.stopPropagation();_gheEditarGrupoSetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.5;flex-shrink:0;font-size:10px" title="Editar grupo">⊞</button>
+          <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.6;flex-shrink:0" title="Renomear">${iconEdit}</button>
+          <button onclick="event.stopPropagation();removerGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--red,#dc2626);font-size:14px;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1" title="Remover">&times;</button>
+        </div>
+        ${isAtivo ? flyoutAberto(si) : ''}
+      </div>`;
+    }).join('');
+  }
 
   // if selected setor was removed, reset
   if (_gheSetorAtivo !== null && _gheSetorAtivo >= _gheTempHierarquia.length) {
@@ -11900,8 +12034,13 @@ function _renderGHEDetailPane() {
     }
   }
 
+  const grupoBadge = grupo.grupo
+    ? `<div style="margin-bottom:6px"><span style="display:inline-block;font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 8px;color:var(--tm);cursor:pointer" onclick="_gheEditarGrupoSetor(${_gheSetorAtivo})" title="Editar grupo">⊞ ${esc(grupo.grupo)}</span></div>`
+    : `<div style="margin-bottom:6px"><span style="display:inline-block;font-size:10px;color:var(--tl);cursor:pointer" onclick="_gheEditarGrupoSetor(${_gheSetorAtivo})" title="Adicionar grupo">+ Adicionar grupo</span></div>`;
+
   el.innerHTML = `
     <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:2px;overflow-wrap:break-word">${esc(grupo.nome)}</div>
+    ${grupoBadge}
     <div style="font-size:11px;color:var(--tm);margin-bottom:14px">${grupo.funcoes.length} cargo(s) cadastrado(s)</div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px;text-align:center">
@@ -12076,7 +12215,7 @@ function adicionarGHESetor() {
   if (_gheTempHierarquia.some(h => h.nome.toLowerCase() === val.toLowerCase())) {
     toast('Setor já cadastrado.', 'w'); return;
   }
-  _gheTempHierarquia.push({ nome: val, funcoes: [] });
+  _gheTempHierarquia.push({ nome: val, funcoes: [], grupo: '' });
   _gheSetorAtivo = _gheTempHierarquia.length - 1;
   inp.value = '';
   fecharSugestoesGHE('setor');
@@ -12484,7 +12623,8 @@ async function salvarGHE() {
       let setorNomeParaId = {};
       if (setorNomes.length) {
         const setRows = setorNomes.map((nome, i) =>
-          ({ empresa_id: empId, nome, ordem: i, ativo: true, tenant_id: tenantId }));
+          ({ empresa_id: empId, nome, ordem: i, ativo: true, tenant_id: tenantId,
+             grupo: _gheTempHierarquia[i]?.grupo || null }));
         const { data: setInseridos, error } = await sbAdmin
           .from('empresa_setores').insert(setRows).select('id,nome');
         if (error) throw error;
@@ -12507,7 +12647,7 @@ async function salvarGHE() {
 
       emp.setores    = setorNomes;
       emp.funcoes    = todosCargos.map(c => c.nome);
-      emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes] }));
+      emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes], grupo: h.grupo || '' }));
       emp.universais = [..._gheTempUniversais];
 
       // Salvar headcount se veio do import
