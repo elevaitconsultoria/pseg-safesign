@@ -11689,7 +11689,7 @@ function _renderGHETabela() {
 
   const filtro = _gheNorm(_gheFiltroTabela);
   let linhas = _gheLinhasTabela().filter(l =>
-    !filtro || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
+    !filtro || _gheNorm(l.grupo).includes(filtro) || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
   );
 
   const key = _gheSortTabelaKey, dir = _gheSortTabelaDir;
@@ -11829,7 +11829,8 @@ function _gheSugerirGrupos() {
 
   _renderGHESetoresPanel();
   _renderGHEDetailPane();
-  toast(`${preenchidos} setor(es) agrupados — revise e ajuste antes de salvar.`, preenchidos ? 'g' : 'w');
+  if (preenchidos) toast(`${preenchidos} setor(es) agrupados — revise e ajuste antes de salvar.`, 'g');
+  else toast('Todos os setores já possuem grupo ou nenhum padrão foi encontrado.', 'w');
 }
 
 function _renderGHESetoresPanel() {
@@ -11858,7 +11859,7 @@ function _renderGHESetoresPanel() {
     return;
   }
 
-  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const iconEdit = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
   const iconChevron = aberto => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink:0;transition:transform .15s;transform:${aberto?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>`;
 
@@ -11969,9 +11970,10 @@ function _renderGHESetoresPanel() {
     }).join('');
   }
 
-  // if selected setor was removed, reset
+  // if selected setor was removed, reset and refresh detail pane
   if (_gheSetorAtivo !== null && _gheSetorAtivo >= _gheTempHierarquia.length) {
     _gheSetorAtivo = _gheTempHierarquia.length ? _gheTempHierarquia.length - 1 : null;
+    _renderGHEDetailPane();
   }
 }
 
@@ -12576,7 +12578,7 @@ async function salvarGHE() {
   if (isDemoMode) {
     emp.setores    = setorNomes;
     emp.funcoes    = todosCargos.map(c => c.nome);
-    emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes] }));
+    emp.hierarquia = _gheTempHierarquia.map(h => ({ nome: h.nome, funcoes: [...h.funcoes], grupo: h.grupo || '' }));
     emp.universais = [..._gheTempUniversais];
 
     const setores = emp.setores;
