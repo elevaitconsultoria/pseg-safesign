@@ -777,7 +777,7 @@ function coletarRespostas() {
 // GUARDA DE RATE LIMIT — evita reenvio acidental ou bot
 // ══════════════════════════════════════════════════════════
 let _tsUltimoEnvio = 0;
-const _RATE_LIMIT_MS = 30000; // 30 s entre tentativas
+const _RATE_LIMIT_MS = 15000; // 15 s entre tentativas
 
 // Sanitiza strings de metadados: remove tags HTML e limita comprimento
 function _sanitizeMeta(val, maxLen = 120) {
