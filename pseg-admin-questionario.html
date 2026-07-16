@@ -120,6 +120,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .screen{display:none;padding:28px 32px 80px}
 .screen.on{display:block}
 #sc-ghe.on{display:flex}
+/* ── GHE responsive ── */
+@media(max-width:1100px){
+  .ghe-hdr{padding:12px 16px 8px!important}
+  .ghe-body{padding:10px 16px!important}
+}
+@media(max-width:768px){
+  .ghe-hdr{padding:10px 12px 8px!important}
+  .ghe-body{padding:8px 12px!important}
+  #ghe-empresa-sub{display:none}
+  #ghe-adesao-row label{display:none}
+  #ghe-adesao-row select{max-width:130px}
+  #ghe-table-scroll{overflow-x:auto}
+}
+@media(max-width:480px){
+  .ghe-btn-txt{display:none}
+  #ghe-view-toggle button{padding:4px 8px!important}
+  #ghe-kpis span{padding:2px 6px!important}
+}
 .page-header{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
 .page-header:has(.page-hdr-actions){display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .page-hdr-left{min-width:0}
@@ -3469,10 +3487,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- TELA GESTÃO DE GHEs (Setores & Funções) -->
-<div class="screen" id="sc-ghe" style="padding:0;flex-direction:column;height:calc(100vh - 52px)">
+<div class="screen" id="sc-ghe" style="padding:0;flex-direction:column;height:calc(100vh - 52px);height:calc(100dvh - 52px)">
 
     <!-- ── Cabeçalho compacto ── -->
-    <div style="padding:14px 22px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div class="ghe-hdr" style="padding:14px 22px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
       <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <div class="modal-title" style="margin:0;flex-shrink:0">Setores &amp; Funções</div>
         <div class="modal-sub" id="ghe-empresa-sub" style="margin:0;flex:1;min-width:200px">Configure os grupos homogêneos de exposição do cliente.</div>
@@ -3528,23 +3546,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
 
     <!-- ── Painel hierárquico (scrollável) ── -->
-    <div style="flex:1;overflow-y:auto;padding:12px 22px">
+    <div class="ghe-body" style="flex:1;overflow-y:auto;padding:12px 22px">
     <div id="ghe-tree-view">
 
       <!-- Toolbar de ações (movida do header para caber no espaço disponível) -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
         <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="_gheSugerirGrupos()" title="Sugerir agrupamentos por similaridade de nome">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Sugerir grupos
+          <span class="ghe-btn-txt">Sugerir grupos</span>
         </button>
         <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
         <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="document.getElementById('ghe-import-input').click()" title="Importar CSV ou Excel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          CSV/Excel
+          <span class="ghe-btn-txt">CSV/Excel</span>
         </button>
         <button id="ghe-cola-toggle" class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="toggleColaLista()" title="Colar lista de pares Setor;Cargo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
-          Colar
+          <span class="ghe-btn-txt">Colar</span>
         </button>
       </div>
 
@@ -3641,7 +3659,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroTabela='';_renderGHETabela()}"/>
       </div>
       <div style="border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
-        <div style="max-height:min(62vh,640px);overflow-y:auto">
+        <div id="ghe-table-scroll" style="max-height:min(62vh,640px);overflow-y:auto">
           <table style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead>
               <tr style="background:var(--bg)">
