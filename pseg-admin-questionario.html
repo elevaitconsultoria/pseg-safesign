@@ -10059,10 +10059,11 @@ function selecionarEmpresaDoChip(id, nome) {
   setEmpresaAtiva(id, nome);
   fecharChipDropdown();
   // Re-renderizar a tela atual com a nova empresa
-  const tela = document.querySelector('.screen[style*="display: block"], .screen[style*="display:block"]');
-  const telaId = tela?.id?.replace('s-','');
-  if (telaId && ['analise','graficos','laudo','auditoria','comparativo'].includes(telaId)) {
-    goScreen(telaId, document.getElementById('nb-'+telaId));
+  const tela = document.querySelector('.screen.on');
+  const telaId = tela?.id?.replace('sc-', '');
+  const navBtn = document.querySelector('.nav-item.on');
+  if (telaId && telaId !== 'dashboard') {
+    goScreen(telaId, navBtn);
   } else {
     renderDashboard();
   }
@@ -13544,7 +13545,7 @@ function goScreen(id, btn) {
   // 4. Propagar empresa ativa para todos os selects da tela
   const temEmpresa = !!_empresaAtiva?.id;
   if (temEmpresa) {
-    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa'].forEach(sid => {
+    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa'].forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
@@ -13585,8 +13586,7 @@ function goScreen(id, btn) {
         case 'auditoria':
           if (temEmpresa || _links.length) {
             _hideNudge('sc-auditoria');
-            buildCombo('combo-audit-setor');
-            setTimeout(renderTelaAuditoria, 50);
+            onAuditEmpresaChange();
           } else { _nudgeEmpresa('sc-auditoria'); }
           break;
         case 'laudo':
@@ -13636,10 +13636,10 @@ function goScreen(id, btn) {
           // Tela estática — nada a renderizar
           break;
         case 'q':
-          // Se empresa ativa está definida, carregar questionário dela
+          // Carregar questionário da empresa ativa sempre que navegar para a tela
           if (temEmpresa) {
             const selEmp = document.getElementById('sel-emp');
-            if (selEmp && !selEmp.value) {
+            if (selEmp) {
               selEmp.value = _empresaAtiva.id;
               loadEmpresa(_empresaAtiva.id);
             }
