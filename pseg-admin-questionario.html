@@ -1800,25 +1800,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="fp-side">
 
       <!-- Filtro Empresa -->
-      <div class="card" style="padding:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Cliente</div>
-        <select id="f-empresa" onchange="onEmpresaChange()" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:8px 11px;outline:none;color:var(--tx);cursor:pointer">
+      <div class="filter-card">
+        <div class="filter-label">Cliente</div>
+        <select id="f-empresa" onchange="onEmpresaChange()" class="filter-select">
           <option value="">Todos os clientes</option>
         </select>
       </div>
 
       <!-- Filtro Ciclo -->
-      <div class="card" style="padding:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Ciclo</div>
-        <select id="f-ciclo" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:8px 11px;outline:none;color:var(--tx);cursor:pointer">
+      <div class="filter-card">
+        <div class="filter-label">Ciclo</div>
+        <select id="f-ciclo" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
 
       <!-- Filtro Setores — combo -->
-      <div class="card" style="padding:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">Setores</div>
+      <div class="filter-card">
+        <div class="filter-hdr">
+          <div class="filter-label" style="margin-bottom:0">Setores</div>
           <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('setor')">+ Agrupar</button>
         </div>
         <div class="combo" id="combo-setor">
@@ -1846,9 +1846,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
 
       <!-- Filtro Funções — combo -->
-      <div class="card" style="padding:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">Funções</div>
+      <div class="filter-card">
+        <div class="filter-hdr">
+          <div class="filter-label" style="margin-bottom:0">Funções</div>
           <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('funcao')">+ Agrupar</button>
         </div>
         <div class="combo" id="combo-funcao">
@@ -1875,8 +1875,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </div>
 
       <!-- Filtro Nível de Risco — combo -->
-      <div class="card" style="padding:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Nível de risco</div>
+      <div class="filter-card">
+        <div class="filter-label">Nível de risco</div>
         <div class="combo" id="combo-nivel">
           <div class="combo-trigger" onclick="toggleCombo('combo-nivel')">
             <div class="combo-preview" id="combo-nivel-preview"><span class="combo-placeholder">Todos os níveis</span></div>
@@ -2059,22 +2059,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <!-- FILTROS -->
     <div class="fp-side graf-filters">
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Cliente</div>
-        <select id="gf-empresa" onchange="onGrafFiltroChange()" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer">
+      <div class="filter-card">
+        <div class="filter-label">Cliente</div>
+        <select id="gf-empresa" onchange="onGrafFiltroChange()" class="filter-select">
           <option value="">Todos os clientes</option>
         </select>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Ciclo</div>
-        <select id="gf-ciclo" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer">
+      <div class="filter-card">
+        <div class="filter-label">Ciclo</div>
+        <select id="gf-ciclo" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Setores</div>
+      <div class="filter-card">
+        <div class="filter-label">Setores</div>
         <div class="combo" id="combo-gf-setor">
           <div class="combo-trigger" onclick="toggleCombo('combo-gf-setor')">
             <div class="combo-preview" id="combo-gf-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
@@ -2083,7 +2083,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <div class="combo-dropdown">
             <div class="combo-search-wrap">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Buscar..." oninput="filterCombo('combo-gf-setor',this.value)"/>
+              <input type="text" placeholder="Buscar setor..." oninput="filterCombo('combo-gf-setor',this.value)"/>
             </div>
             <div class="combo-list" id="combo-gf-setor-list"></div>
             <div class="combo-footer">
@@ -2097,8 +2097,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Funções</div>
+      <div class="filter-card">
+        <div class="filter-label">Funções</div>
         <div class="combo" id="combo-gf-funcao">
           <div class="combo-trigger" onclick="toggleCombo('combo-gf-funcao')">
             <div class="combo-preview" id="combo-gf-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
@@ -2107,7 +2107,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <div class="combo-dropdown">
             <div class="combo-search-wrap">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Buscar..." oninput="filterCombo('combo-gf-funcao',this.value)"/>
+              <input type="text" placeholder="Buscar função..." oninput="filterCombo('combo-gf-funcao',this.value)"/>
             </div>
             <div class="combo-list" id="combo-gf-funcao-list"></div>
             <div class="combo-footer">
@@ -2121,8 +2121,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">Exibir bloco</div>
+      <div class="filter-card">
+        <div class="filter-label">Exibir bloco</div>
         <div style="display:flex;flex-direction:column;gap:5px" id="gf-bloco-checks"></div>
       </div>
 
@@ -2168,17 +2168,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div class="laudo-layout" id="fl-laudo">
 
     <!-- FILTROS -->
-    <div class="fp-side" style="display:flex;flex-direction:column;gap:10px">
+    <div class="fp-side">
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Cliente</div>
-        <select id="ld-empresa" onchange="onLaudoFiltro()" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer">
+      <div class="filter-card">
+        <div class="filter-label">Cliente</div>
+        <select id="ld-empresa" onchange="onLaudoFiltro()" class="filter-select">
           <option value="">Todos os clientes</option>
         </select>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Setores</div>
+      <div class="filter-card">
+        <div class="filter-label">Ciclo</div>
+        <select id="ld-ciclo" onchange="renderLaudo()" class="filter-select">
+          <option value="">Todos os ciclos</option>
+        </select>
+      </div>
+
+      <div class="filter-card">
+        <div class="filter-label">Setores</div>
         <div class="combo" id="combo-ld-setor">
           <div class="combo-trigger" onclick="toggleCombo('combo-ld-setor')">
             <div class="combo-preview" id="combo-ld-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
@@ -2187,7 +2194,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <div class="combo-dropdown">
             <div class="combo-search-wrap">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Buscar..." oninput="filterCombo('combo-ld-setor',this.value)"/>
+              <input type="text" placeholder="Buscar setor..." oninput="filterCombo('combo-ld-setor',this.value)"/>
             </div>
             <div class="combo-list" id="combo-ld-setor-list"></div>
             <div class="combo-footer">
@@ -2201,13 +2208,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Responsável técnico</div>
-        <input id="ld-responsavel" type="text" placeholder="Nome do ergonomista — CREA/CRF" style="width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:12px;padding:7px 11px;outline:none;color:var(--tx)"/>
+      <div class="filter-card">
+        <div class="filter-label">Responsável técnico</div>
+        <input id="ld-responsavel" type="text" placeholder="Nome do ergonomista — CREA/CRF" class="filter-select" style="cursor:text"/>
       </div>
 
-      <div class="card" style="padding:14px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:8px">Seções do laudo</div>
+      <div class="filter-card">
+        <div class="filter-label">Seções do laudo</div>
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
       </div>
 
@@ -3280,7 +3287,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
   <!-- Filtro empresa -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-    <select id="link-f-empresa" onchange="renderLinks()" style="border:1.5px solid var(--border);border-radius:var(--r);background:white;font-family:'Inter',sans-serif;font-size:13px;padding:7px 11px;outline:none;color:var(--tx);cursor:pointer;min-width:220px">
+    <label class="filter-label" style="margin-bottom:0;white-space:nowrap">Cliente</label>
+    <select id="link-f-empresa" onchange="renderLinks()" class="filter-select" style="min-width:220px;width:auto">
       <option value="">Todos os clientes</option>
     </select>
     <span style="font-size:12px;color:var(--tl)" id="links-count"></span>
@@ -8454,6 +8462,14 @@ async function onLaudoFiltro() {
     const nome = _empresas.find(e => e.id === emp)?.nome || '';
     setEmpresaAtiva(emp, nome);
     limparCacheRespostas();
+  }
+  // Popular ciclos da empresa selecionada
+  const elCiclo = document.getElementById('ld-ciclo');
+  if (elCiclo) {
+    const ciclosEmp = emp ? _ciclos.filter(c => c.empresa_id === emp) : [];
+    const cur = elCiclo.value;
+    elCiclo.innerHTML = '<option value="">Todos os ciclos</option>' +
+      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
   const emp_obj = _empresas.find(e => e.id === emp);
 
