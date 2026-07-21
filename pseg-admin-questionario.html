@@ -3417,11 +3417,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <option value="60">60 dias</option>
       </select>
     </div>
-    <label class="inv-toggle" id="nl-teste-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-is-teste').checked=this.classList.contains('on')" style="margin-bottom:4px">
+    <label class="inv-toggle" id="nl-teste-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-is-teste').checked=this.classList.contains('on')" style="margin-bottom:8px">
       <input type="checkbox" id="nl-is-teste" style="display:none">
       <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
       <span class="inv-toggle-lbl">Link de teste</span>
       <span class="inv-toggle-sub">Respostas excluídas dos cálculos</span>
+    </label>
+    <label class="inv-toggle" id="nl-multi-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-permite-multi').checked=this.classList.contains('on')" style="margin-bottom:4px">
+      <input type="checkbox" id="nl-permite-multi" style="display:none">
+      <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <span class="inv-toggle-lbl">Permitir múltiplas respostas no mesmo dispositivo</span>
+      <span class="inv-toggle-sub">Notebook compartilhado</span>
     </label>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalLink()">Cancelar</button>
@@ -3481,6 +3487,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       ⚠️ Esta empresa não tem setores/GHEs cadastrados.
       <span style="cursor:pointer;text-decoration:underline;font-weight:600" onclick="fecharModalGheBatch();abrirModalGHE(document.getElementById('gb-empresa').value)">Configurar agora</span>
     </div>
+
+    <label class="inv-toggle" id="gb-multi-toggle" onclick="this.classList.toggle('on');document.getElementById('gb-permite-multi').checked=this.classList.contains('on')" style="margin-bottom:12px">
+      <input type="checkbox" id="gb-permite-multi" style="display:none">
+      <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <span class="inv-toggle-lbl">Permitir múltiplas respostas no mesmo dispositivo</span>
+      <span class="inv-toggle-sub">Aplica a todos os links do lote</span>
+    </label>
 
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalGheBatch()">Cancelar</button>
@@ -6799,7 +6812,7 @@ async function carregarLinks() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
-    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
+    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
     const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
@@ -6813,6 +6826,7 @@ async function carregarLinks() {
       token:         l.token,
       ativo:         l.ativo,
       is_teste:      l.is_teste || false,
+      permite_multi_resposta: l.permite_multi_resposta || false,
       respostas:     0,
       criado:        new Date(l.criado_em).toLocaleDateString('pt-BR'),
       expira:        l.expira_em ? new Date(l.expira_em).toLocaleDateString('pt-BR') : '—',
@@ -6958,6 +6972,7 @@ function renderLinks() {
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
           ${l.is_teste?'<span class="tag ty" style="font-size:10px">⚗ Teste</span>':''}
+          ${l.permite_multi_resposta?'<span class="tag tb" style="font-size:10px">↻ Multi-dispositivo</span>':''}
           <span class="tag ${l.ativo?'tg':'tgr'}" style="font-size:10px">${l.ativo?'Ativo':'Inativo'}</span>
           <span class="tag tb" style="font-size:10px">${l.respostas} resp.</span>
         </div>
@@ -7230,6 +7245,11 @@ function fecharModalLink() {
   const chk = document.getElementById('nl-is-teste');
   if (tog) tog.classList.remove('on');
   if (chk) chk.checked = false;
+  // Reset toggle de multi-resposta
+  const togM = document.getElementById('nl-multi-toggle');
+  const chkM = document.getElementById('nl-permite-multi');
+  if (togM) togM.classList.remove('on');
+  if (chkM) chkM.checked = false;
 }
 
 async function gerarLink() {
@@ -7241,6 +7261,7 @@ async function gerarLink() {
   const token   = Math.random().toString(36).slice(2,14);
   const expira_em = val > 0 ? new Date(Date.now() + val * 86400000).toISOString() : null;
   const is_teste  = document.getElementById('nl-is-teste')?.checked || false;
+  const permite_multi_resposta = document.getElementById('nl-permite-multi')?.checked || false;
 
   if (!isDemoMode) {
     try {
@@ -7248,8 +7269,8 @@ async function gerarLink() {
         .from('links_coleta')
         .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
                   setor_sugerido: setor || null, token, ativo: true,
-                  expira_em: expira_em, tenant_id: currentTenantId, is_teste })
-        .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
+                  expira_em: expira_em, tenant_id: currentTenantId, is_teste, permite_multi_resposta })
+        .select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
         .single();
       if (error) throw error;
       _links.unshift({
@@ -7260,6 +7281,8 @@ async function gerarLink() {
         ciclo:         data.ciclos?.nome || '',
         token:         data.token,
         ativo:         true, respostas: 0,
+        is_teste:      data.is_teste || false,
+        permite_multi_resposta: data.permite_multi_resposta || false,
         criado:        new Date(data.criado_em).toLocaleDateString('pt-BR'),
         expira:        data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
       });
@@ -7272,6 +7295,8 @@ async function gerarLink() {
       nomeEmpresa: emp?.nome || empresaId,
       setor_sugerido: setor, ciclo: cic?.nome || '',
       token, ativo: true, respostas: 0,
+      is_teste: is_teste,
+      permite_multi_resposta: permite_multi_resposta,
       criado: new Date().toLocaleDateString('pt-BR'),
       expira: expira_em ? new Date(expira_em).toLocaleDateString('pt-BR') : '—',
     });
@@ -7308,6 +7333,10 @@ function abrirModalGheBatch(empresaId) {
 
 function fecharModalGheBatch() {
   document.getElementById('modal-ghe-batch')?.classList.remove('open');
+  const tog = document.getElementById('gb-multi-toggle');
+  const chk = document.getElementById('gb-permite-multi');
+  if (tog) tog.classList.remove('on');
+  if (chk) chk.checked = false;
 }
 
 function onGheBatchEmpresaChange() {
@@ -7408,6 +7437,8 @@ async function gerarLinksBatch() {
 
   if (!selecionados.length) { toast('Selecione ao menos um GHE.', 'w'); return; }
 
+  const permite_multi_resposta = document.getElementById('gb-permite-multi')?.checked || false;
+
   const btn = document.getElementById('gb-btn-gerar');
   if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
 
@@ -7422,8 +7453,8 @@ async function gerarLinksBatch() {
         const { data, error } = await sbAdmin
           .from('links_coleta')
           .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
-                    setor_sugerido: setor, token, ativo: true, expira_em, tenant_id: currentTenantId })
-          .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
+                    setor_sugerido: setor, token, ativo: true, expira_em, tenant_id: currentTenantId, permite_multi_resposta })
+          .select('id, token, ativo, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
           .single();
         if (error) throw error;
         _links.unshift({
@@ -7432,6 +7463,7 @@ async function gerarLinksBatch() {
           setor_sugerido: data.setor_sugerido || '',
           ciclo: data.ciclos?.nome || '',
           token: data.token, ativo: true, respostas: 0,
+          permite_multi_resposta: data.permite_multi_resposta || false,
           criado: new Date(data.criado_em).toLocaleDateString('pt-BR'),
           expira: data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
         });
@@ -7445,6 +7477,7 @@ async function gerarLinksBatch() {
         nomeEmpresa: emp?.nome || empresaId,
         setor_sugerido: setor, ciclo: cic?.nome || '',
         token, ativo: true, respostas: 0,
+        permite_multi_resposta: permite_multi_resposta,
         criado: new Date().toLocaleDateString('pt-BR'),
         expira: expira_em ? new Date(expira_em).toLocaleDateString('pt-BR') : '—',
       });
