@@ -7249,7 +7249,7 @@ async function gerarLink() {
         .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
                   setor_sugerido: setor || null, token, ativo: true,
                   expira_em: expira_em, tenant_id: currentTenantId, is_teste })
-        .select('id, token, ativo, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
+        .select('id, token, ativo, is_teste, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
         .single();
       if (error) throw error;
       _links.unshift({
@@ -7260,6 +7260,7 @@ async function gerarLink() {
         ciclo:         data.ciclos?.nome || '',
         token:         data.token,
         ativo:         true, respostas: 0,
+        is_teste:      data.is_teste || false,
         criado:        new Date(data.criado_em).toLocaleDateString('pt-BR'),
         expira:        data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
       });
@@ -7272,6 +7273,7 @@ async function gerarLink() {
       nomeEmpresa: emp?.nome || empresaId,
       setor_sugerido: setor, ciclo: cic?.nome || '',
       token, ativo: true, respostas: 0,
+      is_teste: is_teste,
       criado: new Date().toLocaleDateString('pt-BR'),
       expira: expira_em ? new Date(expira_em).toLocaleDateString('pt-BR') : '—',
     });
