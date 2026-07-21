@@ -1803,7 +1803,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="filter-card">
         <div class="filter-label">Cliente</div>
         <select id="f-empresa" onchange="onEmpresaChange()" class="filter-select">
-          <option value="">Todos os clientes</option>
+          <option value="" disabled>— Selecione o cliente —</option>
         </select>
       </div>
 
@@ -1958,7 +1958,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="filter-card">
         <label class="filter-label" for="audit-empresa">Cliente</label>
         <select id="audit-empresa" onchange="onAuditEmpresaChange()" class="filter-select">
-          <option value="">Todos os clientes</option>
+          <option value="" disabled>— Selecione o cliente —</option>
         </select>
       </div>
 
@@ -2062,7 +2062,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="filter-card">
         <div class="filter-label">Cliente</div>
         <select id="gf-empresa" onchange="onGrafFiltroChange()" class="filter-select">
-          <option value="">Todos os clientes</option>
+          <option value="" disabled>— Selecione o cliente —</option>
         </select>
       </div>
 
@@ -2173,7 +2173,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="filter-card">
         <div class="filter-label">Cliente</div>
         <select id="ld-empresa" onchange="onLaudoFiltro()" class="filter-select">
-          <option value="">Todos os clientes</option>
+          <option value="" disabled>— Selecione o cliente —</option>
         </select>
       </div>
 
@@ -3289,7 +3289,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <label class="filter-label" style="margin-bottom:0;white-space:nowrap">Cliente</label>
     <select id="link-f-empresa" onchange="renderLinks()" class="filter-select" style="min-width:220px;width:auto">
-      <option value="">Todos os clientes</option>
+      <option value="" disabled>— Selecione o cliente —</option>
     </select>
     <span style="font-size:12px;color:var(--tl)" id="links-count"></span>
   </div>
@@ -3317,8 +3317,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
 </div>
 
-  </main>
-</div><!-- /app-shell -->
 
 <!-- ══ MODAL QR CODE ══ -->
 <div class="modal-bg" id="modal-qr">
@@ -3713,6 +3711,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </button>
     </div>
 </div>
+  </main>
+</div><!-- /app-shell -->
 
 <!-- MODAL EMPRESA (criação + edição) -->
 <div class="modal-bg" id="modal-cliente-perfil">
@@ -4669,7 +4669,7 @@ function popularSelectsEmpresas() {
       ? '<option value="">Selecione o cliente...</option>'
       : (id === 'cmp-empresa' || id === 'plano-empresa')
       ? '<option value="">— selecione —</option>'
-      : '<option value="">Todos os clientes</option>';
+      : '<option value="" disabled>— Selecione o cliente —</option>';
     el.innerHTML = vazio + _empresas.map(e =>
       `<option value="${e.id}"${e.id===cur?' selected':''}>${e.nome}</option>`
     ).join('');
@@ -5213,19 +5213,6 @@ async function onEmpresaChange() {
   _popularFiltroCiclo(emp);
 
   if (!emp || isDemoMode) {
-    if (!isDemoMode) {
-      // "Todos os clientes": mostrar união de setores/funções de todas as empresas
-      const allSetores = [...new Set(_empresas.flatMap(e => e.setores || []))].sort();
-      const allFuncoes = [...new Set(_empresas.flatMap(e => e.funcoes || []))].sort();
-      if (allSetores.length) {
-        comboItems['combo-setor'] = () => allSetores;
-        comboState['combo-setor'] = new Set(allSetores);
-      }
-      if (allFuncoes.length) {
-        comboItems['combo-funcao'] = () => allFuncoes;
-        comboState['combo-funcao'] = new Set(allFuncoes);
-      }
-    }
     buildCombo('combo-setor');
     buildCombo('combo-funcao');
     return;
@@ -7631,27 +7618,19 @@ async function onGrafFiltroChange() {
     el.innerHTML = '<option value="">Todos os ciclos</option>' +
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
-  if (!isDemoMode && sbAdmin) {
+  if (!isDemoMode && empId && sbAdmin) {
     try {
-      if (empId) {
-        const { data } = await sbAdmin
-          .from('respostas').select('setor, funcao').eq('empresa_id', empId);
-        const empresaObj = _empresas.find(e => e.id === empId);
-        const normSetores = (data || []).map(r => r.setor || 'Geral');
-        const normFuncoes = (data || []).map(r => r.funcao || '—');
-        const setores = normSetores.length ? [...new Set(normSetores)].sort() : (empresaObj?.setores || []);
-        const funcoes = normFuncoes.length ? [...new Set(normFuncoes)].sort() : (empresaObj?.funcoes || []);
-        comboItems['combo-gf-setor']  = () => setores;
-        comboItems['combo-gf-funcao'] = () => funcoes;
-        comboState['combo-gf-setor']  = new Set(setores);
-        comboState['combo-gf-funcao'] = new Set(funcoes);
-      } else {
-        // "Todos os clientes": união de todas as empresas
-        const allSetores = [...new Set(_empresas.flatMap(e => e.setores || []))].sort();
-        const allFuncoes = [...new Set(_empresas.flatMap(e => e.funcoes || []))].sort();
-        if (allSetores.length) { comboItems['combo-gf-setor'] = () => allSetores; comboState['combo-gf-setor'] = new Set(allSetores); }
-        if (allFuncoes.length) { comboItems['combo-gf-funcao'] = () => allFuncoes; comboState['combo-gf-funcao'] = new Set(allFuncoes); }
-      }
+      const { data } = await sbAdmin
+        .from('respostas').select('setor, funcao').eq('empresa_id', empId);
+      const empresaObj = _empresas.find(e => e.id === empId);
+      const normSetores = (data || []).map(r => r.setor || 'Geral');
+      const normFuncoes = (data || []).map(r => r.funcao || '—');
+      const setores = normSetores.length ? [...new Set(normSetores)].sort() : (empresaObj?.setores || []);
+      const funcoes = normFuncoes.length ? [...new Set(normFuncoes)].sort() : (empresaObj?.funcoes || []);
+      comboItems['combo-gf-setor']  = () => setores;
+      comboItems['combo-gf-funcao'] = () => funcoes;
+      comboState['combo-gf-setor']  = new Set(setores);
+      comboState['combo-gf-funcao'] = new Set(funcoes);
     } catch(e) { console.warn('onGrafFiltroChange:', e); }
   }
   buildCombo('combo-gf-setor');
@@ -8500,9 +8479,6 @@ async function onLaudoFiltro() {
     } catch(e) {
       allSetores = [...new Set((_respostasCache[emp] || []).map(r => r.setor || 'Geral'))].sort();
     }
-  } else {
-    // "Todos os clientes": união de todas as empresas
-    allSetores = [...new Set(_empresas.flatMap(e => e.setores || []))].sort();
   }
 
   comboItems['combo-ld-setor'] = () => allSetores;
@@ -11104,7 +11080,7 @@ function _popularSelectAudit() {
   const sel = document.getElementById('audit-empresa');
   if (!sel) return;
   const cur = sel.value;
-  sel.innerHTML = '<option value="">Todos os clientes</option>' +
+  sel.innerHTML = '<option value="" disabled>— Selecione o cliente —</option>' +
     _empresas.map(e => `<option value="${e.id}" ${e.id===cur?'selected':''}>${e.nome}</option>`).join('');
   if (!cur && _empresaAtiva?.id) sel.value = _empresaAtiva.id;
 }
@@ -11120,24 +11096,15 @@ async function onAuditEmpresaChange() {
       ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
   }
   // Carregar setores das respostas reais (funções são populadas dinamicamente em renderTelaAuditoria)
-  if (!isDemoMode && sbAdmin) {
+  if (!isDemoMode && empId && sbAdmin) {
     try {
-      if (empId) {
-        const { data } = await sbAdmin
-          .from('respostas').select('setor').eq('empresa_id', empId);
-        const empresaObj = _empresas.find(e => e.id === empId);
-        const normSetores = (data || []).map(r => r.setor || 'Geral');
-        const setores = normSetores.length ? [...new Set(normSetores)].sort() : (empresaObj?.setores || []);
-        comboItems['combo-audit-setor'] = () => setores;
-        comboState['combo-audit-setor'] = new Set(setores);
-      } else {
-        // "Todos os clientes": união de todas as empresas
-        const allSetores = [...new Set(_empresas.flatMap(e => e.setores || []))].sort();
-        if (allSetores.length) {
-          comboItems['combo-audit-setor'] = () => allSetores;
-          comboState['combo-audit-setor'] = new Set(allSetores);
-        }
-      }
+      const { data } = await sbAdmin
+        .from('respostas').select('setor').eq('empresa_id', empId);
+      const empresaObj = _empresas.find(e => e.id === empId);
+      const normSetores = (data || []).map(r => r.setor || 'Geral');
+      const setores = normSetores.length ? [...new Set(normSetores)].sort() : (empresaObj?.setores || []);
+      comboItems['combo-audit-setor'] = () => setores;
+      comboState['combo-audit-setor'] = new Set(setores);
     } catch(e) { console.warn('onAuditEmpresaChange:', e); }
   }
   buildCombo('combo-audit-setor');
