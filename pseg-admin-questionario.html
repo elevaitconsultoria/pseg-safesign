@@ -2325,8 +2325,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div id="nq-s-hint" style="font-size:10px;color:var(--tm);margin-top:5px;padding:6px 10px;background:var(--bg);border-radius:6px;display:none"></div>
     </div>
     <!-- Inversa -->
-    <label class="inv-toggle" id="nq-inv-toggle" onclick="toggleInvNova()">
-      <input type="checkbox" id="nq-inv"/>
+    <label class="inv-toggle" id="nq-inv-toggle">
+      <input type="checkbox" id="nq-inv" onchange="toggleInvNova()"/>
       <div class="inv-dot" id="nq-inv-dot">
         <svg width="8" height="8" viewBox="0 0 12 12" style="display:none"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
       </div>
@@ -3417,14 +3417,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <option value="60">60 dias</option>
       </select>
     </div>
-    <label class="inv-toggle" id="nl-teste-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-is-teste').checked=this.classList.contains('on')" style="margin-bottom:8px">
-      <input type="checkbox" id="nl-is-teste" style="display:none">
+    <label class="inv-toggle" id="nl-teste-toggle" style="margin-bottom:8px">
+      <input type="checkbox" id="nl-is-teste" style="display:none" onchange="document.getElementById('nl-teste-toggle').classList.toggle('on', this.checked)">
       <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
       <span class="inv-toggle-lbl">Link de teste</span>
       <span class="inv-toggle-sub">Respostas excluídas dos cálculos</span>
     </label>
-    <label class="inv-toggle" id="nl-multi-toggle" onclick="this.classList.toggle('on');document.getElementById('nl-permite-multi').checked=this.classList.contains('on')" style="margin-bottom:4px">
-      <input type="checkbox" id="nl-permite-multi" style="display:none">
+    <label class="inv-toggle" id="nl-multi-toggle" style="margin-bottom:4px">
+      <input type="checkbox" id="nl-permite-multi" style="display:none" onchange="document.getElementById('nl-multi-toggle').classList.toggle('on', this.checked)">
       <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
       <span class="inv-toggle-lbl">Permitir múltiplas respostas no mesmo dispositivo</span>
       <span class="inv-toggle-sub">Notebook compartilhado</span>
@@ -3488,8 +3488,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span style="cursor:pointer;text-decoration:underline;font-weight:600" onclick="fecharModalGheBatch();abrirModalGHE(document.getElementById('gb-empresa').value)">Configurar agora</span>
     </div>
 
-    <label class="inv-toggle" id="gb-multi-toggle" onclick="this.classList.toggle('on');document.getElementById('gb-permite-multi').checked=this.classList.contains('on')" style="margin-bottom:12px">
-      <input type="checkbox" id="gb-permite-multi" style="display:none">
+    <label class="inv-toggle" id="gb-multi-toggle" style="margin-bottom:12px">
+      <input type="checkbox" id="gb-permite-multi" style="display:none" onchange="document.getElementById('gb-multi-toggle').classList.toggle('on', this.checked)">
       <div class="inv-dot"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
       <span class="inv-toggle-lbl">Permitir múltiplas respostas no mesmo dispositivo</span>
       <span class="inv-toggle-sub">Aplica a todos os links do lote</span>
@@ -4487,7 +4487,7 @@ function setSNova(n) {
 }
 
 function toggleInvNova() {
-  novaInv = !novaInv;
+  novaInv = document.getElementById('nq-inv').checked;
   const tg = document.getElementById('nq-inv-toggle');
   const dt = document.getElementById('nq-inv-dot');
   tg.classList.toggle('on',novaInv);
