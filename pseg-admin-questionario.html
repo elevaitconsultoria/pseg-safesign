@@ -7237,7 +7237,17 @@ async function excluirLink(id, nRespostas, isTeste, token) {
   toast('Link excluído.', 'g');
 }
 
-function abrirModalLink() { document.getElementById('modal-link').classList.add('open'); }
+function abrirModalLink() {
+  document.getElementById('modal-link').classList.add('open');
+  // Pré-seleciona a empresa atualmente filtrada/ativa, evitando gerar link para o cliente errado
+  const nlEl = document.getElementById('nl-empresa');
+  const empresaDefault = document.getElementById('link-f-empresa')?.value || _empresaAtiva?.id || '';
+  if (nlEl && empresaDefault) {
+    nlEl.value = empresaDefault;
+    popularSetoresModal();
+    popularSelectCiclos(empresaDefault);
+  }
+}
 function fecharModalLink() {
   document.getElementById('modal-link').classList.remove('open');
   // Reset toggle de teste
