@@ -417,6 +417,7 @@ let setorNome     = '';
 let empresaSetores = []; // [{id, nome}]
 let empresaFuncoes = []; // [{id, nome, setor_id}]
 let empresaLogo    = ''; // base64 do logo do cliente (exibido no formulário)
+let permiteMultiResposta = false; // link configurado para permitir várias respostas no mesmo dispositivo
 // LGPD + rastreabilidade
 const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
 let _lgpdAceito   = true; // base legal: obrigação legal (art. 11, II, "a") — não depende de consentimento
@@ -441,21 +442,11 @@ async function init() {
   // Salvar token globalmente para uso no envio
   linkToken = token;
 
-  // Verificar se já respondeu neste dispositivo
-  if (localStorage.getItem('pseg_respondido_' + token)) {
-    hideAll();
-    const sc = document.getElementById('success-screen');
-    sc.classList.add('active');
-    sc.querySelector('.screen-title').textContent = 'Você já participou!';
-    sc.querySelector('.screen-sub').textContent   = 'Sua resposta para esta pesquisa já foi registrada neste dispositivo. Obrigado pela participação!';
-    return;
-  }
-
   try {
     // Buscar link pelo token na tabela links_coleta (schema v3)
     const { data: linkData, error } = await sb
       .from('links_coleta')
-      .select('empresa_id, setor_sugerido, ciclo_id, ativo, expira_em, empresas(id, nome, logo_base64)')
+      .select('empresa_id, setor_sugerido, ciclo_id, ativo, expira_em, permite_multi_resposta, empresas(id, nome, logo_base64)')
       .eq('token', token)
       .single();
 
@@ -474,6 +465,19 @@ async function init() {
       return;
     }
 
+    permiteMultiResposta = linkData.permite_multi_resposta || false;
+
+    // Verificar se já respondeu neste dispositivo
+    if (localStorage.getItem('pseg_respondido_' + token)) {
+      hideAll();
+      const sc = document.getElementById('success-screen');
+      sc.classList.add('active');
+      sc.querySelector('.screen-title').textContent = 'Você já participou!';
+      sc.querySelector('.screen-sub').textContent   = 'Sua resposta para esta pesquisa já foi registrada neste dispositivo. Obrigado pela participação!';
+      renderBotaoProximoResp();
+      return;
+    }
+
     empresaId   = linkData.empresa_id;
     cicloId     = linkData.ciclo_id || null;
     empresaNome = linkData.empresas?.nome || 'Empresa';
@@ -489,6 +493,28 @@ async function init() {
   } catch (e) {
     showError('Erro ao carregar a pesquisa: ' + e.message);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// MULTI-RESPOSTA — libera o dispositivo para o próximo colaborador
+// ══════════════════════════════════════════════════════════
+function renderBotaoProximoResp() {
+  const sc = document.getElementById('success-screen');
+  if (!sc || !permiteMultiResposta) return;
+  document.getElementById('btn-proximo-resp')?.remove();
+  const btn = document.createElement('button');
+  btn.id = 'btn-proximo-resp';
+  btn.type = 'button';
+  btn.textContent = '↻ Liberar para o próximo colaborador';
+  btn.style.cssText = "margin-top:20px;background:white;color:var(--g);border:1.5px solid var(--g);border-radius:8px;padding:11px 20px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer";
+  btn.onclick = liberarParaProximo;
+  sc.appendChild(btn);
+}
+
+function liberarParaProximo() {
+  if (!confirm('Liberar este dispositivo para o próximo colaborador responder? A tela atual será reiniciada.')) return;
+  localStorage.removeItem('pseg_respondido_' + linkToken);
+  window.location.reload();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -965,7 +991,11 @@ async function enviarResposta() {
 
   // Mostrar tela de confirmação
   hideAll();
-  document.getElementById('success-screen').classList.add('active');
+  const scOk = document.getElementById('success-screen');
+  scOk.classList.add('active');
+  scOk.querySelector('.screen-title').textContent = 'Obrigado!';
+  scOk.querySelector('.screen-sub').textContent   = 'Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PSEG.';
+  renderBotaoProximoResp();
 }
 
 // ── Info de dispositivo para auditoria ──
