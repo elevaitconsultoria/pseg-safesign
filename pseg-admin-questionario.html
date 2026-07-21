@@ -4821,7 +4821,9 @@ function abrirModalClientePerfil(empId) {
   document.getElementById('cp-contato').value      = emp?.contato      || '';
   document.getElementById('cp-endereco').value     = emp?.endereco     || '';
   document.getElementById('cp-erro').style.display = 'none';
-  document.getElementById('cp-btn').textContent    = isNovo ? 'Cadastrar empresa' : 'Salvar';
+  const cpBtn = document.getElementById('cp-btn');
+  cpBtn.disabled = false;
+  cpBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14" style="pointer-events:none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ${isNovo ? 'Cadastrar empresa' : 'Salvar'}`;
 
   if (!isNovo) _cpLogoBase64 = emp.logo_base64 || '';
   const prev = document.getElementById('cp-logo-preview');
