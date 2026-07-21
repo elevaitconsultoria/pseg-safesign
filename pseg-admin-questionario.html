@@ -369,7 +369,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .s-btn.sel-3{background:#d97706;border-color:#d97706;color:white}
 .s-btn.sel-4{background:#dc2626;border-color:#dc2626;color:white}
 .s-label{font-size:10px;color:#6b7280;margin-top:4px;text-align:center}
-.inv-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);transition:all .15s;background:#f7f9f8}
+.inv-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);transition:all .15s;background:#f7f9f8;user-select:none;-webkit-user-select:none}
 .inv-toggle:hover{border-color:var(--amber);background:var(--amberbg)}
 .inv-toggle.on{border-color:var(--amber);background:var(--amberbg)}
 .inv-toggle input{display:none}
@@ -3380,7 +3380,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL NOVO LINK -->
 <div class="modal-bg" id="modal-link">
-  <div class="modal">
+  <div class="modal" style="max-width:560px">
     <div class="modal-title">Novo link de coleta</div>
     <div class="modal-sub">O link gerado pode ser enviado por WhatsApp, e-mail ou impresso como QR Code. O funcionário não precisa de login.</div>
     <div class="g2" style="margin-bottom:12px">
@@ -3441,7 +3441,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- MODAL GERAR LINKS EM LOTE POR GHE -->
 <div class="modal-bg" id="modal-ghe-batch">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-title">Gerar links por GHE</div>
     <div class="modal-sub">Cria automaticamente um link de coleta para cada GHE (setor) selecionado. Cada link virá pré-configurado com o setor correspondente.</div>
 
