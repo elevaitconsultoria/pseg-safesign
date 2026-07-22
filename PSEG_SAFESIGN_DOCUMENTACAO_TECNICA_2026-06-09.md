@@ -1,6 +1,7 @@
 # PSEG SafeSign — Documentação Técnica
-**Verificado em:** 2026-07-14 (consultado diretamente dos bancos DEV e PROD)
+**Verificado em:** 2026-07-22 (consultado diretamente dos bancos DEV e PROD via MCP Supabase)
 **PROD:** `vftyiildukrpgmnbcnao` · **DEV:** `szqatgvgghxvyyncsjxl`
+**Nota:** o nome do arquivo mantém a data de criação original (2026-06-09) por estabilidade de link/referência — o conteúdo é atualizado continuamente. Ver seção 17 (Changelog) para o histórico cronológico do que mudou em cada verificação.
 
 ---
 
@@ -85,7 +86,7 @@ updated_at  timestamptz NOT NULL, default now()
 tenant_id   uuid        FK tenants ON DELETE SET NULL (nullable — NULL para super_admin)
 ```
 
-### 4.3 `empresas` (12 colunas)
+### 4.3 `empresas` (13 colunas)
 ```
 id              uuid        PK, uuid_generate_v4()
 nome            text        NOT NULL
@@ -95,13 +96,16 @@ ativo           boolean     default true
 criado_em       timestamptz default now()
 questionario_id uuid        FK questionarios ON DELETE SET NULL
 criado_por      uuid        FK auth.users ON DELETE SET NULL
-tenant_id       uuid        FK tenants ON DELETE CASCADE
+tenant_id       uuid        FK tenants ON DELETE CASCADE (nullable — linhas legadas sem tenant existem)
 razao_social    text        nullable
 endereco        text        nullable
 logo_base64     text        nullable
+numero_cliente  int         nullable — código curto de referência por tenant (ver 4.23), atribuído via trigger
 ```
 
-### 4.4 `est_perfil` (9 colunas em PROD, 12 em DEV)
+> **`excluirEmpresa()` faz HARD DELETE** (`DELETE FROM empresas`), não soft-delete — apesar de existir a coluna `ativo`, que é usada só como filtro de carregamento (`carregarEmpresas()` sempre faz `.eq('ativo', true)`), não como flag de exclusão lógica. Isso importa para `numero_cliente`: o número nunca é reatribuído a outra empresa mesmo após exclusão, porque é gerado por um contador dedicado (`tenant_contadores`), não por `MAX(numero_cliente)+1` — ver 4.23.
+
+### 4.4 `est_perfil` (12 colunas — sincronizado entre DEV e PROD desde 2026-07-20)
 ```
 id                    uuid        PK, uuid_generate_v4()
 tenant_id             uuid        NOT NULL, UNIQUE — FK tenants
@@ -112,38 +116,45 @@ responsavel_padrao    text        nullable
 registro_profissional text        nullable
 logo_base64           text        nullable
 atualizado_em         timestamptz default now()
--- Apenas em DEV:
-cor_primaria          text        nullable
+cor_primaria          text        nullable, default '#16a34a' — identidade visual da EST nos laudos
 nome_responsavel      text        nullable
 email_responsavel     text        nullable
 ```
+> `migration_sync_est_perfil_prod.sql` aplicada em PROD em 2026-07-20 — as 3 últimas colunas, antes exclusivas de DEV, agora existem nos dois bancos. Divergência da seção 3 (linha `est_perfil colunas`) **resolvida**.
 
-### 4.5 `ciclos` (9 colunas)
+### 4.5 `ciclos` (13 colunas)
 ```
-id          uuid        PK, uuid_generate_v4()
-empresa_id  uuid        NOT NULL, FK empresas ON DELETE CASCADE
-nome        text        NOT NULL
-data_inicio date        nullable
-data_fim    date        nullable
-status      text        default 'aberto' — CHECK IN ('aberto','encerrado','laudo_gerado')
-criado_em   timestamptz default now()
-descricao   text        nullable
-tenant_id   uuid        FK tenants ON DELETE CASCADE
+id                  uuid        PK, uuid_generate_v4()
+empresa_id          uuid        NOT NULL, FK empresas ON DELETE CASCADE
+nome                text        NOT NULL — gerado automaticamente para ciclos novos (ex: "Avaliação — Julho 2026"), não é mais digitado
+data_inicio         date        nullable
+data_fim            date        nullable
+status              text        default 'aberto' — CHECK IN ('aberto','encerrado','laudo_gerado')
+criado_em           timestamptz default now() — APENAS auditoria técnica, NUNCA usar para lógica de período
+descricao           text        nullable
+tenant_id           uuid        FK tenants ON DELETE CASCADE
+ano_referencia      int         nullable — período que a coleta representa (fato objetivo, obrigatório na criação via UI)
+mes_referencia      int         nullable — CHECK (mes_referencia BETWEEN 1 AND 12)
+tipo_ciclo          text        default 'Não classificado' — classificação opcional (Linha de Base/1º Semestre/2º Semestre/Reavaliação Anual/Pós-Mudança Organizacional), editável a qualquer momento sem afetar ano/mês/vínculos
+referencia_estimada boolean     default false — true quando ano/mes foram inferidos via backfill de migration (badge "⏱ estimado" na UI), false para ciclos criados após a mudança
 ```
+> `migration_ciclos_referencia_temporal.sql` (2026-07-22). Separa fato objetivo (quando o ciclo se refere) de interpretação humana (como classificar). O critério de ordenação cronológica em `preencherSelectCiclos()` e `renderComparativo()` (Comparativo entre Ciclos) foi corrigido para usar `(ano_referencia, mes_referencia)` em vez de `data_inicio||criado_em` — o fallback antigo caía silenciosamente em ordem de CRIAÇÃO quando `data_inicio` estava vazio, não ordem de PERÍODO.
 
-### 4.6 `links_coleta` (10 colunas)
+### 4.6 `links_coleta` (11 colunas)
 ```
-id              uuid        PK, uuid_generate_v4()
-empresa_id      uuid        NOT NULL, FK empresas ON DELETE CASCADE
-ciclo_id        uuid        FK ciclos ON DELETE SET NULL (nullable)
-token           text        NOT NULL, UNIQUE — gerado automaticamente: encode(gen_random_bytes(16),'hex')
-setor_sugerido  text        nullable
-ativo           boolean     default true
-expira_em       timestamptz nullable (NULL = sem expiração)
-criado_em       timestamptz default now()
-tenant_id       uuid        FK tenants ON DELETE CASCADE
-is_teste        boolean     NOT NULL, default false
+id                      uuid        PK, uuid_generate_v4()
+empresa_id              uuid        NOT NULL, FK empresas ON DELETE CASCADE
+ciclo_id                uuid        FK ciclos ON DELETE SET NULL (nullable)
+token                   text        NOT NULL, UNIQUE — gerado automaticamente: encode(gen_random_bytes(16),'hex')
+setor_sugerido          text        nullable
+ativo                   boolean     default true
+expira_em               timestamptz nullable (NULL = sem expiração)
+criado_em               timestamptz default now()
+tenant_id               uuid        FK tenants ON DELETE CASCADE
+is_teste                boolean     NOT NULL, default false
+permite_multi_resposta  boolean     nullable, default false — quando true, a trava de "1 resposta por dispositivo" (localStorage no formulário) é liberável pelo respondente via botão "Liberar para o próximo colaborador" na tela de sucesso. Uso: notebook/tablet compartilhado por vários funcionários (ex.: trabalhadores de campo sem dispositivo próprio).
 ```
+> `migration_links_multi_resposta.sql` (2026-07-21). Flag por link, não por empresa — o consultor decide caso a caso. A trava em si continua sendo puramente client-side (`localStorage`); a coluna só habilita/desabilita a exibição do botão de liberação. Nenhuma constraint de banco depende disso — `session_id` de `respostas` já é gerado novo a cada carregamento de página, então não há necessidade de mudança na idempotência do `salvar_resposta`.
 
 > **REGRA CRÍTICA:** `token` é UNIQUE (1 link por empresa/ciclo), mas N funcionários usam o mesmo link.
 > `respostas.link_token` NÃO é UNIQUE. NUNCA adicionar UNIQUE em `respostas.link_token`.
@@ -367,6 +378,15 @@ cartao_bandeira     text        nullable
 pago_em             timestamptz nullable
 created_at          timestamptz NOT NULL, default now()
 ```
+
+### 4.23 `tenant_contadores` (2 colunas — nova, 2026-07-22)
+```
+tenant_id          uuid  PK, FK tenants ON DELETE CASCADE
+contador_empresas  int   NOT NULL, default 0
+```
+> Contador atômico por tenant para gerar `empresas.numero_cliente` (código curto de referência, ex: `CLI-007`). Usado exclusivamente pelo trigger `fn_atribuir_numero_cliente` (ver 7.3) — nunca acessada diretamente pelo frontend. RLS habilitado **sem nenhuma policy** intencionalmente (nenhum role deveria conseguir ler/escrever direto; `SECURITY DEFINER` do trigger contorna RLS). Isso gera um achado INFO no advisor de segurança (`rls_enabled_no_policy`) que é esperado, não um bug.
+>
+> **Por que não usar `MAX(numero_cliente)+1`:** `excluirEmpresa()` faz hard delete. Se o número fosse `MAX+1`, excluir a última empresa cadastrada faria a próxima nova empresa reaproveitar o número da excluída — problemático se aquele código já foi comunicado a alguém (ex.: "seu código de cliente é CLI-007"). O contador dedicado garante que o número nunca é reutilizado, mesmo com exclusões.
 
 ### 4.22 Views (sem RLS próprio)
 ```
@@ -627,10 +647,11 @@ SELECT salvar_resposta(
 | Trigger | Tabela | Função | Descrição |
 |---------|--------|--------|-----------|
 | `handle_new_user` | `auth.users` | `handle_new_user()` | Cria perfil automaticamente ao criar usuário |
-| `fn_guard_perfil_update` | `perfis` | `fn_guard_perfil_update()` | Bloqueia alteração do próprio role (DEV; PROD pendente) |
+| `tg_guard_perfil_update` | `perfis` | `fn_guard_perfil_update()` | Bloqueia alteração do próprio role — **confirmado presente em DEV e PROD** (aplicada via `migration_rbac_viewer_hardening.sql`, item removido da lista de pendências) |
 | `fn_proteger_ancora` | `questoes` | `fn_proteger_ancora()` | Protege questões âncora de exclusão |
 | `set_updated_at` | Várias | `set_updated_at()` | Atualiza updated_at automaticamente |
 | `rls_auto_enable` | (event trigger) | `rls_auto_enable()` | Habilita RLS automaticamente em novas tabelas |
+| `trg_numero_cliente` | `empresas` | `fn_atribuir_numero_cliente()` | **Nova (2026-07-22).** `BEFORE INSERT`, só dispara quando `numero_cliente IS NULL`. Atribui o próximo número via `tenant_contadores` (UPSERT atômico). Se `NEW.tenant_id IS NULL` (linhas legadas sem tenant), não atribui número — evita violar a PK de `tenant_contadores`. `SECURITY DEFINER`, mas `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated` aplicado explicitamente — funções `RETURNS trigger` são naturalmente não-invocáveis fora de um trigger real, mas o Postgres concede `EXECUTE` a `PUBLIC` por padrão em toda função nova, o que apareceria como achado no advisor de segurança (`anon/authenticated_security_definer_function_executable`) se não fosse revogado. |
 
 ---
 
@@ -848,8 +869,11 @@ ORDER BY l.criado_em DESC;
 | `migration_empresa_headcount.sql` | ✅ | ✅ | Tabela headcount + RLS |
 | `migration_fix_empresa_funcoes_unique.sql` | ✅ | ✅ | UNIQUE por (empresa_id, setor_id, nome) |
 | `migration_fix_grants_dev.sql` | ✅ | N/A | GRANTs para empresa_headcount e respostas_raw_backup em DEV |
-| `migration_rbac_viewer_hardening.sql` | ✅ | ❌ **pendente** | Trigger fn_guard_perfil_update + 7 policies viewer RESTRICTIVE |
-| `migration_sync_est_perfil_prod.sql` | N/A | ❌ pendente | Colunas cor_primaria, nome_responsavel, email_responsavel em est_perfil |
+| `migration_rbac_viewer_hardening.sql` | ✅ | ✅ **confirmado 2026-07-22** | Trigger `tg_guard_perfil_update` + 7 policies viewer RESTRICTIVE |
+| `migration_sync_est_perfil_prod.sql` | N/A | ✅ **aplicada 2026-07-20** | Colunas cor_primaria, nome_responsavel, email_responsavel em est_perfil |
+| `migration_links_multi_resposta.sql` | ✅ | ✅ **2026-07-21** | `links_coleta.permite_multi_resposta` — trava de dispositivo opcional por link |
+| `migration_empresas_numero_cliente.sql` | ✅ | ✅ **2026-07-22** | `empresas.numero_cliente` + tabela `tenant_contadores` + trigger `trg_numero_cliente` |
+| `migration_ciclos_referencia_temporal.sql` | ✅ | ✅ **2026-07-22** | `ciclos.ano_referencia/mes_referencia/tipo_ciclo/referencia_estimada` + backfill |
 
 ---
 
@@ -857,11 +881,11 @@ ORDER BY l.criado_em DESC;
 
 | Item | Ambiente | Prioridade | Observação |
 |------|----------|-----------|------------|
-| Aplicar `migration_rbac_viewer_hardening.sql` | PROD | Alta | Trigger de proteção de role pendente |
-| Aplicar `migration_sync_est_perfil_prod.sql` | PROD | Baixa | Só ao implementar identidade visual |
 | Reimportar catálogo ELEVA IT CONSULTORIA | PROD | Média | 0 setores, 98 funções universais — não afeta outros clientes |
-| Alinhar policies de `questoes/questionarios/questionario_questoes` DEV | DEV | Média | DEV permite qualquer autenticado escrever (PROD só super_admin) |
+| Alinhar policies de `questoes/questionarios/questionario_questoes` DEV | DEV | Média | DEV permite qualquer autenticado escrever (PROD só super_admin) — não reverificado desde 2026-07-14, confirmar antes de agir |
 | Teste e2e onboarding nova EST | DEV | Produto | |
+
+> As duas migrations antes listadas como pendentes (`migration_rbac_viewer_hardening.sql` e `migration_sync_est_perfil_prod.sql`) foram confirmadas aplicadas em PROD durante a verificação de 2026-07-22 — removidas desta lista.
 
 ---
 
@@ -877,9 +901,44 @@ ORDER BY l.criado_em DESC;
 | `duplicate key violates unique constraint empresa_funcoes_empresa_id_nome_key` | Constraint antigo ainda ativo | Verificar se migration foi aplicada: `UNIQUE(empresa_id, setor_id, nome)` |
 | `column "criado_em" does not exist` (em respostas_raw_backup em PROD) | PROD tem `gravado_em`, não `criado_em` | Usar `gravado_em` em PROD |
 | Cargos todos como universais após import | Coluna de setor não reconhecida na planilha | Cabeçalho deve ter: setor, depto, área, lotação, etc. |
+| Toggle/checkbox custom "não responde ao clique" (liga e desliga sozinho) | `onclick` no `<label>` que envolve um `<input>` — 1 clique físico gera 2 eventos (o real + o reenvio nativo do navegador pro input associado) | Nunca colocar a lógica de toggle no `onclick` do label; usar `onchange` do `<input>` (dispara 1x por interação real) |
+| Campo recém-criado via `insert()` "some" da UI até recarregar a página | `.select()` de retorno do insert não incluía o campo novo, e/ou o objeto local (array em memória) não foi atualizado com ele | Sempre incluir TODOS os campos novos no `.select()` pós-insert e atualizar o objeto local imediatamente, não só o banco |
 
 ---
 
 ## 16. Skill de Validação
 
 A skill `/validar-formulario` (`.claude/skills/validar-formulario/SKILL.md`) contém o checklist de 8 passos para validar o pipeline de respostas antes de qualquer deploy. Dispara automaticamente ao mencionar formulário, salvar_resposta, "resposta salva localmente" ou "permission denied".
+
+---
+
+## 17. Changelog — Sessões de Trabalho (cronológico)
+
+Fluxo de trabalho padrão do projeto: alterações de schema sempre em DEV primeiro → validar → PROD. Deploy de frontend via push em `develop`/`main` no Cloudflare Pages (branch `main` = produção). Toda mudança de banco vira uma migration versionada (`migration_*.sql`) na raiz do repo, mesmo depois de aplicada — funciona como changelog de schema.
+
+### 2026-07-13 — Ciclo hierarquia organizacional / GHE tela cheia
+Validação profunda de setores/funções/headcount + integração formulários + redesenho UX da tela GHE (modal → tela cheia 96vw×92vh com toggle Árvore/Tabela). Guard contra `empresa_id`/`tenant_id` nulo em `salvarGHE`, salvaguarda contra wipe de setores no import. Auditoria de segurança RLS: removida policy `raw_backup_select` que vazava payload bruto de respostas entre tenants (crítico, só existia em PROD); corrigido INSERT sem escopo em `resposta_itens`. Constraint de `empresa_funcoes` alterado de `UNIQUE(empresa_id, nome)` para `UNIQUE(empresa_id, setor_id, nome)` — permite mesmo cargo em setores diferentes.
+
+### 2026-07-14 — Correção crítica do pipeline de respostas
+`salvar_resposta` recebia `p_session_id uuid` e comparava sem cast — quebrava em DEV, onde `session_id` era `text`. Corrigido com `::text` só em DEV (PROD já era `uuid`, nunca esteve quebrado). Criada a skill `/validar-formulario`.
+
+### 2026-07-20 — `est_perfil` sincronizado
+`migration_sync_est_perfil_prod.sql` aplicada em PROD — colunas `cor_primaria`, `nome_responsavel`, `email_responsavel`, antes só em DEV.
+
+### 2026-07-20/21 — Revisão de texto das 27 questões (NR-01) + descoberta de hotfix paralelo
+Documento da Diretoria trouxe redação revisada de 25 das 27 questões oficiais. Durante o merge `develop→main`, descoberto que um hotfix anterior (`e554358`, 06/07) já havia reformulado 10 dessas mesmas questões direto em `main`, sem nunca voltar para `develop` — gerou conflito real de merge. Por decisão do usuário, a revisão da Diretoria prevaleceu. Resolvido manualmente preservando as demais mudanças de `main` (renomeação de âncoras "Ideal→Adequado", "Crítico→Elevado"). Corrigido também Q18, que estava categorizada no bloco temático errado (Relações Interpessoais → Fatores Organizacionais).
+**Lição:** textos de questão em `pseg-admin-questionario.html` (`QS_OFICIAIS`) e `pseg-forms.html` (`BLOCOS`) são hardcoded em dois lugares independentes — nenhuma mudança de texto é lida do banco (`questoes.texto` existe mas não é consumido pelo admin, só serve de índice de UUID). Renomear questão hoje é seguro (não quebra vínculo com respostas, que são só `questao_id`+`valor`), mas precisa editar os dois arquivos e nunca só um.
+
+### 2026-07-21 — Flag "multi-resposta" por link + série de bugs de UI encontrados e corrigidos
+Implementada a flag `permite_multi_resposta` (ver 4.6) para liberar a trava de 1-resposta-por-dispositivo em notebooks compartilhados. Durante testes reais do usuário, três bugs reais foram encontrados e corrigidos na mesma sessão:
+1. **Toggles (checkbox custom) não respondiam ao clique** — causa raiz: `onclick` no `<label>` que envolve o `<input>` causava DOIS eventos de clique por clique físico (o clique real + o reenvio nativo do navegador pro input associado, que bubbleia de volta pelo label), fazendo `classList.toggle()` cancelar a si mesmo. Afetava os 4 toggles do sistema, incluindo um bug pré-existente em "Questão inversa" não relacionado a esta feature. Fix: lógica movida do `onclick` do label para o `onchange` do input.
+2. **Modal "Novo link" não herdava a empresa ativa/filtrada** — `abrirModalLink()` nunca sincronizava `nl-empresa` com `link-f-empresa` (filtro da tela) ou `_empresaAtiva` (estado global), sempre resetando pra "Selecione...". Gerava links pro cliente errado sem o usuário perceber.
+3. **Botão "Salvar" do modal de empresa travava permanentemente após o 1º uso** — `salvarPerfilCliente()` setava `disabled=true` antes do save mas só revertia no `catch` (erro); no caminho de sucesso o botão ficava travado até recarregar a página inteira. Bug secundário junto: `textContent` apagava o ícone SVG do botão.
+
+Padrão identificado nesta sessão, relevante para código futuro: **sempre incluir os campos novos no `.select()` de retorno de um `insert()`**, e atualizar o objeto local imediatamente — bugs de "campo sumiu até recarregar a página" (badge de link de teste, e o padrão que motivou a checagem no fix de multi-resposta) vêm de esquecer isso.
+
+### 2026-07-22 — Lista de clientes + código curto, referência temporal de ciclos
+1. **Tela "Clientes" — visualização em lista + código curto** (`CLI-001`, `CLI-002`...): grade de cards ficava difícil de escanear com muitos clientes. Adicionado toggle Grade/Lista (reaproveitando `.seg-toggle-group`, mesmo componente já usado no toggle da Análise), busca por nome/CNPJ em tempo real, e código sequencial por tenant via contador dedicado (`tenant_contadores`, ver 4.23) — nunca reaproveitado mesmo com exclusão de cliente (hard delete confirmado).
+2. **Ciclos — referência temporal estruturada**: campo `nome` livre (misturava "2026", "julho/2026", "1ª avaliação") substituído por selects de Mês/Ano obrigatórios na criação, com `nome` gerado automaticamente. Campo `tipo_ciclo` opcional, editável a qualquer momento via select inline (não existia nenhum fluxo de edição de ciclo antes — só criar/excluir). Corrigido bug real de ordenação: Comparativo entre Ciclos e o filtro de ciclo ordenavam por `criado_em` quando `data_inicio` estava vazio, misturando ordem de criação com ordem de período.
+3. Criado checkpoint git (`checkpoint-antes-ciclos-ref-temporal`, tag no commit `3b38c3b`) antes da feature de ciclos, para rollback fácil se necessário.
+4. Ambas migrations aplicadas e validadas em DEV antes de PROD, seguindo o fluxo padrão. Achado de segurança corrigido: `fn_atribuir_numero_cliente` (função de trigger) ficava exposta como RPC público por padrão do Postgres (`EXECUTE` concedido a `PUBLIC` em toda função nova) — `REVOKE` aplicado explicitamente nos dois bancos.
