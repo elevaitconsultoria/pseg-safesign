@@ -12650,7 +12650,7 @@ function confirmarEditUniversal(i) {
 }
 
 // ── IMPORTAÇÃO CSV / EXCEL ──
-let _gheImportCargoSetor = {}; // cargo → setor (do CSV)
+let _gheImportCargoSetor = {}; // cargo → Set(setores) — um cargo pode existir em varios setores
 let _gheImportSetores    = [];
 let _gheImportFuncoes    = [];
 let _gheImportHeadcount  = []; // [{setor, funcao, quantidade}] — calculado no import
@@ -12766,13 +12766,20 @@ function _processarGHEImport(rows) {
     ? [...new Set(rows.map(r => (r[colCargo]||'').trim()).filter(Boolean))].sort()
     : [];
 
-  // Monta mapa cargo → setor a partir dos pares do CSV
+  // Monta mapa cargo → setores (do CSV). Um cargo pode existir em varios
+  // setores diferentes (ex: "Aprendiz Administrativo" em 14 setores) — por
+  // isso o valor e um Set, nao um unico setor. Um mapa 1:1 aqui faria cada
+  // linha nova sobrescrever a anterior, perdendo silenciosamente todos os
+  // vinculos exceto o ultimo lido para aquele nome de cargo.
   _gheImportCargoSetor = {};
   if (colSetor && colCargo) {
     rows.forEach(r => {
       const s = (r[colSetor]||'').trim();
       const c = (r[colCargo]||'').trim();
-      if (c && s) _gheImportCargoSetor[c] = s;
+      if (c && s) {
+        if (!_gheImportCargoSetor[c]) _gheImportCargoSetor[c] = new Set();
+        _gheImportCargoSetor[c].add(s);
+      }
     });
   }
 
@@ -12845,9 +12852,11 @@ function confirmarGHEImport() {
   // Constrói hierarquia a partir do mapa cargo→setor
   const novaHier = {};
   _gheImportSetores.forEach(s => { if (!novaHier[s]) novaHier[s] = []; });
-  Object.entries(_gheImportCargoSetor).forEach(([cargo, setor]) => {
-    if (!novaHier[setor]) novaHier[setor] = [];
-    if (!novaHier[setor].includes(cargo)) novaHier[setor].push(cargo);
+  Object.entries(_gheImportCargoSetor).forEach(([cargo, setoresDoCargo]) => {
+    setoresDoCargo.forEach(setor => {
+      if (!novaHier[setor]) novaHier[setor] = [];
+      if (!novaHier[setor].includes(cargo)) novaHier[setor].push(cargo);
+    });
   });
   // Cargos sem setor → universais
   const novosUniversais = _gheImportFuncoes.filter(f => !_gheImportCargoSetor[f]);
