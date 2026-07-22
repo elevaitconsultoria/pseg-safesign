@@ -520,15 +520,32 @@ function liberarParaProximo() {
 // ══════════════════════════════════════════════════════════
 // GHE — CARREGAR SETORES & FUNÇÕES DA EMPRESA
 // ══════════════════════════════════════════════════════════
+// Supabase/PostgREST limita SELECT a 1000 linhas por padrao, silenciosamente.
+// Empresas com catalogo grande de setores/funcoes poderiam ficar com o
+// dropdown incompleto sem nenhum erro visivel. Pagina com .range() ate
+// esgotar os resultados.
+async function _fetchAllGHE(queryFactory, pageSize = 1000) {
+  let all = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryFactory().range(from, from + pageSize - 1);
+    if (error) return [];
+    all = all.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 async function carregarGHEEmpresa(empId) {
   if (!empId || empId === 'dev-mode') return;
   try {
-    const [resSet, resFun] = await Promise.all([
-      sb.from('empresa_setores').select('id, nome').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
-      sb.from('empresa_funcoes').select('id, nome, setor_id').eq('empresa_id', empId).eq('ativo', true).order('ordem'),
+    const [setRows, funRows] = await Promise.all([
+      _fetchAllGHE(() => sb.from('empresa_setores').select('id, nome').eq('empresa_id', empId).eq('ativo', true).order('ordem')),
+      _fetchAllGHE(() => sb.from('empresa_funcoes').select('id, nome, setor_id').eq('empresa_id', empId).eq('ativo', true).order('ordem')),
     ]);
-    empresaSetores = (resSet.data || []).map(r => ({ id: r.id, nome: r.nome }));
-    empresaFuncoes = (resFun.data || []).map(r => ({ id: r.id, nome: r.nome, setor_id: r.setor_id || null }));
+    empresaSetores = setRows.map(r => ({ id: r.id, nome: r.nome }));
+    empresaFuncoes = funRows.map(r => ({ id: r.id, nome: r.nome, setor_id: r.setor_id || null }));
   } catch(e) {
     empresaSetores = [];
     empresaFuncoes = [];

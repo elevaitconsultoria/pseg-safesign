@@ -4640,6 +4640,25 @@ let _cpLogoBase64 = '';  // logo carregado no modal de perfil
 let _empresasViewMode = localStorage.getItem('pseg_empresas_view') || 'grade';
 let _ciclos   = []; // [{id, nome, empresa_id}]
 
+// Supabase/PostgREST limita SELECT a 1000 linhas por padrao — silenciosamente,
+// sem erro. Usado nas cargas cross-empresa (setores/funcoes de TODO o tenant
+// de uma vez, sem filtro de empresa_id) que podem passar disso com a base
+// crescendo. queryFactory deve retornar um query builder NOVO a cada chamada
+// (nao uma promise ja disparada), pois o builder do supabase-js so pode ser
+// usado uma vez.
+async function _fetchAllSupabase(queryFactory, pageSize = 1000) {
+  let all = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryFactory().range(from, from + pageSize - 1);
+    if (error) return { data: all, error };
+    all = all.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: all, error: null };
+}
+
 async function carregarEmpresas() {
   if (isDemoMode) {
     _empresas = [
@@ -4663,8 +4682,12 @@ async function carregarEmpresas() {
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
       (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true)).order('nome'),
       (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada')).order('criado_em', { ascending: false }),
-      (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true)).order('empresa_id').order('ordem'),
-      (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true)).order('empresa_id').order('ordem'),
+      _fetchAllSupabase(() => tid
+        ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
+        : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).order('empresa_id').order('ordem')),
+      _fetchAllSupabase(() => tid
+        ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
+        : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).order('empresa_id').order('ordem')),
     ]);
     _empresas = (emps || []).map(emp => {
       const empSetores = (setData || []).filter(r => r.empresa_id === emp.id);
@@ -12627,7 +12650,7 @@ function confirmarEditUniversal(i) {
 }
 
 // ── IMPORTAÇÃO CSV / EXCEL ──
-let _gheImportCargoSetor = {}; // cargo → setor (do CSV)
+let _gheImportCargoSetor = {}; // cargo → Set(setores) — um cargo pode existir em varios setores
 let _gheImportSetores    = [];
 let _gheImportFuncoes    = [];
 let _gheImportHeadcount  = []; // [{setor, funcao, quantidade}] — calculado no import
@@ -12665,15 +12688,44 @@ function importarGHEArquivo(input) {
 }
 
 function _parseGHECSV(text) {
-  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  // detecta delimitador: ; ou ,
-  const delim = lines[0].includes(';') ? ';' : ',';
-  const headers = lines[0].split(delim).map(h => h.trim().replace(/^"|"$/g, ''));
-  return lines.slice(1).map(line => {
-    const vals = line.split(delim).map(v => v.trim().replace(/^"|"$/g, ''));
-    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
-  }).filter(r => Object.values(r).some(v => v));
+  const clean = text.replace(/\r/g, '');
+  // detecta delimitador pela primeira linha
+  const delim = (clean.split('\n')[0] || '').includes(';') ? ';' : ',';
+
+  // Parser char-a-char respeitando aspas — evita quebrar linhas quando um
+  // valor (ex: nome de setor) contém o proprio delimitador ou uma quebra
+  // de linha dentro de aspas, o que faria a divisao ingenua por split()
+  // deslocar colunas silenciosamente (setor vira cargo, cargo vira
+  // quantidade etc.) sem nenhum erro visivel.
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < clean.length; i++) {
+    const c = clean[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (clean[i+1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === delim) {
+      row.push(field); field = '';
+    } else if (c === '\n') {
+      row.push(field); rows.push(row); row = []; field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+
+  const linhas = rows.filter(r => r.some(v => v.trim()));
+  if (linhas.length < 2) return [];
+  const headers = linhas[0].map(h => h.trim());
+  return linhas.slice(1).map(vals =>
+    Object.fromEntries(headers.map((h, i) => [h, (vals[i] || '').trim()]))
+  ).filter(r => Object.values(r).some(v => v));
 }
 
 function _detectarColuna(headers, candidatos) {
@@ -12714,13 +12766,20 @@ function _processarGHEImport(rows) {
     ? [...new Set(rows.map(r => (r[colCargo]||'').trim()).filter(Boolean))].sort()
     : [];
 
-  // Monta mapa cargo → setor a partir dos pares do CSV
+  // Monta mapa cargo → setores (do CSV). Um cargo pode existir em varios
+  // setores diferentes (ex: "Aprendiz Administrativo" em 14 setores) — por
+  // isso o valor e um Set, nao um unico setor. Um mapa 1:1 aqui faria cada
+  // linha nova sobrescrever a anterior, perdendo silenciosamente todos os
+  // vinculos exceto o ultimo lido para aquele nome de cargo.
   _gheImportCargoSetor = {};
   if (colSetor && colCargo) {
     rows.forEach(r => {
       const s = (r[colSetor]||'').trim();
       const c = (r[colCargo]||'').trim();
-      if (c && s) _gheImportCargoSetor[c] = s;
+      if (c && s) {
+        if (!_gheImportCargoSetor[c]) _gheImportCargoSetor[c] = new Set();
+        _gheImportCargoSetor[c].add(s);
+      }
     });
   }
 
@@ -12793,9 +12852,11 @@ function confirmarGHEImport() {
   // Constrói hierarquia a partir do mapa cargo→setor
   const novaHier = {};
   _gheImportSetores.forEach(s => { if (!novaHier[s]) novaHier[s] = []; });
-  Object.entries(_gheImportCargoSetor).forEach(([cargo, setor]) => {
-    if (!novaHier[setor]) novaHier[setor] = [];
-    if (!novaHier[setor].includes(cargo)) novaHier[setor].push(cargo);
+  Object.entries(_gheImportCargoSetor).forEach(([cargo, setoresDoCargo]) => {
+    setoresDoCargo.forEach(setor => {
+      if (!novaHier[setor]) novaHier[setor] = [];
+      if (!novaHier[setor].includes(cargo)) novaHier[setor].push(cargo);
+    });
   });
   // Cargos sem setor → universais
   const novosUniversais = _gheImportFuncoes.filter(f => !_gheImportCargoSetor[f]);
@@ -12885,7 +12946,24 @@ async function salvarGHE() {
     toast(`GHE salvo: ${setores.length} setor(es), ${funcoes.length} cargo(s).`, 'g');
   } else {
     try {
-      // Salvaguarda: não apagar um catálogo de setores existente ao salvar uma
+      // Salvaguarda 1: bloqueia save totalmente vazio (nem setor nem cargo) se já
+      // existir catálogo cadastrado — sem isso, o delete abaixo roda incondicionalmente
+      // e nada é reinserido, apagando o catálogo inteiro com "sucesso" falso na tela.
+      // Cenário real: arquivo errado, planilha vazia, ou coluna não reconhecida.
+      if (setorNomes.length === 0 && todosCargos.length === 0) {
+        const { count: setoresDB } = await sbAdmin
+          .from('empresa_setores').select('id', { count: 'exact', head: true })
+          .eq('empresa_id', empId);
+        const { count: funcoesDB } = await sbAdmin
+          .from('empresa_funcoes').select('id', { count: 'exact', head: true })
+          .eq('empresa_id', empId);
+        if ((setoresDB || 0) > 0 || (funcoesDB || 0) > 0) {
+          toast(`Nenhum setor ou cargo detectado na estrutura atual — save bloqueado para não apagar o catálogo existente (${setoresDB||0} setor(es), ${funcoesDB||0} cargo(s)). Confira o arquivo importado.`, 'w', 6000);
+          return;
+        }
+      }
+
+      // Salvaguarda 2: não apagar um catálogo de setores existente ao salvar uma
       // estrutura sem setores (tudo universal) — causa comum de "cargos caírem
       // no universal" quando a coluna de setor do arquivo não foi reconhecida.
       if (setorNomes.length === 0 && todosCargos.length > 0) {
