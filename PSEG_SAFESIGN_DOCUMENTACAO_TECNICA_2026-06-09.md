@@ -744,9 +744,26 @@ Tela de tela cheia (96vw × 92vh) para consultores cadastrarem a estrutura organ
 ### Salvaguardas implementadas
 
 - Guard nulo em `abrirModalGHE`, `mudarEmpresaGHE`, `salvarGHE` (garante empresa_id real)
-- Wipe safeguard: não limpa setores/cargos se import vier vazio
+- Wipe safeguard 1 (2026-07-22): bloqueia `salvarGHE()` **sem opção de confirmar** quando a estrutura atual está totalmente vazia (nem setor nem cargo) e já existe catálogo no banco — evita apagar tudo com "sucesso" falso na tela quando a coluna do arquivo não é reconhecida
+- Wipe safeguard 2 (pré-existente): quando setores vêm vazios mas cargos existem (tudo cairia em "universal"), pede confirmação antes de substituir
 - Race condition: captura `empId = _gheEmpresaId` antes dos awaits assíncronos
 - Erro de headcount: lança exception visível (não engole silenciosamente)
+- `_parseGHECSV` (2026-07-22): parser char-a-char respeitando aspas (RFC4180-like) — antes fazia `split()` ingênuo por delimitador, corrompendo linhas silenciosamente quando um valor de setor/cargo continha o próprio delimitador entre aspas. Só afetava `.csv`; `.xlsx`/`.xls` sempre usou `XLSX.utils.sheet_to_json`, que já tratava aspas corretamente
+- `_gheImportCargoSetor` (2026-07-22): mapa cargo→setor **mudou de 1:1 para 1:N** (`Set` de setores). Antes, um cargo genérico existindo em vários setores da planilha (ex: "Aprendiz Administrativo" em 14 setores) só ficava vinculado ao ÚLTIMO setor lido — cada linha nova sobrescrevia a anterior no mapa. Ver seção 17 (22/07) para o caso real que expôs o bug
+
+### Investigação de GAP de importação (2026-07-22)
+
+Cliente reportou setores/cargos importados não aparecendo no formulário. Comparação exata (planilha original × banco) confirmou:
+- **Setores: sempre 100% corretos.** Nenhuma perda de setor foi encontrada em nenhuma empresa auditada.
+- **Cargos: perda real**, causada pelo bug do `_gheImportCargoSetor` acima — cargos que se repetem em múltiplos setores na planilha só chegavam a UM setor no banco.
+- **Não existe agrupamento automático** ("agrupamento de setores") durante import — o campo `grupo` de `empresa_setores` só é preenchido manualmente ou via botão opt-in "Sugerir grupos" (`_gheSugerirGrupos`), nunca automaticamente no fluxo de import.
+
+**Metodologia de auditoria** (reaproveitável para futuras investigações de gap): extrair pares únicos `(setor, cargo)` da planilha original via `openpyxl` em Python, comparar com `SELECT es.nome, ef.nome FROM empresa_setores es LEFT JOIN empresa_funcoes ef ON ef.setor_id=es.id WHERE es.empresa_id=...` no banco — diff de conjuntos revela exatamente o que falta, sem depender de contagem de linhas (que sempre diverge, já que a planilha tem 1 linha por funcionário e o catálogo é deduplicado).
+
+**Empresas com dados incompletos no banco no momento da correção** (precisam reimportar a planilha original para corrigir os cargos que faltam, já que o bug era write-time, não corrompeu o que já foi salvo corretamente):
+- **Udinese** — 71 pares setor-cargo faltando (de 200)
+- **Assa Abloy (Shared Services)** — 15 pares faltando (de 163), incluindo "Suporte Tecnico a Vendas" totalmente sem cargo
+- **ELEVA IT CONSULTORIA** — caso mais severo, não relacionado a este bug: `empresa_setores`/`empresa_funcoes` zerados por completo (ver seção 17, pendência antiga desde 14/07, agravada por um wipe total sem aviso corrigido pela salvaguarda 1 acima)
 
 ---
 
@@ -881,7 +898,9 @@ ORDER BY l.criado_em DESC;
 
 | Item | Ambiente | Prioridade | Observação |
 |------|----------|-----------|------------|
-| Reimportar catálogo ELEVA IT CONSULTORIA | PROD | Média | 0 setores, 98 funções universais — não afeta outros clientes |
+| Reimportar catálogo ELEVA IT CONSULTORIA | PROD | Média | `empresa_setores`/`empresa_funcoes` zerados por completo (não só universais como antes — agravado por um wipe total sem aviso, corrigido em 22/07) — não afeta outros clientes |
+| Reimportar planilha da Udinese | PROD | Alta | 71 pares setor-cargo faltando por causa do bug do `_gheImportCargoSetor` (corrigido 22/07) — dados antigos no banco continuam incompletos até reimportar |
+| Reimportar planilha da Assa Abloy (Shared Services) | PROD | Alta | 15 pares faltando, mesmo motivo acima — inclui "Suporte Tecnico a Vendas" sem nenhum cargo |
 | Alinhar policies de `questoes/questionarios/questionario_questoes` DEV | DEV | Média | DEV permite qualquer autenticado escrever (PROD só super_admin) — não reverificado desde 2026-07-14, confirmar antes de agir |
 | Teste e2e onboarding nova EST | DEV | Produto | |
 
@@ -903,6 +922,9 @@ ORDER BY l.criado_em DESC;
 | Cargos todos como universais após import | Coluna de setor não reconhecida na planilha | Cabeçalho deve ter: setor, depto, área, lotação, etc. |
 | Toggle/checkbox custom "não responde ao clique" (liga e desliga sozinho) | `onclick` no `<label>` que envolve um `<input>` — 1 clique físico gera 2 eventos (o real + o reenvio nativo do navegador pro input associado) | Nunca colocar a lógica de toggle no `onclick` do label; usar `onchange` do `<input>` (dispara 1x por interação real) |
 | Campo recém-criado via `insert()` "some" da UI até recarregar a página | `.select()` de retorno do insert não incluía o campo novo, e/ou o objeto local (array em memória) não foi atualizado com ele | Sempre incluir TODOS os campos novos no `.select()` pós-insert e atualizar o objeto local imediatamente, não só o banco |
+| Import GHE: cargo genérico (ex: "Aprendiz Administrativo") aparece só em 1 setor no banco, mas existe em vários na planilha | `_gheImportCargoSetor` era um mapa 1:1 (cargo→setor); cada linha nova com o mesmo cargo sobrescrevia a anterior | Corrigido 22/07: mapa agora é cargo→`Set` de setores. Empresas importadas antes disso precisam reimportar a planilha |
+| Import GHE: linha de setor/cargo corrompida silenciosamente (colunas deslocadas) num arquivo `.csv` | `_parseGHECSV` fazia `split()` ingênuo por delimitador; um valor entre aspas contendo o próprio delimitador (ex: `"Produção, Turno A"`) quebrava o alinhamento das colunas seguintes | Corrigido 22/07: parser char-a-char respeitando aspas. Só afetava `.csv` — `.xlsx`/`.xls` sempre foi seguro |
+| Import GHE apaga catálogo inteiro de setores/cargos com toast de "sucesso" | `salvarGHE()` sempre fazia DELETE antes de INSERT; se a estrutura vinda do import estivesse totalmente vazia (nem setor nem cargo — arquivo errado, coluna não reconhecida), nada era reinserido depois do DELETE | Corrigido 22/07: nova salvaguarda bloqueia o save (sem opção de confirmar) quando tudo vem vazio e já existe catálogo — mostra aviso em vez de apagar. Sem soft-delete, dados apagados antes desta correção não são recuperáveis (caso real: ELEVA IT CONSULTORIA) |
 
 ---
 
@@ -942,3 +964,12 @@ Padrão identificado nesta sessão, relevante para código futuro: **sempre incl
 2. **Ciclos — referência temporal estruturada**: campo `nome` livre (misturava "2026", "julho/2026", "1ª avaliação") substituído por selects de Mês/Ano obrigatórios na criação, com `nome` gerado automaticamente. Campo `tipo_ciclo` opcional, editável a qualquer momento via select inline (não existia nenhum fluxo de edição de ciclo antes — só criar/excluir). Corrigido bug real de ordenação: Comparativo entre Ciclos e o filtro de ciclo ordenavam por `criado_em` quando `data_inicio` estava vazio, misturando ordem de criação com ordem de período.
 3. Criado checkpoint git (`checkpoint-antes-ciclos-ref-temporal`, tag no commit `3b38c3b`) antes da feature de ciclos, para rollback fácil se necessário.
 4. Ambas migrations aplicadas e validadas em DEV antes de PROD, seguindo o fluxo padrão. Achado de segurança corrigido: `fn_atribuir_numero_cliente` (função de trigger) ficava exposta como RPC público por padrão do Postgres (`EXECUTE` concedido a `PUBLIC` em toda função nova) — `REVOKE` aplicado explicitamente nos dois bancos.
+
+### 2026-07-22 (continuação) — Investigação e correção do GAP de importação GHE
+Usuário reportou setores/cargos importados não aparecendo completos no formulário, e enviou as planilhas originais de Udinese e Assa Abloy (Shared Services) para conferência. Metodologia: extrair pares únicos `(setor, cargo)` da planilha via Python/openpyxl e comparar por diff de conjuntos contra o banco (ver seção 11 para a query). Resultado: setores sempre 100% corretos; **não existe agrupamento automático** de setores no import (hipótese inicial do usuário, descartada — `grupo` só é preenchido manualmente ou via botão opt-in "Sugerir grupos"). Três bugs reais encontrados e corrigidos no pipeline de import (`pseg-admin-questionario.html`, funções `_processarGHEImport`/`confirmarGHEImport`/`salvarGHE`/`_parseGHECSV`):
+
+1. **Bug principal, explica o GAP reportado**: `_gheImportCargoSetor` era um mapa 1:1 cargo→setor; um cargo genérico existindo em vários setores na planilha (ex: "Aprendiz Administrativo" em 14 setores da Udinese) só ficava vinculado ao ÚLTIMO setor lido — cada linha nova sobrescrevia a anterior. Fix: mapa virou cargo→`Set` de setores. Validado reprocessando os 464 funcionários reais da planilha da Udinese pelo pipeline corrigido: resultado bateu exatamente 200/200 pares esperados (contra 129 que estavam no banco).
+2. **Achado durante a mesma investigação, não relacionado ao GAP reportado mas com o mesmo padrão de risco**: `salvarGHE()` sempre fazia DELETE incondicional de `empresa_setores`/`empresa_funcoes` antes de reinserir; se a estrutura do import viesse totalmente vazia (nem setor nem cargo — arquivo errado, coluna não reconhecida), nada era reinserido depois do delete, e a tela mostrava "GHE salvo com sucesso!" — falso positivo. Isso explica por que **ELEVA IT CONSULTORIA** tinha `empresa_funcoes` zerado (antes eram 98 cargos "universais", já um problema conhecido desde 14/07 — algo apagou até isso). Fix: nova salvaguarda bloqueia o save (sem opção de confirmar, diferente da salvaguarda parcial já existente) quando tudo vem vazio e já existe catálogo no banco.
+3. **`_parseGHECSV` reescrito** com parser char-a-char respeitando aspas — o `split()` ingênuo por delimitador quebrava silenciosamente o alinhamento de colunas quando um valor continha o próprio delimitador entre aspas. Só afetava `.csv`.
+
+**Pendência real deixada**: Udinese e Assa Abloy (Shared Services) precisam ser **reimportadas** — o bug era write-time (corrompia o que era salvo), não fez os dados já salvos ficarem inconsistentes de outra forma, mas os dados já salvos continuam incompletos até rodar o import de novo com o código corrigido. ELEVA IT também precisa de reimport (pendência antiga, sem dado pra recuperar — sem soft-delete).
