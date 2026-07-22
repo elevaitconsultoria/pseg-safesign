@@ -3314,7 +3314,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </button>
     </div>
   </div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+    <input type="text" id="emp-busca" placeholder="Buscar por nome ou CNPJ..." oninput="renderTelaEmpresas()"
+      style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Inter',sans-serif">
+    <div class="seg-toggle-group">
+      <button id="empbtn-grade" onclick="_setEmpresasViewMode('grade')">Grade</button>
+      <button id="empbtn-lista" onclick="_setEmpresasViewMode('lista')">Lista</button>
+    </div>
+  </div>
   <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+  <div id="empresas-lista" style="display:none;flex-direction:column;gap:8px"></div>
 </div>
 
 
@@ -4611,9 +4620,10 @@ const SETORES_DEMO  = ['Administrativo','Produção A','Produção B','Engenhari
 const FUNCOES_DEMO  = ['Operador','Técnico','Assistente','Supervisor','Engenheiro','Analista','Gerente'];
 
 // Cache de empresas carregadas do Supabase
-let _empresas = []; // [{id, nome, cnpj, razao_social, endereco, contato, logo_base64, ativo}]
+let _empresas = []; // [{id, nome, cnpj, razao_social, endereco, contato, logo_base64, ativo, numero_cliente}]
 let _cpEmpresaId = null; // empresa sendo editada no modal de perfil
 let _cpLogoBase64 = '';  // logo carregado no modal de perfil
+let _empresasViewMode = localStorage.getItem('pseg_empresas_view') || 'grade';
 let _ciclos   = []; // [{id, nome, empresa_id}]
 
 async function carregarEmpresas() {
@@ -4637,7 +4647,7 @@ async function carregarEmpresas() {
   try {
     const tid = _supportMode && _supportTenant?.id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
-      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo').eq('ativo',true)).order('nome'),
+      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true)).order('nome'),
       (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
       (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true)).order('empresa_id').order('ordem'),
       (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true)).order('empresa_id').order('ordem'),
@@ -10692,33 +10702,77 @@ function entrarModoDemo() {
 // ══════════════════════════════════════════
 // TELA EMPRESAS
 // ══════════════════════════════════════════
+// Normaliza texto para busca (minúsculas, sem acento)
+function _normEmpBusca(s) {
+  return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+// Calcula métricas/status compartilhados entre grade e lista
+function _calcMetricasEmpresa(emp) {
+  const linksEmp  = _links.filter(l => l.empresa_id === emp.id);
+  const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
+  const linksAtiv = linksEmp.filter(l => l.ativo).length;
+  const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
+  const nSetores  = (emp.setores || []).length;
+  const nFuncoes  = (emp.funcoes || []).length;
+  const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
+  const codigo    = emp.numero_cliente ? `CLI-${String(emp.numero_cliente).padStart(3,'0')}` : '';
+
+  let status, statusBg, statusColor;
+  if (!linksAtiv)       { status='Sem links'; statusBg='var(--bg)'; statusColor='var(--tl)'; }
+  else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
+  else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
+
+  return { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nFuncoes, nomeEsc, codigo, status, statusBg, statusColor };
+}
+
+function _setEmpresasViewMode(mode) {
+  _empresasViewMode = mode;
+  try { localStorage.setItem('pseg_empresas_view', mode); } catch(e) {}
+  renderTelaEmpresas();
+}
+
 function renderTelaEmpresas() {
-  const grid = document.getElementById('empresas-grid');
-  if (!grid) return;
+  const grid  = document.getElementById('empresas-grid');
+  const lista = document.getElementById('empresas-lista');
+  if (!grid || !lista) return;
+
+  const btnGrade = document.getElementById('empbtn-grade');
+  const btnLista = document.getElementById('empbtn-lista');
+  if (btnGrade) btnGrade.classList.toggle('stg-active', _empresasViewMode === 'grade');
+  if (btnLista) btnLista.classList.toggle('stg-active', _empresasViewMode === 'lista');
+  grid.style.display  = _empresasViewMode === 'grade' ? 'grid' : 'none';
+  lista.style.display = _empresasViewMode === 'lista' ? 'flex' : 'none';
 
   if (!_empresas.length) {
-    grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
+    const vazio = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 12px;display:block"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente cadastrado</div>
       <div style="font-size:12px;margin-bottom:16px">Cadastre a primeira empresa cliente para iniciar.</div>
       <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Nova empresa</button>
     </div>`;
+    grid.innerHTML = vazio;
+    lista.innerHTML = vazio;
     return;
   }
 
-  grid.innerHTML = _empresas.map(emp => {
-    const linksEmp  = _links.filter(l => l.empresa_id === emp.id);
-    const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
-    const linksAtiv = linksEmp.filter(l => l.ativo).length;
-    const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
-    const nSetores  = (emp.setores || []).length;
-    const nFuncoes  = (emp.funcoes || []).length;
-    const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
+  const termo = _normEmpBusca(document.getElementById('emp-busca')?.value);
+  const filtradas = termo
+    ? _empresas.filter(emp => _normEmpBusca(emp.nome).includes(termo) || _normEmpBusca(emp.cnpj).includes(termo))
+    : _empresas;
 
-    let status, statusBg, statusColor;
-    if (!linksAtiv)       { status='Sem links'; statusBg='var(--bg)'; statusColor='var(--tl)'; }
-    else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
-    else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
+  if (!filtradas.length) {
+    const semResultado = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente encontrado</div>
+      <div style="font-size:12px">Tente buscar por outro nome ou CNPJ.</div>
+    </div>`;
+    grid.innerHTML = semResultado;
+    lista.innerHTML = semResultado;
+    return;
+  }
+
+  grid.innerHTML = filtradas.map(emp => {
+    const { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo, status, statusBg, statusColor } = _calcMetricasEmpresa(emp);
 
     const avatarHtml = emp.logo_base64
       ? `<div style="width:40px;height:40px;border-radius:8px;background:white;border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:3px">
@@ -10734,7 +10788,10 @@ function renderTelaEmpresas() {
           <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
             ${avatarHtml}
             <div style="min-width:0;flex:1">
-              <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
+                ${codigo ? `<span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;flex-shrink:0">${codigo}</span>` : ''}
+              </div>
               <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
             </div>
           </div>
@@ -10785,6 +10842,42 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           Excluir
         </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (_empresasViewMode === 'lista') _renderEmpresasLista(filtradas);
+}
+
+function _renderEmpresasLista(filtradas) {
+  const lista = document.getElementById('empresas-lista');
+  if (!lista) return;
+
+  const btn = (title, svg, onclick, extraStyle) => `<button class="btn btn-ghost" title="${title}" style="padding:5px 7px;${extraStyle||''}" onclick="${onclick}">${svg}</button>`;
+
+  lista.innerHTML = filtradas.map(emp => {
+    const { linksAtiv, respTotal, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp } = _calcMetricasEmpresa(emp);
+
+    return `<div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="emp-row-${emp.id}">
+      <span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;min-width:56px;text-align:center">${codigo||'—'}</span>
+      <div style="min-width:0;flex:1 1 220px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
+        <div style="font-size:11px;color:var(--tl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.cnpj||'Sem CNPJ'}</div>
+      </div>
+      <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
+        <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
+        <span title="Respostas"><strong>${respTotal}</strong> resp.</span>
+        <span title="Setores"><strong>${nSetores}</strong> set.</span>
+        <span title="Ciclos"><strong>${ciclosEmp.length}</strong> cic.</span>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;margin-left:auto">
+        ${btn('Configurar', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', `abrirModalClientePerfil('${emp.id}')`)}
+        ${btn('Setores', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', `abrirModalGHE('${emp.id}')`)}
+        ${btn('Ciclos', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', `abrirModalCiclo('${emp.id}')`)}
+        ${btn('Links', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>', `goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)`)}
+        ${btn('Resultados', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', `setEmpresaAtiva('${emp.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))`)}
+        ${btn('Excluir', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>', `excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})`, 'color:var(--red);border-color:transparent')}
       </div>
     </div>`;
   }).join('');
