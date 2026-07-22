@@ -3362,9 +3362,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div id="ciclos-list" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Novo ciclo</div>
-      <div class="field" style="margin-bottom:10px">
-        <label>Nome do ciclo <span style="color:var(--red)">*</span></label>
-        <input type="text" id="nc-nome" placeholder="Ex: PGR 2025/1" onkeydown="if(event.key==='Enter')salvarCiclo()"/>
+      <div class="g2" style="margin-bottom:10px">
+        <div class="field">
+          <label>Mês de referência <span style="color:var(--red)">*</span></label>
+          <select id="nc-mes">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+            <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+            <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ano de referência <span style="color:var(--red)">*</span></label>
+          <select id="nc-ano"></select>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-bottom:10px">
+        💡 Refere-se ao período que a coleta representa — não precisa ser o mês atual. O nome do ciclo é gerado automaticamente a partir disso.
       </div>
       <div class="g2" style="margin-bottom:10px">
         <div class="field">
@@ -4637,9 +4651,9 @@ async function carregarEmpresas() {
        funcoes: ['Analista Jr','Analista Pl','Analista Sr','Assistente','Gerente','Técnico(a)','Operador(a)','Supervisor(a)']},
     ];
     _ciclos = [
-      {id:'c1', nome:'PGR — Ciclo 2025/1',   empresa_id:'abc'},
-      {id:'c2', nome:'PGR — Ciclo 2025/2',   empresa_id:'abc'},
-      {id:'c3', nome:'Avaliação Inicial 2025',empresa_id:'xyz'},
+      {id:'c1', nome:'PGR — Ciclo 2025/1',   empresa_id:'abc', ano_referencia:2025, mes_referencia:3, tipo_ciclo:'1º Semestre', referencia_estimada:false},
+      {id:'c2', nome:'PGR — Ciclo 2025/2',   empresa_id:'abc', ano_referencia:2025, mes_referencia:9, tipo_ciclo:'2º Semestre', referencia_estimada:false},
+      {id:'c3', nome:'Avaliação Inicial 2025',empresa_id:'xyz', ano_referencia:2025, mes_referencia:1, tipo_ciclo:'Linha de Base', referencia_estimada:false},
     ];
     popularSelectsEmpresas();
     return;
@@ -4648,7 +4662,7 @@ async function carregarEmpresas() {
     const tid = _supportMode && _supportTenant?.id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
       (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true)).order('nome'),
-      (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao')).order('criado_em', { ascending: false }),
+      (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada')).order('criado_em', { ascending: false }),
       (tid ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true)).order('empresa_id').order('ordem'),
       (tid ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true)).order('empresa_id').order('ordem'),
     ]);
@@ -10888,6 +10902,9 @@ function _renderEmpresasLista(filtradas) {
 // ══════════════════════════════════════════
 let _cicloEmpresaId = null;
 
+const MES_NOME_CICLO = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const TIPOS_CICLO = ['Não classificado','Linha de Base','1º Semestre','2º Semestre','Reavaliação Anual','Pós-Mudança Organizacional'];
+
 function abrirModalCiclo(empresaId) {
   // Popular select de empresa
   const sel = document.getElementById('ciclo-empresa-sel');
@@ -10896,7 +10913,16 @@ function abrirModalCiclo(empresaId) {
       _empresas.map(e => `<option value="${e.id}"${e.id===empresaId?' selected':''}>${e.nome}</option>`).join('');
   }
   _cicloEmpresaId = empresaId || null;
-  document.getElementById('nc-nome').value = '';
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const anoSel = document.getElementById('nc-ano');
+  if (anoSel) {
+    anoSel.innerHTML = '';
+    for (let a = anoAtual - 2; a <= anoAtual + 2; a++) {
+      anoSel.innerHTML += `<option value="${a}"${a===anoAtual?' selected':''}>${a}</option>`;
+    }
+  }
+  document.getElementById('nc-mes').value = String(hoje.getMonth() + 1);
   document.getElementById('nc-data-inicio').value = '';
   document.getElementById('nc-data-fim').value = '';
   const sub = document.getElementById('ciclo-empresa-sub');
@@ -10930,41 +10956,70 @@ function renderCiclosModal(empresaId) {
   list.innerHTML = ciclosEmp.map(c => {
     const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : null;
     const dts = [fmt(c.data_inicio), fmt(c.data_fim)].filter(Boolean).join(' – ');
+    const tipoAtual = c.tipo_ciclo || 'Não classificado';
     return `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)">
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--tx)">${c.nome}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);gap:8px;flex-wrap:wrap">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--tx);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${c.nome}
+          ${c.referencia_estimada ? '<span style="font-size:9px;font-weight:700;color:var(--amber);background:var(--amberbg);border-radius:4px;padding:1px 5px" title="Mês/ano inferidos automaticamente — confira se está correto">⏱ estimado</span>' : ''}
+          ${tipoAtual === 'Não classificado' ? '<span style="font-size:9px;font-weight:700;color:var(--tl);background:white;border:1px solid var(--border);border-radius:4px;padding:1px 5px">Não classificado</span>' : ''}
+        </div>
         ${dts ? `<div style="font-size:10px;color:#6b7280;margin-top:1px">📅 ${dts}</div>` : ''}
+        <select onchange="atualizarTipoCiclo('${c.id}',this.value)" style="margin-top:5px;font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;color:var(--tm)">
+          ${TIPOS_CICLO.map(t => `<option value="${t}"${t===tipoAtual?' selected':''}>${t}</option>`).join('')}
+        </select>
       </div>
-      <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px" title="Remover">&times;</button>
+      <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px;flex-shrink:0" title="Remover">&times;</button>
     </div>`;
   }).join('');
 }
 
+async function atualizarTipoCiclo(cicloId, novoTipo) {
+  const ciclo = _ciclos.find(c => c.id === cicloId);
+  if (!ciclo) return;
+  const tipoAnterior = ciclo.tipo_ciclo;
+  ciclo.tipo_ciclo = novoTipo;
+  renderCiclosModal(_cicloEmpresaId);
+  if (isDemoMode) { toast('Classificação atualizada (demo).', 'g'); return; }
+  try {
+    const { error } = await sbAdmin.from('ciclos').update({ tipo_ciclo: novoTipo }).eq('id', cicloId);
+    if (error) throw error;
+    toast('Classificação atualizada.', 'g');
+  } catch(e) {
+    ciclo.tipo_ciclo = tipoAnterior;
+    renderCiclosModal(_cicloEmpresaId);
+    toast('Erro ao atualizar: ' + e.message, 'w');
+  }
+}
+
 async function salvarCiclo() {
   if (!_cicloEmpresaId) { toast('Selecione um cliente.', 'w'); return; }
-  const nome       = document.getElementById('nc-nome').value.trim();
+  const mes        = parseInt(document.getElementById('nc-mes').value);
+  const ano        = parseInt(document.getElementById('nc-ano').value);
   const dataInicio = document.getElementById('nc-data-inicio').value || null;
   const dataFim    = document.getElementById('nc-data-fim').value || null;
-  if (!nome) { toast('Informe o nome do ciclo.', 'w'); return; }
+  if (!mes || !ano) { toast('Selecione o mês e o ano de referência.', 'w'); return; }
+  const nome = `Avaliação — ${MES_NOME_CICLO[mes]} ${ano}`;
 
   if (isDemoMode) {
-    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim };
+    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
+                   ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false };
     _ciclos.unshift(novo);
     popularSelectsEmpresas();
     toast('Ciclo criado!', 'g');
   } else {
     try {
       const { data, error } = await sbAdmin.from('ciclos')
-        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim, tenant_id: currentTenantId })
-        .select('id,nome,empresa_id,data_inicio,data_fim').single();
+        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
+                  ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false, tenant_id: currentTenantId })
+        .select('id,nome,empresa_id,data_inicio,data_fim,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').single();
       if (error) throw error;
       _ciclos.unshift(data);
       popularSelectsEmpresas();
       toast('Ciclo criado!', 'g');
     } catch(e) { toast('Erro: ' + e.message, 'w'); return; }
   }
-  document.getElementById('nc-nome').value = '';
   document.getElementById('nc-data-inicio').value = '';
   document.getElementById('nc-data-fim').value = '';
   renderCiclosModal(_cicloEmpresaId);
@@ -13146,16 +13201,30 @@ function preencherSelectEmpresas(selId) {
   if (cur) sel.value = cur;
 }
 
+// Ordena ciclos pelo periodo que representam (ano/mes de referencia), nao
+// por quando foram criados no sistema. criado_em/data_inicio so entram como
+// fallback para os raros ciclos sem os campos novos preenchidos.
+function _ordenarCiclosPorPeriodo(lista) {
+  return [...lista].sort((a, b) => {
+    const chaveA = (a.ano_referencia != null && a.mes_referencia != null)
+      ? a.ano_referencia * 100 + a.mes_referencia
+      : null;
+    const chaveB = (b.ano_referencia != null && b.mes_referencia != null)
+      ? b.ano_referencia * 100 + b.mes_referencia
+      : null;
+    if (chaveA != null && chaveB != null) return chaveA - chaveB;
+    const da = a.data_inicio || a.criado_em || '';
+    const db = b.data_inicio || b.criado_em || '';
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+}
+
 function preencherSelectCiclos(selId, empId) {
   const sel = document.getElementById(selId);
   if (!sel) return;
   sel.innerHTML = '<option value="">Todos os ciclos</option>';
   if (!empId) return;
-  _ciclos.filter(c => c.empresa_id === empId).sort((a,b) => {
-    const da = a.data_inicio || a.criado_em || '';
-    const db = b.data_inicio || b.criado_em || '';
-    return da < db ? -1 : da > db ? 1 : 0;
-  }).forEach(c => {
+  _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId)).forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.id; opt.textContent = c.nome;
     sel.appendChild(opt);
@@ -13178,11 +13247,7 @@ async function renderComparativo() {
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Carregando dados dos ciclos…</div></div>';
 
   // Buscar todos os ciclos da empresa
-  const ciclos = _ciclos.filter(c => c.empresa_id === empId).sort((a,b) => {
-    const da = a.data_inicio || a.criado_em || '';
-    const db = b.data_inicio || b.criado_em || '';
-    return da < db ? -1 : da > db ? 1 : 0;
-  });
+  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
 
   if (ciclos.length < 2) {
     panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) cadastrado(s).</div></div>';
