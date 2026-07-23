@@ -544,7 +544,8 @@ async function carregarGHEEmpresa(empId) {
       _fetchAllGHE(() => sb.from('empresa_setores').select('id, nome').eq('empresa_id', empId).eq('ativo', true).order('ordem')),
       _fetchAllGHE(() => sb.from('empresa_funcoes').select('id, nome, setor_id').eq('empresa_id', empId).eq('ativo', true).order('ordem')),
     ]);
-    empresaSetores = setRows.map(r => ({ id: r.id, nome: r.nome }));
+    empresaSetores = setRows.map(r => ({ id: r.id, nome: r.nome }))
+                             .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     empresaFuncoes = funRows.map(r => ({ id: r.id, nome: r.nome, setor_id: r.setor_id || null }));
   } catch(e) {
     empresaSetores = [];
@@ -565,7 +566,8 @@ function popularMetaFuncao(setorId) {
     const lista = (setorId)
       ? empresaFuncoes.filter(f => f.setor_id === setorId || f.setor_id === null)
       : empresaFuncoes;
-    base = lista.map(f => f.nome).filter(n => n.toLowerCase() !== 'outro');
+    base = lista.map(f => f.nome).filter(n => n.toLowerCase() !== 'outro')
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   } else {
     base = ['Operacional','Técnico(a)','Administrativo(a)','Supervisor(a)','Gerente / Diretor(a)'];
   }

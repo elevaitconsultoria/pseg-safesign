@@ -13032,6 +13032,14 @@ async function salvarGHE() {
         if (hcErr) throw new Error('Quadro de funcionários: ' + hcErr.message);
         hcSalvo = hcRows.length;
         _gheImportHeadcount = [];
+      } else if (setorNomes.length === 0 && todosCargos.length === 0) {
+        // Catálogo esvaziado intencionalmente (passou pela salvaguarda 1 acima) e
+        // nenhum import trouxe headcount novo — sem isso, empresa_headcount ficava
+        // órfão: setores/cargos zerados mas o quadro de funcionários antigo intacto,
+        // referenciando setores/cargos que não existem mais. Caso real: Assa Abloy
+        // (Shared Services) e ELEVA IT CONSULTORIA, 2026-07-22.
+        const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', empId);
+        if (hcDelErr) throw new Error('Quadro de funcionários (limpeza): ' + hcDelErr.message);
       }
 
       const hcMsg = hcSalvo > 0 ? ` + quadro de ${hcSalvo} linha(s)` : '';
