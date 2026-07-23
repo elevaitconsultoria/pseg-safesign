@@ -12742,6 +12742,18 @@ function _detectarColuna(headers, candidatos) {
 // Não remove acentos nem expande abreviações — "ADM" e "Administrativo" são setores distintos.
 function _gheNorm(s) { return (s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
 
+// Chave de matching forte: sem acento, sem espaço duplo, lowercase
+function _gheNormStrong(s) {
+  return (s||'').trim().replace(/\s+/g,' ').toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+}
+
+// Retorna a forma "mais acentuada" entre duas strings — em pt-BR é quase sempre a grafia correta
+function _ghePrefAcentuado(a, b) {
+  const score = s => ((s||'').normalize('NFD').match(/\p{Diacritic}/gu) || []).length;
+  return score(a) >= score(b) ? a : b;
+}
+
 function _processarGHEImport(rows) {
   if (!rows || rows.length === 0) {
     return _gheImportErro('O arquivo está vazio ou sem dados válidos.');
@@ -12758,28 +12770,42 @@ function _processarGHEImport(rows) {
     );
   }
 
-  // ── Deduplicar setores e cargos (comportamento existente) ──
-  const setores = colSetor
-    ? [...new Set(rows.map(r => (r[colSetor]||'').trim()).filter(Boolean))].sort()
-    : [];
-  const funcoes = colCargo
-    ? [...new Set(rows.map(r => (r[colCargo]||'').trim()).filter(Boolean))].sort()
-    : [];
+  // ── Deduplicar setores e cargos ──
+  // Usa _gheNormStrong (sem acento) como chave de dedup para colapsar variantes de acentuação
+  // (ex: "Producao" == "Produção"). Preserva sempre a forma mais acentuada (grafia correta pt-BR).
+  const _dedupAcentuado = (rows, col) => {
+    if (!col) return [];
+    const m = new Map();
+    rows.forEach(r => {
+      const raw = (r[col]||'').trim();
+      if (!raw) return;
+      const key = _gheNormStrong(raw);
+      m.set(key, _ghePrefAcentuado(m.get(key) || raw, raw));
+    });
+    return [...m.values()].sort();
+  };
+  const setores = _dedupAcentuado(rows, colSetor);
+  const funcoes = _dedupAcentuado(rows, colCargo);
 
   // Monta mapa cargo → setores (do CSV). Um cargo pode existir em varios
   // setores diferentes (ex: "Aprendiz Administrativo" em 14 setores) — por
   // isso o valor e um Set, nao um unico setor. Um mapa 1:1 aqui faria cada
   // linha nova sobrescrever a anterior, perdendo silenciosamente todos os
   // vinculos exceto o ultimo lido para aquele nome de cargo.
+  // Usamos os nomes canônicos (já deduplicados por acento) como chave e valor,
+  // para que "Producao" e "Produção" sejam tratados como o mesmo cargo/setor.
+  const _setorCanon = new Map(setores.map(s => [_gheNormStrong(s), s]));
+  const _cargoCanon = new Map(funcoes.map(f => [_gheNormStrong(f), f]));
   _gheImportCargoSetor = {};
   if (colSetor && colCargo) {
     rows.forEach(r => {
-      const s = (r[colSetor]||'').trim();
-      const c = (r[colCargo]||'').trim();
-      if (c && s) {
-        if (!_gheImportCargoSetor[c]) _gheImportCargoSetor[c] = new Set();
-        _gheImportCargoSetor[c].add(s);
-      }
+      const sRaw = (r[colSetor]||'').trim();
+      const cRaw = (r[colCargo]||'').trim();
+      if (!cRaw || !sRaw) return;
+      const s = _setorCanon.get(_gheNormStrong(sRaw)) || sRaw;
+      const c = _cargoCanon.get(_gheNormStrong(cRaw)) || cRaw;
+      if (!_gheImportCargoSetor[c]) _gheImportCargoSetor[c] = new Set();
+      _gheImportCargoSetor[c].add(s);
     });
   }
 
@@ -12797,16 +12823,24 @@ function _processarGHEImport(rows) {
       const setor = colSetor ? (r[colSetor]||'').trim() : '';
       const cargo = colCargo ? (r[colCargo]||'').trim() : '';
       if (!setor && !cargo) return;
-      const key = `${_gheNorm(setor)}|||${_gheNorm(cargo)}`;
+      const key = `${_gheNormStrong(setor)}|||${_gheNormStrong(cargo)}`;
       if (colQtd) {
         // Lista pré-agregada: somar valores da coluna Quantidade
         const qtd = parseInt((r[colQtd]||'0').toString().replace(/\D/g,''), 10) || 0;
-        if (hcMap.has(key)) { hcMap.get(key).quantidade += qtd; }
-        else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: qtd }); }
+        if (hcMap.has(key)) {
+          const ex = hcMap.get(key);
+          ex.setor  = _ghePrefAcentuado(ex.setor, setor);
+          ex.funcao = _ghePrefAcentuado(ex.funcao||'', cargo||'') || null;
+          ex.quantidade += qtd;
+        } else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: qtd }); }
       } else {
         // Lista nominal (1 linha = 1 funcionário): contar linhas
-        if (hcMap.has(key)) { hcMap.get(key).quantidade++; }
-        else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: 1 }); }
+        if (hcMap.has(key)) {
+          const ex = hcMap.get(key);
+          ex.setor  = _ghePrefAcentuado(ex.setor, setor);
+          ex.funcao = _ghePrefAcentuado(ex.funcao||'', cargo||'') || null;
+          ex.quantidade++;
+        } else { hcMap.set(key, { setor, funcao: cargo || null, quantidade: 1 }); }
       }
     });
     _gheImportHeadcount = [...hcMap.values()].filter(h => h.setor || h.funcao);
@@ -12863,12 +12897,12 @@ function confirmarGHEImport() {
 
   // Mescla com hierarquia existente
   Object.entries(novaHier).forEach(([setorNome, cargos]) => {
-    let grupo = _gheTempHierarquia.find(h => h.nome.toLowerCase() === setorNome.toLowerCase());
+    let grupo = _gheTempHierarquia.find(h => _gheNormStrong(h.nome) === _gheNormStrong(setorNome));
     if (!grupo) { grupo = { nome: setorNome, funcoes: [] }; _gheTempHierarquia.push(grupo); }
-    cargos.forEach(c => { if (!grupo.funcoes.some(f => f.toLowerCase() === c.toLowerCase())) grupo.funcoes.push(c); });
+    cargos.forEach(c => { if (!grupo.funcoes.some(f => _gheNormStrong(f) === _gheNormStrong(c))) grupo.funcoes.push(c); });
   });
   novosUniversais.forEach(f => {
-    if (!_gheTempUniversais.some(u => u.toLowerCase() === f.toLowerCase())) _gheTempUniversais.push(f);
+    if (!_gheTempUniversais.some(u => _gheNormStrong(u) === _gheNormStrong(f))) _gheTempUniversais.push(f);
   });
 
   if (_gheSetorAtivo === null && _gheTempHierarquia.length) _gheSetorAtivo = 0;
@@ -12958,8 +12992,13 @@ async function salvarGHE() {
           .from('empresa_funcoes').select('id', { count: 'exact', head: true })
           .eq('empresa_id', empId);
         if ((setoresDB || 0) > 0 || (funcoesDB || 0) > 0) {
-          toast(`Nenhum setor ou cargo detectado na estrutura atual — save bloqueado para não apagar o catálogo existente (${setoresDB||0} setor(es), ${funcoesDB||0} cargo(s)). Confira o arquivo importado.`, 'w', 6000);
-          return;
+          const ok = confirm(
+            `Atenção: esta empresa tem ${setoresDB||0} setor(es) e ${funcoesDB||0} cargo(s) cadastrados, mas a estrutura atual está completamente vazia.\n\n` +
+            `Isso costuma acontecer ao importar um arquivo errado ou com colunas não reconhecidas.\n\n` +
+            `Se quiser APAGAR todo o catálogo intencionalmente, clique em OK.\n` +
+            `Para cancelar e preservar os dados, clique em Cancelar.`
+          );
+          if (!ok) { toast('Save cancelado — catálogo preservado.', 'w'); return; }
         }
       }
 
