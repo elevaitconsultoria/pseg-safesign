@@ -12958,8 +12958,13 @@ async function salvarGHE() {
           .from('empresa_funcoes').select('id', { count: 'exact', head: true })
           .eq('empresa_id', empId);
         if ((setoresDB || 0) > 0 || (funcoesDB || 0) > 0) {
-          toast(`Nenhum setor ou cargo detectado na estrutura atual — save bloqueado para não apagar o catálogo existente (${setoresDB||0} setor(es), ${funcoesDB||0} cargo(s)). Confira o arquivo importado.`, 'w', 6000);
-          return;
+          const ok = confirm(
+            `Atenção: esta empresa tem ${setoresDB||0} setor(es) e ${funcoesDB||0} cargo(s) cadastrados, mas a estrutura atual está completamente vazia.\n\n` +
+            `Isso costuma acontecer ao importar um arquivo errado ou com colunas não reconhecidas.\n\n` +
+            `Se quiser APAGAR todo o catálogo intencionalmente, clique em OK.\n` +
+            `Para cancelar e preservar os dados, clique em Cancelar.`
+          );
+          if (!ok) { toast('Save cancelado — catálogo preservado.', 'w'); return; }
         }
       }
 
