@@ -1641,14 +1641,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Visão geral dos seus clientes, coleta ativa e respostas recebidas</div>
     </div>
-    <div class="page-hdr-actions">
+    <div class="page-hdr-actions" id="dash-hdr-actions">
       <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova empresa
       </button>
     </div>
   </div>
-
   <!-- KPIs -->
   <div class="g4" style="margin-bottom:20px">
     <div class="dash-kpi">
@@ -4689,7 +4688,12 @@ async function carregarEmpresas() {
         ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).order('empresa_id').order('ordem')),
     ]);
-    _empresas = (emps || []).map(emp => {
+    // viewer: filtrar para só a empresa vinculada ao perfil (antes de montar objetos)
+    const empsRaw = (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id)
+      ? (emps || []).filter(e => e.id === currentUser.empresa_id)
+      : (emps || []);
+
+    _empresas = empsRaw.map(emp => {
       const empSetores = (setData || []).filter(r => r.empresa_id === emp.id);
       const empFuncoes = (funData || []).filter(r => r.empresa_id === emp.id);
       const setorIdToNome = {};
@@ -4712,7 +4716,9 @@ async function carregarEmpresas() {
         universais,
       };
     });
-    _ciclos = cics || [];
+    _ciclos = (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id)
+      ? (cics || []).filter(c => c.empresa_id === currentUser.empresa_id)
+      : (cics || []);
     popularSelectsEmpresas();
   } catch(e) {
     console.warn('carregarEmpresas:', e);
@@ -9661,13 +9667,14 @@ async function loadPerfil() {
   try {
     const { data, error } = await sbAdmin
       .from('perfis')
-      .select('tenant_id, role, nome, ativo')
+      .select('tenant_id, empresa_id, role, nome, ativo')
       .eq('id', currentUser.id)
       .single();
     if (error) throw error;
     currentTenantId = data?.tenant_id || null;
-    // Sincronizar role do banco no objeto currentUser (usado por aplicarRestricoesPorRole)
-    if (data?.role) currentUser.role = data.role;
+    // Sincronizar role e empresa_id do banco no objeto currentUser
+    if (data?.role)       currentUser.role       = data.role;
+    if (data?.empresa_id) currentUser.empresa_id = data.empresa_id;
     // Avisar se tenant não foi definido (usuário novo sem onboarding)
     if (!currentTenantId) {
       console.warn('[PSEG] Usuário sem tenant_id — onboarding pendente.');
@@ -10032,17 +10039,19 @@ function aplicarRestricoesPorRole() {
     // Consultor: coleta + análise + relatórios — sem gestão de equipe, plano ou configurações
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
 
-    // Ocultar itens restritos ao consultor (plano de ação e perfil da EST são só admin)
-    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos', 'nb-plano', 'nb-est-perfil']);
+    // Ocultar itens restritos ao consultor
+    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos', 'nb-plano', 'nb-est-perfil', 'nb-gestao-ests']);
     restritos.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
 
-    // Ocultar seção "Conta" (só contém Assinatura)
+    // Ocultar seções "Conta" e "Administração" (ficam vazias para consultor)
     document.querySelectorAll('.sidebar-section').forEach(sec => {
-      if (sec.textContent.trim() === 'Conta') sec.style.display = 'none';
+      if (['Conta','Administração'].includes(sec.textContent.trim())) sec.style.display = 'none';
     });
+    const sbSecAdmin = document.getElementById('sb-sec-admin');
+    if (sbSecAdmin) sbSecAdmin.style.display = 'none';
 
     // Se estiver numa tela restrita, redirecionar ao dashboard
     const telaAtiva = document.querySelector('.screen.on')?.id;
@@ -10062,9 +10071,11 @@ function aplicarRestricoesPorRole() {
     const txt = sec.textContent.trim();
     sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
   });
-  // Ocultar botões de escrita na tela de links
-  const linksActionBtns = document.getElementById('links-action-btns');
-  if (linksActionBtns) linksActionBtns.style.display = 'none';
+  // Ocultar botões de escrita (links e dashboard)
+  ['links-action-btns', 'dash-hdr-actions'].forEach(eid => {
+    const el = document.getElementById(eid);
+    if (el) el.style.display = 'none';
+  });
   // Tela inicial: Dashboard
   goScreen('dashboard', document.getElementById('nb-dashboard'));
 }
