@@ -1294,6 +1294,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <div class="sidebar-section">Conta</div>
 
+    <button class="nav-item" id="nb-est-perfil" data-label="Perfil da EST" onclick="goScreen('est-perfil',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-1a7 7 0 0 1 14 0v1"/><path d="M17 13l2 2 4-4"/></svg>
+      <span class="nav-label">Perfil da EST</span>
+    </button>
+
     <button class="nav-item" id="nb-assinatura" data-label="Assinatura" onclick="goScreen('assinatura',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
       <span class="nav-label">Assinatura</span>
@@ -1329,11 +1334,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <button class="nav-item sa-only" id="nb-gestao-ests" data-label="Gestão de ESTs" onclick="goScreen('gestao-ests',this)" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 12h6"/></svg>
       <span class="nav-label">Gestão de ESTs</span>
-    </button>
-
-    <button class="nav-item" id="nb-est-perfil" data-label="Perfil da EST" onclick="goScreen('est-perfil',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-1a7 7 0 0 1 14 0v1"/><path d="M17 13l2 2 4-4"/></svg>
-      <span class="nav-label">Perfil da EST</span>
     </button>
 
     <button class="nav-item nav-toggle-sidebar" onclick="toggleSidebar()" data-label="Expandir menu" title="Recolher/expandir menu">
@@ -9836,6 +9836,9 @@ async function entrarComoEST(tenantId, nome) {
   renderDashboard();
   renderTelaEmpresas();
 
+  // Expandir sidebar para visão de admin (oculta gestao-ests)
+  aplicarRestricoesPorRole();
+
   goScreen('dashboard', document.getElementById('nb-dashboard'));
   toast(`Visualizando como "${nome}"`, 'g', 3000);
 }
@@ -9852,6 +9855,9 @@ async function sairModoSuporte() {
   await carregarEmpresas();
   await carregarLinks();
   renderDashboard();
+
+  // Colapsar sidebar de volta ao modo super_admin normal
+  aplicarRestricoesPorRole();
 
   goScreen('gestao-ests', document.getElementById('nb-gestao-ests'));
 }
@@ -10022,9 +10028,20 @@ function aplicarRestricoesPorRole() {
     ? raw : 'consultor';
 
   if (role === 'super_admin') {
-    // Super admin (Eleva IT): vê tudo + seção Administração exclusiva
-    document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
-    document.querySelectorAll('.sa-only').forEach(el => el.style.display = '');
+    if (_supportMode) {
+      // Em modo suporte (Entrar como EST): sidebar igual ao admin — sem gestao-ests
+      document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
+      document.querySelectorAll('.sa-only').forEach(el => el.style.display = 'none');
+    } else {
+      // Modo normal: apenas Gestão de ESTs e Equipe visíveis
+      document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = 'none');
+      ['nb-gestao-ests','nb-usuarios'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+      });
+      const sbAdmin = document.getElementById('sb-sec-admin');
+      if (sbAdmin) sbAdmin.style.display = '';
+    }
     return;
   }
 
@@ -10537,8 +10554,9 @@ async function salvarReconfVinculo() {
 async function toggleAtivoUsuario(id, ativo) {
   if (!sbAdmin) return;
   const callerRole = currentUser?.role;
-  if (callerRole === 'cliente_viewer' || !callerRole) {
-    toast('Acesso negado.', 'r'); return;
+  const callerIsAdmin = callerRole === 'admin' || callerRole === 'super_admin';
+  if (!callerIsAdmin) {
+    toast('Acesso negado: apenas Admin EST ou Super Admin podem alterar usuários.', 'r'); return;
   }
   // Bloquear qualquer tentativa de tocar em super_admin
   const { data: alvo } = await sbAdmin.from('perfis').select('role').eq('id', id).single();
