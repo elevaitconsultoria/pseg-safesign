@@ -3853,10 +3853,12 @@ function _carregarRiscosLocal() {
 async function carregarRiscosDB() {
   if (isDemoMode || !sbAdmin) return;
   try {
-    const { data, error } = await sbAdmin
+    let qRiscos = sbAdmin
       .from('riscos_config')
       .select('cd_risco,nome,categoria,severidade,consequencias')
       .is('empresa_id', null); // riscos globais (sem empresa específica)
+    if (currentTenantId) qRiscos = qRiscos.eq('tenant_id', currentTenantId);
+    const { data, error } = await qRiscos;
     if (error || !data?.length) return;
     data.forEach(r => {
       if (!r.cd_risco) return;
@@ -9820,6 +9822,8 @@ async function toggleAtivoEST(tenantId, nome, ativoAtual) {
 async function entrarComoEST(tenantId, nome) {
   _supportMode = true;
   _supportTenant = { id: tenantId, nome };
+  // INSERTs e queries JS usam currentTenantId — deve refletir o tenant em contexto
+  currentTenantId = tenantId;
 
   // Mostrar banner
   const banner = document.getElementById('banner-suporte');
@@ -9846,14 +9850,15 @@ async function entrarComoEST(tenantId, nome) {
 async function sairModoSuporte() {
   _supportMode = false;
   _supportTenant = null;
+  currentTenantId = null; // super_admin não tem tenant próprio
+  _empresas = [];         // limpa dados da EST visitada — super_admin não precisa deles
+  _links    = [];
 
   const banner = document.getElementById('banner-suporte');
   if (banner) banner.style.display = 'none';
   document.querySelector('.app-shell')?.style?.removeProperty('padding-bottom');
 
-  // Recarregar sem filtro de suporte
-  await carregarEmpresas();
-  await carregarLinks();
+  // Não recarregar empresas/links — super_admin opera pelo painel gestao-ests
   renderDashboard();
 
   // Colapsar sidebar de volta ao modo super_admin normal
@@ -10359,11 +10364,16 @@ async function carregarUsuarios() {
   }
   el.innerHTML = '<div style="color:var(--tl);font-size:12px;padding:16px">Carregando…</div>';
   try {
-    const { data, error } = await sbAdmin
+    // super_admin vê todos os tenants; demais roles filtram pelo próprio tenant
+    // (defesa em profundidade sobre o RLS de perfis)
+    let qUsuarios = sbAdmin
       .from('perfis')
       .select('id, nome, role, ativo, empresa_id, tenant_id, created_at, empresas(id,nome), tenants(id,nome)')
-      .neq('role', 'super_admin')
-      .order('created_at', { ascending: false });
+      .neq('role', 'super_admin');
+    if (currentUser?.role !== 'super_admin' && currentTenantId) {
+      qUsuarios = qUsuarios.eq('tenant_id', currentTenantId);
+    }
+    const { data, error } = await qUsuarios.order('created_at', { ascending: false });
     if (error) throw error;
     if (!data?.length) {
       el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum usuário encontrado</div><div class="empty-state-sub">Crie o primeiro usuário usando o botão acima.</div></div>';
