@@ -1,7 +1,7 @@
 # PSEG SafeSign — Documentação do Projeto
 
 > Plataforma de avaliação de riscos psicossociais (NR-17 / NR-01 / BS 8800)  
-> Stack: HTML estático + Supabase (PostgreSQL + Auth + Realtime) + GitHub Pages
+> Stack: HTML estático + Supabase (PostgreSQL + Auth + RLS + Edge Functions) + Cloudflare Pages
 
 ---
 
@@ -38,8 +38,10 @@ Consultoria (admin)
 
 | Ambiente | Admin | Formulário |
 |---|---|---|
-| **GitHub Pages (produção)** | `https://elevaitconsultoria.github.io/pseg-safesign/pseg-admin-questionario.html` | `https://elevaitconsultoria.github.io/pseg-safesign/pseg-forms.html?token=TOKEN` |
-| **Local (dev)** | `http://localhost:3788/pseg-admin-questionario.html` | `http://localhost:3788/pseg-forms.html?token=TOKEN` |
+| **PROD (Cloudflare Pages — branch main)** | `https://pseg-safesign.pages.dev/pseg-admin-questionario.html` | `https://pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN` |
+| **DEV (Cloudflare Pages — branch develop)** | `https://develop.pseg-safesign.pages.dev/pseg-admin-questionario.html` | `https://develop.pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN` |
+| **GitHub Pages (secundário, não oficial)** | `https://elevaitconsultoria.github.io/pseg-safesign/pseg-admin-questionario.html` | — |
+| **Local** | `http://localhost:3788/pseg-admin-questionario.html` | `http://localhost:3788/pseg-forms.html?token=TOKEN` |
 
 Servidor local: `npx serve -p 3788 .` (ver `.claude/launch.json`)
 
@@ -62,141 +64,211 @@ A tela de login oferece três opções:
 ## 4. Banco de Dados (Supabase)
 
 ### Projeto
-- **ID:** `vftyiildukrpgmnbcnao`
-- **URL:** `https://vftyiildukrpgmnbcnao.supabase.co`
-- **Chave pública (anon):** presente nos arquivos HTML (seguro — read-only por padrão)
 
-### Schema completo
+| Ambiente | Project ID | URL |
+|----------|-----------|-----|
+| PROD | `vftyiildukrpgmnbcnao` | `https://vftyiildukrpgmnbcnao.supabase.co` |
+| DEV | `szqatgvgghxvyyncsjxl` | `https://szqatgvgghxvyyncsjxl.supabase.co` |
+
+Chave pública (anon): presente nos arquivos HTML após build (seguro — read-only por padrão para anon).
+
+### Schema completo (PROD, verificado 2026-07-23)
+
+RLS habilitado em todas as 23 tabelas. Trigger DDL `rls_auto_enable` garante RLS em novas tabelas.
 
 ```
+tenants
+  id uuid PK | nome text | slug text UNIQUE | plano text | ativo bool | trial_ate timestamptz
+  max_empresas int | max_usuarios int | max_respostas_mes int | criado_em timestamptz
+
+perfis
+  id uuid PK→auth.users | tenant_id uuid→tenants | empresa_id uuid→empresas (nullable, só viewer)
+  role text (super_admin/admin/consultor/cliente_viewer) | ativo bool | nome text | email text
+
 empresas
-  id uuid PK | nome text | cnpj text | contato text
-  ativo bool | criado_em timestamptz | criado_por uuid→auth.users | questionario_id uuid
+  id uuid PK | tenant_id uuid→tenants | nome text | razao_social text | cnpj text
+  logo_base64 text | questionario_id uuid | numero_cliente int | criado_em timestamptz
 
 ciclos
-  id uuid PK | empresa_id uuid→empresas | nome text | descricao text
-  data_inicio date | data_fim date | status text | criado_em timestamptz
-
-empresa_setores          ← Fase 2 (GHE)
-  id uuid PK | empresa_id uuid→empresas | nome text | ordem int | ativo bool | created_at
-
-empresa_funcoes          ← Fase 2 (GHE)
-  id uuid PK | empresa_id uuid→empresas | nome text | ordem int | ativo bool | created_at
+  id uuid PK | empresa_id uuid→empresas | tenant_id uuid→tenants | nome text (gerado auto)
+  data_inicio date | data_fim date | ano_referencia int | mes_referencia int (1-12)
+  tipo_ciclo text | referencia_estimada bool | criado_em timestamptz
 
 links_coleta
-  id uuid PK | empresa_id uuid→empresas | ciclo_id uuid→ciclos
-  token text UNIQUE | setor_sugerido text | ativo bool | expira_em timestamptz | criado_em
-
-respostas
-  id uuid PK | empresa_id uuid | ciclo_id uuid | link_token text
-  setor text | funcao text | escolaridade text | fonte text | respondido_em timestamptz
-  questionario_id uuid
-
-resposta_itens
-  id uuid PK | resposta_id uuid→respostas | questao_id uuid→questoes | valor int(1-4)
+  id uuid PK | token text UNIQUE | empresa_id uuid→empresas | tenant_id uuid→tenants
+  ciclo_id uuid→ciclos | setor_sugerido text | ativo bool | expira_em timestamptz
+  is_teste bool | permite_multi_resposta bool (default false) | criado_em timestamptz
 
 questoes
-  id uuid PK | codigo text (Q1-Q27) | texto text | bloco text | invertida bool | is_oficial bool
+  id uuid PK | codigo text (A1-C7) | texto text | bloco text | is_oficial bool
+  is_ancora bool | inversa bool | cd_risco text | severidade int | ordem int
 
-questionarios / questionario_questoes   ← estrutura de questionário configurável
-laudos                                  ← relatórios gerados
-perfis                                  ← roles dos usuários (admin / consultor / cliente_viewer)
-riscos_config                           ← tabela de riscos por empresa
+questionarios / questionario_questoes   ← configuração de questionário por empresa
+
+respostas
+  id uuid PK | empresa_id uuid | tenant_id uuid | ciclo_id uuid | link_token text
+  setor text | funcao text | escolaridade text | session_id uuid (PROD) / text (DEV)
+  lgpd_aceito bool | device_info text | respondido_em timestamptz
+
+resposta_itens
+  id uuid PK | resposta_id uuid→respostas | questao_id uuid→questoes | valor int (1-4)
+
+respostas_fila      ← fila de processamento (status: pendente/processado/erro)
+respostas_raw_backup ← backup bruto por session_id
+
+empresa_setores
+  id uuid PK | empresa_id uuid | tenant_id uuid | nome text | grupo text | ordem int | ativo bool
+
+empresa_funcoes
+  id uuid PK | empresa_id uuid | tenant_id uuid | setor_id uuid→empresa_setores (nullable=universal)
+  nome text | ordem int | ativo bool
+  UNIQUE (empresa_id, setor_id, nome)
+
+empresa_headcount
+  id uuid PK | empresa_id uuid | tenant_id uuid | setor text | funcao text | quantidade int
+  UNIQUE (empresa_id, setor, COALESCE(funcao, ''))
+
+laudos              ← registro de laudos gerados (metadados, não o conteúdo)
+riscos_config       ← configuração P×S por tenant (empresa_id nullable = global do tenant)
+est_perfil          ← branding da EST (logo, cor primária, nome/email do responsável)
+tenant_contadores   ← contador sequencial de clientes por tenant (CLI-001, CLI-002...)
+pagamentos          ← histórico de pagamentos (Stripe / Asaas PIX)
+subscriptions       ← planos ativos por tenant
+planos_config       ← configuração de planos (limites, preços)
 ```
 
 ### Migrations aplicadas
 
-| Arquivo | Status | Conteúdo |
-|---|---|---|
-| `pseg-phase1-migration.sql` | ✅ Aplicada | perfis, criado_por, ciclos colunas, riscos_config, RLS base |
-| `pseg-phase2-migration.sql` | ✅ Aplicada | empresa_setores, empresa_funcoes, RLS GHE |
+| Migration | DEV | PROD | Conteúdo |
+|-----------|-----|------|---------|
+| `pseg-phase1-migration.sql` | ✅ | ✅ | perfis, criado_por, ciclos, riscos_config, RLS base |
+| `pseg-phase2-migration.sql` | ✅ | ✅ | empresa_setores, empresa_funcoes, RLS GHE |
+| `pseg-phase3-saas-tenants.sql` | ✅ | ✅ | multitenancy, tabela tenants |
+| `pseg-phase4-billing.sql` | ✅ | ✅ | pagamentos, subscriptions, planos_config |
+| `migration_empresa_headcount.sql` | ✅ | ✅ | tabela empresa_headcount + RLS |
+| `migration_fix_empresa_funcoes_unique.sql` | ✅ | ✅ | UNIQUE por (empresa_id, setor_id, nome) |
+| `migration_rbac_viewer_hardening.sql` | ✅ | ✅ | trigger tg_guard_perfil_update + policies viewer RESTRICTIVE |
+| `migration_sync_est_perfil_prod.sql` | N/A | ✅ | sincroniza colunas est_perfil entre DEV e PROD |
+| `migration_links_multi_resposta.sql` | ✅ | ✅ | links_coleta.permite_multi_resposta |
+| `migration_empresas_numero_cliente.sql` | ✅ | ✅ | empresas.numero_cliente + tenant_contadores + trigger |
+| `migration_ciclos_referencia_temporal.sql` | ✅ | ✅ | ciclos.ano_referencia/mes_referencia/tipo_ciclo/referencia_estimada |
 
-### RLS resumida
+### RLS resumida (modelo de acesso)
 
-| Tabela | Público (anon) | Autenticado |
-|---|---|---|
-| empresas | SELECT onde ativo=true | SELECT/INSERT/UPDATE próprias |
-| ciclos | SELECT todos | ALL |
-| links_coleta | SELECT onde ativo=true | ALL |
-| respostas | INSERT validado por token | SELECT/DELETE |
-| resposta_itens | INSERT livre | SELECT/DELETE |
-| empresa_setores | SELECT onde ativo=true | ALL (próprias empresas) |
-| empresa_funcoes | SELECT onde ativo=true | ALL (próprias empresas) |
-| questoes | SELECT todos | ALL |
-| perfis | — | Self SELECT/UPDATE + admin ALL |
+RLS é scoped por `tenant_id` — dados de uma consultoria nunca são visíveis para outra.
+
+| Tabela | anon | consultor/admin | super_admin |
+|--------|------|----------------|-------------|
+| empresas | — | CRUD próprio tenant | ALL |
+| ciclos | — | CRUD próprio tenant | ALL |
+| links_coleta | SELECT (ativo=true) | CRUD próprio tenant | ALL |
+| respostas | INSERT via RPC | SELECT próprio tenant | ALL |
+| resposta_itens | INSERT via RPC | SELECT próprio tenant | ALL |
+| empresa_setores/funcoes | SELECT (ativo=true) | CRUD próprio tenant | ALL |
+| empresa_headcount | — | CRUD próprio tenant | ALL |
+| perfis | — | Self SELECT/UPDATE | ALL |
+| tenants | — | Self SELECT | ALL |
 
 ---
 
 ## 5. Módulos do Painel Admin
 
-### 5.1 Dashboard
-- KPIs: nº empresas, respostas totais, links ativos, links sem resposta
-- Cards por empresa com status visual e link para análise
+### 5.1 Dashboard (`sc-dashboard`)
+- KPIs globais: nº empresas, respostas totais, links ativos, trial status
+- Cards de empresas com status visual: respostas, adesão, link para análise direta
 
-### 5.2 Empresas (`sc-empresas`) ← novo
-- Grid de cards por empresa: links ativos, respostas, setores, ciclos
-- Botões por card: **GHE**, **Ciclos**, **Links**, **Resultados**
-- "Nova empresa" → salva com `criado_por` → abre GHE automaticamente
+### 5.2 Clientes / Empresas (`sc-empresas`)
+- Toggle Grade/Lista com busca em tempo real por nome/CNPJ
+- Código sequencial por tenant: CLI-001, CLI-002... (nunca reaproveitado mesmo após exclusão)
+- Botões por empresa: **GHE**, **Ciclos**, **Links**, **Resultados**
+- Edição inline de nome da empresa; modal de perfil (logo, CNPJ)
+- Exclusão com hard delete — **irreversível**, sem soft-delete
 
 ### 5.3 Links de Coleta (`sc-links`)
-- Gerar link com token aleatório por empresa + ciclo + setor opcional
-- Por link: **📋 Copiar**, **💬 WhatsApp**, **📷 QR Code**, **Ativar/Desativar**
-- Modal QR Code inline com download PNG
-- Realtime: contador de respostas atualiza sem F5 (quando autenticado)
+- Gerar link por empresa + ciclo + setor opcional; flag `permite_multi_resposta` por link
+- Geração em lote por setor (todos os setores da empresa de uma vez)
+- Por link: **Copiar**, **WhatsApp**, **QR Code** (inline, download PNG), **Ativar/Desativar**, **Excluir**
+- Realtime: contador de respostas atualiza ao vivo (Supabase Realtime, só na tela de links)
+- Painel de adesão por link: % de resposta por setor vs. headcount cadastrado
 
-### 5.4 GHE — Setores & Funções (modal)
-- Acessível via botão "GHE" no card de empresa ou toolbar de Links
-- CRUD de setores e funções por empresa
-- Persiste em `empresa_setores` / `empresa_funcoes` (prod) ou `_empresas[x]` (demo)
-- Atualiza combos de filtro em todas as telas ao salvar
+### 5.4 GHE — Setores, Funções & Headcount (`sc-ghe`)
+- Tela cheia (96vw × 92vh), não mais modal
+- Toggle Árvore/Tabela para visualização da hierarquia
+- CRUD de setores e funções com edição inline; funções universais (sem setor)
+- Import de planilha CSV/XLSX com parser robusto (RFC 4180); templates por segmento
+- Mapeamento cargo→setor 1:N (um cargo pode estar em múltiplos setores)
+- Painel de adesão: cruza `empresa_headcount` × respostas por ciclo
+- Salvaguardas contra wipe acidental; headcount limpo junto com catálogo quando esvaziado
 
-### 5.5 Ciclos (modal)
-- Acessível via botão "Ciclos" no card de empresa
-- Criar ciclo com nome + período
-- Listar/remover ciclos existentes
+### 5.5 Ciclos (modal por empresa)
+- Selects de Mês + Ano (não mais campo de texto livre); nome gerado automaticamente: "Avaliação — Julho 2026"
+- Classificação do ciclo: Linha de Base / 1º Semestre / 2º Semestre / Reavaliação Anual / Pós-Mudança Organizacional
+- Badge "estimado" para ciclos com referência inferida do campo `data_inicio` (backfill)
+- Ordenação cronológica por `ano_referencia/mes_referencia` (não por data de criação)
 
 ### 5.6 Questionário (`sc-q`)
-- 27 questões oficiais NR-17 em 3 blocos (A: Demandas, B: Relações, C: Organizacional)
-- Questões extras configuráveis por empresa
-- Parâmetros: probabilidade (P), severidade (S), bloco
+- 27 questões oficiais NR-01 em 3 blocos: A (Demandas), B (Relações), C (Organizacional)
+- Questões extras configuráveis; parâmetros: severidade (S), cd_risco, invertida
+- Questões âncora protegidas de exclusão (trigger no banco)
 
-### 5.7 Resultados / Análise (`sc-analise`)
-- Filtros por empresa, setor, função, nível de risco
-- Tabela de riscos com score P×S calculado
-- Distribuição por nível: IRRELEVANTE / BAIXO / MÉDIO / ALTO / CRÍTICO
+### 5.7 Análise / Resultados (`sc-analise`)
+- Filtros: empresa, ciclo, setor (multi), função (multi), escolaridade, nível de risco
+- Modos de visualização: Gráfica / Tabela, Por Risco / Por Questão, Segregado / Consolidado
+- Score P×S por fator de risco; distribuição de frequência por questão
+- Exportação CSV e PDF (jsPDF + html2canvas); botão de impressão
 
-### 5.8 Distribuição (`sc-graficos`)
-- Gráficos Chart.js: barras por bloco, radar, tendência
+### 5.8 Gráficos (`sc-graficos`)
+- Gráficos Chart.js por bloco: barras de distribuição, evolução por questão
+- Exportação individual (PNG) e em lote (PDF)
 - Filtros por setor e função
 
-### 5.9 Auditoria de Respostas (`sc-auditoria`)
-- Tabela bruta: todas as respostas com 27+ colunas (setor, função, Q1–Q22)
-- Filtros empresa/setor/função
-- Linha de médias no rodapé
-- Exportação CSV (UTF-8 BOM)
+### 5.9 Comparativo entre Ciclos (`sc-comparativo`)
+- Dashboard de evolução: compara dois ciclos de uma empresa lado a lado
+- Ordenação cronológica correta por `ano_referencia/mes_referencia`
+- Variação de score por fator (melhora/piora com delta colorido)
 
-### 5.10 Relatório (`sc-laudo`)
-- Documento completo com metodologia + resultados + ações recomendadas
-- Exportação PDF via jsPDF
+### 5.10 Auditoria de Respostas (`sc-auditoria`)
+- Tabela bruta: todas as respostas com 27 colunas de valor + metadados
+- Filtros: empresa, ciclo, setor, função; painel recolhível
+- Linha de médias no rodapé; exportação CSV (UTF-8 BOM)
 
-### 5.11 Riscos & Severidade (`sc-riscos`)
-- Tabela de riscos com probabilidade e severidade configuráveis
-- Persiste em `riscos_config`
+### 5.11 Laudo (`sc-laudo`)
+- Preview e impressão do laudo NR-01 com metodologia + riscos + ações recomendadas
+- Seções configuráveis (toggle por checkbox); filtros de empresa/ciclo/setor
+- Exportação PDF via jsPDF + html2canvas; registro em `laudos` (metadados)
 
-### 5.12 Usuários (`sc-usuarios`)
-- Listagem de perfis com role e status
-- Alterar role (admin / consultor / cliente_viewer)
-- Ativar/desativar usuário
+### 5.12 Plano de Ação (`sc-plano`)
+- 5W2H gerado a partir dos riscos identificados na análise (ALTO e CRÍTICO)
+- Exportação CSV
 
-### 5.13 Metodologia (`sc-metodologia`)
-- Documentação técnica: NR-01, NR-17, BS 8800
-- Calculadora P×S, interpretação, referências
+### 5.13 Riscos & Severidade (`sc-riscos`)
+- Configuração da tabela de riscos por tenant: nome, categoria, severidade (S), consequências, medidas
+- Persiste em `riscos_config` (empresa_id nullable = configuração global do tenant)
 
-### 5.14 Backlog (`sc-backlog`)
-- Portal do Cliente (dashboard read-only por empresa)
-- Personalização do questionário por empresa
-- Notificações automáticas
-- Plano de Ação 5W2H
+### 5.14 Assinatura / Billing (`sc-assinatura`)
+- Planos: Trial, Starter, Professional, Enterprise (limites: empresas, usuários, respostas/mês)
+- Pagamento via Stripe (cartão) e Asaas (PIX) — integrado via Edge Function `criar-checkout`
+- Barras de uso: empresas/usuários/respostas vs. limite do plano
+- Histórico de pagamentos
+
+### 5.15 Equipe / Usuários (`sc-usuarios`)
+- Listagem de usuários do tenant: nome, role, status
+- Convidar novos membros via e-mail (Supabase Auth invite)
+- Alterar role (admin/consultor/cliente_viewer); ativar/desativar
+- `cliente_viewer`: vinculado a uma empresa específica (acesso read-only a uma empresa)
+
+### 5.16 Perfil da EST (`sc-est-perfil`)
+- Configurações de branding da consultoria: logo, cor primária, nome/e-mail do responsável
+- Persiste em `est_perfil`
+
+### 5.17 Metodologia (`sc-metodologia`)
+- Documentação da metodologia P×S com mapa visual de questões por bloco
+- Matriz de risco interativa; referências normativas (NR-01, NR-17, BS 8800)
+
+### 5.18 Gestão de ESTs (`sc-gestao-ests`) — super_admin only
+- Visão cross-tenant: lista de todas as consultorias, KPIs globais
+- Ativar/desativar tenant; entrar em modo suporte (impersonação)
+- Convidar nova EST via Edge Function `convidar-est`
 
 ---
 
@@ -274,22 +346,30 @@ Todas as operações de escrita são feitas em memória (não persistem).
 
 ---
 
-## 10. Repositórios Git
+## 10. Repositório e Deploy
 
-| Repo | Branch | Conteúdo |
-|---|---|---|
-| `elevaitconsultoria/site_rep` | `claude/jovial-euler` | Desenvolvimento ativo |
-| `elevaitconsultoria/pseg-safesign` | `gh-pages` | GitHub Pages (produção) |
-| `elevaitconsultoria/pseg-safesign` | `main` | Branch principal safesign |
+**Repo:** `elevaitconsultoria/pseg-safesign`
 
-### Deploy
-```bash
-# Desenvolvimento
-git push origin claude/jovial-euler
+| Branch | Ambiente | Observação |
+|--------|----------|-----------|
+| `develop` | DEV (Cloudflare Pages) | Branch de trabalho — push livre |
+| `main` | PROD (Cloudflare Pages) | Branch protegida — PR obrigatório |
 
-# Publicar no GitHub Pages (feito automaticamente pelos scripts de deploy)
-git push https://github.com/elevaitconsultoria/pseg-safesign.git gh-pages:gh-pages
+O Cloudflare Pages detecta push em cada branch e executa `build.js` automaticamente com as variáveis de ambiente configuradas por environment.
+
+### Fluxo de deploy
+
 ```
+git push origin develop          → DEV atualiza automaticamente
+                                    (https://develop.pseg-safesign.pages.dev)
+
+PR manual via GitHub:
+https://github.com/elevaitconsultoria/pseg-safesign/compare/main...develop
+→ Usuário faz merge → PROD atualiza automaticamente
+                       (https://pseg-safesign.pages.dev)
+```
+
+> `gh` CLI não está autenticado — PRs sempre criados manualmente pela URL acima.
 
 ---
 
@@ -328,58 +408,62 @@ const SUPA_ANON = 'eyJhbGc...';  // chave pública anon — seguro expor
 ## 13. Checklist para Nova Instalação
 
 ```
-[ ] 1. Criar projeto Supabase
-[ ] 2. Atualizar SUPA_URL e SUPA_ANON nos dois HTMLs
-[ ] 3. Executar pseg-phase1-migration.sql no SQL Editor
-[ ] 4. Executar pseg-phase2-migration.sql no SQL Editor
-[ ] 5. Criar usuário admin em Authentication → Users → Add user
-[ ] 6. O trigger on_auth_user_created cria perfil automaticamente com role='consultor'
-[ ] 7. Promover para admin:
-       UPDATE perfis SET role='admin' WHERE id='<UUID>';
-[ ] 8. Publicar os HTMLs (GitHub Pages, Vercel, Netlify ou servidor estático)
-[ ] 9. Acessar /pseg-admin-questionario.html → login → criar empresa → GHE → link
-[ ] 10. Testar formulário com o link gerado
+[ ] 1. Criar projeto Supabase (PROD e DEV separados)
+[ ] 2. Aplicar migrations em ordem no SQL Editor do Supabase:
+       pseg-phase1-migration.sql
+       pseg-phase2-migration.sql
+       pseg-phase3-saas-tenants.sql
+       pseg-phase4-billing.sql
+       migration_*.sql (demais, em ordem cronológica pelo nome)
+[ ] 3. Criar primeiro usuário em Authentication → Users → Add user
+[ ] 4. O trigger on_auth_user_created cria o perfil automaticamente (role='consultor')
+[ ] 5. Promover para admin:
+       UPDATE perfis SET role = 'admin' WHERE id = '<UUID do usuário>';
+[ ] 6. Criar tenant inicial via RPC (ou diretamente via SQL):
+       SELECT criar_tenant('Nome da EST', 'slug-da-est');
+[ ] 7. Conectar o perfil ao tenant:
+       UPDATE perfis SET tenant_id = '<tenant_id>', role = 'admin' WHERE id = '<UUID>';
+[ ] 8. Configurar variáveis de ambiente no Cloudflare Pages:
+       SUPA_URL, SUPA_ANON (obrigatórias)
+       APP_ENV=development (só no environment DEV)
+       STRIPE_PAYMENT_LINKS (se usar billing)
+[ ] 9. Push em `develop` → aguardar build do Cloudflare Pages
+[ ] 10. Acessar admin DEV → login → criar empresa → GHE → link
+[ ] 11. Testar formulário com o link gerado
+[ ] 12. PR develop→main para deploy em PROD
 ```
 
 ---
 
 ## 14. Backlog / Pendências
 
-### 🔴 Alta prioridade
+### 🔴 Operacionais (PROD — ação manual necessária)
 
-| Item | Descrição | Notas |
-|---|---|---|
-| **Teste E2E real** | Executar o fluxo completo com login Supabase real: login → empresa → GHE → link → form → auditoria | Ambiente de produção pronto; precisa de execução manual |
-| **Validação RLS consultor** | Testar que consultor só vê suas próprias empresas (não as de outros consultores) | Depende de ter 2+ usuários |
+| Item | Detalhe |
+|------|---------|
+| **PR develop→main** | 5 commits acumulados em develop ainda não em PROD. URL: `https://github.com/elevaitconsultoria/pseg-safesign/compare/main...develop` |
+| **Reimportar Assa Abloy (Shared Services)** | Catálogo zerado — reimportar planilha pelo admin + validar com `/validar-importacao-ghe` |
+| **Reimportar ELEVA IT CONSULTORIA** | Catálogo zerado após wipe acidental sem soft-delete |
 
-### 🟡 Média prioridade
-
-| Item | Descrição |
-|---|---|
-| **Tela Empresas — edição inline** | Editar nome/CNPJ diretamente no card sem abrir modal |
-| **Exportação PDF** | Testar jsPDF com dados reais — verificar formatação e quebra de página |
-| **Modo offline robusto** | Reenviar respostas salvas em localStorage quando conexão restaurada |
-| **Comparativo entre ciclos** | Dashboard temporal quando há ≥ 2 ciclos com respostas — gráfico de evolução |
-
-### 🟢 Baixa prioridade (Backlog documentado na tela)
+### 🟡 Produto (não iniciado)
 
 | Item | Descrição |
-|---|---|
-| **Portal do Cliente** | Área read-only para empresa ver seus resultados sem consultoria intermediar |
-| **Personalização do questionário** | Ativar/desativar/adicionar questões por empresa |
-| **Notificações automáticas** | E-mail ao consultor em nova resposta; alerta de link expirando |
-| **Plano de Ação 5W2H** | Geração a partir dos riscos identificados |
-| **Comparativo entre ciclos** | Dashboard temporal quando há ≥ 2 ciclos com respostas |
+|------|-----------|
+| **Portal do Cliente** | Acesso direto da empresa aos seus resultados sem intermediação da consultoria. Schema suporta (`perfis.role = 'cliente_viewer'`, `perfis.empresa_id`); UI não implementada |
+| **Ajuste de Probabilidade pelo Consultor** | Permitir editar o P calculado antes de fechar o laudo |
+| **Personalização do Questionário por empresa** | Banco já suporta (`questionarios`, `questionario_questoes`); UI tem esqueleto em `sc-q` mas não é usada em produção |
+| **Notificações & Alertas** | E-mail ao consultor em nova resposta; alerta de link expirando |
+| **Landing Page** | Site de marketing separado do painel admin |
 
 ### ⚙️ Débito técnico
 
 | Item | Descrição |
-|---|---|
-| **Variáveis de ambiente** | SUPA_URL e SUPA_ANON estão hardcoded nos HTMLs; mover para processo de build ou endpoint seguro em produção com múltiplos clientes |
-| **Build step** | O projeto tem ~6700 linhas por arquivo; à medida que cresce considerar Vite + módulos ES |
-| **Testes automatizados** | Nenhum teste unitário ou E2E; considerar Playwright para smoke tests do fluxo |
-| **QR Code offline** | Atualmente usa API externa (qrserver.com); se offline, imagem não carrega |
-| **Carregamento questões** | `carregarMapaQuestoes()` no forms.html não é awaited (race condition teórica) |
+|------|-----------|
+| **Credenciais PROD hardcoded em `pseg-forms.html`** | Linhas 332–333 têm URL e JWT como literais; substituição é via regex no build.js — risco de falha silenciosa se formatação mudar. Admin usa placeholders seguros (`__SUPA_URL__`) |
+| **Sem soft-delete** | Hard delete em empresas, links e riscos. Dados apagados são irrecuperáveis (caso real: ELEVA IT CONSULTORIA) |
+| **QR Code depende de CDN externo** | `qrcodejs` via CDN sem hash SRI; se CDN cair ou for comprometido, QR codes param de funcionar |
+| **Cache de respostas sem TTL** | `_respostasCache` em memória, sem invalidação automática. Dados ficam stale até reload |
+| **Rate limiting só no frontend** | `_RATE_LIMIT_MS = 15000` ms no forms.html pode ser contornado via chamada direta ao RPC |
 
 ---
 
@@ -396,7 +480,8 @@ const SUPA_ANON = 'eyJhbGc...';  // chave pública anon — seguro expor
 | v1.0 | Auth real Supabase; Tela Empresas; Ciclos; QR inline; WhatsApp share; URL fix GitHub Pages |
 | v1.1 | Production hardening: criado_por, realtime guard, refresh pós-save, escape onclick |
 | v1.2 | Filtro por ciclo em Resultados + Distribuição + Auditoria; date pickers no modal de ciclos; "Esqueci minha senha"; badge de empresas no sidebar |
+| v1.3 | **Multi-tenant RBAC** completo: roles `super_admin`/`admin`/`consultor`/`cliente_viewer`, tela Equipe (ESTs), tela Perfil de EST, menu por role, RLS com tenant isolation. **Billing**: integração Stripe, planos, subscriptions, tela Assinatura, tela Plano, `tenant_contadores`. **Código cliente** para empresas (`numero_cliente`). **GHE como tela cheia** (96vw×92vh, substituiu modal). **Comparativo entre Ciclos**: dashboard temporal para ≥ 2 ciclos. **Plano de Ação 5W2H**: geração a partir de riscos identificados. **Referência temporal em Ciclos**: campos `ano_referencia`/`mes_referencia`/`tipo_ciclo`; seletor Mês+Ano substitui campo texto livre; nome gerado automaticamente. Bug fixes: cargo→setor 1:N (era 1:1, descartava vínculos), headcount órfão ao limpar catálogo, salvaguarda GHE via `confirm()` em vez de hard-block, ordenação alfabética pt-BR em setores/cargos no formulário público, dedup de acentuação no import GHE. |
 
 ---
 
-*Documentação atualizada em 2026-04-16 — v1.2*
+*Documentação atualizada em 2026-07-23 — v1.3*
