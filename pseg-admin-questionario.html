@@ -1641,14 +1641,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Visão geral dos seus clientes, coleta ativa e respostas recebidas</div>
     </div>
-    <div class="page-hdr-actions">
+    <div class="page-hdr-actions" id="dash-hdr-actions">
       <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova empresa
       </button>
     </div>
   </div>
-
   <!-- KPIs -->
   <div class="g4" style="margin-bottom:20px">
     <div class="dash-kpi">
@@ -3250,7 +3249,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       
       
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px" id="links-action-btns">
       <button class="btn btn-ghost" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Nova empresa
@@ -4689,7 +4688,12 @@ async function carregarEmpresas() {
         ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).order('empresa_id').order('ordem')),
     ]);
-    _empresas = (emps || []).map(emp => {
+    // viewer: filtrar para só a empresa vinculada ao perfil (antes de montar objetos)
+    const empsRaw = (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id)
+      ? (emps || []).filter(e => e.id === currentUser.empresa_id)
+      : (emps || []);
+
+    _empresas = empsRaw.map(emp => {
       const empSetores = (setData || []).filter(r => r.empresa_id === emp.id);
       const empFuncoes = (funData || []).filter(r => r.empresa_id === emp.id);
       const setorIdToNome = {};
@@ -4712,7 +4716,9 @@ async function carregarEmpresas() {
         universais,
       };
     });
-    _ciclos = cics || [];
+    _ciclos = (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id)
+      ? (cics || []).filter(c => c.empresa_id === currentUser.empresa_id)
+      : (cics || []);
     popularSelectsEmpresas();
   } catch(e) {
     console.warn('carregarEmpresas:', e);
@@ -7038,12 +7044,13 @@ function renderLinks() {
         <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="abrirModalQR('${url}','${nomeEsc}')">
           📷 QR Code
         </button>
+        ${currentUser?.role !== 'cliente_viewer' ? `
         <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="toggleLink('${l.id}')">
           ${l.ativo?'Desativar':'Ativar'}
         </button>
         <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);${(!l.is_teste&&l.respostas>0)?'opacity:.4;cursor:not-allowed':''}" onclick="excluirLink('${l.id}',${l.respostas},${l.is_teste},'${l.token}')" title="${(!l.is_teste&&l.respostas>0)?'Link com respostas — não pode ser excluído':l.is_teste?'Excluir link de teste e suas respostas':'Excluir link'}">
           🗑 Excluir
-        </button>
+        </button>` : ''}
       </div>
       <div style="padding:6px 16px 8px;font-size:10px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
         <span>Criado: ${l.criado}</span>
@@ -9660,13 +9667,14 @@ async function loadPerfil() {
   try {
     const { data, error } = await sbAdmin
       .from('perfis')
-      .select('tenant_id, role, nome, ativo')
+      .select('tenant_id, empresa_id, role, nome, ativo')
       .eq('id', currentUser.id)
       .single();
     if (error) throw error;
     currentTenantId = data?.tenant_id || null;
-    // Sincronizar role do banco no objeto currentUser (usado por aplicarRestricoesPorRole)
-    if (data?.role) currentUser.role = data.role;
+    // Sincronizar role e empresa_id do banco no objeto currentUser
+    if (data?.role)       currentUser.role       = data.role;
+    if (data?.empresa_id) currentUser.empresa_id = data.empresa_id;
     // Avisar se tenant não foi definido (usuário novo sem onboarding)
     if (!currentTenantId) {
       console.warn('[PSEG] Usuário sem tenant_id — onboarding pendente.');
@@ -10031,28 +10039,30 @@ function aplicarRestricoesPorRole() {
     // Consultor: coleta + análise + relatórios — sem gestão de equipe, plano ou configurações
     document.querySelectorAll('.nav-item, .sidebar-section').forEach(el => el.style.display = '');
 
-    // Ocultar itens restritos ao consultor (plano de ação é só admin)
-    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos', 'nb-plano']);
+    // Ocultar itens restritos ao consultor
+    const restritos = new Set(['nb-usuarios', 'nb-assinatura', 'nb-riscos', 'nb-plano', 'nb-est-perfil', 'nb-gestao-ests']);
     restritos.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
 
-    // Ocultar seção "Conta" (só contém Assinatura)
+    // Ocultar seções "Conta" e "Administração" (ficam vazias para consultor)
     document.querySelectorAll('.sidebar-section').forEach(sec => {
-      if (sec.textContent.trim() === 'Conta') sec.style.display = 'none';
+      if (['Conta','Administração'].includes(sec.textContent.trim())) sec.style.display = 'none';
     });
+    const sbSecAdmin = document.getElementById('sb-sec-admin');
+    if (sbSecAdmin) sbSecAdmin.style.display = 'none';
 
     // Se estiver numa tela restrita, redirecionar ao dashboard
     const telaAtiva = document.querySelector('.screen.on')?.id;
-    if (['sc-usuarios','sc-assinatura','sc-riscos','sc-plano'].includes(telaAtiva)) {
+    if (['sc-usuarios','sc-assinatura','sc-riscos','sc-plano','sc-est-perfil'].includes(telaAtiva)) {
       goScreen('dashboard', document.getElementById('nb-dashboard'));
     }
     return;
   }
 
-  // cliente_viewer: Dashboard + Links de coleta + Análise + Comparativo + Relatório
-  const permitidosViewer = new Set(['nb-dashboard','nb-links','nb-analise','nb-graficos','nb-comparativo','nb-auditoria','nb-laudo']);
+  // cliente_viewer: Dashboard + Links (leitura) + Análise + Relatório — sem comparativo nem auditoria
+  const permitidosViewer = new Set(['nb-dashboard','nb-links','nb-analise','nb-graficos','nb-laudo']);
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.style.display = permitidosViewer.has(btn.id) ? '' : 'none';
   });
@@ -10060,6 +10070,11 @@ function aplicarRestricoesPorRole() {
   document.querySelectorAll('.sidebar-section').forEach(sec => {
     const txt = sec.textContent.trim();
     sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
+  });
+  // Ocultar botões de escrita (links e dashboard)
+  ['links-action-btns', 'dash-hdr-actions'].forEach(eid => {
+    const el = document.getElementById(eid);
+    if (el) el.style.display = 'none';
   });
   // Tela inicial: Dashboard
   goScreen('dashboard', document.getElementById('nb-dashboard'));
@@ -10280,6 +10295,7 @@ function removerLogoEST() {
 }
 
 async function salvarEstPerfil() {
+  if (currentUser?.role === 'consultor') { toast('Apenas administradores podem editar o Perfil da EST.', 'r'); return; }
   if (!sbAdmin || !currentTenantId) { toast('Sem conexão com o banco.', 'r'); return; }
   const g = id => document.getElementById(id)?.value.trim() || null;
   const logo = _estPerfil?._logoTemp !== undefined
@@ -13840,10 +13856,10 @@ function goScreen(id, btn) {
   // Controle de acesso por role
   const role = currentUser?.role;
   const restritos = {
-    consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests']),
+    consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
-    // viewer: leitura + links + análise + relatório — sem gestão EST, clientes ou configurações
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe']),
+    // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','comparativo','auditoria']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
