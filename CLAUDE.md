@@ -59,6 +59,12 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
 7. **Multi-tenant.** Cada empresa pertence a um `tenant` (consultoria). RLS garante que dados
    de uma consultoria nunca vazam para outra. `super_admin` pode ver todos os tenants.
 
+8. **`currentTenantId` é a variável global de contexto de tenant** para todo INSERT e query JS com
+   filtro explícito. Para `admin`/`consultor`/`viewer` é o tenant do usuário logado. Para
+   `super_admin` em modo suporte (`entrarComoEST`) é o `tenantId` da EST visitada; ao sair
+   (`sairModoSuporte`) volta a `null`. **Nunca hardcodar tenant_id em queries — sempre usar
+   `currentTenantId`.**
+
 ## Arquitetura
 
 - **SPA de arquivo único**: `pseg-admin-questionario.html` (painel admin) e `pseg-forms.html`
@@ -139,6 +145,73 @@ Capitalização não é normalizada — responsabilidade do cliente na planilha.
   serão usados na UI — omitir causa "campo some até recarregar" (bug real 2026-07-21).
 - Toggles custom: colocar lógica no `onchange` do `<input>`, nunca no `onclick` do `<label>`
   que o envolve — 1 clique físico gera 2 eventos se a lógica estiver no label (bug real 2026-07-21).
+
+## RBAC — Matriz de acesso por role (2026-07-24)
+
+| Tela | super_admin | admin | consultor | cliente_viewer |
+|------|-------------|-------|-----------|----------------|
+| dashboard | ✅ | ✅ | ✅ | ✅ |
+| empresas (Clientes) | ✅ | ✅ | ✅ | ❌ |
+| ghe (Setores/Funções) | ✅ | ✅ | ✅ | ❌ |
+| links de coleta | ✅ | ✅ | ✅ | ✅ leitura |
+| questionário | ✅ | ✅ | ✅ | ❌ |
+| analise / graficos | ✅ | ✅ | ✅ | ✅ |
+| comparativo | ✅ | ✅ | ✅ | ❌ |
+| auditoria | ✅ | ✅ | ✅ | ❌ |
+| laudo (relatório) | ✅ | ✅ | ✅ | ✅ |
+| plano de ação | ✅ | ✅ | ❌ | ❌ |
+| usuarios (equipe) | ✅ | ✅ | ❌ | ❌ |
+| riscos / assinatura | ✅ | ✅ | ❌ | ❌ |
+| est-perfil (Perfil EST) | ✅ | ✅ | ❌ | ❌ |
+| gestao-ests | ✅ | ❌ | ❌ | ❌ |
+
+**Duas camadas de proteção no frontend:**
+1. `aplicarRestricoesPorRole()` — oculta itens do sidebar no boot
+2. `goScreen()` — verifica `restritos[role]` em tempo de navegação e bloqueia com toast
+
+**Três camadas para funções críticas** (ex: `salvarEstPerfil`): sidebar + goScreen + guard no início da função.
+
+**super_admin — sidebar dinâmico:**
+- Boot normal: mostra apenas Gestão de ESTs + Equipe
+- Após `entrarComoEST()`: expande para visão admin (sem gestao-ests)
+- Após `sairModoSuporte()`: colapsa de volta
+
+**cliente_viewer — isolamento de dados:**
+- JS: `carregarEmpresas()` filtra por `currentUser.empresa_id`
+- Banco: policy RESTRICTIVE `viewer_empresa_select_empresas` em `empresas`
+- Botões de escrita ocultos: `links-action-btns` e `dash-hdr-actions`
+
+**Policies RESTRICTIVE do viewer no banco** (DEV + PROD, `migration_viewer_write_hardening.sql`):
+- INSERT/DELETE bloqueados em: `links_coleta`, `laudos`, `empresa_headcount`, `ciclos`
+- SELECT em `empresas` scoped a `get_my_empresa_id()`
+- UPDATE em tabelas operacionais (migration anterior `migration_rbac_viewer_hardening.sql`)
+
+## Modo Suporte (super_admin — `entrarComoEST`)
+
+O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de
+uma EST específica, usa o botão "Entrar como":
+
+```
+entrarComoEST(tenantId, nome)
+  → _supportMode = true
+  → _supportTenant = { id, nome }
+  → currentTenantId = tenantId      ← INSERTs usam tenant correto
+  → carregarEmpresas() com filtro   ← SELECTs filtrados pelo tid
+  → aplicarRestricoesPorRole()      ← sidebar expande (visão admin)
+  → banner amarelo visível
+
+sairModoSuporte()
+  → _supportMode = false
+  → _supportTenant = null
+  → currentTenantId = null          ← super_admin não tem tenant
+  → _empresas = [], _links = []     ← limpa sem carregar cross-tenant
+  → aplicarRestricoesPorRole()      ← sidebar colapsa
+  → goScreen('gestao-ests')
+```
+
+**Por que `currentTenantId = tenantId` é crítico**: todos os INSERTs do sistema usam
+`currentTenantId` como `tenant_id`. Sem isso, registros criados em modo suporte teriam
+`tenant_id = null` e ficariam órfãos (invisíveis para o admin da EST).
 
 ## Gotchas críticos de arquitetura
 
