@@ -1,7 +1,7 @@
-# Usuários de Teste — DEV (szqatgvgghxvyyncsjxl)
+﻿# Usuários de Teste — DEV (szqatgvgghxvyyncsjxl)
 
-> **Projeto:** pseg-safesign-dev  
-> **URL admin DEV:** https://develop.pseg-safesign.pages.dev/pseg-admin-questionario.html (ou preview do CF Pages)  
+> **Projeto:** psicomap-dev  
+> **URL admin DEV:** https://develop.psicomap.pages.dev/psicomap-admin.html (ou preview do CF Pages)  
 > **Criados via:** Supabase Dashboard → Authentication → Users → "Add user"  
 > **Após criar:** executar SQL abaixo para definir o role e tenant corretos na tabela `perfis`.
 

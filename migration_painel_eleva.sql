@@ -1,5 +1,5 @@
--- ══════════════════════════════════════════════════════════════════════════
--- PSEG SafeSign — Migração 7: Painel Eleva IT (super_admin cross-tenant)
+﻿-- ══════════════════════════════════════════════════════════════════════════
+-- PsicoMap — Migração 7: Painel Eleva IT (super_admin cross-tenant)
 -- Executar no Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════════════════════
 

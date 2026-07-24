@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#1a7a3c"/>
-<title>PSEG — Pesquisa Psicossocial</title>
+<title>PsicoMap — Pesquisa Psicossocial</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -147,7 +147,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 <div class="screen" id="success-screen">
   <div class="screen-icon" style="background:var(--gl)"><svg viewBox="0 0 24 24" fill="var(--g)" width="28" height="28"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
   <div class="screen-title" style="color:var(--g)">Obrigado!</div>
-  <div class="screen-sub">Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PSEG.</div>
+  <div class="screen-sub">Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PsicoMap.</div>
 </div>
 
 <!-- CONSENTIMENTO LGPD -->
@@ -187,7 +187,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="consent-section"><div class="consent-section-title">Controlador, operador e encarregado</div>
         <p><strong>Controlador:</strong> seu empregador (empresa contratante do serviço de avaliação).<br>
-        <strong>Operador:</strong> P R BARBOSA - PSEG Engenharia de Segurança do Trabalho.<br>
+        <strong>Operador:</strong> P R BARBOSA - PsicoMap.<br>
         <strong>Encarregado (DPO) — Art. 41 LGPD:</strong> <a href="mailto:contato@psegsst.com.br" style="color:var(--g)">contato@psegsst.com.br</a></p>
       </div>
       <div class="consent-section"><div class="consent-section-title">Seus direitos (Art. 18 LGPD)</div>
@@ -1013,7 +1013,7 @@ async function enviarResposta() {
   const scOk = document.getElementById('success-screen');
   scOk.classList.add('active');
   scOk.querySelector('.screen-title').textContent = 'Obrigado!';
-  scOk.querySelector('.screen-sub').textContent   = 'Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PSEG.';
+  scOk.querySelector('.screen-sub').textContent   = 'Suas respostas foram enviadas com sucesso. Elas serão analisadas pela equipe de Segurança do Trabalho da PsicoMap.';
   renderBotaoProximoResp();
 }
 
@@ -1148,5 +1148,8 @@ function toast(msg, type) {
 // ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', init);
 </script>
+<footer style="text-align:center;padding:16px 8px;font-size:11px;color:#bbb;">
+  Desenvolvido por <a href="https://elevaitconsultoria.netlify.app/" target="_blank" rel="noopener" style="color:#bbb;text-decoration:underline;">Eleva IT Consultoria</a>
+</footer>
 </body>
 </html>

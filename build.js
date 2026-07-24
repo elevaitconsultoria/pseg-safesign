@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PSEG SafeSign — Build script
+ * PsicoMap — Build script
  *
  * Injeta variáveis de ambiente no HTML estático antes do deploy.
  * Usado pelo Cloudflare Pages (branch main = prod, branch develop = dev).
@@ -42,8 +42,8 @@ if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
 
 // Arquivos HTML que recebem injeção de credenciais
 const htmlTargets = [
-  'pseg-admin-questionario.html',
-  'pseg-forms.html',
+  'psicomap-admin.html',
+  'psicomap-forms.html',
 ];
 
 htmlTargets.forEach(filename => {
@@ -55,7 +55,7 @@ htmlTargets.forEach(filename => {
   html = html
     .replace(/__SUPA_URL__/g,  JSON.stringify(env.SUPA_URL))
     .replace(/__SUPA_ANON__/g, JSON.stringify(env.SUPA_ANON))
-    // Credenciais hardcoded no pseg-forms.html
+    // Credenciais hardcoded no psicomap-forms.html
     .replace(
       /const SUPABASE_URL\s*=\s*'https:\/\/[^']+'/g,
       `const SUPABASE_URL  = ${JSON.stringify(env.SUPA_URL)}`
@@ -70,8 +70,8 @@ htmlTargets.forEach(filename => {
 });
 
 // Manter referência para o arquivo principal (usado abaixo para Stripe e banner)
-const src = path.join(__dirname, 'pseg-admin-questionario.html');
-const out = path.join(dist, 'pseg-admin-questionario.html');
+const src = path.join(__dirname, 'psicomap-admin.html');
+const out = path.join(dist, 'psicomap-admin.html');
 let html  = fs.readFileSync(out, 'utf8'); // já foi escrito acima
 
 // ── Substituições adicionais (só admin) ───────────────────────
@@ -119,5 +119,5 @@ staticFiles.forEach(file => {
 });
 
 // Copiar pasta supabase/functions se existir (para referência, não deploy)
-console.log(`[build] ✅ HTML gerado → dist/pseg-admin-questionario.html`);
+console.log(`[build] ✅ HTML gerado → dist/psicomap-admin.html`);
 console.log(`[build] Ambiente: ${env.APP_ENV} | Supabase: ${env.SUPA_URL.replace(/https:\/\/(.{8}).*/, 'https://$1...')} | Stripe: ${env.STRIPE_MODE}`);

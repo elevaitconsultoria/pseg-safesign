@@ -1,5 +1,5 @@
 /**
- * PSEG SafeSign — Edge Function: webhook-billing
+ * PsicoMap — Edge Function: webhook-billing
  *
  * Recebe eventos de pagamento do Stripe e Asaas e atualiza o plano do tenant.
  *

@@ -1,13 +1,13 @@
----
+﻿---
 name: commitar-e-pr
 description: >
   Commita as alterações do branch develop e abre PR documentada para main no repositório
-  pseg-safesign. Use sempre que houver mudanças prontas para subir: o skill cuida de
+  psicomap. Use sempre que houver mudanças prontas para subir: o skill cuida de
   git add, commit com mensagem convencional, push, e gh pr create com título e body
   estruturado em português. O usuário só precisa aprovar e fazer o merge.
 ---
 
-# Commitar e abrir PR — PSEG SafeSign
+# Commitar e abrir PR — PsicoMap
 
 Execute cada etapa em sequência. Não pule etapas.
 

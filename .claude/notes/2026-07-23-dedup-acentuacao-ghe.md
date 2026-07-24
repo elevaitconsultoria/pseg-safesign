@@ -1,4 +1,4 @@
-# Sessão 2026-07-23 — Dedup de acentuação no pipeline GHE
+﻿# Sessão 2026-07-23 — Dedup de acentuação no pipeline GHE
 
 ## O que foi feito (em ordem)
 
@@ -13,7 +13,7 @@
    e descartado — risco com siglas (CEO, NR-17) e capitalização é
    responsabilidade do cliente na planilha.
 
-4. Implementadas 2 funções auxiliares em `pseg-admin-questionario.html`:
+4. Implementadas 2 funções auxiliares em `psicomap-admin.html`:
    - `_gheNormStrong`: strip de diacríticos via NFD para chave de matching
    - `_ghePrefAcentuado`: entre dois candidatos, preserva o mais acentuado
 
@@ -27,7 +27,7 @@
    estava autenticado naquele momento).
 
 7. `gh` CLI autenticado com fine-grained token (`claude-git-token`, expira
-   2026-08-22, conta `elevaitconsultoria`, repo `pseg-safesign`, permissões:
+   2026-08-22, conta `elevaitconsultoria`, repo `psicomap`, permissões:
    Contents + Metadata + Pull requests write).
 
 8. Criada skill `/commitar-e-pr` em `.claude/skills/commitar-e-pr/SKILL.md`.

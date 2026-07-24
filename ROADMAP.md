@@ -1,4 +1,4 @@
-# PSEG SafeSign — Roadmap Interno
+﻿# PsicoMap — Roadmap Interno
 
 > Funcionalidades planejadas para versões futuras. Documento interno — não exibido no sistema.
 
@@ -74,12 +74,12 @@ Permitir que o consultor desative ou adicione questões específicas por empresa
 ### Landing Page / Página de Vendas
 **Prioridade: Média · Site separado**
 
-Site separado voltado para conversão — apresenta o SafeSign para potenciais clientes sem misturar com o app operacional.
+Site separado voltado para conversão — apresenta o PsicoMap para potenciais clientes sem misturar com o app operacional.
 
-- Domínio próprio (ex: `safesign.com.br`) separado do app
+- Domínio próprio (ex: `psicomap.com.br`) separado do app
 - Seções: hero + proposta de valor, como funciona, planos, contato
 - SEO-ready: meta tags, OG, Schema.org, carregamento sem Supabase
-- CTA para trial/contato; onboarding leva ao app (app.safesign.com.br)
+- CTA para trial/contato; onboarding leva ao app (app.psicomap.com.br)
 - Sem autenticação — página pública, otimizada para conversão
 
 > Modelo atual (B2B consultivo) pede landing separada — visitante frio não deve cair no app diretamente.

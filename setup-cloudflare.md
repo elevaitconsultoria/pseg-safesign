@@ -1,4 +1,4 @@
-# Configuração Cloudflare Pages — Ambientes
+﻿# Configuração Cloudflare Pages — Ambientes
 
 ## 1. Alterar o Build Command no projeto Cloudflare Pages
 
@@ -49,8 +49,8 @@ No painel do Cloudflare Pages → seu projeto → **Settings → Builds & deploy
 
 ## 4. Domínio customizado (se aplicável)
 
-- `main` → seu domínio de produção (ex: `app.pseg.com.br`)
-- `develop` → subdomínio de staging (ex: `staging.pseg.com.br`) ou URL automática do Cloudflare
+- `main` → seu domínio de produção (ex: `app.psicomap.com.br`)
+- `develop` → subdomínio de staging (ex: `staging.psicomap.com.br`) ou URL automática do Cloudflare
 
 ---
 
@@ -58,6 +58,6 @@ No painel do Cloudflare Pages → seu projeto → **Settings → Builds & deploy
 
 Após o próximo deploy em cada branch, verifique no log de build:
 ```
-[build] ✅ HTML gerado → dist/pseg-admin-questionario.html
+[build] ✅ HTML gerado → dist/psicomap-admin.html
 [build] Ambiente: production | Supabase: https://vftyii... | Stripe: live
 ```

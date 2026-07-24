@@ -1,9 +1,9 @@
-# Setup do Banco de Dados — Ambiente DEV
+﻿# Setup do Banco de Dados — Ambiente DEV
 
 Execute os scripts abaixo **nesta ordem** no SQL Editor do projeto Supabase DEV.
 
 ## Pré-requisitos
-- Criar projeto no Supabase: `pseg-safesign-dev`
+- Criar projeto no Supabase: `psicomap-dev`
 - Região recomendada: South America (São Paulo) — mesma do prod
 
 ---
@@ -11,15 +11,15 @@ Execute os scripts abaixo **nesta ordem** no SQL Editor do projeto Supabase DEV.
 ## Ordem de execução
 
 ```
-1. pseg-schema-v3.sql             ← Schema base: tabelas principais
-2. pseg-admin-rls-policies.sql    ← Políticas RLS básicas
-3. pseg-fix-rls-respostas.sql     ← Correção RLS respostas
-4. pseg-phase1-migration.sql      ← Migração fase 1
-5. pseg-phase2-migration.sql      ← Migração fase 2
-6. pseg-phase3-saas-tenants.sql   ← Multi-tenant SaaS
-7. pseg-phase4-billing.sql        ← Billing / assinatura
-8. pseg-security-patch.sql        ← Patch de segurança v1
-9. pseg-security-patch-v2.sql     ← Patch de segurança v2
+1. psicomap-schema-v3.sql             ← Schema base: tabelas principais
+2. psicomap-admin-rls-policies.sql    ← Políticas RLS básicas
+3. psicomap-fix-rls-respostas.sql     ← Correção RLS respostas
+4. psicomap-phase1-migration.sql      ← Migração fase 1
+5. psicomap-phase2-migration.sql      ← Migração fase 2
+6. psicomap-phase3-saas-tenants.sql   ← Multi-tenant SaaS
+7. psicomap-phase4-billing.sql        ← Billing / assinatura
+8. psicomap-security-patch.sql        ← Patch de segurança v1
+9. psicomap-security-patch-v2.sql     ← Patch de segurança v2
 10. migration_roles.sql           ← Sistema de roles
 11. migration_super_admin.sql     ← Super admin
 12. migration_painel_eleva.sql    ← Painel Eleva IT

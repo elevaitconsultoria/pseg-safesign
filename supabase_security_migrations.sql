@@ -1,5 +1,5 @@
--- ══════════════════════════════════════════════════════════════════════════
--- PSEG SafeSign — Migrações de Segurança e Performance
+﻿-- ══════════════════════════════════════════════════════════════════════════
+-- PsicoMap — Migrações de Segurança e Performance
 -- Executar no Supabase Dashboard → SQL Editor
 -- Ordem: 1 → 2 → 3 → 4
 -- ══════════════════════════════════════════════════════════════════════════

@@ -1,8 +1,8 @@
----
+﻿---
 name: validar-importacao-ghe
 description: >
-  Confronta os dados importados de GHE (setores/funções/headcount) de uma empresa no PSEG
-  SafeSign contra a planilha Excel original enviada pelo cliente, ANTES do envio de qualquer
+  Confronta os dados importados de GHE (setores/funções/headcount) de uma empresa no PsicoMap
+  contra a planilha Excel original enviada pelo cliente, ANTES do envio de qualquer
   laudo ou entrega. Use SEMPRE que: (1) o usuário anexar uma planilha de colaboradores/GHE e
   pedir para "confrontar", "validar", "conferir" ou "bater" com o que foi cadastrado; (2) o
   usuário relatar um GAP de dados reportado por um cliente; (3) antes de enviar um laudo ou
@@ -15,10 +15,10 @@ description: >
 # Validação de Importação GHE — Planilha × Sistema
 
 Esta skill audita se tudo que está na planilha do cliente também está, corretamente, no banco
-do PSEG SafeSign. Nasceu de um GAP real reportado por cliente em 2026-07 (Udinese e Assa Abloy
+do PsicoMap. Nasceu de um GAP real reportado por cliente em 2026-07 (Udinese e Assa Abloy
 Shared Services), causado por um bug de mapeamento cargo→setor 1:1 que descartava vínculos
 quando o mesmo cargo aparecia em setores diferentes na planilha. Ver seção 11 do
-`PSEG_SAFESIGN_DOCUMENTACAO_TECNICA_2026-06-09.md` para o histórico completo.
+`PSICOMAP_DOCUMENTACAO_TECNICA_2026-06-09.md` para o histórico completo.
 
 **Formato assumido da planilha (atual):** uma linha por colaborador, com pelo menos uma coluna
 de Setor e uma coluna de Cargo/Função. QTD não é uma coluna — é **derivada** contando quantas
@@ -36,7 +36,7 @@ Planilha do cliente (1 linha = 1 colaborador)
   │  Financeiro    Analista Jr        ← 2 colaboradores no mesmo par
   │  Financeiro    Coordenador
   ▼
-Import no admin (pseg-admin-questionario.html → GHE)
+Import no admin (psicomap-admin.html → GHE)
   │
   ├─ empresa_setores      (catálogo de setores únicos)
   ├─ empresa_funcoes      (catálogo de cargos únicos, setor_id pode ser NULL = universal)
@@ -124,7 +124,7 @@ visual erra).
 
 Faça o diff em Python/JS a partir dos JSONs salvos. Para o **matching** de chaves (não para
 exibição), aplique a mesma normalização conservadora usada pelo importador (`_gheNorm` em
-`pseg-admin-questionario.html`: trim + colapso de espaços + lowercase) — isso evita falsos
+`psicomap-admin.html`: trim + colapso de espaços + lowercase) — isso evita falsos
 positivos por diferença de maiúscula/espaço duplo, que não é um GAP real de dado.
 
 Gere três listas:

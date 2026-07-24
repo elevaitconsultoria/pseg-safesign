@@ -1,9 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/",      "destination": "/pseg-admin-questionario.html" },
-    { "source": "/admin", "destination": "/pseg-admin-questionario.html" },
-    { "source": "/form",  "destination": "/pseg-forms.html" }
+    { "source": "/",      "destination": "/psicomap-admin.html" },
+    { "source": "/admin", "destination": "/psicomap-admin.html" },
+    { "source": "/form",  "destination": "/psicomap-forms.html" }
   ],
   "headers": [
     {

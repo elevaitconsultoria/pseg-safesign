@@ -1,8 +1,8 @@
-# PSEG SafeSign — Guia para o Agente
+﻿# PsicoMap — Guia para o Agente
 
 ## Contexto de negócio
 
-O PSEG SafeSign é uma **plataforma SaaS de avaliação de riscos psicossociais ocupacionais**,
+O PsicoMap é uma **plataforma SaaS de avaliação de riscos psicossociais ocupacionais**,
 voltada a consultorias de segurança do trabalho que precisam aplicar e analisar questionários
 exigidos pela **NR-01, NR-17 e BS 8800** nas empresas clientes.
 
@@ -61,7 +61,7 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
 
 ## Arquitetura
 
-- **SPA de arquivo único**: `pseg-admin-questionario.html` (painel admin) e `pseg-forms.html`
+- **SPA de arquivo único**: `psicomap-admin.html` (painel admin) e `psicomap-forms.html`
   (formulário público). Toda lógica JS é inline — sem bundler, sem build step nos arquivos.
 - **Backend**: Supabase. PROD: `vftyiildukrpgmnbcnao`. DEV: `szqatgvgghxvyyncsjxl`.
 - **Deploy**: Cloudflare Pages. `develop` → DEV. `main` → PROD. `main` tem branch protection —
@@ -105,7 +105,7 @@ Capitalização não é normalizada — responsabilidade do cliente na planilha.
 
 **Antes de enviar laudo para cliente com base importada: rodar `/validar-importacao-ghe`.**
 
-## Formulário público (`pseg-forms.html`)
+## Formulário público (`psicomap-forms.html`)
 
 - `carregarGHEEmpresa()` faz fetch do banco a cada load — sem cache local. Reimportar pelo admin
   reflete imediatamente; não é necessário gerar novo link.
@@ -145,7 +145,7 @@ Capitalização não é normalizada — responsabilidade do cliente na planilha.
 - **Textos de questões hardcoded em dois lugares**: `QS_OFICIAIS` (admin, ln ~3989) e `BLOCOS`
   (forms, ln ~30). Qualquer atualização de texto **deve ser feita nos dois arquivos** — nunca
   só em um. A tabela `questoes.texto` existe mas não é fonte de verdade do admin.
-- **`pseg-forms.html` tem credenciais PROD hardcoded** (linhas 332–333). O `build.js` substitui
+- **`psicomap-forms.html` tem credenciais PROD hardcoded** (linhas 332–333). O `build.js` substitui
   via regex — se o código ao redor mudar, o regex falha silenciosamente sem erro. O admin usa
   placeholders seguros (`__SUPA_URL__`); o forms não. Cuidado ao reformatar essas linhas.
 - **Hard delete sem soft-delete**: `excluirEmpresa()` (ln ~4996) é irreversível com CASCADE.

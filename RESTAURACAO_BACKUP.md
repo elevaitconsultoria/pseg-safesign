@@ -1,9 +1,9 @@
-# Guia de Restauração — PSEG SafeSign
+﻿# Guia de Restauração — PsicoMap
 
 **Quando usar:** tabela `respostas` ou `resposta_itens` corrompida, dropada acidentalmente, ou com dados faltando.
 
 **Onde executar:** Supabase Dashboard → SQL Editor  
-**Projeto:** `vftyiildukrpgmnbcnao` (pseg-safesign)  
+**Projeto:** `vftyiildukrpgmnbcnao` (psicomap)  
 **URL:** https://supabase.com/dashboard/project/vftyiildukrpgmnbcnao/sql/new
 
 ---
@@ -172,4 +172,4 @@ ORDER BY respostas DESC;
 
 ---
 
-*Gerado em 2026-06-22 | PSEG SafeSign — Eleva IT Consultoria*
+*Gerado em 2026-06-22 | PsicoMap — Eleva IT Consultoria*

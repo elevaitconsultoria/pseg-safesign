@@ -1,7 +1,7 @@
-# PSEG SafeSign — Referência Rápida do Projeto
+﻿# PsicoMap — Referência Rápida do Projeto
 
 > Documento de consulta rápida: URLs, variáveis, parâmetros, constantes e fluxos operacionais.  
-> Para arquitetura completa, ver `PSEG_SAFESIGN_DOCUMENTACAO_TECNICA_2026-06-09.md`.  
+> Para arquitetura completa, ver `PSICOMAP_DOCUMENTACAO_TECNICA_2026-06-09.md`.  
 > Para guia do agente, ver `CLAUDE.md`.
 
 ---
@@ -10,13 +10,13 @@
 
 | Recurso | PROD | DEV |
 |---------|------|-----|
-| **Admin** | https://pseg-safesign.pages.dev/pseg-admin-questionario.html | https://develop.pseg-safesign.pages.dev/pseg-admin-questionario.html |
-| **Formulário** | https://pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN | https://develop.pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN |
+| **Admin** | https://psicomap.pages.dev/psicomap-admin.html | https://develop.psicomap.pages.dev/psicomap-admin.html |
+| **Formulário** | https://psicomap.pages.dev/psicomap-forms.html?token=TOKEN | https://develop.psicomap.pages.dev/psicomap-forms.html?token=TOKEN |
 | **Supabase dashboard** | https://supabase.com/dashboard/project/vftyiildukrpgmnbcnao | https://supabase.com/dashboard/project/szqatgvgghxvyyncsjxl |
 | **Supabase API** | https://vftyiildukrpgmnbcnao.supabase.co | https://szqatgvgghxvyyncsjxl.supabase.co |
-| **Cloudflare Pages** | https://dash.cloudflare.com (projeto pseg-safesign, branch main) | (branch develop) |
-| **GitHub** | https://github.com/elevaitconsultoria/pseg-safesign | — |
-| **GitHub Pages (secundário)** | https://elevaitconsultoria.github.io/pseg-safesign/ | — |
+| **Cloudflare Pages** | https://dash.cloudflare.com (projeto psicomap, branch main) | (branch develop) |
+| **GitHub** | https://github.com/elevaitconsultoria/psicomap | — |
+| **GitHub Pages (secundário)** | https://elevaitconsultoria.github.io/psicomap/ | — |
 
 ---
 
@@ -26,10 +26,10 @@
 |------|-------|
 | Supabase project ID — PROD | `vftyiildukrpgmnbcnao` |
 | Supabase project ID — DEV | `szqatgvgghxvyyncsjxl` |
-| GitHub repo | `elevaitconsultoria/pseg-safesign` |
+| GitHub repo | `elevaitconsultoria/psicomap` |
 | Branch PROD | `main` |
 | Branch DEV | `develop` |
-| Cloudflare project name | `pseg-safesign` |
+| Cloudflare project name | `psicomap` |
 
 ---
 
@@ -45,8 +45,8 @@ Configuradas em cada environment do Cloudflare Pages (Settings → Environment v
 | `STRIPE_PAYMENT_LINKS` | Não | JSON com links de pagamento Stripe por plano. Se ausente, build usa links hardcoded de teste |
 
 **Como o build.js usa essas variáveis:**
-- `pseg-admin-questionario.html`: substitui placeholders `__SUPA_URL__` e `__SUPA_ANON__` via `replaceAll()`
-- `pseg-forms.html`: substitui via **regex** (diferente — risco: se o código mudar, regex falha silenciosamente)
+- `psicomap-admin.html`: substitui placeholders `__SUPA_URL__` e `__SUPA_ANON__` via `replaceAll()`
+- `psicomap-forms.html`: substitui via **regex** (diferente — risco: se o código mudar, regex falha silenciosamente)
 - Banner DEV: injeta `<div id="dev-banner">` após `<body>` quando `APP_ENV=development`
 
 ---
@@ -154,8 +154,8 @@ Questões invertidas: valor_ajustado = 5 - valor_original
 
 | Arquivo | Constante | Linha aprox. |
 |---------|-----------|-------------|
-| `pseg-admin-questionario.html` | `QS_OFICIAIS` | ~3989 |
-| `pseg-forms.html` | `BLOCOS` | ~30 |
+| `psicomap-admin.html` | `QS_OFICIAIS` | ~3989 |
+| `psicomap-forms.html` | `BLOCOS` | ~30 |
 
 **Qualquer atualização de texto de questão deve ser feita nos dois arquivos simultaneamente.**  
 A tabela `questoes.texto` no banco existe mas não é fonte de verdade do admin — serve apenas como índice de UUID para o pipeline de respostas.
@@ -181,14 +181,14 @@ Escala de resposta: `1=Nunca | 2=Às vezes | 3=Frequente | 4=Sempre`
 
 ## 11. localStorage — Chaves Usadas
 
-### pseg-forms.html
+### psicomap-forms.html
 
 | Chave | Propósito |
 |-------|-----------|
 | `pseg_respondido_${linkToken}` | Flag "já respondeu neste dispositivo" (bloqueio de 2ª resposta) |
 | `pseg_offline_${timestamp}` | Resposta salva localmente quando RPC falha (reenvio posterior) |
 
-### pseg-admin-questionario.html
+### psicomap-admin.html
 
 | Chave | Propósito |
 |-------|-----------|
@@ -207,7 +207,7 @@ Escala de resposta: `1=Nunca | 2=Às vezes | 3=Frequente | 4=Sempre`
 
 ## 12. Dependências Externas (CDN)
 
-### pseg-admin-questionario.html
+### psicomap-admin.html
 
 | Biblioteca | Versão | Propósito |
 |-----------|--------|-----------|
@@ -219,7 +219,7 @@ Escala de resposta: `1=Nunca | 2=Às vezes | 3=Frequente | 4=Sempre`
 | `xlsx` | 0.18.5 | Leitura de planilhas XLSX/CSV no import GHE |
 | Google Fonts | — | Inter, JetBrains Mono, Playfair Display, DM Sans |
 
-### pseg-forms.html
+### psicomap-forms.html
 
 | Biblioteca | Versão | Propósito |
 |-----------|--------|-----------|
@@ -271,16 +271,16 @@ Escala de resposta: `1=Nunca | 2=Às vezes | 3=Frequente | 4=Sempre`
 1. Desenvolver em local (ou direto no arquivo)
 2. git push origin develop
    → Cloudflare Pages executa build.js com vars DEV
-   → DEV URL: https://develop.pseg-safesign.pages.dev
+   → DEV URL: https://develop.psicomap.pages.dev
 
 3. Validar com /validar-formulario se mudou pipeline de respostas
 
-4. Criar PR: https://github.com/elevaitconsultoria/pseg-safesign/compare/main...develop
+4. Criar PR: https://github.com/elevaitconsultoria/psicomap/compare/main...develop
    (gh CLI não autenticado — PR manual)
 5. Usuário faz merge no GitHub
 
 6. Cloudflare Pages executa build.js com vars PROD
-   → PROD URL: https://pseg-safesign.pages.dev
+   → PROD URL: https://psicomap.pages.dev
 ```
 
 **Pré-requisito:** variáveis de ambiente configuradas em cada environment do Cloudflare Pages (seção 3).
@@ -344,7 +344,7 @@ WHERE empresa_id = 'UUID';
 ## 17. Configuração do Cliente Supabase no Formulário
 
 ```js
-// pseg-forms.html — isolamento intencional da sessão admin
+// psicomap-forms.html — isolamento intencional da sessão admin
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
     persistSession: false,
