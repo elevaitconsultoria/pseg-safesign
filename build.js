@@ -109,7 +109,7 @@ if (env.APP_ENV?.trim().toLowerCase() === 'development') {
 fs.writeFileSync(out, html, 'utf8');
 
 // ── Copiar arquivos estáticos ──────────────────────────────────
-const staticFiles = ['404.html', 'index.html', 'login-bg.jpg', 'favicon.ico'];
+const staticFiles = ['404.html', 'index.html', 'login-bg.jpg', 'favicon.ico', '_redirects', '_headers'];
 staticFiles.forEach(file => {
   const srcPath = path.join(__dirname, file);
   if (fs.existsSync(srcPath)) {
