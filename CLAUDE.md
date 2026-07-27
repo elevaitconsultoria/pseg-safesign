@@ -119,6 +119,23 @@ Capitalização não é normalizada — responsabilidade do cliente na planilha.
   "Outro" sempre inserido por último, fora do sort.
 - `link_token` não é único por funcionário — idempotência é por `session_id`.
 
+## Checklist de rebrand (aprendido no rebrand PsicoMap, 2026-07)
+
+Ao renomear arquivos HTML que têm URLs distribuídas publicamente (WhatsApp, QR Code, e-mail):
+
+1. **Nunca deletar** — sempre redirecionar. Adicionar 301 em `_redirects` antes de remover o arquivo.
+2. **Cobrir ambas as variantes** — o CF Pages serve `foo.html` também como `/foo`:
+   ```
+   /pseg-forms.html  →  /psicomap-forms.html  301
+   /pseg-forms       →  /psicomap-forms.html  301
+   ```
+3. **Copiar `_redirects` para `dist/`** — confirmar que está no array `staticFiles` de `build.js`.
+4. **Rodar `/validar-formulario`** após deploy para confirmar que o pipeline de submissão está intacto.
+5. **Testar um link real** (distribuído antes do rebrand) antes de fechar o ciclo.
+
+**Alternativa mais segura:** mudar apenas o conteúdo dos arquivos HTML sem renomeá-los —
+elimina toda a categoria de bugs de link quebrado.
+
 ## Skills disponíveis
 
 | Skill | Quando usar |
@@ -223,3 +240,9 @@ sairModoSuporte()
   placeholders seguros (`__SUPA_URL__`); o forms não. Cuidado ao reformatar essas linhas.
 - **Hard delete sem soft-delete**: `excluirEmpresa()` (ln ~4996) é irreversível com CASCADE.
   Dados apagados não são recuperáveis (caso real: ELEVA IT CONSULTORIA 2026-07-22).
+- **`_redirects` e `_headers` devem estar em `dist/`**: o Cloudflare Pages serve a partir de
+  `dist/`. Sem copiar esses arquivos no `build.js` (array `staticFiles`), nenhum redirect
+  ou header de segurança chega ao deploy. Verificar `staticFiles` em `build.js` sempre que
+  adicionar regras de routing.
+- **Cloudflare Pretty URLs**: o CF Pages serve `foo.html` também como `/foo` (sem extensão).
+  Qualquer redirect de compatibilidade deve cobrir **ambas** as variantes (`/foo.html` e `/foo`).
