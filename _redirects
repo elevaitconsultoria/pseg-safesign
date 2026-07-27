@@ -7,7 +7,9 @@
 
 # Compatibilidade retroativa — links distribuídos antes do rebrand
 /pseg-forms.html              /psicomap-forms.html         301
+/pseg-forms                   /psicomap-forms.html         301
 /pseg-admin-questionario.html /psicomap-admin.html         301
+/pseg-admin-questionario      /psicomap-admin.html         301
 
 # Painel admin (raiz já redireciona via index.html)
 /admin        /psicomap-admin.html  200
