@@ -10,13 +10,17 @@
 
 | Recurso | PROD | DEV |
 |---------|------|-----|
-| **Admin** | https://psicomap.pages.dev/psicomap-admin.html | https://develop.psicomap.pages.dev/psicomap-admin.html |
-| **Formulário** | https://psicomap.pages.dev/psicomap-forms.html?token=TOKEN | https://develop.psicomap.pages.dev/psicomap-forms.html?token=TOKEN |
+| **Admin** | https://pseg-safesign.pages.dev/psicomap-admin.html ¹ | https://develop.pseg-safesign.pages.dev/psicomap-admin.html |
+| **Formulário** | https://pseg-safesign.pages.dev/psicomap-forms.html?token=TOKEN ¹ | https://develop.pseg-safesign.pages.dev/psicomap-forms.html?token=TOKEN |
 | **Supabase dashboard** | https://supabase.com/dashboard/project/vftyiildukrpgmnbcnao | https://supabase.com/dashboard/project/szqatgvgghxvyyncsjxl |
 | **Supabase API** | https://vftyiildukrpgmnbcnao.supabase.co | https://szqatgvgghxvyyncsjxl.supabase.co |
-| **Cloudflare Pages** | https://dash.cloudflare.com (projeto psicomap, branch main) | (branch develop) |
-| **GitHub** | https://github.com/elevaitconsultoria/psicomap | — |
-| **GitHub Pages (secundário)** | https://elevaitconsultoria.github.io/psicomap/ | — |
+| **Cloudflare Pages** | https://dash.cloudflare.com (projeto **pseg-safesign** ¹, branch main) | (branch develop) |
+| **GitHub** | https://github.com/elevaitconsultoria/pseg-safesign ¹ | — |
+| **GitHub Pages (secundário)** | https://elevaitconsultoria.github.io/pseg-safesign/ ¹ | — |
+
+> ¹ **Pendente renomeação manual** (backlog infra): Cloudflare Pages e GitHub repo ainda usam
+> o nome antigo `pseg-safesign`. Após o rename, as URLs mudarão para `psicomap.pages.dev` e
+> `github.com/elevaitconsultoria/psicomap`. Ver seção de pendências no `CLAUDE.md`.
 
 ---
 
@@ -29,7 +33,7 @@
 | GitHub repo | `elevaitconsultoria/psicomap` |
 | Branch PROD | `main` |
 | Branch DEV | `develop` |
-| Cloudflare project name | `psicomap` |
+| Cloudflare project name | `pseg-safesign` (pendente renomeação para `psicomap`) |
 
 ---
 
@@ -280,14 +284,54 @@ Escala de resposta: `1=Nunca | 2=Às vezes | 3=Frequente | 4=Sempre`
 5. Usuário faz merge no GitHub
 
 6. Cloudflare Pages executa build.js com vars PROD
-   → PROD URL: https://psicomap.pages.dev
+   → PROD URL: https://pseg-safesign.pages.dev (futuro: psicomap.pages.dev)
 ```
 
 **Pré-requisito:** variáveis de ambiente configuradas em cada environment do Cloudflare Pages (seção 3).
 
 ---
 
-## 16. Comandos SQL Frequentes
+## 16. Routing e Redirects (Cloudflare Pages)
+
+### Arquivo `_redirects`
+
+O Cloudflare Pages serve a partir de `dist/`. O `build.js` copia `_redirects` para `dist/` via
+o array `staticFiles`. **Se `_redirects` não estiver nesse array, redirects são ignorados em prod.**
+
+Regras atuais (arquivo `_redirects` na raiz do repo):
+
+```
+/form         /psicomap-forms.html    200   # rota pública amigável
+/form/*       /psicomap-forms.html    200
+/pseg-forms.html  /psicomap-forms.html  301   # compatibilidade retroativa
+/pseg-forms       /psicomap-forms.html  301   # idem — variante sem extensão
+/pseg-admin-questionario.html /psicomap-admin.html  301
+/pseg-admin-questionario      /psicomap-admin.html  301
+/admin        /psicomap-admin.html    200
+/admin/*      /psicomap-admin.html    200
+/**.sql       /404.html              403   # bloquear acesso a SQL/MD
+/**.md        /404.html              403
+```
+
+### Regra de cobertura dupla (obrigatória)
+
+O Cloudflare Pages ativa **Pretty URLs** por padrão: serve `foo.html` também em `/foo` (sem extensão).
+Portanto **qualquer redirect de compatibilidade deve cobrir AMBAS as variantes**:
+- `/pseg-forms.html` → `/psicomap-forms.html`
+- `/pseg-forms`      → `/psicomap-forms.html`  ← sem esta linha, links antigos `/pseg-forms?token=...` quebram
+
+### Lição aprendida (rebrand 2026-07)
+
+Três bugs em cadeia causaram links quebrados em produção:
+1. Arquivo `pseg-forms.html` deletado sem redirect → PR #35 (301 em `_redirects`)
+2. `_redirects` não copiado para `dist/` → PR #36 (`staticFiles` em `build.js`)
+3. Variante sem `.html` não coberta → PR #37 (cobertura dupla no `_redirects`)
+
+Ver nota de sessão: `.claude/notes/2026-07-27-rebrand-links-fix.md`
+
+---
+
+## 17. Comandos SQL Frequentes
 
 ### Encontrar empresa por nome
 ```sql
@@ -341,7 +385,7 @@ WHERE empresa_id = 'UUID';
 
 ---
 
-## 17. Configuração do Cliente Supabase no Formulário
+## 18. Configuração do Cliente Supabase no Formulário
 
 ```js
 // psicomap-forms.html — isolamento intencional da sessão admin
@@ -358,7 +402,7 @@ Evita que uma sessão admin aberta no mesmo browser interfira com o formulário 
 
 ---
 
-## 18. Ciclos — Formato do Nome Gerado
+## 19. Ciclos — Formato do Nome Gerado
 
 ```js
 // Meses em português (índice 1-12)
