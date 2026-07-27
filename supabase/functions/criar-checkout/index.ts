@@ -1,5 +1,5 @@
 /**
- * PSEG SafeSign — Edge Function: criar-checkout
+ * PsicoMap — Edge Function: criar-checkout
  *
  * Cria uma sessão de pagamento (Stripe ou Asaas) para upgrade de plano.
  * Chamada pelo front com: POST /functions/v1/criar-checkout
@@ -113,7 +113,7 @@ async function criarCheckoutStripe({ tenant, plano, supabase, jwt }: any) {
   }
 
   // Criar Checkout Session
-  const appUrl = Deno.env.get('APP_URL') || 'https://elevaitconsultoria.github.io/pseg-safesign'
+  const appUrl = Deno.env.get('APP_URL') || 'https://elevaitconsultoria.github.io/psicomap'
   const session = await stripePost('/checkout/sessions', STRIPE_KEY, {
     customer:             customerId,
     mode:                 'subscription',
@@ -160,7 +160,7 @@ async function criarCobrancaAsaas({ tenant, plano, metodo, supabase }: any) {
     billingType,
     value:           valor,
     dueDate:         dueDate.toISOString().split('T')[0],
-    description:     `PSEG SafeSign — Plano ${plano}`,
+    description:     `PsicoMap — Plano ${plano}`,
     externalReference: `${tenant.id}::${plano}`,
   })
 

@@ -1,8 +1,8 @@
----
+﻿---
 name: validar-formulario
 description: >
   Valida end-to-end o fluxo de submissão do formulário psicossocial e gravação de respostas
-  no PSEG SafeSign. Use SEMPRE que: (1) qualquer alteração tocar em salvar_resposta, respostas,
+  no PsicoMap. Use SEMPRE que: (1) qualquer alteração tocar em salvar_resposta, respostas,
   resposta_itens, respostas_fila ou respostas_raw_backup; (2) antes de um merge develop→main;
   (3) após qualquer deploy em produção; (4) ao investigar erros como "resposta salva localmente",
   "operator does not exist", ou "permission denied"; (5) quando o usuário pedir para validar,
@@ -10,9 +10,9 @@ description: >
   sistema — nenhuma mudança deve ir a produção sem essa validação.
 ---
 
-# Validação End-to-End — Formulário PSEG SafeSign
+# Validação End-to-End — Formulário PsicoMap
 
-O formulário público (`pseg-forms.html`) é a função mais crítica do sistema. Qualquer falha
+O formulário público (`psicomap-forms.html`) é a função mais crítica do sistema. Qualquer falha
 silenciosa aqui significa que respostas de funcionários se perdem sem aviso. Este skill garante
 que o pipeline completo está funcionando antes de qualquer deploy.
 
@@ -22,7 +22,7 @@ Uma submissão válida passa por **4 etapas em sequência**, todas dentro de uma
 no RPC `salvar_resposta` (SECURITY DEFINER):
 
 ```
-pseg-forms.html → Supabase RPC salvar_resposta
+psicomap-forms.html → Supabase RPC salvar_resposta
   │
   ├─ 1. respostas_raw_backup  (INSERT — backup bruto, antes de qualquer validação)
   ├─ 2. respostas_fila        (INSERT status='pendente' → UPDATE status='processado')

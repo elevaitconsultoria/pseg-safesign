@@ -1,5 +1,5 @@
--- ══════════════════════════════════════════════════════════════════════════
--- PSEG SafeSign — Migração 9: Modo teste em links de coleta
+﻿-- ══════════════════════════════════════════════════════════════════════════
+-- PsicoMap — Migração 9: Modo teste em links de coleta
 -- Executar no Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════════════════════
 

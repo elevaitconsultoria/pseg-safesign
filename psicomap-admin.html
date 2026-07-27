@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PSEG — Admin · Questionário & Análise</title>
+<title>PsicoMap — Admin · Questionário & Análise</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -1004,12 +1004,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div style="width:34px;height:34px;background:#1d4ed8;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </div>
-      <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PSEG SafeSign</span>
+      <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PsicoMap</span>
     </div>
 
     <h2 style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
     <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
-      Bem-vindo ao PSEG SafeSign. Crie uma senha para ativar sua conta.
+      Bem-vindo ao PsicoMap. Crie uma senha para ativar sua conta.
     </p>
 
     <label style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px">Nova senha</label>
@@ -1086,7 +1086,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             Identificador único (slug)
           </label>
           <div style="position:relative">
-            <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;pointer-events:none">safesign.app/</span>
+            <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;pointer-events:none">psicomap.app/</span>
             <input id="ob-slug" type="text" placeholder="minha-consultoria"
               style="width:100%;box-sizing:border-box;padding:11px 14px 11px 112px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#cbd5e1;outline:none;transition:border-color .2s"
               onfocus="this.style.borderColor='rgba(245,158,11,.6)'"
@@ -1537,7 +1537,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="field">
           <label>Nome da empresa <span style="color:var(--red)">*</span></label>
-          <input type="text" id="ep-nome" placeholder="Ex: PSEG Engenharia de Segurança do Trabalho"/>
+          <input type="text" id="ep-nome" placeholder="Ex: PsicoMap Engenharia de Segurança do Trabalho"/>
         </div>
         <div class="field">
           <label>CNPJ</label>
@@ -1712,7 +1712,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <label>Cliente:</label>
     <select id="sel-emp" onchange="loadEmpresa(this.value)">
       <option value="">— selecione —</option>
-      <option value="padrao">⭐ Padrão PSEG</option>
+      <option value="padrao">⭐ Padrão PsicoMap</option>
     </select>
     <span id="emp-badge" style="display:none" class="tag tg"></span>
     <div style="margin-left:auto;display:flex;gap:8px" id="toolbar-q" style="display:none">
@@ -2524,7 +2524,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="met-card-body">
         <div class="met-card-title">Mapeamento questão → risco (cd_risco)</div>
         <div class="met-card-text">
-          Cada questão é vinculada a um <strong>cd_risco</strong> — o fator de risco psicossocial que ela mede. Um mesmo risco pode ter múltiplas questões, cada uma abordando o problema por um ângulo diferente. Essa vinculação é configurável pelo admin da PSEG na aba "Questionário".
+          Cada questão é vinculada a um <strong>cd_risco</strong> — o fator de risco psicossocial que ela mede. Um mesmo risco pode ter múltiplas questões, cada uma abordando o problema por um ângulo diferente. Essa vinculação é configurável pelo admin da PsicoMap na aba "Questionário".
           <div style="margin-top:10px" id="met-q-mapa"></div>
         </div>
       </div>
@@ -2577,7 +2577,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <span class="met-algo-n">5</span>
               <div>
                 <strong>Determinar S (Severidade)</strong><br>
-                S é um valor fixo por cd_risco, definido na tabela de riscos PSEG. Representa o impacto potencial à saúde do trabalhador caso o risco se concretize.
+                S é um valor fixo por cd_risco, definido na tabela de riscos PsicoMap. Representa o impacto potencial à saúde do trabalhador caso o risco se concretize.
               </div>
             </div>
             <div class="met-algo-step">
@@ -2963,10 +2963,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div style="font-size:13px;color:var(--tm);line-height:1.7">
       <p style="margin-bottom:8px">Site separado voltado para conversão — apresenta o Eleva IT para potenciais clientes sem misturar com o app operacional.</p>
       <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Domínio próprio (ex: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">safesign.com.br</code>) separado do app</li>
+        <li>Domínio próprio (ex: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">psicomap.com.br</code>) separado do app</li>
         <li>Seções: hero + proposta de valor, como funciona, planos, contato</li>
         <li>SEO-ready: meta tags, OG, Schema.org, carregamento sem Supabase</li>
-        <li>CTA para trial/contato; onboarding leva ao app (app.safesign.com.br)</li>
+        <li>CTA para trial/contato; onboarding leva ao app (app.psicomap.com.br)</li>
         <li>Sem autenticação — página pública, otimizada para conversão</li>
       </ul>
     </div>
@@ -3870,8 +3870,8 @@ async function carregarRiscosDB() {
       };
       FATORES[r.cd_risco] = r.nome.length > 32 ? r.nome.slice(0,30)+'…' : r.nome;
     });
-    console.log('[PSEG] Riscos carregados do banco:', data.length);
-  } catch(e) { console.warn('[PSEG] carregarRiscosDB:', e.message); }
+    console.log('[PsicoMap] Riscos carregados do banco:', data.length);
+  } catch(e) { console.warn('[PsicoMap] carregarRiscosDB:', e.message); }
 }
 
 async function _salvarRiscosDB() {
@@ -3890,11 +3890,11 @@ async function _salvarRiscosDB() {
       .from('riscos_config')
       .upsert(upserts, { onConflict: 'tenant_id,empresa_id,cd_risco' });
     if (error) throw error;
-  } catch(e) { console.warn('[PSEG] _salvarRiscosDB:', e.message); }
+  } catch(e) { console.warn('[PsicoMap] _salvarRiscosDB:', e.message); }
 }
 
-// cd_risco → detalhes do risco (fonte: Planilha Riscos Psicossociais e Fontes Geradoras — PSEG)
-// Editável pelo admin PSEG via painel de configuração de riscos
+// cd_risco → detalhes do risco (fonte: Planilha Riscos Psicossociais e Fontes Geradoras — PsicoMap)
+// Editável pelo admin PsicoMap via painel de configuração de riscos
 const RISCOS_DETALHES = {
   1: {
     nome:'Carga de trabalho excessiva',
@@ -3988,7 +3988,7 @@ const BLOCOS_INFO = {
 };
 
 const QS_OFICIAIS = [
-  // cd = cd_risco (1-12, tabela PSEG)  inv = questão inversa (score = 5-v)  anc = âncora (não removível)
+  // cd = cd_risco (1-12, tabela PsicoMap)  inv = questão inversa (score = 5-v)  anc = âncora (não removível)
   // ve = valor esperado ajustado = 1 (Nunca = risco mínimo) para todas as 27 oficiais
   {id:1, c:'Q01',t:'Em minha rotina de trabalho, considero que tenho prazos impossíveis de cumprir?',b:'A',cd:3, inv:false,anc:false,oficial:true,ve:1},
   {id:2, c:'Q02',t:'Considero que minha carga de trabalho é intensa e excessiva?',b:'A',cd:1, inv:false,anc:true, oficial:true,ve:1},
@@ -4125,7 +4125,7 @@ let grupoSelecionados = new Set();
 // ══════════════════════════════════════════
 function loadEmpresa(val) {
   // Atualizar empresa ativa global
-  const nomeEmp = val === 'padrao' ? 'Padrão PSEG' : (_empresas.find(e => e.id === val)?.nome || val || '');
+  const nomeEmp = val === 'padrao' ? 'Padrão PsicoMap' : (_empresas.find(e => e.id === val)?.nome || val || '');
   if (val && val !== '') setEmpresaAtiva(val, nomeEmp);
   limparCacheRespostas(); // limpar cache ao trocar empresa
   if (!val) {
@@ -4147,7 +4147,7 @@ function loadEmpresa(val) {
   document.getElementById('toolbar-q').style.display='flex';
   const badge = document.getElementById('emp-badge');
   badge.style.display = 'inline-block';
-  badge.textContent = val === 'padrao' ? 'Padrão PSEG' : 'Questionário personalizado';
+  badge.textContent = val === 'padrao' ? 'Padrão PsicoMap' : 'Questionário personalizado';
 
   renderQuestoes();
   renderParams(null);
@@ -4327,7 +4327,7 @@ function renderParams(q) {
   if (!titleEl) return;
 
   const bi = BLOCOS_INFO[q.b] || BLOCOS_INFO['EXTRA'];
-  titleEl.textContent = q.c + ' — ' + (q.oficial ? 'Questão Padrão PSEG' : 'Questão Extra');
+  titleEl.textContent = q.c + ' — ' + (q.oficial ? 'Questão Padrão PsicoMap' : 'Questão Extra');
 
   metaEl.innerHTML =
     `<span class="tag" style="background:${bi.bg};color:${bi.cor}">${bi.nome.split(' — ')[0]}</span>` +
@@ -4384,7 +4384,7 @@ function renderParams(q) {
       <span class="inv-toggle-sub">Score ajustado = 5 − valor bruto</span>
     </label>
 
-    ${q.oficial ? `<div class="alert alert-b" style="font-size:11px">Questão padrão PSEG — ajustes ficam apenas nesta sessão até sincronização com o banco de dados.</div>` : ''}
+    ${q.oficial ? `<div class="alert alert-b" style="font-size:11px">Questão Padrão PsicoMap — ajustes ficam apenas nesta sessão até sincronização com o banco de dados.</div>` : ''}
   </div>`;
 }
 
@@ -5465,7 +5465,7 @@ function exportarCSV() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `pseg_respostas_${_empresaAtiva.nome.replace(/\s+/g,'-')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `psicomap_respostas_${_empresaAtiva.nome.replace(/\s+/g,'-')}_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -5592,7 +5592,7 @@ async function exportarResultados(fmt) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `pseg-analise-${today}.png` });
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${today}.png` });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   toast('✓ PNG exportado.', 'g');
 }
@@ -5657,28 +5657,28 @@ function exportarResultadosPrint() {
   body { font-family: 'Inter', sans-serif; color: #111827; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   /* Cabeçalho do relatório */
-  .pseg-cover {
+  .psicomap-cover {
     display: flex; align-items: flex-end; justify-content: space-between;
     border-bottom: 3px solid #16532d; padding-bottom: 10px; margin-bottom: 22px;
     page-break-after: avoid; break-after: avoid;
   }
-  .pseg-cover-title { font-size: 18pt; font-weight: 800; color: #16532d; line-height: 1.1; }
-  .pseg-cover-sub   { font-size: 9pt; color: #6b7280; margin-top: 3px; }
-  .pseg-cover-meta  { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
-  .pseg-cover-meta strong { color: #374151; }
+  .psicomap-cover-title { font-size: 18pt; font-weight: 800; color: #16532d; line-height: 1.1; }
+  .psicomap-cover-sub   { font-size: 9pt; color: #6b7280; margin-top: 3px; }
+  .psicomap-cover-meta  { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
+  .psicomap-cover-meta strong { color: #374151; }
 
   /* Tags de filtro */
-  .pseg-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
-  .pseg-tag  { font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: #f0f2f4; color: #374151; border: 1px solid #e5e7eb; }
+  .psicomap-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
+  .psicomap-tag  { font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: #f0f2f4; color: #374151; border: 1px solid #e5e7eb; }
 
   /* Bloco de setor — nunca corta */
-  .pseg-setor { page-break-inside: avoid; break-inside: avoid; margin-bottom: 32px; }
+  .psicomap-setor { page-break-inside: avoid; break-inside: avoid; margin-bottom: 32px; }
 
   /* Card de risco — nunca corta */
-  .pseg-card  { page-break-inside: avoid; break-inside: avoid; }
+  .psicomap-card  { page-break-inside: avoid; break-inside: avoid; }
 
   /* Legenda escala — nunca corta do bloco que a precede */
-  .pseg-legenda { page-break-after: avoid; break-after: avoid; }
+  .psicomap-legenda { page-break-after: avoid; break-after: avoid; }
 
   /* Seção colapsível sempre visível no print */
   [style*="display:none"] { display: block !important; }
@@ -5695,40 +5695,40 @@ function exportarResultadosPrint() {
 <body>
 
 <!-- Cabeçalho -->
-<div class="pseg-cover">
+<div class="psicomap-cover">
   <div>
-    <div class="pseg-cover-title">Eleva IT</div>
-    <div class="pseg-cover-sub">Análise de Riscos Psicossociais — ${viewMode}</div>
+    <div class="psicomap-cover-title">Eleva IT</div>
+    <div class="psicomap-cover-sub">Análise de Riscos Psicossociais — ${viewMode}</div>
   </div>
-  <div class="pseg-cover-meta">
+  <div class="psicomap-cover-meta">
     ${empNome ? '<div><strong>' + empNome + '</strong></div>' : ''}
     <div>${hoje}</div>
     ${nResp ? '<div>' + nResp + ' respondente' + (nResp !== 1 ? 's' : '') + '</div>' : ''}
   </div>
 </div>
 
-${setores.length > 1 ? '<div class="pseg-tags">' + setores.map(s => '<span class="pseg-tag">' + s + '</span>').join('') + '</div>' : ''}
+${setores.length > 1 ? '<div class="psicomap-tags">' + setores.map(s => '<span class="psicomap-tag">' + s + '</span>').join('') + '</div>' : ''}
 
 <!-- Conteúdo da análise -->
-<div id="pseg-content">${html}</div>
+<div id="psicomap-content">${html}</div>
 
 <script>
 // Adiciona classes de controle de quebra de página aos blocos gerados dinamicamente
 document.addEventListener('DOMContentLoaded', function() {
   // Bloco de setor (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px)
   document.querySelectorAll('#pseg-content > div').forEach(function(el) {
-    el.classList.add('pseg-setor');
+    el.classList.add('psicomap-setor');
   });
 
   // Card de risco individual
   document.querySelectorAll('[style*="border-radius:8px"][style*="overflow:hidden"],' +
     '[style*="border-radius: 8px"][style*="overflow: hidden"]').forEach(function(el) {
-    el.classList.add('pseg-card');
+    el.classList.add('psicomap-card');
   });
 
   // Legenda escala (div imediatamente após o título de setor)
   document.querySelectorAll('[style*="inline-flex"][style*="align-items:center"][style*="gap:8px"]').forEach(function(el) {
-    el.classList.add('pseg-legenda');
+    el.classList.add('psicomap-legenda');
   });
 
   // Forçar exibição de seções colapsadas
@@ -6337,7 +6337,7 @@ const CLASSIF_ERGONOMICA = {
   CRÍTICO:     'Alto Risco Ergonômico',
 };
 
-// Critérios qualitativos de Severidade — Tabela 2 do documento PSEG
+// Critérios qualitativos de Severidade — Tabela 2 do documento PsicoMap
 const S_CRITERIA = {
   1: 'Não geram sobrecargas significativas. Efeitos insignificantes/desprezíveis, baixa fadiga mental. Desmotivação, sensação de invisibilidade, ansiedade leve, frustração.',
   2: 'Geram situações de desconforto e fadiga moderada. Frustração frequente, baixa autoestima, irritabilidade moderada, queda de imunidade.',
@@ -6839,7 +6839,7 @@ function excluirRisco(cd) {
     sbAdmin.from('riscos_config')
       .delete()
       .match({ empresa_id: null, cd_risco: parseInt(cd) })
-      .then(({ error }) => { if (error) console.warn('[PSEG] excluirRisco DB:', error.message); });
+      .then(({ error }) => { if (error) console.warn('[PsicoMap] excluirRisco DB:', error.message); });
   }
   try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
   toast('Risco cd'+cd+' excluído.', 'g');
@@ -7011,12 +7011,12 @@ function renderLinks() {
     }
   }
 
-  // URL correta para GitHub Pages: preserva o caminho base (ex: /pseg-safesign/)
+  // URL correta para GitHub Pages: preserva o caminho base (ex: /psicomap/)
   const _basePath = window.location.pathname.replace(/\/[^/]*$/, '');
   list.innerHTML = links.map(l => {
-    const url      = `${window.location.origin}${_basePath}/pseg-forms.html?token=${l.token}`;
+    const url      = `${window.location.origin}${_basePath}/psicomap-forms.html?token=${l.token}`;
     const nomeEsc  = (l.nomeEmpresa || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    const waMsg    = encodeURIComponent(`Pesquisa Psicossocial PSEG — responda clicando:\n${url}`);
+    const waMsg    = encodeURIComponent(`Pesquisa Psicossocial PsicoMap — responda clicando:\n${url}`);
     return `
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px${l.is_teste?';border-color:#f59e0b;border-style:dashed':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${l.is_teste?'#fffbeb':l.ativo?'white':'var(--bg)'}">
@@ -7236,7 +7236,7 @@ function abrirModalQR(url, nomeEmpresa) {
       const canvas = container.querySelector('canvas');
       if (canvas) {
         const dl = document.getElementById('qr-download-link');
-        if (dl) { dl.href = canvas.toDataURL('image/png'); dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+        if (dl) { dl.href = canvas.toDataURL('image/png'); dl.download = `qr_${nomeEmpresa||'psicomap'}.png`; }
       }
     }, 100);
   } else {
@@ -7244,7 +7244,7 @@ function abrirModalQR(url, nomeEmpresa) {
     const src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(url)}`;
     container.innerHTML = `<img src="${src}" width="240" height="240" alt="QR Code"/>`;
     const dl = document.getElementById('qr-download-link');
-    if (dl) { dl.href = src; dl.download = `qr_${nomeEmpresa||'pseg'}.png`; }
+    if (dl) { dl.href = src; dl.download = `qr_${nomeEmpresa||'psicomap'}.png`; }
   }
 
   document.getElementById('modal-qr').classList.add('open');
@@ -8059,7 +8059,7 @@ function exportChartPNG(codigo) {
   ctx.drawImage(canvas, 0, 0);
   const a = document.createElement('a');
   a.href     = tmp.toDataURL('image/png');
-  a.download = `PSEG_${codigo}.png`;
+  a.download = `PsicoMap_${codigo}.png`;
   a.click();
   toast(`${codigo} exportado como PNG.`, 'g');
 }
@@ -8146,7 +8146,7 @@ async function exportGrafPDF() {
   body { font-family: 'Inter', sans-serif; color: #111827; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11px; }
 
   /* Cabeçalho */
-  .pseg-cover {
+  .psicomap-cover {
     display: flex; align-items: flex-end; justify-content: space-between;
     border-bottom: 3px solid #16532d; padding-bottom: 10px; margin-bottom: 16px;
     page-break-after: avoid; break-after: avoid;
@@ -8191,7 +8191,7 @@ async function exportGrafPDF() {
 </head>
 <body>
 
-<div class="pseg-cover">
+<div class="psicomap-cover">
   <div>
     <div style="font-size:18pt;font-weight:800;color:#16532d;line-height:1.1">Eleva IT</div>
     <div style="font-size:9pt;color:#6b7280;margin-top:3px">Distribuição de Respostas por Questão</div>
@@ -8202,7 +8202,7 @@ async function exportGrafPDF() {
   </div>
 </div>
 
-<div id="pseg-dist-content">${html}</div>
+<div id="psicomap-dist-content">${html}</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -8331,7 +8331,7 @@ O <strong>Nível de Risco</strong> final é obtido pelo cruzamento <strong>P × 
   referencia: `Fonte: Adaptado de <em>Mulhausen &amp; Damiano (1998)</em>, Apêndice D da <em>BS 8800</em> (BSI, 1996) e <em>AIHA 2015</em>. Classificação ergonômica conforme <em>Hudson Couto (2007)</em>. Conforme estabelecido no Programa de Gerenciamento de Riscos Ocupacionais — PGR, <strong>NR-01</strong>.`
 };
 
-// ── Ações sugeridas por cd_risco e nível — fonte: Planilha PSEG "Riscos Psicossociais e Fontes Geradoras" ──
+// ── Ações sugeridas por cd_risco e nível — fonte: Planilha PsicoMap "Riscos Psicossociais e Fontes Geradoras" ──
 const ACOES_SUGERIDAS = {
   '1': { // Carga de trabalho excessiva
     MÉDIO: [
@@ -8620,7 +8620,7 @@ async function renderLaudo() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#1a7a3c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
         </div>
         <div>
-          <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:white;letter-spacing:1px">PSEG</div>
+          <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:white;letter-spacing:1px">PsicoMap</div>
           <div style="font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Engenharia de Segurança do Trabalho</div>
         </div>
       </div>
@@ -8896,7 +8896,7 @@ async function renderLaudo() {
         ${fGrupo.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).map(f=>{
           const acoesKey = f.cd ? String(f.cd) : String(f.id);
           const detalhe  = RISCOS_DETALHES[f.cd || f.id] || {};
-          const acoes    = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
+          const acoes    = ACOES_SUGERIDAS[acoesKey]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
           const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
           return `<div style="margin-bottom:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <!-- cabeçalho do fator -->
@@ -8918,7 +8918,7 @@ async function renderLaudo() {
           </div>`;
         }).join('')}
         <div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">
-          ℹ️ As ações acima são baseadas na planilha de Riscos Psicossociais e Fontes Geradoras (PSEG) e devem ser complementadas com avaliação presencial pelo técnico responsável.
+          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.
         </div>
       </div>`;
     });
@@ -8945,8 +8945,8 @@ async function _registrarLaudo() {
       snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome },
       tenant_id:     currentTenantId
     });
-    console.log('[PSEG] Laudo registrado no banco.');
-  } catch(e) { console.warn('[PSEG] _registrarLaudo:', e.message); }
+    console.log('[PsicoMap] Laudo registrado no banco.');
+  } catch(e) { console.warn('[PsicoMap] _registrarLaudo:', e.message); }
 }
 
 // ── Helper HTML-escape ──────────────────────────────────────────
@@ -9059,8 +9059,8 @@ tr:last-child td{border-bottom:none}
 .fonte-nota{font-size:10px;color:#9ca3af;text-align:right;margin-top:4px;font-style:italic}
 .mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}`;
 
-  // ── Branding da EST (ou padrão PSEG) ─────────────────────────
-  const estNome  = estPerfil?.nome_empresa    || 'PSEG Engenharia de Segurança do Trabalho';
+  // ── Branding da EST (ou Padrão PsicoMap) ─────────────────────────
+  const estNome  = estPerfil?.nome_empresa    || 'PsicoMap';
   const estLogo  = estPerfil?.logo_base64     || null;
   const coverLogoHTML = estLogo
     ? `<div class="cover-logo" style="background:white;padding:4px;border:1.5px solid #e5e7eb"><img src="${estLogo}" style="width:100%;height:100%;object-fit:contain"></div>`
@@ -9142,7 +9142,7 @@ tr:last-child td{border-bottom:none}
       const key = f.cd ? String(f.cd) : String(f.id);
       if (vistos.has(key)) return;
       vistos.add(key);
-      const acoes = ACOES_SUGERIDAS[key]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PSEG.'];
+      const acoes = ACOES_SUGERIDAS[key]?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
       acoesHTML += `<div class="acoes-grupo">
         <div class="acoes-risco-title">${e(f.nome)}</div>
         <ul class="acoes-lista">${acoes.map(a=>`<li>${e(a)}</li>`).join('')}</ul>
@@ -9218,7 +9218,7 @@ tr:last-child td{border-bottom:none}
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PSEG — Laudo — ${e(nomeEmp)}</title>
+<title>PsicoMap — Laudo — ${e(nomeEmp)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>${css}</style></head>
 <body>
@@ -9398,7 +9398,7 @@ ${_hasAC && acoesHTML ? `
   <div class="sec-title">${_snAC}. Ações Recomendadas por Fator de Risco</div>
   <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
   ${acoesHTML}
-  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na planilha de Riscos Psicossociais e Fontes Geradoras (PSEG) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
+  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
   ${footer('Ações Recomendadas')}
 </div>` : ''}
 
@@ -9536,7 +9536,7 @@ async function checkSession() {
 
   // Registrar listener ANTES de getSession (captura INITIAL_SESSION)
   sbAdmin.auth.onAuthStateChange((event, session) => {
-    console.log('[PSEG Auth]', event);
+    console.log('[PsicoMap Auth]', event);
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
       if (_isInviteFlow) {
@@ -9571,7 +9571,7 @@ async function checkSession() {
       diagnosticarConexao();
     }
   } catch(e) {
-    console.warn('[PSEG] getSession falhou:', e.message);
+    console.warn('[PsicoMap] getSession falhou:', e.message);
     showLogin();
     diagnosticarConexao();
   }
@@ -9679,10 +9679,10 @@ async function loadPerfil() {
     if (data?.empresa_id) currentUser.empresa_id = data.empresa_id;
     // Avisar se tenant não foi definido (usuário novo sem onboarding)
     if (!currentTenantId) {
-      console.warn('[PSEG] Usuário sem tenant_id — onboarding pendente.');
+      console.warn('[PsicoMap] Usuário sem tenant_id — onboarding pendente.');
     }
   } catch (e) {
-    console.warn('[PSEG] loadPerfil:', e.message);
+    console.warn('[PsicoMap] loadPerfil:', e.message);
     currentTenantId = null;
   }
 }
@@ -10127,7 +10127,7 @@ async function sincronizarQuestoes() {
     await sbAdmin.from('questoes').upsert(upserts, { onConflict: 'codigo' });
     // Recarregar mapa após inserção
     await carregarMapaQuestoesAdmin();
-    console.log('[PSEG] Questões sincronizadas com o banco.');
+    console.log('[PsicoMap] Questões sincronizadas com o banco.');
   } catch(e) { console.warn('sincronizarQuestoes:', e.message); }
 }
 
@@ -10272,7 +10272,7 @@ async function carregarEstPerfil() {
       .eq('tenant_id', currentTenantId)
       .maybeSingle();
     _estPerfil = data || null;
-  } catch(e) { console.warn('[PSEG] carregarEstPerfil:', e.message); }
+  } catch(e) { console.warn('[PsicoMap] carregarEstPerfil:', e.message); }
 }
 
 function preencherFormEstPerfil() {
@@ -10773,11 +10773,11 @@ document.addEventListener('keydown', function(e) {
 
 // Acesso sem autenticação desabilitado em produção
 function entrarModoAdmin() {
-  console.warn('[PSEG] Acesso sem autenticação desabilitado.');
+  console.warn('[PsicoMap] Acesso sem autenticação desabilitado.');
 }
 
 function entrarModoDemo() {
-  console.warn('[PSEG] Modo demonstração desabilitado.');
+  console.warn('[PsicoMap] Modo demonstração desabilitado.');
 }
 
 // ══════════════════════════════════════════
@@ -11107,7 +11107,7 @@ async function removerCiclo(id) {
 }
 
 function _loginErro(msg) {
-  console.error('[PSEG Login erro]', msg);
+  console.error('[PsicoMap Login erro]', msg);
   const el = document.getElementById('login-err');
   if (!el) { alert('Erro de login: ' + msg); return; }
   el.textContent = msg;
@@ -11171,16 +11171,16 @@ async function fazerLogin() {
   // ── Tentativa 1: SDK Supabase ───────────────────────────────
   if (sbAdmin) {
     try {
-      console.log('[PSEG Login] tentando SDK signInWithPassword…');
+      console.log('[PsicoMap Login] tentando SDK signInWithPassword…');
       const { data, error } = await sbAdmin.auth.signInWithPassword({ email, password: senha });
       if (error) throw error;
-      console.log('[PSEG Login] SDK: sucesso', data.user?.email);
+      console.log('[PsicoMap Login] SDK: sucesso', data.user?.email);
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
       _loginOk(data.user);
       return;
     } catch(e) {
       const msg = e?.message || String(e);
-      console.warn('[PSEG Login] SDK falhou:', msg);
+      console.warn('[PsicoMap Login] SDK falhou:', msg);
       // Se for erro de credenciais (não de rede), não tenta fetch fallback
       if (msg.includes('Invalid login') || msg.includes('invalid_credentials') ||
           msg.includes('Email not confirmed') || msg.includes('email_not_confirmed')) {
@@ -11193,15 +11193,15 @@ async function fazerLogin() {
         return;
       }
       // Senão, tenta fallback via fetch direto
-      console.warn('[PSEG Login] erro de rede/SDK, tentando fetch direto…');
+      console.warn('[PsicoMap Login] erro de rede/SDK, tentando fetch direto…');
     }
   } else {
-    console.warn('[PSEG Login] sbAdmin é null, tentando fetch direto…');
+    console.warn('[PsicoMap Login] sbAdmin é null, tentando fetch direto…');
   }
 
   // ── Tentativa 2: fetch direto à API REST do Supabase Auth ───
   try {
-    console.log('[PSEG Login] fetch direto para', SUPA_URL + '/auth/v1/token');
+    console.log('[PsicoMap Login] fetch direto para', SUPA_URL + '/auth/v1/token');
     const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
       method : 'POST',
       headers: {
@@ -11212,7 +11212,7 @@ async function fazerLogin() {
       body: JSON.stringify({ email, password: senha })
     });
     const json = await res.json();
-    console.log('[PSEG Login] fetch resposta status', res.status, json);
+    console.log('[PsicoMap Login] fetch resposta status', res.status, json);
 
     if (!res.ok) {
       const msg = json?.error_description || json?.msg || json?.error || ('HTTP ' + res.status);
@@ -11238,7 +11238,7 @@ async function fazerLogin() {
 
   } catch(e2) {
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-    console.error('[PSEG Login] fetch também falhou:', e2);
+    console.error('[PsicoMap Login] fetch também falhou:', e2);
     _loginErro('Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
   }
 }
@@ -11290,7 +11290,7 @@ async function fazerLogout() {
   try {
     if (sbAdmin && !isDemoMode) await sbAdmin.auth.signOut();
   } catch(e) {
-    console.warn('[PSEG] signOut:', e.message);
+    console.warn('[PsicoMap] signOut:', e.message);
   }
   currentUser = null;
   showLogin();
@@ -11768,7 +11768,7 @@ async function carregarAdesaoGHE(empresaId, cicloId) {
   try {
     _gheAdesaoData = await calcRepresentatividade(empresaId, cicloId || undefined);
   } catch (e) {
-    console.warn('[PSEG] adesão GHE:', e.message);
+    console.warn('[PsicoMap] adesão GHE:', e.message);
     _gheAdesaoData = null;
   }
   if (totalBadge) {
@@ -13838,7 +13838,7 @@ async function renderPlanoAcao() {
       <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:6px;border:1px solid var(--bs)">
         <div style="font-size:10px;font-weight:700;color:var(--tm);margin-bottom:4px">MONITORAMENTO</div>
         <div style="font-size:11px;color:var(--tx)">Reavaliar no próximo ciclo de pesquisa. Indicador de sucesso: redução do nível P para BAIXO ou IRRELEVANTE.</div>
-      </div>` : `<div class="alert alert-y" style="font-size:11px">Fator sem ação padrão cadastrada. Consulte o especialista PSEG para elaborar ação específica.</div>`}
+      </div>` : `<div class="alert alert-y" style="font-size:11px">Fator sem ação padrão cadastrada. Consulte o especialista PsicoMap para elaborar ação específica.</div>`}
     </div>`;
   });
 
@@ -14074,7 +14074,7 @@ async function carregarUsageTenant() {
     renderUsageWidget();
     _renderAssinaturaBadge();
   } catch(e) {
-    console.warn('[PSEG Billing] carregarUsageTenant:', e.message);
+    console.warn('[PsicoMap Billing] carregarUsageTenant:', e.message);
   }
 }
 
@@ -14171,7 +14171,7 @@ async function verificarLimiteTenant(recurso) {
     }
     return true;
   } catch(e) {
-    console.warn('[PSEG Billing] verificarLimiteTenant:', e.message);
+    console.warn('[PsicoMap Billing] verificarLimiteTenant:', e.message);
     return true; // fail-open para não bloquear em caso de erro de rede
   }
 }
@@ -14393,7 +14393,7 @@ async function iniciarPagamento(plano, provider, metodo = 'cartao') {
       data = await res.json();
     } catch (fetchErr) {
       // Edge Function não deployed → fallback para payment link Stripe ou aviso
-      console.warn('[PSEG Billing] Edge Function indisponível, usando fallback:', fetchErr);
+      console.warn('[PsicoMap Billing] Edge Function indisponível, usando fallback:', fetchErr);
       if (provider === 'stripe') {
         const link = STRIPE_PAYMENT_LINKS[plano];
         if (link) {
@@ -14411,7 +14411,7 @@ async function iniciarPagamento(plano, provider, metodo = 'cartao') {
     if (!res.ok) {
       // Edge Function retornou erro — fallback Stripe
       if (provider === 'stripe') {
-        console.warn('[PSEG Billing] criar-checkout retornou erro, usando fallback:', data?.error);
+        console.warn('[PsicoMap Billing] criar-checkout retornou erro, usando fallback:', data?.error);
         const link = STRIPE_PAYMENT_LINKS[plano];
         if (link) {
           window.open(link, '_blank');
@@ -14440,7 +14440,7 @@ async function iniciarPagamento(plano, provider, metodo = 'cartao') {
     }
   } catch(e) {
     toast('Erro: ' + e.message, 'w');
-    console.error('[PSEG Billing] iniciarPagamento:', e);
+    console.error('[PsicoMap Billing] iniciarPagamento:', e);
   } finally {
     if (btn) { btn.textContent = provider === 'stripe' ? '💳 Pagar com cartão' : '⚡ PIX / Boleto'; btn.disabled = false; }
   }
@@ -14595,6 +14595,9 @@ function copiarPix() {
 <div id="pix-qr-container" style="display:none"></div>
 <div id="pix-code" style="display:none"></div>
 <div id="pix-expira" style="display:none"></div>
+<footer style="text-align:center;padding:10px 8px;font-size:11px;color:#bbb;border-top:1px solid #f0f0f0;margin-top:auto;">
+  Desenvolvido por <a href="https://elevaitconsultoria.netlify.app/" target="_blank" rel="noopener" style="color:#bbb;text-decoration:underline;">Eleva IT Consultoria</a>
+</footer>
 </body>
 </html>
 

@@ -1,5 +1,5 @@
--- ══════════════════════════════════════════════════════════════════════════
--- PSEG SafeSign — Migração 10: Perfil de identidade visual da EST
+﻿-- ══════════════════════════════════════════════════════════════════════════
+-- PsicoMap — Migração 10: Perfil de identidade visual da EST
 -- Executar no Supabase Dashboard → SQL Editor (ou via MCP apply_migration)
 -- ══════════════════════════════════════════════════════════════════════════
 

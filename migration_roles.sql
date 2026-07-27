@@ -1,5 +1,5 @@
--- ══════════════════════════════════════════════════════════════════════════
--- PSEG SafeSign — Migração 5: Roles internos (admin | consultor)
+﻿-- ══════════════════════════════════════════════════════════════════════════
+-- PsicoMap — Migração 5: Roles internos (admin | consultor)
 -- Executar no Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════════════════════
 

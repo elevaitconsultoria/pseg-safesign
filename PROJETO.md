@@ -1,4 +1,4 @@
-# PSEG SafeSign — Documentação do Projeto
+﻿# PsicoMap — Documentação do Projeto
 
 > Plataforma de avaliação de riscos psicossociais (NR-17 / NR-01 / BS 8800)  
 > Stack: HTML estático + Supabase (PostgreSQL + Auth + RLS + Edge Functions) + Cloudflare Pages
@@ -7,12 +7,12 @@
 
 ## 1. Visão Geral
 
-O SafeSign é uma aplicação web Single-Page sem framework de build. Toda a lógica reside em dois arquivos HTML auto-contidos:
+O PsicoMap é uma aplicação web Single-Page sem framework de build. Toda a lógica reside em dois arquivos HTML auto-contidos:
 
 | Arquivo | Papel |
 |---|---|
-| `pseg-admin-questionario.html` | Painel da consultoria (admin) |
-| `pseg-forms.html` | Formulário de coleta para funcionários |
+| `psicomap-admin.html` | Painel da consultoria (admin) |
+| `psicomap-forms.html` | Formulário de coleta para funcionários |
 
 **Fluxo principal:**
 ```
@@ -38,10 +38,10 @@ Consultoria (admin)
 
 | Ambiente | Admin | Formulário |
 |---|---|---|
-| **PROD (Cloudflare Pages — branch main)** | `https://pseg-safesign.pages.dev/pseg-admin-questionario.html` | `https://pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN` |
-| **DEV (Cloudflare Pages — branch develop)** | `https://develop.pseg-safesign.pages.dev/pseg-admin-questionario.html` | `https://develop.pseg-safesign.pages.dev/pseg-forms.html?token=TOKEN` |
-| **GitHub Pages (secundário, não oficial)** | `https://elevaitconsultoria.github.io/pseg-safesign/pseg-admin-questionario.html` | — |
-| **Local** | `http://localhost:3788/pseg-admin-questionario.html` | `http://localhost:3788/pseg-forms.html?token=TOKEN` |
+| **PROD (Cloudflare Pages — branch main)** | `https://psicomap.pages.dev/psicomap-admin.html` | `https://psicomap.pages.dev/psicomap-forms.html?token=TOKEN` |
+| **DEV (Cloudflare Pages — branch develop)** | `https://develop.psicomap.pages.dev/psicomap-admin.html` | `https://develop.psicomap.pages.dev/psicomap-forms.html?token=TOKEN` |
+| **GitHub Pages (secundário, não oficial)** | `https://elevaitconsultoria.github.io/psicomap/psicomap-admin.html` | — |
+| **Local** | `http://localhost:3788/psicomap-admin.html` | `http://localhost:3788/psicomap-forms.html?token=TOKEN` |
 
 Servidor local: `npx serve -p 3788 .` (ver `.claude/launch.json`)
 
@@ -141,10 +141,10 @@ planos_config       ← configuração de planos (limites, preços)
 
 | Migration | DEV | PROD | Conteúdo |
 |-----------|-----|------|---------|
-| `pseg-phase1-migration.sql` | ✅ | ✅ | perfis, criado_por, ciclos, riscos_config, RLS base |
-| `pseg-phase2-migration.sql` | ✅ | ✅ | empresa_setores, empresa_funcoes, RLS GHE |
-| `pseg-phase3-saas-tenants.sql` | ✅ | ✅ | multitenancy, tabela tenants |
-| `pseg-phase4-billing.sql` | ✅ | ✅ | pagamentos, subscriptions, planos_config |
+| `psicomap-phase1-migration.sql` | ✅ | ✅ | perfis, criado_por, ciclos, riscos_config, RLS base |
+| `psicomap-phase2-migration.sql` | ✅ | ✅ | empresa_setores, empresa_funcoes, RLS GHE |
+| `psicomap-phase3-saas-tenants.sql` | ✅ | ✅ | multitenancy, tabela tenants |
+| `psicomap-phase4-billing.sql` | ✅ | ✅ | pagamentos, subscriptions, planos_config |
 | `migration_empresa_headcount.sql` | ✅ | ✅ | tabela empresa_headcount + RLS |
 | `migration_fix_empresa_funcoes_unique.sql` | ✅ | ✅ | UNIQUE por (empresa_id, setor_id, nome) |
 | `migration_rbac_viewer_hardening.sql` | ✅ | ✅ | trigger tg_guard_perfil_update + policies viewer RESTRICTIVE |
@@ -272,11 +272,11 @@ RLS é scoped por `tenant_id` — dados de uma consultoria nunca são visíveis 
 
 ---
 
-## 6. Formulário de Coleta (`pseg-forms.html`)
+## 6. Formulário de Coleta (`psicomap-forms.html`)
 
 ### Fluxo técnico
 ```
-1. URL: /pseg-forms.html?token=XXXX
+1. URL: /psicomap-forms.html?token=XXXX
 2. init() → carregarMapaQuestoes() [async, não bloqueante]
 3. Valida token → links_coleta (ativo=true, não expirado)
 4. carregarGHEEmpresa() → empresa_setores + empresa_funcoes [parallel]
@@ -348,7 +348,7 @@ Todas as operações de escrita são feitas em memória (não persistem).
 
 ## 10. Repositório e Deploy
 
-**Repo:** `elevaitconsultoria/pseg-safesign`
+**Repo:** `elevaitconsultoria/psicomap`
 
 | Branch | Ambiente | Observação |
 |--------|----------|-----------|
@@ -361,12 +361,12 @@ O Cloudflare Pages detecta push em cada branch e executa `build.js` automaticame
 
 ```
 git push origin develop          → DEV atualiza automaticamente
-                                    (https://develop.pseg-safesign.pages.dev)
+                                    (https://develop.psicomap.pages.dev)
 
 PR manual via GitHub:
-https://github.com/elevaitconsultoria/pseg-safesign/compare/main...develop
+https://github.com/elevaitconsultoria/psicomap/compare/main...develop
 → Usuário faz merge → PROD atualiza automaticamente
-                       (https://pseg-safesign.pages.dev)
+                       (https://psicomap.pages.dev)
 ```
 
 > `gh` CLI não está autenticado — PRs sempre criados manualmente pela URL acima.
@@ -410,10 +410,10 @@ const SUPA_ANON = 'eyJhbGc...';  // chave pública anon — seguro expor
 ```
 [ ] 1. Criar projeto Supabase (PROD e DEV separados)
 [ ] 2. Aplicar migrations em ordem no SQL Editor do Supabase:
-       pseg-phase1-migration.sql
-       pseg-phase2-migration.sql
-       pseg-phase3-saas-tenants.sql
-       pseg-phase4-billing.sql
+       psicomap-phase1-migration.sql
+       psicomap-phase2-migration.sql
+       psicomap-phase3-saas-tenants.sql
+       psicomap-phase4-billing.sql
        migration_*.sql (demais, em ordem cronológica pelo nome)
 [ ] 3. Criar primeiro usuário em Authentication → Users → Add user
 [ ] 4. O trigger on_auth_user_created cria o perfil automaticamente (role='consultor')
@@ -441,7 +441,7 @@ const SUPA_ANON = 'eyJhbGc...';  // chave pública anon — seguro expor
 
 | Item | Detalhe |
 |------|---------|
-| **PR develop→main** | 5 commits acumulados em develop ainda não em PROD. URL: `https://github.com/elevaitconsultoria/pseg-safesign/compare/main...develop` |
+| **PR develop→main** | 5 commits acumulados em develop ainda não em PROD. URL: `https://github.com/elevaitconsultoria/psicomap/compare/main...develop` |
 | **Reimportar Assa Abloy (Shared Services)** | Catálogo zerado — reimportar planilha pelo admin + validar com `/validar-importacao-ghe` |
 | **Reimportar ELEVA IT CONSULTORIA** | Catálogo zerado após wipe acidental sem soft-delete |
 
@@ -459,7 +459,7 @@ const SUPA_ANON = 'eyJhbGc...';  // chave pública anon — seguro expor
 
 | Item | Descrição |
 |------|-----------|
-| **Credenciais PROD hardcoded em `pseg-forms.html`** | Linhas 332–333 têm URL e JWT como literais; substituição é via regex no build.js — risco de falha silenciosa se formatação mudar. Admin usa placeholders seguros (`__SUPA_URL__`) |
+| **Credenciais PROD hardcoded em `psicomap-forms.html`** | Linhas 332–333 têm URL e JWT como literais; substituição é via regex no build.js — risco de falha silenciosa se formatação mudar. Admin usa placeholders seguros (`__SUPA_URL__`) |
 | **Sem soft-delete** | Hard delete em empresas, links e riscos. Dados apagados são irrecuperáveis (caso real: ELEVA IT CONSULTORIA) |
 | **QR Code depende de CDN externo** | `qrcodejs` via CDN sem hash SRI; se CDN cair ou for comprometido, QR codes param de funcionar |
 | **Cache de respostas sem TTL** | `_respostasCache` em memória, sem invalidação automática. Dados ficam stale até reload |
