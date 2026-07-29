@@ -5645,7 +5645,7 @@ function exportarResultadosPrint() {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Eleva IT — Análise de Riscos${empNome ? ' · ' + empNome : ''}</title>
+<title>Análise de Riscos Psicossociais${empNome ? ' · ' + empNome : ''}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -5697,7 +5697,7 @@ function exportarResultadosPrint() {
 <!-- Cabeçalho -->
 <div class="psicomap-cover">
   <div>
-    <div class="psicomap-cover-title">Eleva IT</div>
+    ${_estPerfil?.nome_empresa ? '<div class="psicomap-cover-title">' + _estPerfil.nome_empresa + '</div>' : ''}
     <div class="psicomap-cover-sub">Análise de Riscos Psicossociais — ${viewMode}</div>
   </div>
   <div class="psicomap-cover-meta">
@@ -8193,7 +8193,7 @@ async function exportGrafPDF() {
 
 <div class="psicomap-cover">
   <div>
-    <div style="font-size:18pt;font-weight:800;color:#16532d;line-height:1.1">Eleva IT</div>
+    ${_estPerfil?.nome_empresa ? '<div style="font-size:18pt;font-weight:800;color:#16532d;line-height:1.1">' + _estPerfil.nome_empresa + '</div>' : ''}
     <div style="font-size:9pt;color:#6b7280;margin-top:3px">Distribuição de Respostas por Questão</div>
   </div>
   <div style="text-align:right;font-size:8pt;color:#9ca3af;line-height:1.7">
@@ -9226,7 +9226,7 @@ tr:last-child td{border-bottom:none}
 <div class="toolbar no-print">
   <div class="logo-mini">
     <svg viewBox="0 0 24 24" fill="#1a5e2a"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-    <span>Eleva IT — Laudo Técnico</span>
+    <span>${estNome ? estNome + ' — ' : ''}Laudo Técnico</span>
   </div>
   <span style="font-size:11px;color:#9ca3af">${e(nomeEmp)} · ${hoje}</span>
   <button class="btn-print" onclick="window.print()">
