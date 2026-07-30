@@ -74,6 +74,13 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   PRs criados via `gh` CLI (autenticado — conta `elevaitconsultoria`, token no keyring Windows).
   Usar skill `/commitar-e-pr` para o fluxo completo.
 - **Build**: `build.js` injeta `SUPA_URL` e `SUPA_ANON_KEY` nos HTMLs antes do deploy no CF Pages.
+- **`develop` não sincroniza com `main` sozinho.** Não existe automação (CI, branch protection
+  com auto-merge) que mantenha os dois alinhados — é manual. Achado real 2026-07-30: `develop`
+  ficou 31 commits atrás, sem nenhum commit próprio, e nunca recebeu o rebrand — o deploy DEV
+  ficou servindo `pseg-admin-questionario` (path antigo) enquanto PROD já estava em
+  `psicomap-admin.html`. Antes de testar algo "em DEV" e concluir que está validado, checar
+  `git log origin/develop..origin/main --oneline`; se não-vazio e sem commits exclusivos de
+  `develop`, um `git push origin origin/main:develop` (fast-forward) resolve sem risco.
 
 ## Divergências DEV ↔ PROD (não ignorar)
 
@@ -85,6 +92,25 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
 | Variáveis CF env | podem estar desatualizadas | fonte da verdade |
 
 **Antes de qualquer deploy que toque o pipeline de submissão de respostas: rodar `/validar-formulario`.**
+
+**Não confiar só nos arquivos `.sql` do repo para saber o que está aplicado.** Auditoria real
+em 2026-07-30 (comparando `pg_policies` nos dois bancos, não os arquivos) encontrou duas
+divergências que nenhum arquivo do repo documentava:
+- As 5 policies `*_super_admin_all` de `migration_painel_eleva.sql` (bypass de RLS para
+  super_admin em `empresas`, `ciclos`, `links_coleta`, `empresa_setores`, `empresa_funcoes`)
+  só tinham sido aplicadas em DEV. Sem elas em PROD, `entrarComoEST()` retornava listas vazias
+  para o super_admin — as RPCs `super_admin_stats()`/`super_admin_tenant_details()` (que
+  também fazem parte da mesma migration) funcionavam normalmente por serem SECURITY DEFINER,
+  mascarando o problema. Corrigido — aplicado em PROD.
+- `questoes`/`questionarios`/`questionario_questoes` tinham sido endurecidas em PROD (escrita
+  restrita a `is_super_admin()`) **sem nenhuma migration file** — DEV ainda tinha as policies
+  originais permissivas (`USING (true)` para qualquer `authenticated`) de
+  `psicomap-admin-rls-policies.sql`. Formalizado em `migration_questoes_write_super_admin.sql`,
+  aplicado nos dois bancos.
+
+Ao investigar um comportamento estranho de RBAC/RLS, comparar `pg_policies` (e triggers em
+`information_schema.triggers`) entre DEV e PROD diretamente via MCP é mais confiável que ler
+os arquivos `.sql` — alguém pode ter aplicado algo direto no SQL Editor sem versionar.
 
 ## Pipeline GHE (importação de estrutura organizacional)
 
