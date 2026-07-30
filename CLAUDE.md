@@ -74,6 +74,13 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   PRs criados via `gh` CLI (autenticado — conta `elevaitconsultoria`, token no keyring Windows).
   Usar skill `/commitar-e-pr` para o fluxo completo.
 - **Build**: `build.js` injeta `SUPA_URL` e `SUPA_ANON_KEY` nos HTMLs antes do deploy no CF Pages.
+- **`develop` não sincroniza com `main` sozinho.** Não existe automação (CI, branch protection
+  com auto-merge) que mantenha os dois alinhados — é manual. Achado real 2026-07-30: `develop`
+  ficou 31 commits atrás, sem nenhum commit próprio, e nunca recebeu o rebrand — o deploy DEV
+  ficou servindo `pseg-admin-questionario` (path antigo) enquanto PROD já estava em
+  `psicomap-admin.html`. Antes de testar algo "em DEV" e concluir que está validado, checar
+  `git log origin/develop..origin/main --oneline`; se não-vazio e sem commits exclusivos de
+  `develop`, um `git push origin origin/main:develop` (fast-forward) resolve sem risco.
 
 ## Divergências DEV ↔ PROD (não ignorar)
 
@@ -85,6 +92,25 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
 | Variáveis CF env | podem estar desatualizadas | fonte da verdade |
 
 **Antes de qualquer deploy que toque o pipeline de submissão de respostas: rodar `/validar-formulario`.**
+
+**Não confiar só nos arquivos `.sql` do repo para saber o que está aplicado.** Auditoria real
+em 2026-07-30 (comparando `pg_policies` nos dois bancos, não os arquivos) encontrou duas
+divergências que nenhum arquivo do repo documentava:
+- As 5 policies `*_super_admin_all` de `migration_painel_eleva.sql` (bypass de RLS para
+  super_admin em `empresas`, `ciclos`, `links_coleta`, `empresa_setores`, `empresa_funcoes`)
+  só tinham sido aplicadas em DEV. Sem elas em PROD, `entrarComoEST()` retornava listas vazias
+  para o super_admin — as RPCs `super_admin_stats()`/`super_admin_tenant_details()` (que
+  também fazem parte da mesma migration) funcionavam normalmente por serem SECURITY DEFINER,
+  mascarando o problema. Corrigido — aplicado em PROD.
+- `questoes`/`questionarios`/`questionario_questoes` tinham sido endurecidas em PROD (escrita
+  restrita a `is_super_admin()`) **sem nenhuma migration file** — DEV ainda tinha as policies
+  originais permissivas (`USING (true)` para qualquer `authenticated`) de
+  `psicomap-admin-rls-policies.sql`. Formalizado em `migration_questoes_write_super_admin.sql`,
+  aplicado nos dois bancos.
+
+Ao investigar um comportamento estranho de RBAC/RLS, comparar `pg_policies` (e triggers em
+`information_schema.triggers`) entre DEV e PROD diretamente via MCP é mais confiável que ler
+os arquivos `.sql` — alguém pode ter aplicado algo direto no SQL Editor sem versionar.
 
 ## Pipeline GHE (importação de estrutura organizacional)
 
@@ -203,6 +229,40 @@ elimina toda a categoria de bugs de link quebrado.
 - SELECT em `empresas` scoped a `get_my_empresa_id()`
 - UPDATE em tabelas operacionais (migration anterior `migration_rbac_viewer_hardening.sql`)
 
+## Módulos por EST — feature flags (2026-07-29)
+
+**Eixo independente do role.** Role responde "quem é você"; módulo responde "o que está ligado
+para esta EST". Serve para segurar recursos ainda em desenvolvimento diante de um cliente
+específico, sem criar mais um role. **Nunca criar role novo para recortar visibilidade** — as
+policies RESTRICTIVE existentes testam literalmente `<> 'cliente_viewer'`, então um role novo
+nasceria com escrita liberada em tudo.
+
+- Tabela `tenant_modulos (tenant_id, modulo, habilitado, updated_at, updated_by)` —
+  `migration_tenant_modulos.sql`. **SELECT** por qualquer usuário do tenant; **escrita só
+  `is_super_admin()`**.
+- **Não colocar os flags em `tenants`**: a policy `tenant_update_admin` deixa o admin da própria
+  EST fazer UPDATE naquela linha — ele religaria os módulos via API.
+- **Ausência de linha = habilitado.** Nenhum seed necessário; EST nova e módulo novo nascem
+  ligados. Ao salvar pelo modal, grava-se linha para todos os módulos do catálogo (religar é
+  UPDATE, não DELETE).
+- `MODULOS_CATALOGO` (catálogo do modal) e `MODULO_POR_TELA` (tela→módulo) em
+  `psicomap-admin.html`. Acrescentar módulo ao catálogo é seguro.
+- Aplicação: `carregarModulosTenant()` preenche `_modulosOff` → `aplicarModulos()` marca
+  `[data-modulo]` com a classe `.modulo-off` (`display:none!important`).
+  **`aplicarModulos()` roda sempre DEPOIS de `aplicarRestricoesPorRole()`**, que começa
+  resetando `display=''` em todos os `.nav-item` — a ordem inversa não gruda.
+- Classe, não `style.display`: reversível e não atropela displays inline pré-existentes.
+- Conteúdo gerado por template string precisa de `_esconderElementosModulos()` no fim do render
+  (já feito em `renderLinks()`, `_renderGHETabela()` e `goScreen()`). Para condicionais dentro de
+  template use o helper `moduloOn('id')`.
+- **O gate é client-side (cosmético)** — adequado para módulo imaturo, não é fronteira de
+  segurança. Bloqueio real exige policy RESTRICTIVE na tabela de dados do módulo.
+- `carregarModulosTenant()` **falha aberto**: erro de leitura loga warn e mantém tudo visível,
+  em vez de esconder o app inteiro se a migration não estiver aplicada.
+- Módulo `adesao` não é tela: guard em `carregarAdesaoGHE()` força `_gheAdesaoData = null` (o
+  detail pane e a tabela já degradam nesse caminho) + `data-modulo` no `#ghe-adesao-row`, nas
+  duas colunas da tabela GHE e no botão "Ver adesão" da tela de Links.
+
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
 O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de
@@ -226,6 +286,10 @@ sairModoSuporte()
   → goScreen('gestao-ests')
 ```
 
+`entrarComoEST` também chama `carregarModulosTenant()` (antes de
+`aplicarRestricoesPorRole`) e `sairModoSuporte` limpa `_modulosOff` — sem isso os flags da EST
+visitada continuariam valendo fora do modo suporte.
+
 **Por que `currentTenantId = tenantId` é crítico**: todos os INSERTs do sistema usam
 `currentTenantId` como `tenant_id`. Sem isso, registros criados em modo suporte teriam
 `tenant_id = null` e ficariam órfãos (invisíveis para o admin da EST).
@@ -246,3 +310,7 @@ sairModoSuporte()
   adicionar regras de routing.
 - **Cloudflare Pretty URLs**: o CF Pages serve `foo.html` também como `/foo` (sem extensão).
   Qualquer redirect de compatibilidade deve cobrir **ambas** as variantes (`/foo.html` e `/foo`).
+- **Branding nos exports usa `_estPerfil.nome_empresa` — nunca string hardcoded**: `exportarResultadosPrint()`,
+  export de Gráficos e toolbar do `_buildLaudoHTML` usam o nome dinâmico da EST. Se ausente, o campo
+  some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
+  `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.

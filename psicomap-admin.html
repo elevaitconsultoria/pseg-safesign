@@ -145,6 +145,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .page-title{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:3px}
 .page-sub{font-size:12px;color:var(--tl);line-height:1.4}
 
+/* Módulo desligado para a EST (feature flag por tenant — tenant_modulos).
+   Aplicada por _esconderElementosModulos() em elementos com data-modulo.
+   !important para vencer .screen.on{display:block} e displays inline. */
+.modulo-off{display:none!important}
+
 /* ══════════════════════════════════════════
    LOGIN — Azul + Branco (clean)
 ══════════════════════════════════════════ */
@@ -1251,7 +1256,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Setores &amp; Funções</span>
     </button>
 
-    <button class="nav-item" id="nb-links" data-label="Links de Coleta" onclick="goScreen('links',this)">
+    <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <span class="nav-label">Links de Coleta</span>
       <span class="nav-badge" id="nb-links-badge" style="display:none"></span>
@@ -1270,24 +1275,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-badge" id="nb-analise-badge" style="display:none"></span>
     </button>
 
-    <button class="nav-item" id="nb-graficos" data-label="Distribuição" onclick="goScreen('graficos',this)">
+    <button class="nav-item" id="nb-graficos" data-modulo="graficos" data-label="Distribuição" onclick="goScreen('graficos',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span class="nav-label">Distribuição</span>
     </button>
 
-    <button class="nav-item" id="nb-comparativo" data-label="Comparativo" onclick="goScreen('comparativo',this)">
+    <button class="nav-item" id="nb-comparativo" data-modulo="comparativo" data-label="Comparativo" onclick="goScreen('comparativo',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <span class="nav-label">Comparativo</span>
     </button>
 
-    <button class="nav-item" id="nb-auditoria" data-label="Auditoria" onclick="goScreen('auditoria',this)">
+    <button class="nav-item" id="nb-auditoria" data-modulo="auditoria" data-label="Auditoria" onclick="goScreen('auditoria',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
       <span class="nav-label">Auditoria</span>
     </button>
 
     <div class="sidebar-section">Exportar</div>
 
-    <button class="nav-item" id="nb-laudo" data-label="Relatório" onclick="goScreen('laudo',this)">
+    <button class="nav-item" id="nb-laudo" data-modulo="laudo" data-label="Relatório" onclick="goScreen('laudo',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       <span class="nav-label">Relatório</span>
     </button>
@@ -1307,7 +1312,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <div class="sidebar-section">Configuração</div>
 
-    <button class="nav-item" id="nb-plano" data-label="Plano de Ação" onclick="goScreen('plano',this)">
+    <button class="nav-item" id="nb-plano" data-modulo="plano" data-label="Plano de Ação" onclick="goScreen('plano',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       <span class="nav-label">Plano de Ação</span>
     </button>
@@ -1317,7 +1322,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Equipe</span>
     </button>
 
-    <button class="nav-item" id="nb-riscos" data-label="Configurar Riscos" onclick="goScreen('riscos',this)">
+    <button class="nav-item" id="nb-riscos" data-modulo="riscos" data-label="Configurar Riscos" onclick="goScreen('riscos',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       <span class="nav-label">Configurar Riscos</span>
     </button>
@@ -1704,7 +1709,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <div class="empresa-banner" id="q-empresa-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       Configurando questionário para: <strong id="q-empresa-banner-nome">—</strong>
-      <button class="empresa-banner-troca" onclick="goScreen('links',document.getElementById('nb-links'))">Trocar empresa</button>
+      <button class="empresa-banner-troca" data-modulo="links" onclick="goScreen('links',document.getElementById('nb-links'))">Trocar empresa</button>
     </div>
 
   <!-- Seletor empresa -->
@@ -1936,7 +1941,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- ══════════════════════════════════════
      TELA AUDITORIA — DADOS BRUTOS
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-auditoria">
+<div class="screen" id="sc-auditoria" data-modulo="auditoria">
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Auditoria de Respostas</div>
@@ -2035,7 +2040,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- ══════════════════════════════════════
      TELA 4 — ANÁLISE GRÁFICA
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-graficos">
+<div class="screen" id="sc-graficos" data-modulo="graficos">
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Distribuição de Respostas</div>
@@ -2146,7 +2151,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- ══════════════════════════════════════
      TELA 5 — LAUDO & RELATÓRIO
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-laudo">
+<div class="screen" id="sc-laudo" data-modulo="laudo">
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Laudo & Relatório</div>
@@ -2803,7 +2808,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- ══════════════════════════════════════
      TELA COMPARATIVO ENTRE CICLOS
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-comparativo">
+<div class="screen" id="sc-comparativo" data-modulo="comparativo">
   <div class="page-header">
     <div class="page-title">Comparativo de Ciclos</div>
     <div class="page-sub">Evolução temporal dos fatores de risco entre avaliações</div>
@@ -2831,7 +2836,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 <!-- ══════════════════════════════════════
      TELA PLANO DE AÇÃO 5W2H
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-plano">
+<div class="screen" id="sc-plano" data-modulo="plano">
   <div class="page-header">
     <div class="page-title">Plano de Ação 5W2H</div>
     <div class="page-sub">Ações corretivas geradas a partir dos riscos identificados (MÉDIO, ALTO e CRÍTICO)</div>
@@ -3140,10 +3145,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
+<!-- Modal módulos habilitados da EST (só super_admin — RLS em tenant_modulos) -->
+<div id="modal-modulos-est" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div class="card" style="width:520px;max-width:94vw;padding:28px;border-radius:14px;max-height:88vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:14px;font-weight:700;color:var(--tx)">Módulos habilitados</div>
+      <button onclick="fecharModalModulosEST()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:18px;line-height:1">✕</button>
+    </div>
+    <div id="modulos-est-nome" style="font-size:12px;color:var(--tl);margin-bottom:16px"></div>
+    <div id="modulos-est-lista" style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1;margin:0 -6px;padding:0 6px"></div>
+    <p style="margin:16px 0 0;font-size:11px;color:var(--tl);line-height:1.5">
+      Módulos desmarcados ficam ocultos para todos os usuários desta EST. É um controle de
+      visibilidade da interface — use para segurar recursos ainda em desenvolvimento, não como
+      barreira de segurança.
+    </p>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button onclick="fecharModalModulosEST()" class="btn btn-g" style="font-size:12px">Cancelar</button>
+      <button onclick="salvarModulosEST()" class="btn" style="font-size:12px" id="btn-salvar-modulos">Salvar módulos</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════
      TELA RISCOS & SEVERIDADE
 ══════════════════════════════════════ -->
-<div class="screen" id="sc-riscos">
+<div class="screen" id="sc-riscos" data-modulo="riscos">
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Configurar Riscos</div>
@@ -3241,7 +3267,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
-<div class="screen" id="sc-links">
+<div class="screen" id="sc-links" data-modulo="links">
   <div class="page-header"><div class="page-title">Clientes &amp; Coleta</div><div class="page-sub">Gerencie seus clientes e gere links de formulário por ciclo de avaliação</div></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
@@ -3562,7 +3588,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
 
         <!-- Ciclo + adesão -->
-        <div id="ghe-adesao-row" style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <div id="ghe-adesao-row" data-modulo="adesao" style="display:flex;gap:6px;align-items:center;flex-shrink:0">
           <label for="ghe-ciclo-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);white-space:nowrap">Ciclo</label>
           <select id="ghe-ciclo-sel"
             onchange="_gheCicloSelecionado=this.value;carregarAdesaoGHE(_gheEmpresaId,_gheCicloSelecionado)"
@@ -3708,8 +3734,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
                 <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
                 <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
                 <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
-                <th data-k="respostas" onclick="_gheSortTabela('respostas')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Respostas <span class="ghe-sort-ind" data-k="respostas"></span></th>
-                <th data-k="pct" onclick="_gheSortTabela('pct')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Adesão <span class="ghe-sort-ind" data-k="pct"></span></th>
+                <th data-k="respostas" data-modulo="adesao" onclick="_gheSortTabela('respostas')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Respostas <span class="ghe-sort-ind" data-k="respostas"></span></th>
+                <th data-k="pct" data-modulo="adesao" onclick="_gheSortTabela('pct')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Adesão <span class="ghe-sort-ind" data-k="pct"></span></th>
               </tr>
             </thead>
             <tbody id="ghe-tabela-body"></tbody>
@@ -3979,6 +4005,30 @@ const RISCOS_DETALHES = {
 const FATORES = Object.fromEntries(
   Object.entries(RISCOS_DETALHES).map(([k,v]) => [String(k), v.nome.length > 32 ? v.nome.slice(0,30)+'…' : v.nome])
 );
+
+// ══════════════════════════════════════════
+// MÓDULOS POR EST (feature flags por tenant)
+// ══════════════════════════════════════════
+// Catálogo exibido no modal "Módulos" da tela Gestão de ESTs. O `id` é gravado
+// em tenant_modulos.modulo e usado no atributo data-modulo do HTML.
+// Acrescentar módulo aqui é seguro: nasce habilitado para todas as ESTs.
+const MODULOS_CATALOGO = [
+  { id:'laudo',       nome:'Relatório final (Laudo)', desc:'Tela de laudo e botões de geração/exportação' },
+  { id:'adesao',      nome:'Adesão',                  desc:'Badge e coluna de adesão na GHE + painel na tela de Links' },
+  { id:'plano',       nome:'Plano de ação',           desc:'Tela de plano de ação' },
+  { id:'riscos',      nome:'Riscos',                  desc:'Tela de configuração de riscos' },
+  { id:'comparativo', nome:'Comparativo',             desc:'Comparação entre ciclos/empresas' },
+  { id:'auditoria',   nome:'Auditoria',               desc:'Trilha de auditoria das respostas' },
+  { id:'graficos',    nome:'Gráficos',                desc:'Tela de gráficos' },
+  { id:'links',       nome:'Links de coleta',         desc:'Geração e gestão de links do formulário' },
+];
+
+// Telas cuja visibilidade é governada por um módulo (id de goScreen → módulo).
+// Telas ausentes deste mapa nunca são bloqueadas por módulo.
+const MODULO_POR_TELA = {
+  laudo:'laudo', plano:'plano', riscos:'riscos', comparativo:'comparativo',
+  auditoria:'auditoria', graficos:'graficos', links:'links',
+};
 
 const BLOCOS_INFO = {
   A:{nome:'Bloco A — Demandas de Trabalho',     cor:'#4b5ea8',bg:'#f0f2fb'},
@@ -7058,13 +7108,16 @@ function renderLinks() {
         <span>Criado: ${l.criado}</span>
         <span>Expira: ${l.expira}</span>
         <span>Token: <code style="font-size:10px">${l.token}</code></span>
-        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;margin-left:auto;flex-shrink:0" onclick="verAdesaoLink('${l.id}')">
+        <button class="btn btn-ghost" data-modulo="adesao" style="font-size:10px;padding:3px 8px;margin-left:auto;flex-shrink:0" onclick="verAdesaoLink('${l.id}')">
           📊 Ver adesão
         </button>
       </div>
-      <div id="adesao-${l.id}" style="display:none;border-top:1px solid var(--border);padding:12px 16px;background:var(--bg)"></div>
+      <div id="adesao-${l.id}" data-modulo="adesao" style="display:none;border-top:1px solid var(--border);padding:12px 16px;background:var(--bg)"></div>
     </div>`;
   }).join('');
+
+  // Botões/painéis de adesão nascem neste render — reaplicar o flag do módulo
+  if (_modulosOff.size) _esconderElementosModulos();
 }
 
 function copiarLink(url) {
@@ -7135,6 +7188,7 @@ async function calcRepresentatividade(empId, cicloId) {
 }
 
 async function verAdesaoLink(linkId) {
+  if (!moduloOn('adesao')) return; // módulo desligado para esta EST
   const painel = document.getElementById(`adesao-${linkId}`);
   if (!painel) return;
 
@@ -9475,6 +9529,11 @@ let currentUser = null;
 let currentTenantId = null;  // definido após login via loadPerfil()
 let isDemoMode = false;
 
+// Módulos DESLIGADOS para o tenant atual (feature flags por EST).
+// Preenchido por carregarModulosTenant(); vazio = tudo habilitado.
+// Ver migration_tenant_modulos.sql — ausência de linha no banco = habilitado.
+let _modulosOff = new Set();
+
 // ─────────────────────────────────────────────────────────────
 // Autenticação obrigatória — apenas Supabase Auth (produção)
 // Bypass removido: acesso somente com login válido
@@ -9685,6 +9744,9 @@ async function loadPerfil() {
     console.warn('[PsicoMap] loadPerfil:', e.message);
     currentTenantId = null;
   }
+  // Módulos habilitados da EST — depende de currentTenantId, precisa vir antes
+  // de aplicarRestricoesPorRole()/aplicarModulos() em _iniciarAppAposTenant()
+  await carregarModulosTenant();
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -9785,7 +9847,15 @@ async function carregarESTs() {
             ${ativo ? 'Ativo' : 'Inativo'}
           </button>
         </td>
-        <td style="padding:11px 12px;text-align:center">
+        <td style="padding:11px 12px;text-align:center;white-space:nowrap">
+          <button onclick="abrirModalModulosEST('${t.t_id}','${(t.nome||'').replace(/'/g,'')}')"
+            title="Escolher quais módulos ficam visíveis para esta EST"
+            style="background:var(--bg2);border:1px solid var(--border);cursor:pointer;
+              padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;color:var(--tx);
+              display:inline-flex;align-items:center;gap:4px;margin-right:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Módulos
+          </button>
           <button onclick="entrarComoEST('${t.t_id}','${(t.nome||'').replace(/'/g,'')}')"
             style="background:var(--bg2);border:1px solid var(--border);cursor:pointer;
               padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;color:var(--tx);
@@ -9834,6 +9904,9 @@ async function entrarComoEST(tenantId, nome) {
   // Adicionar padding ao rodapé para não cobrir conteúdo
   document.querySelector('.app-shell')?.style?.setProperty('padding-bottom', '48px');
 
+  // Módulos da EST visitada — antes de aplicarRestricoesPorRole()
+  await carregarModulosTenant();
+
   // Recarregar dados filtrados ao tenant selecionado
   await carregarEmpresas();
   await carregarLinks();
@@ -9842,6 +9915,7 @@ async function entrarComoEST(tenantId, nome) {
 
   // Expandir sidebar para visão de admin (oculta gestao-ests)
   aplicarRestricoesPorRole();
+  aplicarModulos();
 
   goScreen('dashboard', document.getElementById('nb-dashboard'));
   toast(`Visualizando como "${nome}"`, 'g', 3000);
@@ -9853,6 +9927,7 @@ async function sairModoSuporte() {
   currentTenantId = null; // super_admin não tem tenant próprio
   _empresas = [];         // limpa dados da EST visitada — super_admin não precisa deles
   _links    = [];
+  _modulosOff = new Set(); // flags da EST visitada não valem fora do modo suporte
 
   const banner = document.getElementById('banner-suporte');
   if (banner) banner.style.display = 'none';
@@ -9863,8 +9938,105 @@ async function sairModoSuporte() {
 
   // Colapsar sidebar de volta ao modo super_admin normal
   aplicarRestricoesPorRole();
+  aplicarModulos(); // _modulosOff vazio: reverte qualquer .modulo-off pendente
 
   goScreen('gestao-ests', document.getElementById('nb-gestao-ests'));
+}
+
+// ══════════════════════════════════════════
+// MODAL "MÓDULOS" DA EST (super_admin)
+// ══════════════════════════════════════════
+let _modulosEstTenantId = null; // EST sendo configurada no modal
+
+async function abrirModalModulosEST(tenantId, nome) {
+  const modal = document.getElementById('modal-modulos-est');
+  const lista = document.getElementById('modulos-est-lista');
+  if (!modal || !lista || !sbAdmin) return;
+  _modulosEstTenantId = tenantId;
+  document.getElementById('modulos-est-nome').textContent = nome || '';
+  lista.innerHTML = '<div style="font-size:12px;color:var(--tl);padding:8px 0">Carregando…</div>';
+  modal.style.display = 'flex';
+
+  // Ausência de linha = habilitado, então só as linhas com habilitado=false
+  // desmarcam o checkbox
+  const off = new Set();
+  const { data, error } = await sbAdmin
+    .from('tenant_modulos')
+    .select('modulo')
+    .eq('tenant_id', tenantId)
+    .eq('habilitado', false);
+  if (error) {
+    lista.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:8px 0">
+      Erro ao carregar módulos: ${error.message}<br>Execute migration_tenant_modulos.sql no Supabase.</div>`;
+    return;
+  }
+  (data || []).forEach(r => off.add(r.modulo));
+
+  // Sem handler por item: o estado dos checkboxes é lido de uma vez em
+  // salvarModulosEST(). Por isso envolver o input no <label> é seguro aqui —
+  // não há lógica para o duplo evento clique-no-label disparar.
+  lista.innerHTML = MODULOS_CATALOGO.map(m => `
+    <label style="display:flex;gap:10px;align-items:flex-start;padding:9px 8px;border-radius:8px;cursor:pointer">
+      <input type="checkbox" class="mod-est-chk" data-modulo-id="${m.id}"
+             ${off.has(m.id) ? '' : 'checked'}
+             style="margin-top:2px;width:15px;height:15px;cursor:pointer;flex-shrink:0">
+      <span style="min-width:0">
+        <span style="display:block;font-size:12.5px;font-weight:600;color:var(--tx)">${m.nome}</span>
+        <span style="display:block;font-size:11px;color:var(--tl);line-height:1.4">${m.desc}</span>
+      </span>
+    </label>`).join('');
+}
+
+function fecharModalModulosEST() {
+  const modal = document.getElementById('modal-modulos-est');
+  if (modal) modal.style.display = 'none';
+  _modulosEstTenantId = null;
+}
+
+async function salvarModulosEST() {
+  const tenantId = _modulosEstTenantId;
+  const btn = document.getElementById('btn-salvar-modulos');
+  const chks = document.querySelectorAll('#modulos-est-lista .mod-est-chk');
+  if (!tenantId || !chks.length) return;
+
+  const original = btn.textContent;
+  btn.textContent = 'Salvando...';
+  btn.disabled = true;
+
+  // Grava uma linha por módulo do catálogo (inclusive os habilitados) para que
+  // religar um módulo seja um UPDATE, não a remoção da linha
+  const rows = Array.from(chks).map(chk => ({
+    tenant_id:  tenantId,
+    modulo:     chk.dataset.moduloId,
+    habilitado: chk.checked,
+    updated_at: new Date().toISOString(),
+    updated_by: currentUser?.id || null,
+  }));
+
+  const { error } = await sbAdmin
+    .from('tenant_modulos')
+    .upsert(rows, { onConflict: 'tenant_id,modulo' });
+
+  btn.textContent = original;
+  btn.disabled = false;
+
+  if (error) {
+    toast(`Erro ao salvar módulos: ${error.message}`, 'r', 6000);
+    console.error('salvarModulosEST:', error);
+    return;
+  }
+
+  const nOff = rows.filter(r => !r.habilitado).length;
+  toast(nOff ? `Módulos salvos — ${nOff} oculto(s) para esta EST.` : 'Módulos salvos — todos habilitados.', 'g');
+  fecharModalModulosEST();
+
+  // Se a EST configurada é a que está em modo suporte, refletir na hora
+  if (_supportMode && _supportTenant?.id === tenantId) {
+    await carregarModulosTenant();
+    aplicarRestricoesPorRole();
+    aplicarModulos();
+  }
+  carregarESTs();
 }
 
 function abrirModalConvidarEST() {
@@ -9971,6 +10143,7 @@ function _iniciarAppAposTenant() {
   }
 
   aplicarRestricoesPorRole();
+  aplicarModulos();
 
   // super_admin não tem tenant — vai direto ao painel Eleva IT
   if (currentUser?.role === 'super_admin') {
@@ -10022,6 +10195,58 @@ async function showApp() {
   await loadPerfil();
   // Onboarding desativado — acesso direto ao app após login
   _iniciarAppAposTenant();
+}
+
+// ══════════════════════════════════════════
+// MÓDULOS POR EST — carga e aplicação
+// ══════════════════════════════════════════
+// Eixo independente do role: role responde "quem é você", módulo responde
+// "o que está ligado para esta EST". Só super_admin altera (RLS na tabela).
+async function carregarModulosTenant() {
+  _modulosOff = new Set();
+  if (!sbAdmin || !currentTenantId) return;
+  const { data, error } = await sbAdmin
+    .from('tenant_modulos')
+    .select('modulo')
+    .eq('tenant_id', currentTenantId)
+    .eq('habilitado', false);
+  if (error) {
+    // Fail-open deliberado: sem a migration aplicada o app segue como antes,
+    // em vez de esconder tudo por causa de um erro de leitura.
+    console.warn('[PsicoMap] módulos do tenant:', error.message);
+    return;
+  }
+  (data || []).forEach(r => _modulosOff.add(r.modulo));
+}
+
+// Helper para templates e guards: `if (!moduloOn('adesao')) return;`
+function moduloOn(id) { return !_modulosOff.has(id); }
+
+// Esconde todo elemento com data-modulo cujo módulo esteja desligado.
+// Separada de aplicarModulos() porque goScreen() a chama no fim de cada
+// navegação (para pegar HTML gerado por template string) — e goScreen não pode
+// disparar o redirect abaixo, sob risco de recursão.
+function _esconderElementosModulos() {
+  document.querySelectorAll('[data-modulo]').forEach(el => {
+    const off = el.dataset.modulo.split(/\s+/).some(m => _modulosOff.has(m));
+    // Classe em vez de style.display: reversível (religar módulo não exige
+    // reload) e não sobrescreve o display inline que o elemento já tinha
+    // — vários blocos nascem com display:none por outro motivo.
+    el.classList.toggle('modulo-off', off);
+  });
+}
+
+// DEVE rodar SEMPRE DEPOIS de aplicarRestricoesPorRole(), que começa
+// resetando display='' em todos os .nav-item — a ordem inversa não gruda.
+function aplicarModulos() {
+  _esconderElementosModulos();
+
+  // Se a tela em foco pertence a um módulo desligado, sair dela
+  const ativa = document.querySelector('.screen.on')?.id?.replace(/^sc-/, '');
+  const mod = ativa && MODULO_POR_TELA[ativa];
+  if (mod && _modulosOff.has(mod)) {
+    goScreen('dashboard', document.getElementById('nb-dashboard'));
+  }
 }
 
 function aplicarRestricoesPorRole() {
@@ -10710,7 +10935,7 @@ function renderDashboard() {
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         ${!isAtiva ? `<button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');renderDashboard()">Selecionar</button>` : ''}
-        <button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">Links</button>
+        <button class="btn btn-ghost" data-modulo="links" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">Links</button>
         <button class="btn btn-g" style="font-size:11px"
           onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
           Analisar
@@ -10911,7 +11136,7 @@ function renderTelaEmpresas() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Ciclos
         </button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)">
+        <button class="btn btn-ghost" data-modulo="links" style="font-size:11px;padding:5px 10px" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
           Links
         </button>
@@ -11758,7 +11983,9 @@ function _gheRenderCicloSel() {
 // "Ver adesão" na tela de Links. cicloId vazio = agregado de todos os ciclos.
 async function carregarAdesaoGHE(empresaId, cicloId) {
   const totalBadge = document.getElementById('ghe-adesao-total');
-  if (!empresaId || isDemoMode || !sbAdmin) {
+  // Módulo desligado para a EST: cai no mesmo caminho de "sem dados" — o
+  // detail pane e a tabela já degradam com _gheAdesaoData = null
+  if (!empresaId || isDemoMode || !sbAdmin || !moduloOn('adesao')) {
     _gheAdesaoData = null;
     if (totalBadge) totalBadge.style.display = 'none';
     _renderGHEDetailPane();
@@ -12010,10 +12237,14 @@ function _renderGHETabela() {
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
       <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
-      <td style="padding:8px 14px;text-align:right;color:${ad?'var(--tx)':'var(--tl)'}">${ad ? ad.respostas : '—'}</td>
-      <td style="padding:8px 14px;text-align:right;font-weight:${ad?'700':'400'};color:${corAd}">${ad ? ad.pct+'%' : '—'}</td>
+      <td data-modulo="adesao" style="padding:8px 14px;text-align:right;color:${ad?'var(--tx)':'var(--tl)'}">${ad ? ad.respostas : '—'}</td>
+      <td data-modulo="adesao" style="padding:8px 14px;text-align:right;font-weight:${ad?'700':'400'};color:${corAd}">${ad ? ad.pct+'%' : '—'}</td>
     </tr>`;
   }).join('');
+
+  // As células de adesão nascem a cada render — reaplicar o flag para que
+  // cabeçalho e corpo da tabela nunca fiquem desalinhados
+  if (_modulosOff.size) _esconderElementosModulos();
 }
 
 function _atualizarGHEKpis() {
@@ -13894,6 +14125,13 @@ function goScreen(id, btn) {
     return;
   }
 
+  // Controle por módulo da EST (independente do role) — ver MODULOS_CATALOGO
+  const modTela = MODULO_POR_TELA[id];
+  if (modTela && _modulosOff.has(modTela)) {
+    toast('Módulo não disponível para esta EST.', 'r');
+    return;
+  }
+
   // 1. Esconder todas as telas e desativar todos os nav items
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('on'));
@@ -14019,6 +14257,9 @@ function goScreen(id, btn) {
           break;
       }
     } catch(e) { console.warn('goScreen render error:', id, e); }
+    // Reaplicar módulos DEPOIS do render — pega blocos criados por template
+    // string (ex.: botão "Ver adesão" na lista de links)
+    if (_modulosOff.size) _esconderElementosModulos();
   }, 0);
 
   // 6. Fechar sidebar no mobile
