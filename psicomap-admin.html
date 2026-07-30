@@ -1626,10 +1626,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <option value="admin">Admin EST</option>
         </select>
       </div>
+      <div class="field" id="nu-tenant-field" style="display:none">
+        <label>EST <span style="color:var(--red)">*</span></label>
+        <select id="nu-tenant-id"></select>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalNovoUsuario()">Cancelar</button>
-      <button class="btn btn-g" style="flex:2" onclick="salvarNovoUsuario()">
+      <button class="btn btn-g" style="flex:2" id="btn-salvar-novo-usuario" onclick="salvarNovoUsuario()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Criar usuário
       </button>
@@ -10802,7 +10806,7 @@ async function toggleAtivoUsuario(id, ativo) {
   carregarUsuarios();
 }
 
-function abrirModalNovoUsuario() {
+async function abrirModalNovoUsuario() {
   const callerRole = currentUser?.role;
   const callerIsAdmin = callerRole === 'admin' || callerRole === 'super_admin';
   if (!callerIsAdmin) {
@@ -10815,6 +10819,24 @@ function abrirModalNovoUsuario() {
   // Todos os perfis disponíveis para admin/super_admin; Admin EST visível para ambos
   const adminOpt = document.querySelector('#nu-role option[value="admin"]');
   if (adminOpt) adminOpt.style.display = '';
+
+  const tenantField = document.getElementById('nu-tenant-field');
+  if (callerRole === 'super_admin' && sbAdmin) {
+    tenantField.style.display = '';
+    const sel = document.getElementById('nu-tenant-id');
+    sel.innerHTML = '<option value="">Carregando…</option>';
+    const { data: tenants, error } = await sbAdmin.from('tenants').select('id, nome').eq('ativo', true).order('nome');
+    sel.innerHTML = '';
+    (tenants || []).forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = t.nome;
+      sel.appendChild(opt);
+    });
+    if (error || !tenants?.length) sel.innerHTML = '<option value="">Nenhuma EST encontrada</option>';
+  } else {
+    tenantField.style.display = 'none';
+  }
+
   document.getElementById('modal-novo-usuario').classList.add('open');
 }
 function fecharModalNovoUsuario() {
@@ -10825,14 +10847,52 @@ async function salvarNovoUsuario() {
   const email = document.getElementById('nu-email').value.trim();
   const nome  = document.getElementById('nu-nome').value.trim();
   const role  = document.getElementById('nu-role').value;
+  const callerRole = currentUser?.role;
   if (!email) { toast('Informe o e-mail.', 'w'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'r'); return; }
   if (!sbAdmin) { toast('Modo demo — não é possível criar usuários reais.', 'w'); return; }
 
-  // Supabase Admin API não está disponível no client com anon key.
-  // Orientar o admin a criar via dashboard, ou usar uma Edge Function futura.
-  toast('Para criar usuários: Supabase Dashboard → Authentication → Users → Add user.', 'w');
-  // Registrar perfil diretamente se o usuário já existir pelo ID (uso avançado)
-  fecharModalNovoUsuario();
+  let tenantId = null;
+  if (callerRole === 'super_admin') {
+    tenantId = document.getElementById('nu-tenant-id').value;
+    if (!tenantId) { toast('Selecione a EST de destino.', 'w'); return; }
+  }
+
+  const btn = document.getElementById('btn-salvar-novo-usuario');
+  btn.disabled = true;
+  const btnTxtOrig = btn.innerHTML;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const fnUrl = SUPA_URL + '/functions/v1/convidar-usuario';
+    const res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (await sbAdmin.auth.getSession()).data.session?.access_token,
+      },
+      body: JSON.stringify({ email, nome, role, tenant_id: tenantId }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    toast(`Convite enviado para ${email}!`, 'g');
+    fecharModalNovoUsuario();
+    carregarUsuarios();
+  } catch (e) {
+    const isNotFound = e.message?.includes('404') || e.message?.includes('Failed to fetch');
+    if (isNotFound) {
+      toast('Edge Function não configurada. Convide manualmente via Supabase → Authentication → Users → Invite user.', 'w', 8000);
+    } else {
+      toast('Erro ao convidar usuário: ' + (e.message || e), 'r');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = btnTxtOrig;
+  }
 }
 
 // ══════════════════════════════════════════
