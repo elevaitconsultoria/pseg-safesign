@@ -203,6 +203,40 @@ elimina toda a categoria de bugs de link quebrado.
 - SELECT em `empresas` scoped a `get_my_empresa_id()`
 - UPDATE em tabelas operacionais (migration anterior `migration_rbac_viewer_hardening.sql`)
 
+## Módulos por EST — feature flags (2026-07-29)
+
+**Eixo independente do role.** Role responde "quem é você"; módulo responde "o que está ligado
+para esta EST". Serve para segurar recursos ainda em desenvolvimento diante de um cliente
+específico, sem criar mais um role. **Nunca criar role novo para recortar visibilidade** — as
+policies RESTRICTIVE existentes testam literalmente `<> 'cliente_viewer'`, então um role novo
+nasceria com escrita liberada em tudo.
+
+- Tabela `tenant_modulos (tenant_id, modulo, habilitado, updated_at, updated_by)` —
+  `migration_tenant_modulos.sql`. **SELECT** por qualquer usuário do tenant; **escrita só
+  `is_super_admin()`**.
+- **Não colocar os flags em `tenants`**: a policy `tenant_update_admin` deixa o admin da própria
+  EST fazer UPDATE naquela linha — ele religaria os módulos via API.
+- **Ausência de linha = habilitado.** Nenhum seed necessário; EST nova e módulo novo nascem
+  ligados. Ao salvar pelo modal, grava-se linha para todos os módulos do catálogo (religar é
+  UPDATE, não DELETE).
+- `MODULOS_CATALOGO` (catálogo do modal) e `MODULO_POR_TELA` (tela→módulo) em
+  `psicomap-admin.html`. Acrescentar módulo ao catálogo é seguro.
+- Aplicação: `carregarModulosTenant()` preenche `_modulosOff` → `aplicarModulos()` marca
+  `[data-modulo]` com a classe `.modulo-off` (`display:none!important`).
+  **`aplicarModulos()` roda sempre DEPOIS de `aplicarRestricoesPorRole()`**, que começa
+  resetando `display=''` em todos os `.nav-item` — a ordem inversa não gruda.
+- Classe, não `style.display`: reversível e não atropela displays inline pré-existentes.
+- Conteúdo gerado por template string precisa de `_esconderElementosModulos()` no fim do render
+  (já feito em `renderLinks()`, `_renderGHETabela()` e `goScreen()`). Para condicionais dentro de
+  template use o helper `moduloOn('id')`.
+- **O gate é client-side (cosmético)** — adequado para módulo imaturo, não é fronteira de
+  segurança. Bloqueio real exige policy RESTRICTIVE na tabela de dados do módulo.
+- `carregarModulosTenant()` **falha aberto**: erro de leitura loga warn e mantém tudo visível,
+  em vez de esconder o app inteiro se a migration não estiver aplicada.
+- Módulo `adesao` não é tela: guard em `carregarAdesaoGHE()` força `_gheAdesaoData = null` (o
+  detail pane e a tabela já degradam nesse caminho) + `data-modulo` no `#ghe-adesao-row`, nas
+  duas colunas da tabela GHE e no botão "Ver adesão" da tela de Links.
+
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
 O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de
@@ -226,6 +260,10 @@ sairModoSuporte()
   → goScreen('gestao-ests')
 ```
 
+`entrarComoEST` também chama `carregarModulosTenant()` (antes de
+`aplicarRestricoesPorRole`) e `sairModoSuporte` limpa `_modulosOff` — sem isso os flags da EST
+visitada continuariam valendo fora do modo suporte.
+
 **Por que `currentTenantId = tenantId` é crítico**: todos os INSERTs do sistema usam
 `currentTenantId` como `tenant_id`. Sem isso, registros criados em modo suporte teriam
 `tenant_id = null` e ficariam órfãos (invisíveis para o admin da EST).
@@ -246,3 +284,7 @@ sairModoSuporte()
   adicionar regras de routing.
 - **Cloudflare Pretty URLs**: o CF Pages serve `foo.html` também como `/foo` (sem extensão).
   Qualquer redirect de compatibilidade deve cobrir **ambas** as variantes (`/foo.html` e `/foo`).
+- **Branding nos exports usa `_estPerfil.nome_empresa` — nunca string hardcoded**: `exportarResultadosPrint()`,
+  export de Gráficos e toolbar do `_buildLaudoHTML` usam o nome dinâmico da EST. Se ausente, o campo
+  some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
+  `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.
