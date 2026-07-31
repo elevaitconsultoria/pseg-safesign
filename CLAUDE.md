@@ -263,6 +263,43 @@ nasceria com escrita liberada em tudo.
   detail pane e a tabela já degradam nesse caminho) + `data-modulo` no `#ghe-adesao-row`, nas
   duas colunas da tabela GHE e no botão "Ver adesão" da tela de Links.
 
+## Cadastro de usuários pelo sistema (2026-07-31)
+
+Convite/exclusão de usuário **sempre** passa por Edge Function com `service_role` — nunca
+client-side. `auth.admin.*` (criar/convidar/excluir) só existe no SDK server-side; a
+`service_role key` fica só no runtime da Edge Function, nunca no client (`sbAdmin` usa
+`anon key`). Padrão usado por `convidar-est`, `convidar-usuario` e `excluir-usuario`: a
+function recebe o JWT do caller no header `Authorization`, resolve role/tenant do caller
+lendo `perfis` com esse JWT (nunca confia em valores enviados no body) e só então usa o
+client `service_role` para a operação de Admin API.
+
+- `supabase/functions/convidar-usuario/index.ts` — convida (`auth.admin.inviteUserByEmail`)
+  ou reenvia (`{ resend_user_id }`) um membro de equipe. `admin` só convida para o próprio
+  tenant (ignora `tenant_id` do body); `super_admin` informa e a function valida que o tenant
+  existe. `role` do convidado nunca pode ser `super_admin` (evita escalonamento). Depois do
+  convite, corrige `role`/`tenant_id`/`nome` que o trigger `handle_new_user()` grava com
+  valores default (`role='consultor'`, `tenant_id=NULL`).
+- `supabase/functions/excluir-usuario/index.ts` — `auth.admin.deleteUser`; `perfis.id →
+  auth.users(id)` é `ON DELETE CASCADE`, então não precisa apagar as duas tabelas. Nunca
+  permite excluir `super_admin` nem a própria conta do caller.
+- `perfis_com_status()` (`migration_perfis_status_rpc.sql`) — `SECURITY DEFINER`, mesmo
+  padrão de `auth_role()`/`get_my_tenant_id()`/`is_super_admin()`. Existe porque
+  `auth.users.last_sign_in_at` não é alcançável pelo client via `select` direto em `perfis`
+  (RLS não estende a `auth.users`); a function faz o `JOIN` internamente e filtra por tenant
+  do caller dentro da própria function. `carregarUsuarios()` usa essa RPC, não mais `select`
+  direto — badge "Convite pendente" quando `last_sign_in_at IS NULL`.
+- O loop pós-convite (e-mail → `?type=invite` na URL → `onAuthStateChange('SIGNED_IN')` →
+  `showSetPassword()` → `definirSenha()` → `auth.updateUser({password})`) já existia antes
+  desta feature (`psicomap-admin.html:9592-9612`, `~11531-11571`) — como o `tenant_id`/`role`
+  já são gravados corretos pela Edge Function antes do primeiro login, o usuário nunca passa
+  por um estado "logado mas sem tenant".
+- Redirect URL do Supabase Auth (Authentication → URL Configuration no Dashboard) é
+  configuração de plataforma, não alcançável por código nem MCP — confirmar manualmente que
+  os domínios de DEV/PROD estão na allowlist sempre que o link de convite parecer quebrado.
+- Ver `.claude/notes/2026-07-31-cadastro-usuarios-sistema.md` para o detalhamento completo
+  (incluindo como testar `SECURITY DEFINER` via `set_config('request.jwt.claims', ...)` sem
+  precisar de uma sessão HTTP real).
+
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
 O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de

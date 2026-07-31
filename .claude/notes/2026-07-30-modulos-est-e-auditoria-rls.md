@@ -120,16 +120,25 @@ existe nenhum mecanismo automático que mantenha os branches alinhados — isso 
 
 ---
 
-## Commit e PR
+## Commit, PR e merge
 
-Commit `04ebef3` no branch `docs/licoes-rebrand` (nome não reflete mais o conteúdo — a PR
-virou a de módulos por EST, branch não foi renomeado). PR #40 aberta para `main`, com o
-status das 3 migrations e o test plan para o usuário validar em DEV antes do merge.
+Commit `04ebef3` (+ `eb57351` de documentação) no branch `docs/licoes-rebrand` (nome não
+reflete mais o conteúdo — a PR virou a de módulos por EST, branch não foi renomeado). PR #40
+aberta para `main` com o status das 3 migrations e o test plan.
+
+**PR #40 mergeada pelo usuário em 2026-07-30T15:59:57Z** (merge commit `bcd0cce`). Isso deixou
+`develop` 3 commits atrás de novo — mesmo padrão do achado da seção 3 — sincronizado de novo
+via fast-forward logo em seguida. Confirma que o dessync `develop`/`main` não é um evento
+isolado: acontece a **cada merge em main**, porque não há automação. Chip de tarefa em segundo
+plano sugerido ao usuário (não iniciado) para criar um GitHub Action de fast-forward automático
+de `develop` em resposta a push em `main`.
 
 ## Checklist para a próxima sessão
 
 - [ ] Usuário testa fluxo completo de módulos em DEV com login real de super_admin
-- [ ] Após validar, aplicar `migration_tenant_modulos.sql` em PROD
-- [ ] Revisar/aprovar PR #40
+- [ ] Após validar, aplicar `migration_tenant_modulos.sql` em PROD — **único item de código
+      pendente do ciclo**
 - [ ] (opcional, baixa prioridade) fechar os 3 gaps DEV-atrás-de-PROD listados em 2c
-- [ ] Verificar periodicamente se `develop`/`main` voltaram a divergir — não há automação
+- [ ] (opcional) revisar/rodar a automação de sync `develop`↔`main` se o chip sugerido for aceito
+- [ ] Até lá, verificar manualmente `git log origin/develop..origin/main --oneline` após cada
+      merge em `main`
