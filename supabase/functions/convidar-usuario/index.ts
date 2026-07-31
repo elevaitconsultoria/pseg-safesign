@@ -44,6 +44,35 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Reenvio de convite: apenas reemite o e-mail para um usuário já criado
+    // (perfil e tenant_id já corretos, não mexe em role/tenant).
+    if (body.resend_user_id) {
+      const resendId = body.resend_user_id;
+      const { data: alvoPerfil, error: alvoError } = await callerClient
+        .from('perfis')
+        .select('id, tenant_id, role')
+        .eq('id', resendId)
+        .single();
+      if (alvoError || !alvoPerfil) {
+        return new Response(JSON.stringify({ error: 'Usuário não encontrado' }), { status: 404, headers: corsHeaders });
+      }
+      if (alvoPerfil.role === 'super_admin') {
+        return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders });
+      }
+      if (callerRole === 'admin' && alvoPerfil.tenant_id !== callerPerfil.tenant_id) {
+        return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders });
+      }
+      const { data: alvoUser, error: alvoUserError } = await adminClient.auth.admin.getUserById(resendId);
+      if (alvoUserError || !alvoUser?.user?.email) {
+        return new Response(JSON.stringify({ error: 'Não foi possível localizar o e-mail do usuário' }), { status: 404, headers: corsHeaders });
+      }
+      const { error: resendError } = await adminClient.auth.admin.inviteUserByEmail(alvoUser.user.email);
+      if (resendError) throw resendError;
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const email = (body.email || '').trim();
     const nome = (body.nome || '').trim();
     const role = body.role;
@@ -55,8 +84,6 @@ Deno.serve(async (req) => {
     if (!ROLES_PERMITIDAS.includes(role)) {
       return new Response(JSON.stringify({ error: 'role inválida' }), { status: 400, headers: corsHeaders });
     }
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     if (callerRole === 'admin') {
       // admin de EST só pode convidar para o próprio tenant — ignora qualquer
