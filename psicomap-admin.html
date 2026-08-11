@@ -968,10 +968,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="login-title">Entrar</div>
 
       <label class="login-label" for="login-email">E-mail</label>
-      <input class="login-input" type="email" id="login-email" placeholder="seu@email.com.br" autocomplete="email"/>
+      <input class="login-input" type="email" id="login-email" placeholder="seu@email.com.br" autocomplete="email"
+        oninput="document.getElementById('login-err').style.display='none'"/>
 
       <label class="login-label" for="login-senha">Senha</label>
-      <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
+      <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') fazerLogin()"
+        oninput="document.getElementById('login-err').style.display='none'"/>
 
       <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
 
@@ -4734,9 +4737,11 @@ async function carregarEmpresas() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
+    const isViewer = currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
-      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true)).order('nome'),
-      (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada')).order('criado_em', { ascending: false }),
+      // viewer: filtrar no banco — evita enviar dados de outras empresas pela rede
+      (() => { let q = sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('id', currentUser.empresa_id); return q.order('nome'); })(),
+      (() => { let q = sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada'); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('empresa_id', currentUser.empresa_id); return q.order('criado_em', { ascending: false }); })(),
       _fetchAllSupabase(() => tid
         ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).order('empresa_id').order('ordem')),
@@ -6925,6 +6930,10 @@ async function carregarLinks() {
     const tid = _supportMode && _supportTenant?.id;
     let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
+    // viewer: restringir ao banco para a empresa vinculada ao perfil
+    if (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id) {
+      q = q.eq('empresa_id', currentUser.empresa_id);
+    }
     const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
     _links = (data || []).map(l => ({
@@ -9538,6 +9547,24 @@ let isDemoMode = false;
 // Ver migration_tenant_modulos.sql — ausência de linha no banco = habilitado.
 let _modulosOff = new Set();
 
+// Guard contra chamadas concorrentes de showApp() (listener + getSession podem disparar juntos)
+let _showingApp = false;
+
+// Limpa todo estado em memória ligado ao usuário/tenant — chamada em logout e em sairModoSuporte.
+// Garante que dados de um usuário não vazam para o próximo em troca de sessão na mesma aba.
+function _limparEstadoSessao() {
+  currentTenantId = null;
+  _empresas       = [];
+  _ciclos         = [];
+  _links          = [];
+  _respostasCache = {};
+  _estPerfil      = null;
+  _modulosOff     = new Set();
+  _showingApp     = false;
+  _empresaAtiva   = { id: '', nome: '' };
+  try { sessionStorage.removeItem('pseg_empresa_ativa'); } catch(_e) {}
+}
+
 // ─────────────────────────────────────────────────────────────
 // Autenticação obrigatória — apenas Supabase Auth (produção)
 // Bypass removido: acesso somente com login válido
@@ -9637,12 +9664,12 @@ async function checkSession() {
       if (!_isInviteFlow && !_isRecoveryFlow) showApp();
     } else {
       showLogin();
-      diagnosticarConexao();
+      // Sem sessão é o caso normal (novo visitante) — sem diagnóstico de rede desnecessário
     }
   } catch(e) {
     console.warn('[PsicoMap] getSession falhou:', e.message);
     showLogin();
-    diagnosticarConexao();
+    diagnosticarConexao(); // só aqui há um erro real de conectividade
   }
 }
 
@@ -9934,10 +9961,13 @@ async function entrarComoEST(tenantId, nome) {
 async function sairModoSuporte() {
   _supportMode = false;
   _supportTenant = null;
-  currentTenantId = null; // super_admin não tem tenant próprio
-  _empresas = [];         // limpa dados da EST visitada — super_admin não precisa deles
-  _links    = [];
-  _modulosOff = new Set(); // flags da EST visitada não valem fora do modo suporte
+  currentTenantId = null;   // super_admin não tem tenant próprio
+  _empresas       = [];     // limpa dados da EST visitada
+  _ciclos         = [];
+  _links          = [];
+  _respostasCache = {};     // respostas da EST visitada não devem persistir
+  _estPerfil      = null;
+  _modulosOff     = new Set(); // flags da EST visitada não valem fora do modo suporte
 
   const banner = document.getElementById('banner-suporte');
   if (banner) banner.style.display = 'none';
@@ -10194,17 +10224,23 @@ function _iniciarAppAposTenant() {
 }
 
 async function showApp() {
-  document.getElementById('login-overlay').classList.remove('show');
-  document.getElementById('app-shell').style.display = 'grid';
-  const email = currentUser?.email || 'admin';
-  const labelEmail = isDemoMode              ? '👁 Demonstração'
-                   : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
-                   : email;
-  document.getElementById('user-email-display').textContent = labelEmail;
-  // Carregar tenant_id e role ANTES de qualquer query de dados
-  await loadPerfil();
-  // Onboarding desativado — acesso direto ao app após login
-  _iniciarAppAposTenant();
+  if (_showingApp) return; // evita dupla execução (listener + getSession podem disparar juntos)
+  _showingApp = true;
+  try {
+    document.getElementById('login-overlay').classList.remove('show');
+    document.getElementById('app-shell').style.display = 'grid';
+    const email = currentUser?.email || 'admin';
+    const labelEmail = isDemoMode              ? '👁 Demonstração'
+                     : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
+                     : email;
+    document.getElementById('user-email-display').textContent = labelEmail;
+    // Carregar tenant_id e role ANTES de qualquer query de dados
+    await loadPerfil();
+    // Onboarding desativado — acesso direto ao app após login
+    _iniciarAppAposTenant();
+  } finally {
+    _showingApp = false;
+  }
 }
 
 // ══════════════════════════════════════════
@@ -11468,7 +11504,7 @@ function _loginOk(user) {
   const el = document.getElementById('login-err');
   if (el) el.style.display = 'none';
   currentUser = user;
-  carregarPerfilUsuario().then(() => showApp());
+  showApp(); // loadPerfil() dentro de showApp() já carrega role/tenant_id/empresa_id
 }
 
 async function carregarPerfilUsuario() {
@@ -11522,7 +11558,12 @@ async function fazerLogin() {
   if (sbAdmin) {
     try {
       console.log('[PsicoMap Login] tentando SDK signInWithPassword…');
-      const { data, error } = await sbAdmin.auth.signInWithPassword({ email, password: senha });
+      const _loginTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000));
+      const { data, error } = await Promise.race([
+        sbAdmin.auth.signInWithPassword({ email, password: senha }),
+        _loginTimeout,
+      ]);
       if (error) throw error;
       console.log('[PsicoMap Login] SDK: sucesso', data.user?.email);
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
@@ -11552,15 +11593,21 @@ async function fazerLogin() {
   // ── Tentativa 2: fetch direto à API REST do Supabase Auth ───
   try {
     console.log('[PsicoMap Login] fetch direto para', SUPA_URL + '/auth/v1/token');
-    const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
-      method : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey'      : SUPA_ANON,
-        'Authorization': 'Bearer ' + SUPA_ANON
-      },
-      body: JSON.stringify({ email, password: senha })
-    });
+    const _fetchCtrl = new AbortController();
+    const _fetchTimeout = setTimeout(() => _fetchCtrl.abort(), 15000);
+    let res;
+    try {
+      res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+        method : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey'      : SUPA_ANON,
+          'Authorization': 'Bearer ' + SUPA_ANON
+        },
+        body  : JSON.stringify({ email, password: senha }),
+        signal: _fetchCtrl.signal,
+      });
+    } finally { clearTimeout(_fetchTimeout); }
     const json = await res.json();
     console.log('[PsicoMap Login] fetch resposta status', res.status, json);
 
@@ -11589,7 +11636,10 @@ async function fazerLogin() {
   } catch(e2) {
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     console.error('[PsicoMap Login] fetch também falhou:', e2);
-    _loginErro('Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
+    const isTimeout = e2?.name === 'AbortError' || e2?.message === 'timeout';
+    _loginErro(isTimeout
+      ? 'O servidor demorou demais para responder. Verifique sua conexão e tente novamente.'
+      : 'Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
   }
 }
 
@@ -11651,6 +11701,7 @@ async function fazerLogout() {
     console.warn('[PsicoMap] signOut:', e.message);
   }
   currentUser = null;
+  _limparEstadoSessao();
   showLogin();
 }
 
