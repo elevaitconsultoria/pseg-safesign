@@ -1012,8 +1012,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PsicoMap</span>
     </div>
 
-    <h2 style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
-    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
+    <h2 id="sp-titulo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
+    <p id="sp-subtitulo" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
       Bem-vindo ao PsicoMap. Crie uma senha para ativar sua conta.
     </p>
 
@@ -1031,7 +1031,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <button id="sp-btn" onclick="definirSenha()"
       style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:12px;cursor:pointer">
-      Ativar conta
+      <span id="sp-btn-label">Ativar conta</span>
     </button>
 
   </div>
@@ -1485,7 +1485,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-title">Equipe</div>
       <div class="page-sub">Consultores e colaboradores com acesso ao painel</div>
     </div>
-    <div class="page-hdr-actions">
+    <div class="page-hdr-actions" id="usuarios-new-btn-area">
       <button class="btn btn-g" onclick="abrirModalNovoUsuario()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo usuário
@@ -9589,10 +9589,11 @@ async function checkSession() {
     return;
   }
 
-  // Detectar fluxo de convite ANTES de o Supabase processar o hash
+  // Detectar fluxo de convite ou recuperação de senha ANTES de o Supabase processar o hash
   const _inviteParams = new URLSearchParams(window.location.hash.substring(1));
-  const _isInviteFlow = _inviteParams.get('type') === 'invite';
-  if (_isInviteFlow) {
+  const _isInviteFlow   = _inviteParams.get('type') === 'invite';
+  const _isRecoveryFlow = _inviteParams.get('type') === 'recovery';
+  if (_isInviteFlow || _isRecoveryFlow) {
     // Limpar hash da URL sem recarregar (estético)
     history.replaceState(null, '', window.location.pathname);
   }
@@ -9600,12 +9601,16 @@ async function checkSession() {
   // Registrar listener ANTES de getSession (captura INITIAL_SESSION)
   sbAdmin.auth.onAuthStateChange((event, session) => {
     console.log('[PsicoMap Auth]', event);
+    // Recuperação de senha: Supabase emite PASSWORD_RECOVERY (não SIGNED_IN)
+    if (event === 'PASSWORD_RECOVERY') {
+      currentUser = session?.user || currentUser;
+      showSetPassword('recovery');
+      return;
+    }
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
-      if (_isInviteFlow) {
-        showSetPassword();
-        return;
-      }
+      if (_isRecoveryFlow) { showSetPassword('recovery'); return; }
+      if (_isInviteFlow)   { showSetPassword('invite');   return; }
       if (document.getElementById('login-overlay').classList.contains('show')) {
         showApp();
       }
@@ -9628,7 +9633,8 @@ async function checkSession() {
     if (error) throw error;
     if (session?.user) {
       currentUser = session.user;
-      showApp();
+      // Não chamar showApp() em fluxos de convite/recuperação — o listener já cuida
+      if (!_isInviteFlow && !_isRecoveryFlow) showApp();
     } else {
       showLogin();
       diagnosticarConexao();
@@ -10304,6 +10310,10 @@ function aplicarRestricoesPorRole() {
     const sbSecAdmin = document.getElementById('sb-sec-admin');
     if (sbSecAdmin) sbSecAdmin.style.display = 'none';
 
+    // Ocultar botão "Novo usuário" (consultor não convida membros)
+    const usuariosNewBtn = document.getElementById('usuarios-new-btn-area');
+    if (usuariosNewBtn) usuariosNewBtn.style.display = 'none';
+
     // Se estiver numa tela restrita, redirecionar ao dashboard
     const telaAtiva = document.querySelector('.screen.on')?.id;
     if (['sc-usuarios','sc-assinatura','sc-riscos','sc-plano','sc-est-perfil'].includes(telaAtiva)) {
@@ -10322,8 +10332,8 @@ function aplicarRestricoesPorRole() {
     const txt = sec.textContent.trim();
     sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
   });
-  // Ocultar botões de escrita (links e dashboard)
-  ['links-action-btns', 'dash-hdr-actions'].forEach(eid => {
+  // Ocultar botões de escrita (links, dashboard e novo usuário)
+  ['links-action-btns', 'dash-hdr-actions', 'usuarios-new-btn-area'].forEach(eid => {
     const el = document.getElementById(eid);
     if (el) el.style.display = 'none';
   });
@@ -10586,8 +10596,9 @@ async function carregarUsuarios() {
     el.innerHTML = '<div class="alert alert-y">Disponível apenas no modo real (com Supabase conectado).</div>';
     return;
   }
-  // Admin e consultor podem gerenciar usuários; cliente_viewer não
-  if (currentUser?.role === 'cliente_viewer') {
+  // Apenas admin e super_admin gerenciam usuários
+  const _roleParaUsuarios = currentUser?.role;
+  if (!['admin', 'super_admin'].includes(_roleParaUsuarios)) {
     el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito.</div>';
     return;
   }
@@ -11582,7 +11593,15 @@ async function fazerLogin() {
   }
 }
 
-function showSetPassword() {
+function showSetPassword(mode) {
+  // mode: 'invite' (padrão) | 'recovery'
+  const isRecovery = mode === 'recovery';
+  const subtituloEl = document.getElementById('sp-subtitulo');
+  const btnLabelEl  = document.getElementById('sp-btn-label');
+  if (subtituloEl) subtituloEl.textContent = isRecovery
+    ? 'Digite e confirme a nova senha para a sua conta.'
+    : 'Bem-vindo ao PsicoMap. Crie uma senha para ativar sua conta.';
+  if (btnLabelEl) btnLabelEl.textContent = isRecovery ? 'Salvar nova senha' : 'Ativar conta';
   document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('set-password-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('sp-senha').focus(), 100);

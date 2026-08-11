@@ -300,6 +300,41 @@ client `service_role` para a operação de Admin API.
   (incluindo como testar `SECURITY DEFINER` via `set_config('request.jwt.claims', ...)` sem
   precisar de uma sessão HTTP real).
 
+## Segunda metodologia de avaliação — planejamento em andamento (2026-08-03)
+
+O produto hoje aplica **uma única metodologia** de risco psicossocial (BS 8800 / Mulhausen &
+Damiano, 27 questões, escala 1–4, P×S com lookup 4×4). Está em planejamento — **nada implementado
+ainda** — a adição do **HSE Management Standards Indicator Tool**, via a adaptação brasileira
+validada **ICAO-35** (35 itens, 7 dimensões, escala 1–5, direção oposta: alto = melhor condição).
+Plano completo, incluindo análise antecipada de um terceiro instrumento candidato (COPSOQ) e de
+uma ideia de "combo" de metodologias, em
+`.claude/notes/2026-08-03-metodologia-hse-icao35-planejamento.md`.
+
+Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
+antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:
+
+- **A RPC `salvar_resposta` descarta em silêncio itens com `valor` fora de 1–4** — o `INSERT`
+  final tem `WHERE (item->>'valor')::int BETWEEN 1 AND 4`, que é filtro, não validação. Um cliente
+  malformado ou uma metodologia com escala diferente perderia itens sem erro nenhum, com HTTP 200
+  e "Obrigado!" na tela do funcionário. Isso é um bug pré-existente, independente da segunda
+  metodologia — vale corrigir (fazer a validação falhar em voz alta) mesmo que o plano de HSE não
+  avance.
+- **Existem dois overloads de `salvar_resposta` em PROD** (9 e 10 argumentos; o de 9 é morto) —
+  qualquer PR que mexer na assinatura dessa RPC deve usar `CREATE OR REPLACE` sobre a de 10 args,
+  nunca criar um terceiro overload (risco de `PGRST203`, ambiguidade que quebra o formulário
+  inteiro).
+- **`exportarCSV` (`psicomap-admin.html:5498-5510`) está com bug**: lê `r.resposta_itens`, que
+  `loadRespostasParaEmpresa` nunca retorna (ela pivota para `r.q`). As colunas de resposta do CSV
+  saem sempre vazias. Achado colateral, não relacionado à segunda metodologia.
+
+**Decisões de arquitetura já tomadas caso este plano avance** (não implementadas — só para não
+serem redescobertas do zero numa sessão futura): `metodologia` vive no ciclo e é snapshot na
+resposta, nunca no link; **nenhum conversor entre metodologias**, nem plotagem no mesmo eixo —
+cada uma tem seu próprio motor de cálculo, despachado em poucos pontos, nunca um motor genérico
+configurável; catálogo de questões ganha uma coluna `direcao` (alto=bom / alto=ruim) por questão,
+não por metodologia inteira, porque a pesquisa de um terceiro instrumento (COPSOQ) revelou que a
+direção da escala é uma propriedade por dimensão, não por instrumento.
+
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
 O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de
