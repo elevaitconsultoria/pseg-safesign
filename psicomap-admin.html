@@ -968,10 +968,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="login-title">Entrar</div>
 
       <label class="login-label" for="login-email">E-mail</label>
-      <input class="login-input" type="email" id="login-email" placeholder="seu@email.com.br" autocomplete="email"/>
+      <input class="login-input" type="email" id="login-email" placeholder="seu@email.com.br" autocomplete="email"
+        oninput="document.getElementById('login-err').style.display='none'"/>
 
       <label class="login-label" for="login-senha">Senha</label>
-      <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()"/>
+      <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') fazerLogin()"
+        oninput="document.getElementById('login-err').style.display='none'"/>
 
       <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
 
@@ -1012,8 +1015,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#475569;letter-spacing:.9px;text-transform:uppercase">PsicoMap</span>
     </div>
 
-    <h2 style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
-    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
+    <h2 id="sp-titulo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#f1f5f9;margin:0 0 8px">Defina sua senha</h2>
+    <p id="sp-subtitulo" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6">
       Bem-vindo ao PsicoMap. Crie uma senha para ativar sua conta.
     </p>
 
@@ -1031,7 +1034,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
     <button id="sp-btn" onclick="definirSenha()"
       style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:12px;cursor:pointer">
-      Ativar conta
+      <span id="sp-btn-label">Ativar conta</span>
     </button>
 
   </div>
@@ -1485,7 +1488,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="page-title">Equipe</div>
       <div class="page-sub">Consultores e colaboradores com acesso ao painel</div>
     </div>
-    <div class="page-hdr-actions">
+    <div class="page-hdr-actions" id="usuarios-new-btn-area">
       <button class="btn btn-g" onclick="abrirModalNovoUsuario()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo usuário
@@ -4734,9 +4737,11 @@ async function carregarEmpresas() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
+    const isViewer = currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id;
     const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
-      (tid ? sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true).eq('tenant_id',tid) : sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true)).order('nome'),
-      (tid ? sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').eq('tenant_id',tid) : sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada')).order('criado_em', { ascending: false }),
+      // viewer: filtrar no banco — evita enviar dados de outras empresas pela rede
+      (() => { let q = sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('id', currentUser.empresa_id); return q.order('nome'); })(),
+      (() => { let q = sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada'); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('empresa_id', currentUser.empresa_id); return q.order('criado_em', { ascending: false }); })(),
       _fetchAllSupabase(() => tid
         ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).order('empresa_id').order('ordem')),
@@ -6925,6 +6930,10 @@ async function carregarLinks() {
     const tid = _supportMode && _supportTenant?.id;
     let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
+    // viewer: restringir ao banco para a empresa vinculada ao perfil
+    if (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id) {
+      q = q.eq('empresa_id', currentUser.empresa_id);
+    }
     const { data, error } = await q.order('criado_em', { ascending: false });
     if (error) throw error;
     _links = (data || []).map(l => ({
@@ -9538,6 +9547,24 @@ let isDemoMode = false;
 // Ver migration_tenant_modulos.sql — ausência de linha no banco = habilitado.
 let _modulosOff = new Set();
 
+// Guard contra chamadas concorrentes de showApp() (listener + getSession podem disparar juntos)
+let _showingApp = false;
+
+// Limpa todo estado em memória ligado ao usuário/tenant — chamada em logout e em sairModoSuporte.
+// Garante que dados de um usuário não vazam para o próximo em troca de sessão na mesma aba.
+function _limparEstadoSessao() {
+  currentTenantId = null;
+  _empresas       = [];
+  _ciclos         = [];
+  _links          = [];
+  _respostasCache = {};
+  _estPerfil      = null;
+  _modulosOff     = new Set();
+  _showingApp     = false;
+  _empresaAtiva   = { id: '', nome: '' };
+  try { sessionStorage.removeItem('pseg_empresa_ativa'); } catch(_e) {}
+}
+
 // ─────────────────────────────────────────────────────────────
 // Autenticação obrigatória — apenas Supabase Auth (produção)
 // Bypass removido: acesso somente com login válido
@@ -9589,10 +9616,11 @@ async function checkSession() {
     return;
   }
 
-  // Detectar fluxo de convite ANTES de o Supabase processar o hash
+  // Detectar fluxo de convite ou recuperação de senha ANTES de o Supabase processar o hash
   const _inviteParams = new URLSearchParams(window.location.hash.substring(1));
-  const _isInviteFlow = _inviteParams.get('type') === 'invite';
-  if (_isInviteFlow) {
+  const _isInviteFlow   = _inviteParams.get('type') === 'invite';
+  const _isRecoveryFlow = _inviteParams.get('type') === 'recovery';
+  if (_isInviteFlow || _isRecoveryFlow) {
     // Limpar hash da URL sem recarregar (estético)
     history.replaceState(null, '', window.location.pathname);
   }
@@ -9600,12 +9628,16 @@ async function checkSession() {
   // Registrar listener ANTES de getSession (captura INITIAL_SESSION)
   sbAdmin.auth.onAuthStateChange((event, session) => {
     console.log('[PsicoMap Auth]', event);
+    // Recuperação de senha: Supabase emite PASSWORD_RECOVERY (não SIGNED_IN)
+    if (event === 'PASSWORD_RECOVERY') {
+      currentUser = session?.user || currentUser;
+      showSetPassword('recovery');
+      return;
+    }
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
-      if (_isInviteFlow) {
-        showSetPassword();
-        return;
-      }
+      if (_isRecoveryFlow) { showSetPassword('recovery'); return; }
+      if (_isInviteFlow)   { showSetPassword('invite');   return; }
       if (document.getElementById('login-overlay').classList.contains('show')) {
         showApp();
       }
@@ -9628,15 +9660,16 @@ async function checkSession() {
     if (error) throw error;
     if (session?.user) {
       currentUser = session.user;
-      showApp();
+      // Não chamar showApp() em fluxos de convite/recuperação — o listener já cuida
+      if (!_isInviteFlow && !_isRecoveryFlow) showApp();
     } else {
       showLogin();
-      diagnosticarConexao();
+      // Sem sessão é o caso normal (novo visitante) — sem diagnóstico de rede desnecessário
     }
   } catch(e) {
     console.warn('[PsicoMap] getSession falhou:', e.message);
     showLogin();
-    diagnosticarConexao();
+    diagnosticarConexao(); // só aqui há um erro real de conectividade
   }
 }
 
@@ -9928,10 +9961,13 @@ async function entrarComoEST(tenantId, nome) {
 async function sairModoSuporte() {
   _supportMode = false;
   _supportTenant = null;
-  currentTenantId = null; // super_admin não tem tenant próprio
-  _empresas = [];         // limpa dados da EST visitada — super_admin não precisa deles
-  _links    = [];
-  _modulosOff = new Set(); // flags da EST visitada não valem fora do modo suporte
+  currentTenantId = null;   // super_admin não tem tenant próprio
+  _empresas       = [];     // limpa dados da EST visitada
+  _ciclos         = [];
+  _links          = [];
+  _respostasCache = {};     // respostas da EST visitada não devem persistir
+  _estPerfil      = null;
+  _modulosOff     = new Set(); // flags da EST visitada não valem fora do modo suporte
 
   const banner = document.getElementById('banner-suporte');
   if (banner) banner.style.display = 'none';
@@ -10188,17 +10224,23 @@ function _iniciarAppAposTenant() {
 }
 
 async function showApp() {
-  document.getElementById('login-overlay').classList.remove('show');
-  document.getElementById('app-shell').style.display = 'grid';
-  const email = currentUser?.email || 'admin';
-  const labelEmail = isDemoMode              ? '👁 Demonstração'
-                   : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
-                   : email;
-  document.getElementById('user-email-display').textContent = labelEmail;
-  // Carregar tenant_id e role ANTES de qualquer query de dados
-  await loadPerfil();
-  // Onboarding desativado — acesso direto ao app após login
-  _iniciarAppAposTenant();
+  if (_showingApp) return; // evita dupla execução (listener + getSession podem disparar juntos)
+  _showingApp = true;
+  try {
+    document.getElementById('login-overlay').classList.remove('show');
+    document.getElementById('app-shell').style.display = 'grid';
+    const email = currentUser?.email || 'admin';
+    const labelEmail = isDemoMode              ? '👁 Demonstração'
+                     : currentUser?.id === 'local-admin' ? '⚙ Admin (sem login) · ' + email
+                     : email;
+    document.getElementById('user-email-display').textContent = labelEmail;
+    // Carregar tenant_id e role ANTES de qualquer query de dados
+    await loadPerfil();
+    // Onboarding desativado — acesso direto ao app após login
+    _iniciarAppAposTenant();
+  } finally {
+    _showingApp = false;
+  }
 }
 
 // ══════════════════════════════════════════
@@ -10304,6 +10346,10 @@ function aplicarRestricoesPorRole() {
     const sbSecAdmin = document.getElementById('sb-sec-admin');
     if (sbSecAdmin) sbSecAdmin.style.display = 'none';
 
+    // Ocultar botão "Novo usuário" (consultor não convida membros)
+    const usuariosNewBtn = document.getElementById('usuarios-new-btn-area');
+    if (usuariosNewBtn) usuariosNewBtn.style.display = 'none';
+
     // Se estiver numa tela restrita, redirecionar ao dashboard
     const telaAtiva = document.querySelector('.screen.on')?.id;
     if (['sc-usuarios','sc-assinatura','sc-riscos','sc-plano','sc-est-perfil'].includes(telaAtiva)) {
@@ -10322,8 +10368,8 @@ function aplicarRestricoesPorRole() {
     const txt = sec.textContent.trim();
     sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
   });
-  // Ocultar botões de escrita (links e dashboard)
-  ['links-action-btns', 'dash-hdr-actions'].forEach(eid => {
+  // Ocultar botões de escrita (links, dashboard e novo usuário)
+  ['links-action-btns', 'dash-hdr-actions', 'usuarios-new-btn-area'].forEach(eid => {
     const el = document.getElementById(eid);
     if (el) el.style.display = 'none';
   });
@@ -10586,8 +10632,9 @@ async function carregarUsuarios() {
     el.innerHTML = '<div class="alert alert-y">Disponível apenas no modo real (com Supabase conectado).</div>';
     return;
   }
-  // Admin e consultor podem gerenciar usuários; cliente_viewer não
-  if (currentUser?.role === 'cliente_viewer') {
+  // Apenas admin e super_admin gerenciam usuários
+  const _roleParaUsuarios = currentUser?.role;
+  if (!['admin', 'super_admin'].includes(_roleParaUsuarios)) {
     el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito.</div>';
     return;
   }
@@ -11457,7 +11504,7 @@ function _loginOk(user) {
   const el = document.getElementById('login-err');
   if (el) el.style.display = 'none';
   currentUser = user;
-  carregarPerfilUsuario().then(() => showApp());
+  showApp(); // loadPerfil() dentro de showApp() já carrega role/tenant_id/empresa_id
 }
 
 async function carregarPerfilUsuario() {
@@ -11511,7 +11558,12 @@ async function fazerLogin() {
   if (sbAdmin) {
     try {
       console.log('[PsicoMap Login] tentando SDK signInWithPassword…');
-      const { data, error } = await sbAdmin.auth.signInWithPassword({ email, password: senha });
+      const _loginTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000));
+      const { data, error } = await Promise.race([
+        sbAdmin.auth.signInWithPassword({ email, password: senha }),
+        _loginTimeout,
+      ]);
       if (error) throw error;
       console.log('[PsicoMap Login] SDK: sucesso', data.user?.email);
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
@@ -11541,15 +11593,21 @@ async function fazerLogin() {
   // ── Tentativa 2: fetch direto à API REST do Supabase Auth ───
   try {
     console.log('[PsicoMap Login] fetch direto para', SUPA_URL + '/auth/v1/token');
-    const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
-      method : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey'      : SUPA_ANON,
-        'Authorization': 'Bearer ' + SUPA_ANON
-      },
-      body: JSON.stringify({ email, password: senha })
-    });
+    const _fetchCtrl = new AbortController();
+    const _fetchTimeout = setTimeout(() => _fetchCtrl.abort(), 15000);
+    let res;
+    try {
+      res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+        method : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey'      : SUPA_ANON,
+          'Authorization': 'Bearer ' + SUPA_ANON
+        },
+        body  : JSON.stringify({ email, password: senha }),
+        signal: _fetchCtrl.signal,
+      });
+    } finally { clearTimeout(_fetchTimeout); }
     const json = await res.json();
     console.log('[PsicoMap Login] fetch resposta status', res.status, json);
 
@@ -11578,11 +11636,22 @@ async function fazerLogin() {
   } catch(e2) {
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     console.error('[PsicoMap Login] fetch também falhou:', e2);
-    _loginErro('Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
+    const isTimeout = e2?.name === 'AbortError' || e2?.message === 'timeout';
+    _loginErro(isTimeout
+      ? 'O servidor demorou demais para responder. Verifique sua conexão e tente novamente.'
+      : 'Sem conexão com o servidor Supabase. Verifique sua internet e tente novamente. (' + (e2?.message || e2) + ')');
   }
 }
 
-function showSetPassword() {
+function showSetPassword(mode) {
+  // mode: 'invite' (padrão) | 'recovery'
+  const isRecovery = mode === 'recovery';
+  const subtituloEl = document.getElementById('sp-subtitulo');
+  const btnLabelEl  = document.getElementById('sp-btn-label');
+  if (subtituloEl) subtituloEl.textContent = isRecovery
+    ? 'Digite e confirme a nova senha para a sua conta.'
+    : 'Bem-vindo ao PsicoMap. Crie uma senha para ativar sua conta.';
+  if (btnLabelEl) btnLabelEl.textContent = isRecovery ? 'Salvar nova senha' : 'Ativar conta';
   document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('set-password-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('sp-senha').focus(), 100);
@@ -11632,6 +11701,7 @@ async function fazerLogout() {
     console.warn('[PsicoMap] signOut:', e.message);
   }
   currentUser = null;
+  _limparEstadoSessao();
   showLogin();
 }
 
