@@ -1259,6 +1259,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Setores &amp; Funções</span>
     </button>
 
+    <button class="nav-item" id="nb-agrupamentos" data-label="Agrupamentos GHE" onclick="goScreen('agrupamentos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><circle cx="16" cy="11" r="3"/><path d="M3 20v-2a6 6 0 0112 0v2"/><path d="M16 14a6 6 0 016 6v2"/></svg>
+      <span class="nav-label">Agrupamentos GHE</span>
+    </button>
+
     <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <span class="nav-label">Links de Coleta</span>
@@ -1828,10 +1833,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Filtro Setores — combo -->
       <div class="filter-card">
-        <div class="filter-hdr">
-          <div class="filter-label" style="margin-bottom:0">Setores</div>
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('setor')">+ Agrupar</button>
-        </div>
+        <div class="filter-label">Setores</div>
         <div class="combo" id="combo-setor">
           <div class="combo-trigger" onclick="toggleCombo('combo-setor')">
             <div class="combo-preview" id="combo-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
@@ -1852,16 +1854,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
-        <!-- Agrupamentos salvos -->
-        <div id="grupos-setor" style="margin-top:10px"></div>
       </div>
 
       <!-- Filtro Funções — combo -->
       <div class="filter-card">
-        <div class="filter-hdr">
-          <div class="filter-label" style="margin-bottom:0">Funções</div>
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('funcao')">+ Agrupar</button>
-        </div>
+        <div class="filter-label">Funções</div>
         <div class="combo" id="combo-funcao">
           <div class="combo-trigger" onclick="toggleCombo('combo-funcao')">
             <div class="combo-preview" id="combo-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
@@ -1882,7 +1879,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
-        <div id="grupos-funcao" style="margin-top:10px"></div>
       </div>
 
       <!-- Filtro Nível de Risco — combo -->
@@ -2217,6 +2213,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="filter-card">
+        <div class="filter-label">Granularidade do relatório</div>
+        <select id="laudo-granularidade" class="filter-select" onchange="renderLaudo()">
+          <option value="agrupado">Por Agrupamento GHE</option>
+          <option value="segregado">Por Setor</option>
+          <option value="consolidado">Geral</option>
+        </select>
       </div>
 
       <div class="filter-card">
@@ -3274,6 +3279,61 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     TELA — AGRUPAMENTOS GHE
+══════════════════════════════════════ -->
+<div class="screen" id="sc-agrupamentos">
+  <div class="page-header">
+    <div class="page-hdr-left">
+      <div class="page-title">Agrupamentos GHE</div>
+      <div class="page-sub">Grupos Homogêneos de Exposição — consolidam setores ou funções para análise e relatórios</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+    <div class="filter-card" style="flex:1;min-width:220px;margin-bottom:0">
+      <div class="filter-label">Cliente</div>
+      <select id="agrup-empresa" class="filter-select" onchange="_onAgrupEmpresaChange()">
+        <option value="" disabled>— Selecione o cliente —</option>
+      </select>
+    </div>
+    <div id="agrup-kpis" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="agrup-paineis">
+    <!-- Grupos de Setores -->
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">Grupos de Setores</div>
+        <button class="btn btn-g" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGrupo('setor')">+ Novo grupo</button>
+      </div>
+      <div id="agrup-lista-setor">
+        <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>
+      </div>
+    </div>
+    <!-- Grupos de Funções -->
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">Grupos de Funções</div>
+        <button class="btn btn-g" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGrupo('funcao')">+ Novo grupo</button>
+      </div>
+      <div id="agrup-lista-funcao">
+        <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;padding:14px 18px;background:var(--bg);border:1px solid var(--border)">
+    <div style="font-size:11px;color:var(--tl);line-height:1.6">
+      <strong style="color:var(--tx)">Como funciona:</strong>
+      Crie grupos que consolidam múltiplos setores (ou funções) em uma única unidade de análise.
+      Na tela de <strong>Resultados</strong> use o toggle <em>Por Agrupamento</em> para ver os dados consolidados.
+      No <strong>Relatório</strong> escolha a granularidade desejada antes de exportar.
+      Os setores e funções cadastrados na empresa nunca são alterados.
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="sc-links" data-modulo="links">
   <div class="page-header"><div class="page-title">Clientes &amp; Coleta</div><div class="page-sub">Gerencie seus clientes e gere links de formulário por ciclo de avaliação</div></div>
 
@@ -4168,9 +4228,52 @@ async function carregarMapaQuestoesAdmin() {
 }
 let extIdx    = 0;
 let grupoTipo = 'setor';
-let gruposSetor  = JSON.parse(localStorage.getItem('pseg_grupos_setor') ||'[]');
-let gruposFuncao = JSON.parse(localStorage.getItem('pseg_grupos_funcao')||'[]');
+let gruposSetor  = [];
+let gruposFuncao = [];
 let grupoSelecionados = new Set();
+
+// ── Agrupamentos de setores/funções — persistência no banco ────────────────
+async function carregarGruposSetor(empresaId) {
+  if (!empresaId || isDemoMode) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('grupos_setor')
+      .select('id, tipo, nome, itens, ordem')
+      .eq('empresa_id', empresaId)
+      .order('ordem');
+    if (error) throw error;
+    gruposSetor  = (data || []).filter(g => g.tipo === 'setor');
+    gruposFuncao = (data || []).filter(g => g.tipo === 'funcao');
+  } catch(e) {
+    console.warn('[grupos_setor] erro ao carregar, continuando sem agrupamento:', e.message);
+    gruposSetor  = [];
+    gruposFuncao = [];
+  }
+}
+
+async function _salvarGrupoNoBanco(tipo, nome, itens) {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId || !currentTenantId) {
+    toast('Selecione uma empresa antes de criar agrupamentos.', 'w');
+    return false;
+  }
+  const { error } = await sbAdmin.from('grupos_setor').insert({
+    empresa_id: empresaId,
+    tenant_id:  currentTenantId,
+    tipo,
+    nome,
+    itens,
+    ordem: (tipo === 'setor' ? gruposSetor : gruposFuncao).length,
+  });
+  if (error) { toast('Erro ao salvar agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
+
+async function _excluirGrupoNoBanco(id) {
+  const { error } = await sbAdmin.from('grupos_setor').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
 
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
@@ -5371,6 +5474,7 @@ async function onEmpresaChange() {
     comboState['combo-setor']  = new Set(setores);
     comboState['combo-funcao'] = new Set(funcoes);
   } catch(e) { console.warn('onEmpresaChange:', e); }
+  await carregarGruposSetor(emp);
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
 }
@@ -5431,10 +5535,14 @@ async function rodarAnalise() {
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <!-- Toggle Por setor / Geral -->
+        <!-- Toggle Por setor / Por Agrupamento / Geral -->
         <div class="seg-toggle-group">
           <button id="sgbtn-seg"  onclick="_setSegMode('segregado')"
-            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por setor</button>
+            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por Setor</button>
+          <button id="sgbtn-grup" onclick="_setSegMode('agrupado')"
+            class="${_sg==='agrupado'    ? 'stg-active' : ''}"
+            ${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'disabled title="Configure agrupamentos GHE primeiro"' : ''}
+            style="${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'opacity:.4;cursor:not-allowed' : ''}">Por Agrupamento</button>
           <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
             class="${_sg==='consolidado' ? 'stg-active' : ''}">Geral</button>
         </div>
@@ -5897,18 +6005,21 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
-  const segmentos = window._segMode === 'consolidado'
+  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
+  const _sgMode = window._segMode;
+  const segmentos = _sgMode === 'consolidado'
     ? [{label: null, linhas: filtrado}]
-    : (() => {
-        const map = new Map();
-        filtrado.forEach(r => {
-          const arr = map.get(r.setor);
-          if (arr) arr.push(r); else map.set(r.setor, [r]);
-        });
-        return [...new Set(filtrado.map(r => r.setor))].sort()
-          .map(s => ({label: s, linhas: map.get(s) || []}));
-      })();
+    : _sgMode === 'agrupado'
+      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
+      : (() => {
+          const map = new Map();
+          filtrado.forEach(r => {
+            const arr = map.get(r.setor);
+            if (arr) arr.push(r); else map.set(r.setor, [r]);
+          });
+          return [...new Set(filtrado.map(r => r.setor))].sort()
+            .map(s => ({label: s, linhas: map.get(s) || []}));
+        })();
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -5921,7 +6032,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
     if (!resultado.length) return;
 
     const setor = label;
-    const setorLabel = window._segMode === 'consolidado'
+    const setorLabel = _sgMode === 'consolidado'
       ? `<span style="color:var(--tl);font-weight:500">Todos os setores filtrados</span> <span style="font-size:11px;color:var(--tl);font-weight:400">(${linhasSetor.length} respondentes)</span>`
       : (setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -6013,14 +6124,17 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
-  const segmentos = window._segMode === 'consolidado'
+  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
+  const _sgModeR = window._segMode;
+  const segmentos = _sgModeR === 'consolidado'
     ? [{label: null, linhas: filtrado}]
-    : (() => {
-        const map = new Map();
-        filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
-        return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
-      })();
+    : _sgModeR === 'agrupado'
+      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
+      : (() => {
+          const map = new Map();
+          filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
+          return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
+        })();
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -6033,7 +6147,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
     if (!resultado.length) return;
 
-    const blocoLabel = window._segMode === 'consolidado'
+    const blocoLabel = _sgModeR === 'consolidado'
       ? `Todos os setores filtrados <span style="font-size:11px;font-weight:400;color:var(--tl)">(${linhasSetor.length} respondentes)</span>`
       : (label || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -6076,9 +6190,14 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
 function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
   // Consolidado: substituir grupos por um único bloco com todos os setores filtrados
+  // Segregado: grupos = cada setor como próprio grupo (já calculado por agruparPorGrupos com gruposSetor=[])
+  // Agrupado: grupos GHE — passados diretamente
   if (window._segMode === 'consolidado') {
     const todosSetores = setoresAtivos || [...new Set(filtrado.map(r => r.setor))];
     grupos = [{nome: `Todos os setores filtrados (${filtrado.length} respondentes)`, setores: todosSetores}];
+  } else if (window._segMode === 'segregado') {
+    const setores = [...new Set(filtrado.map(r => r.setor))].sort();
+    grupos = setores.map(s => ({nome: s || 'Setor não informado', setores: [s]}));
   }
   const catCores = {
     'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
@@ -6527,7 +6646,7 @@ function renderGruposLista(tipo, grupos, el) {
         <div class="group-items">${g.itens.map(it=>`<span class="group-tag">${it}</span>`).join('')}</div>
       </div>
       <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="aplicarGrupo('${tipo}',${i})">Aplicar</button>
-      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}',${i})">✕</button>
+      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
     </div>`).join('');
 }
 
@@ -6540,10 +6659,11 @@ function aplicarGrupo(tipo, idx) {
   toast(`Agrupamento "${g.nome}" aplicado.`, 'g');
 }
 
-function removerGrupo(tipo, idx) {
-  if (tipo==='setor') { gruposSetor.splice(idx,1); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.splice(idx,1); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
-  renderGruposSalvos();
+async function removerGrupo(tipo, id) {
+  const ok = await _excluirGrupoNoBanco(id);
+  if (!ok) return;
+  await carregarGruposSetor(_empresaAtiva?.id);
+  renderTabelaAgrupamentos();
 }
 
 function abrirNovoGrupo(tipo) {
@@ -6551,8 +6671,19 @@ function abrirNovoGrupo(tipo) {
   grupoSelecionados = new Set();
   document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Novo agrupamento de setores' : 'Novo agrupamento de funções';
   document.getElementById('grupo-nome').value = '';
-  const items = tipo==='setor' ? SETORES_DEMO : FUNCOES_DEMO;
-  document.getElementById('grupo-ms-list').innerHTML = items.map(it=>`
+  // Usar catálogo da empresa (empresa_setores / empresa_funcoes) — fonte autoritativa
+  const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
+  const hierarquia = emp?.hierarquia || [];
+  let items;
+  if (tipo === 'setor') {
+    items = hierarquia.map(h => h.nome).filter(n => n).sort((a,b) => a.localeCompare(b,'pt-BR'));
+  } else {
+    const todas = [...new Set(hierarquia.flatMap(h => h.funcoes || []))];
+    items = todas.filter(f => f).sort((a,b) => a.localeCompare(b,'pt-BR'));
+  }
+  document.getElementById('grupo-ms-list').innerHTML = !items.length
+    ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregue uma empresa com respostas para criar agrupamentos.</div>`
+    : items.map(it=>`
     <div class="ms-item" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
       <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
       ${it}
@@ -6574,16 +6705,81 @@ function toggleGrupoItem(it) {
 
 function fecharGrupo() { document.getElementById('modal-grupo').classList.remove('open'); }
 
-function salvarGrupo() {
+async function salvarGrupo() {
   const nome = document.getElementById('grupo-nome').value.trim();
   if (!nome) { toast('Dê um nome ao agrupamento.','w'); return; }
   if (!grupoSelecionados.size) { toast('Selecione pelo menos 1 item.','w'); return; }
-  const g = { nome, itens:[...grupoSelecionados] };
-  if (grupoTipo==='setor') { gruposSetor.push(g); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.push(g); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
+  const ok = await _salvarGrupoNoBanco(grupoTipo, nome, [...grupoSelecionados]);
+  if (!ok) return;
   fecharGrupo();
-  renderGruposSalvos();
+  await carregarGruposSetor(_empresaAtiva?.id);
+  renderTabelaAgrupamentos();
   toast(`Agrupamento "${nome}" salvo!`,'g');
+}
+
+// ── Tela Agrupamentos GHE ─────────────────────────────────────────────────────
+
+async function _setupTelaAgrupamentos() {
+  const sel = document.getElementById('agrup-empresa');
+  if (!sel) return;
+  // Popular select de empresas
+  const opts = _empresas.map(e => `<option value="${e.id}"${e.id===_empresaAtiva?.id?' selected':''}>${e.nome_fantasia||e.nome||e.id}</option>`).join('');
+  sel.innerHTML = '<option value="" disabled>— Selecione o cliente —</option>' + opts;
+  if (_empresaAtiva?.id) {
+    sel.value = _empresaAtiva.id;
+    await carregarGruposSetor(_empresaAtiva.id);
+    renderTabelaAgrupamentos();
+  }
+}
+
+async function _onAgrupEmpresaChange() {
+  const id = document.getElementById('agrup-empresa')?.value;
+  if (!id) return;
+  // Sincronizar empresa ativa
+  const emp = _empresas.find(e => e.id === id);
+  if (emp) _empresaAtiva = emp;
+  await carregarGruposSetor(id);
+  renderTabelaAgrupamentos();
+}
+
+function renderTabelaAgrupamentos() {
+  const lS = document.getElementById('agrup-lista-setor');
+  const lF = document.getElementById('agrup-lista-funcao');
+  const kpi = document.getElementById('agrup-kpis');
+  if (!lS || !lF) return;
+
+  const nS = gruposSetor.length;
+  const nF = gruposFuncao.length;
+
+  if (kpi) kpi.innerHTML = [
+    `<span style="font-size:12px;color:var(--tl)"><strong style="color:var(--tx)">${nS}</strong> grupo${nS!==1?'s':''} de setores</span>`,
+    `<span style="font-size:12px;color:var(--tl)"><strong style="color:var(--tx)">${nF}</strong> grupo${nF!==1?'s':''} de funções</span>`,
+  ].join('<span style="color:var(--border)">·</span>');
+
+  const renderLista = (grupos, tipo, el) => {
+    if (!_empresaAtiva?.id) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>';
+      return;
+    }
+    if (!grupos.length) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Nenhum grupo criado ainda.</p>';
+      return;
+    }
+    el.innerHTML = grupos.map(g => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px">${e(g.nome)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${g.itens.map(it=>`<span class="group-tag">${e(it)}</span>`).join('')}
+          </div>
+        </div>
+        <button class="btn btn-red" style="font-size:10px;padding:3px 8px;flex-shrink:0"
+          onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+      </div>`).join('');
+  };
+
+  renderLista(gruposSetor, 'setor', lS);
+  renderLista(gruposFuncao, 'funcao', lF);
 }
 
 // ══════════════════════════════════════════
@@ -8652,6 +8848,12 @@ async function onLaudoFiltro() {
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   buildCombo('combo-ld-setor');
+  await carregarGruposSetor(emp);
+  // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
+  const granEl = document.getElementById('laudo-granularidade');
+  if (granEl && (granEl.value === 'agrupado' || granEl.value === 'segregado')) {
+    granEl.value = gruposSetor.length ? 'agrupado' : 'segregado';
+  }
   renderLaudo();
 }
 
@@ -9037,7 +9239,13 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
-  const setoresList = [...new Set(linhas.map(r=>r.setor))].sort();
+  const setoresAtivos = [...new Set(linhas.map(r=>r.setor))];
+  const _laudoGran = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
+  const gruposLaudo = _laudoGran === 'consolidado'
+    ? [{nome: 'Todos os setores', setores: setoresAtivos}]
+    : _laudoGran === 'segregado'
+      ? setoresAtivos.map(s => ({nome: s, setores: [s]}))
+      : agruparPorGrupos(setoresAtivos, gruposSetor);
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -9145,12 +9353,17 @@ tr:last-child td{border-bottom:none}
 
   // ── PÁGINA 4: Resultados por setor ───────────────────────────
   let resultadosHTML = '';
-  setoresList.forEach(setor => {
-    const lS = linhas.filter(r=>r.setor===setor);
+  gruposLaudo.forEach(grupo => {
+    const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
-    resultadosHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>
+    const tituloSetor = grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>';
+    const subtituloGrupo = grupo.setores.length > 1
+      ? `<div style="font-size:10px;color:#9ca3af;padding:4px 12px 8px;border:1px solid #e5e7eb;border-top:none;background:#f9fafb;border-radius:0 0 4px 4px;margin-bottom:8px">Setores incluídos: ${grupo.setores.map(e).join(', ')}</div>`
+      : '';
+    resultadosHTML += `<div class="sec-title setor">${tituloSetor}</div>
+    ${subtituloGrupo}
     <div class="tbl-wrap"><table class="tbl-resultados"><thead><tr>
       <th>Risco</th><th>Fator Ergonômico observado</th><th>Consequência</th>
       <th>Classificação Ergonômica da ocorrência de danos</th><th>Nível de Risco</th>
@@ -14302,7 +14515,7 @@ function goScreen(id, btn) {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
     // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','comparativo','auditoria']),
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','agrupamentos','comparativo','auditoria']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -14327,7 +14540,8 @@ function goScreen(id, btn) {
   // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
   const map = {
-    dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', links:'nb-links', q:'nb-q',
+    dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', agrupamentos:'nb-agrupamentos',
+    links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
@@ -14339,7 +14553,7 @@ function goScreen(id, btn) {
   // 4. Propagar empresa ativa para todos os selects da tela
   const temEmpresa = !!_empresaAtiva?.id;
   if (temEmpresa) {
-    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa'].forEach(sid => {
+    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa','agrup-empresa'].forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
@@ -14361,6 +14575,9 @@ function goScreen(id, btn) {
           break;
         case 'ghe':
           _setupTelaGHE(_empresaAtiva?.id || null);
+          break;
+        case 'agrupamentos':
+          _setupTelaAgrupamentos();
           break;
         case 'links':
           renderLinks();
@@ -14466,7 +14683,7 @@ try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoCheck
 try { buildCombo('combo-ld-setor'); }     catch(e) { console.warn('combo-ld-setor:', e); }
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
-try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
+try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
 // ── INIT — inicializa app com login real via Supabase ──────────────────
 // Questões sempre inicializadas (necessário para Distribuição e Laudo)
 try {
