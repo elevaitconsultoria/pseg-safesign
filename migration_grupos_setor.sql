@@ -46,6 +46,9 @@ CREATE INDEX IF NOT EXISTS idx_grupos_setor_empresa ON grupos_setor (empresa_id,
 
 ALTER TABLE grupos_setor ENABLE ROW LEVEL SECURITY;
 
+-- GRANT: sem isso o Postgres bloqueia antes de checar RLS
+GRANT SELECT, INSERT, UPDATE, DELETE ON grupos_setor TO authenticated;
+
 -- ── Policies ─────────────────────────────────────────────────────────────────
 
 -- SELECT: qualquer membro autenticado do tenant (inclui viewer)

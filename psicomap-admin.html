@@ -6768,9 +6768,9 @@ function renderTabelaAgrupamentos() {
     el.innerHTML = grupos.map(g => `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px">${e(g.nome)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px">${g.nome}</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
-            ${g.itens.map(it=>`<span class="group-tag">${e(it)}</span>`).join('')}
+            ${(g.itens||[]).map(it=>`<span class="group-tag">${it}</span>`).join('')}
           </div>
         </div>
         <button class="btn btn-red" style="font-size:10px;padding:3px 8px;flex-shrink:0"
