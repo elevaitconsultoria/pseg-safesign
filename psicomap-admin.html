@@ -3685,10 +3685,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Toolbar de ações (movida do header para caber no espaço disponível) -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="_gheSugerirGrupos()" title="Sugerir agrupamentos por similaridade de nome">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span class="ghe-btn-txt">Sugerir grupos</span>
-        </button>
         <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
         <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="document.getElementById('ghe-import-input').click()" title="Importar CSV ou Excel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3797,7 +3793,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <table style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead>
               <tr style="background:var(--bg)">
-                <th data-k="grupo" onclick="_gheSortTabela('grupo')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Grupo <span class="ghe-sort-ind" data-k="grupo"></span></th>
                 <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
                 <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
                 <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
@@ -12222,9 +12217,7 @@ function exportarAuditoriaCSV() {
 // ══════════════════════════════════════════
 let _gheEmpresaId      = null;
 let _gheTempHierarquia = []; // [{nome, funcoes:[], grupo:''}]
-let _gheGruposAbertos  = new Set(); // nomes de grupos colapsáveis abertos
 let _gheSetoresAbertos = new Set(); // índices dos setores expandidos na árvore
-let _gheEditandoGrupoSi = null;     // índice do setor com edição de grupo inline ativa
 let _gheTempUniversais = []; // cargos sem setor definido
 
 // compat aliases usados no salvar + sugestões
@@ -12283,9 +12276,7 @@ function _gheResetFiltros() {
   // Descarta qualquer import ainda não salvo — evita que o quadro de
   // funcionários previsualizado para uma empresa seja gravado em outra
   // se o cliente for trocado no dropdown antes de clicar em Salvar.
-  _gheGruposAbertos  = new Set();
   _gheSetoresAbertos = new Set();
-  _gheEditandoGrupoSi = null;
   _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
   _gheImportHeadcount = [];
   const preview = document.getElementById('ghe-import-preview');
@@ -12553,21 +12544,20 @@ function _gheLinhasTabela() {
   const linhas = [];
   _gheTempHierarquia.forEach(g => {
     const setorKey = _gheNorm(g.nome);
-    const grupo = g.grupo || '';
     if (!g.funcoes.length) {
       const k = `${setorKey}|||`;
-      linhas.push({ grupo, setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
       consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
         const k = `${setorKey}|||${_gheNorm(f)}`;
-        linhas.push({ grupo, setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
         consumidas.add(k);
       });
     }
   });
   _gheTempUniversais.forEach(f => {
-    linhas.push({ grupo: '', setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
+    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
   });
 
   // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
@@ -12576,7 +12566,7 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
     if (consumidas.has(k)) return;
-    linhas.push({ grupo: '', setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
+    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
     consumidas.add(k);
   });
 
@@ -12596,7 +12586,7 @@ function _renderGHETabela() {
 
   const filtro = _gheNorm(_gheFiltroTabela);
   let linhas = _gheLinhasTabela().filter(l =>
-    !filtro || _gheNorm(l.grupo).includes(filtro) || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
+    !filtro || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
   );
 
   const key = _gheSortTabelaKey, dir = _gheSortTabelaDir;
@@ -12621,7 +12611,7 @@ function _renderGHETabela() {
   });
 
   if (!linhas.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
     return;
   }
 
@@ -12630,7 +12620,6 @@ function _renderGHETabela() {
     const { cor: corAd } = ad ? _gheCorAdesao(ad.pct) : { cor: 'var(--tl)' };
     return `
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 14px;color:${l.grupo?'var(--tx)':'var(--tl)'};font-size:11px">${l.grupo ? esc(l.grupo) : '—'}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
       <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
@@ -12683,75 +12672,6 @@ function moverGHEUniversal(i) {
 
 const renderGHELists = renderGHEModal; // alias (compat)
 
-function _gheToggleGrupo(nome) {
-  if (_gheGruposAbertos.has(nome)) _gheGruposAbertos.delete(nome);
-  else _gheGruposAbertos.add(nome);
-  _renderGHESetoresPanel();
-}
-
-function _gheEditarGrupoInline(si) {
-  _gheEditandoGrupoSi = si;
-  _renderGHESetoresPanel();
-  const inp = document.getElementById(`ghe-grupo-inp-${si}`);
-  if (inp) { inp.focus(); inp.select(); }
-}
-
-function _gheConfirmarGrupoInline(si, val) {
-  if (_gheEditandoGrupoSi === null) return; // guard double-fire (blur + Enter)
-  _gheEditandoGrupoSi = null;
-  const h = _gheTempHierarquia[si]; if (!h) return;
-  h.grupo = val.trim();
-  if (h.grupo) _gheGruposAbertos.add(h.grupo);
-  _renderGHESetoresPanel();
-}
-
-function _gheEditarGrupoSetor(si) { _gheEditarGrupoInline(si); } // compat
-
-function _gheSugerirGrupos() {
-  // Tokeniza nomes de setor e encontra tokens comuns (≥4 chars) entre pares
-  const norm = s => s.toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .replace(/[^a-z0-9 ]/g,' ').trim();
-  const tokenize = s => norm(s).split(/\s+/).filter(t => t.length >= 4);
-
-  const nomes = _gheTempHierarquia.map(h => h.nome);
-  const tokens = nomes.map(tokenize);
-
-  // Contar frequência de cada token
-  const freq = new Map();
-  tokens.forEach(ts => {
-    const uniq = new Set(ts);
-    uniq.forEach(t => freq.set(t, (freq.get(t) || 0) + 1));
-  });
-
-  // Tokens que aparecem em ≥2 setores são candidatos a grupo
-  const candidatos = [...freq.entries()]
-    .filter(([, c]) => c >= 2)
-    .sort((a, b) => b[1] - a[1]);
-
-  if (!candidatos.length) { toast('Nenhum padrão encontrado para sugerir grupos.', 'w'); return; }
-
-  let preenchidos = 0;
-  _gheTempHierarquia.forEach((h, i) => {
-    if (h.grupo) return; // não sobrescreve edições manuais
-    // Pega o token candidato de maior frequência que aparece neste setor
-    const ts = new Set(tokens[i]);
-    for (const [tok] of candidatos) {
-      if (ts.has(tok)) {
-        // Capitalizar primeira letra
-        h.grupo = tok.charAt(0).toUpperCase() + tok.slice(1);
-        preenchidos++;
-        break;
-      }
-    }
-  });
-
-  _renderGHESetoresPanel();
-  _renderGHEDetailPane();
-  if (preenchidos) toast(`${preenchidos} setor(es) agrupados — revise e ajuste antes de salvar.`, 'g');
-  else toast('Todos os setores já possuem grupo ou nenhum padrão foi encontrado.', 'w');
-}
-
 function _renderGHESetoresPanel() {
   const panel = document.getElementById('ghe-setores-panel');
   if (!panel) return;
@@ -12803,22 +12723,6 @@ function _renderGHESetoresPanel() {
     ).join('')}</span><span style="font-size:10px;font-weight:700;color:${cor}">${pct}%</span>`;
   };
 
-  // Badge de grupo inline (ou input quando em edição)
-  const grupoBadge = si => {
-    const g = _gheTempHierarquia[si];
-    if (_gheEditandoGrupoSi === si) {
-      return `<input id="ghe-grupo-inp-${si}" type="text" value="${esc(g.grupo||'')}"
-        style="width:80px;border:1.5px solid var(--g);border-radius:var(--r);padding:1px 5px;font-size:10px;font-family:inherit;outline:none;background:white"
-        onblur="_gheConfirmarGrupoInline(${si},this.value)"
-        onkeydown="if(event.key==='Enter'){_gheConfirmarGrupoInline(${si},this.value)}else if(event.key==='Escape'){_gheEditandoGrupoSi=null;_renderGHESetoresPanel()}"
-        onclick="event.stopPropagation()">`;
-    }
-    return g.grupo
-      ? `<span onclick="event.stopPropagation();_gheEditarGrupoInline(${si})"
-           style="font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 7px;color:var(--tm);cursor:pointer;white-space:nowrap;flex-shrink:0" title="Editar grupo">⊞ ${esc(g.grupo)}</span>`
-      : `<span onclick="event.stopPropagation();_gheEditarGrupoInline(${si})"
-           style="font-size:10px;color:var(--tl);cursor:pointer;white-space:nowrap;flex-shrink:0;opacity:.6" title="Adicionar grupo">+ grupo</span>`;
-  };
 
   // Flyout de cargos (Nível 2) — reaproveita IDs fixos que _renderGHECargosPanel() popula
   const flyoutCargos = si => `
@@ -12872,7 +12776,6 @@ function _renderGHESetoresPanel() {
           <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${aberto?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:2px;flex-wrap:wrap">${hcBadge}${adBadge}</div>
         </div>
-        ${grupoBadge(si)}
         <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.5;flex-shrink:0" title="Renomear">${iconEdit}</button>
         <button onclick="event.stopPropagation();removerGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--red,#dc2626);font-size:14px;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1" title="Remover">&times;</button>
       </div>
@@ -12880,71 +12783,8 @@ function _renderGHESetoresPanel() {
     </div>`;
   };
 
-  // Calcula totais agregados de um conjunto de itens para o header de grupo
-  const grupoStats = items => {
-    let hcTotal = 0, resp = 0, tot = 0;
-    items.forEach(({g}) => {
-      const sn = _gheNorm(g.nome);
-      _gheHcCache.filter(r=>_gheNorm(r.setor||'')===sn).forEach(r=>{ hcTotal += r.quantidade||0; });
-      (_gheAdesaoData?.linhas||[]).filter(l=>_gheNorm(l.setor||'')===sn).forEach(l=>{ resp+=l.respostas; tot+=l.total; });
-    });
-    const pct = tot > 0 ? Math.round(resp/tot*100) : null;
-    return { hcTotal, pct };
-  };
-
-  const temGrupos = itens.some(({ g }) => g.grupo);
-
-  if (temGrupos && !_gheFiltroSetor) {
-    // Modo agrupado (Nível 0 → Nível 1 → Nível 2)
-    const buckets = new Map();
-    const semGrupo = [];
-    itens.forEach(item => {
-      const grp = item.g.grupo || '';
-      if (!grp) { semGrupo.push(item); return; }
-      if (!buckets.has(grp)) buckets.set(grp, []);
-      buckets.get(grp).push(item);
-    });
-
-    let html = '';
-    buckets.forEach((items, grp) => {
-      const aberto = _gheGruposAbertos.has(grp);
-      const { hcTotal, pct } = grupoStats(items);
-      const hcStr = hcTotal ? ` · ${hcTotal} func.` : '';
-      const adStr = pct !== null ? ` · ${pct}%` : '';
-      html += `<div style="border-bottom:1px solid var(--border)">
-        <div onclick="_gheToggleGrupo('${esc(grp)}')"
-            style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"
-              style="flex-shrink:0;transition:transform .2s;transform:${aberto?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx);flex:1">${esc(grp)}</span>
-          <span style="font-size:10px;color:var(--tl)">${items.length} setor(es)${hcStr}${adStr}</span>
-        </div>
-        ${aberto ? `<div>${items.map(i=>renderSetor(i,10)).join('')}</div>` : ''}
-      </div>`;
-    });
-
-    if (semGrupo.length) {
-      const abert = _gheGruposAbertos.has('__sem_grupo__');
-      const { hcTotal, pct } = grupoStats(semGrupo);
-      const hcStr = hcTotal ? ` · ${hcTotal} func.` : '';
-      const adStr = pct !== null ? ` · ${pct}%` : '';
-      html += `<div style="border-bottom:1px solid var(--border)">
-        <div onclick="_gheToggleGrupo('__sem_grupo__')"
-            style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"
-              style="flex-shrink:0;transition:transform .2s;transform:${abert?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);flex:1">Sem grupo</span>
-          <span style="font-size:10px;color:var(--tl)">${semGrupo.length} setor(es)${hcStr}${adStr}</span>
-        </div>
-        ${abert ? `<div>${semGrupo.map(i=>renderSetor(i,10)).join('')}</div>` : ''}
-      </div>`;
-    }
-
-    panel.innerHTML = html;
-  } else {
-    // Modo flat (sem grupos ou filtro ativo)
-    panel.innerHTML = itens.map(item => renderSetor(item, 0)).join('');
-  }
+  // Lista flat de setores
+  panel.innerHTML = itens.map(item => renderSetor(item, 0)).join('');
 
   // Se o setor ativo foi removido, corrige o índice
   if (_gheSetorAtivo !== null && _gheSetorAtivo >= _gheTempHierarquia.length) {
