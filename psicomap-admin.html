@@ -4168,9 +4168,52 @@ async function carregarMapaQuestoesAdmin() {
 }
 let extIdx    = 0;
 let grupoTipo = 'setor';
-let gruposSetor  = JSON.parse(localStorage.getItem('pseg_grupos_setor') ||'[]');
-let gruposFuncao = JSON.parse(localStorage.getItem('pseg_grupos_funcao')||'[]');
+let gruposSetor  = [];
+let gruposFuncao = [];
 let grupoSelecionados = new Set();
+
+// ── Agrupamentos de setores/funções — persistência no banco ────────────────
+async function carregarGruposSetor(empresaId) {
+  if (!empresaId || isDemoMode) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('grupos_setor')
+      .select('id, tipo, nome, itens, ordem')
+      .eq('empresa_id', empresaId)
+      .order('ordem');
+    if (error) throw error;
+    gruposSetor  = (data || []).filter(g => g.tipo === 'setor');
+    gruposFuncao = (data || []).filter(g => g.tipo === 'funcao');
+  } catch(e) {
+    console.warn('[grupos_setor] erro ao carregar, continuando sem agrupamento:', e.message);
+    gruposSetor  = [];
+    gruposFuncao = [];
+  }
+}
+
+async function _salvarGrupoNoBanco(tipo, nome, itens) {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId || !currentTenantId) {
+    toast('Selecione uma empresa antes de criar agrupamentos.', 'w');
+    return false;
+  }
+  const { error } = await sbAdmin.from('grupos_setor').insert({
+    empresa_id: empresaId,
+    tenant_id:  currentTenantId,
+    tipo,
+    nome,
+    itens,
+    ordem: (tipo === 'setor' ? gruposSetor : gruposFuncao).length,
+  });
+  if (error) { toast('Erro ao salvar agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
+
+async function _excluirGrupoNoBanco(id) {
+  const { error } = await sbAdmin.from('grupos_setor').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
 
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
@@ -5371,6 +5414,8 @@ async function onEmpresaChange() {
     comboState['combo-setor']  = new Set(setores);
     comboState['combo-funcao'] = new Set(funcoes);
   } catch(e) { console.warn('onEmpresaChange:', e); }
+  await carregarGruposSetor(emp);
+  renderGruposSalvos();
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
 }
@@ -6527,7 +6572,7 @@ function renderGruposLista(tipo, grupos, el) {
         <div class="group-items">${g.itens.map(it=>`<span class="group-tag">${it}</span>`).join('')}</div>
       </div>
       <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="aplicarGrupo('${tipo}',${i})">Aplicar</button>
-      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}',${i})">✕</button>
+      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
     </div>`).join('');
 }
 
@@ -6540,9 +6585,10 @@ function aplicarGrupo(tipo, idx) {
   toast(`Agrupamento "${g.nome}" aplicado.`, 'g');
 }
 
-function removerGrupo(tipo, idx) {
-  if (tipo==='setor') { gruposSetor.splice(idx,1); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.splice(idx,1); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
+async function removerGrupo(tipo, id) {
+  const ok = await _excluirGrupoNoBanco(id);
+  if (!ok) return;
+  await carregarGruposSetor(_empresaAtiva?.id);
   renderGruposSalvos();
 }
 
@@ -6551,8 +6597,19 @@ function abrirNovoGrupo(tipo) {
   grupoSelecionados = new Set();
   document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Novo agrupamento de setores' : 'Novo agrupamento de funções';
   document.getElementById('grupo-nome').value = '';
-  const items = tipo==='setor' ? SETORES_DEMO : FUNCOES_DEMO;
-  document.getElementById('grupo-ms-list').innerHTML = items.map(it=>`
+  // Usar setores/funções reais do cache de respostas; SETORES_DEMO como fallback em demo
+  const _cache = _respostasCache[_empresaAtiva?.id] || [];
+  let items;
+  if (_cache.length) {
+    items = tipo === 'setor'
+      ? [...new Set(_cache.map(r => r.setor))].sort((a,b) => a.localeCompare(b,'pt-BR'))
+      : [...new Set(_cache.map(r => r.funcao))].filter(f => f && f !== '—').sort((a,b) => a.localeCompare(b,'pt-BR'));
+  } else {
+    items = tipo === 'setor' ? SETORES_DEMO : FUNCOES_DEMO;
+  }
+  document.getElementById('grupo-ms-list').innerHTML = !items.length
+    ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregue uma empresa com respostas para criar agrupamentos.</div>`
+    : items.map(it=>`
     <div class="ms-item" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
       <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
       ${it}
@@ -6574,14 +6631,14 @@ function toggleGrupoItem(it) {
 
 function fecharGrupo() { document.getElementById('modal-grupo').classList.remove('open'); }
 
-function salvarGrupo() {
+async function salvarGrupo() {
   const nome = document.getElementById('grupo-nome').value.trim();
   if (!nome) { toast('Dê um nome ao agrupamento.','w'); return; }
   if (!grupoSelecionados.size) { toast('Selecione pelo menos 1 item.','w'); return; }
-  const g = { nome, itens:[...grupoSelecionados] };
-  if (grupoTipo==='setor') { gruposSetor.push(g); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.push(g); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
+  const ok = await _salvarGrupoNoBanco(grupoTipo, nome, [...grupoSelecionados]);
+  if (!ok) return;
   fecharGrupo();
+  await carregarGruposSetor(_empresaAtiva?.id);
   renderGruposSalvos();
   toast(`Agrupamento "${nome}" salvo!`,'g');
 }
@@ -8652,6 +8709,7 @@ async function onLaudoFiltro() {
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   buildCombo('combo-ld-setor');
+  await carregarGruposSetor(emp);
   renderLaudo();
 }
 
@@ -9037,7 +9095,8 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
-  const setoresList = [...new Set(linhas.map(r=>r.setor))].sort();
+  const setoresAtivos = [...new Set(linhas.map(r=>r.setor))];
+  const gruposLaudo = agruparPorGrupos(setoresAtivos, gruposSetor);
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -9145,12 +9204,17 @@ tr:last-child td{border-bottom:none}
 
   // ── PÁGINA 4: Resultados por setor ───────────────────────────
   let resultadosHTML = '';
-  setoresList.forEach(setor => {
-    const lS = linhas.filter(r=>r.setor===setor);
+  gruposLaudo.forEach(grupo => {
+    const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
-    resultadosHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>
+    const tituloSetor = grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>';
+    const subtituloGrupo = grupo.setores.length > 1
+      ? `<div style="font-size:10px;color:#9ca3af;padding:4px 12px 8px;border:1px solid #e5e7eb;border-top:none;background:#f9fafb;border-radius:0 0 4px 4px;margin-bottom:8px">Setores incluídos: ${grupo.setores.map(e).join(', ')}</div>`
+      : '';
+    resultadosHTML += `<div class="sec-title setor">${tituloSetor}</div>
+    ${subtituloGrupo}
     <div class="tbl-wrap"><table class="tbl-resultados"><thead><tr>
       <th>Risco</th><th>Fator Ergonômico observado</th><th>Consequência</th>
       <th>Classificação Ergonômica da ocorrência de danos</th><th>Nível de Risco</th>
