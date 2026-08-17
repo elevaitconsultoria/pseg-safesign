@@ -151,6 +151,39 @@ restante do código. Adicionado `(g.itens||[])` como guard extra.
 - `salvar_resposta` RPC — zero alterações
 - Análise sem grupos: "Por Agrupamento" = "Por Setor" (backward compatible via `agruparPorGrupos(setores, [])`)
 
+## Refactor pós-deploy: remoção do grupo visual da tela GHE (2026-08-17)
+
+Commit `5030226` — 168 linhas removidas, zero impacto em análise ou PROD.
+
+### O que foi removido da tela Setores & Funções
+
+| Elemento | Descrição |
+|----------|-----------|
+| Botão "Sugerir grupos" | Auto-atribuía `empresa_setores.grupo` por similaridade de token |
+| Badge "+ grupo" / "⊞ GRUPO A" | Edição inline do campo `grupo` na lista de setores |
+| Headings GRUPO A / SEM GRUPO | Agrupamento visual da lista por `empresa_setores.grupo` |
+| Coluna "Grupo" na Tabela | Exibia `empresa_setores.grupo` na view tabela do GHE |
+
+Funções JS removidas: `_gheSugerirGrupos`, `_gheToggleGrupo`, `_gheEditarGrupoInline`,
+`_gheConfirmarGrupoInline`, `_gheEditarGrupoSetor`.
+Estado JS removido: `_gheGruposAbertos`, `_gheEditandoGrupoSi`.
+
+### O que NÃO muda
+
+- Coluna `empresa_setores.grupo` **permanece no banco** — dados existentes intactos
+- Nenhuma migration necessária
+- Análise, Laudo, e nova tela Agrupamentos GHE: zero impacto
+- Lista de setores no GHE passa a ser sempre flat (sem headings de grupo)
+
+### Motivação
+
+Havia dois mecanismos de agrupamento sobrepostos:
+- `empresa_setores.grupo` — organização visual do catálogo GHE (frágil: apagado na reimportação)
+- `grupos_setor` (nova tabela) — agrupamento para análise/laudo (robusto, persiste entre ciclos)
+
+Decisão: centralizar na nova tela Agrupamentos GHE. O campo antigo pode ser reavaliado no
+futuro para outros usos, mas não expõe mais nenhuma UI de edição.
+
 ## Bugs colaterais descobertos (não corrigidos aqui)
 
 1. `exportarCSV` lê `r.resposta_itens` mas `loadRespostasParaEmpresa` retorna `r.q` — CSV de respostas sai vazio. Documentado em CLAUDE.md (Segunda metodologia, 2026-08-03).

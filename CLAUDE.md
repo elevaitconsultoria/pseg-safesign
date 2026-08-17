@@ -404,7 +404,7 @@ Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` para detalhamento completo.
 
 **Tabela `grupos_setor`** (`migration_grupos_setor.sql` — DEV e PROD):
 - `tipo TEXT CHECK (tipo IN ('setor','funcao'))`, `nome TEXT`, `itens TEXT[]`, `empresa_id`, `tenant_id`
-- Não usar `empresa_setores.grupo` (apagado na reimportação GHE) — essa tabela persiste independente.
+- Não usar `empresa_setores.grupo` (apagado na reimportação GHE, e UI de edição removida em 2026-08-17) — essa tabela persiste independente.
 - Policy `grupos_setor_write`: somente `admin | consultor | super_admin` (viewer lê, não escreve).
 
 **Tela "Agrupamentos GHE"** (`#sc-agrupamentos`):
