@@ -1856,6 +1856,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Agrupamento GHE — Resultados -->
+      <div class="filter-card" id="fc-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ghe')">
+            <div class="combo-preview" id="combo-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filtro Funções — combo -->
       <div class="filter-card">
         <div class="filter-label">Funções</div>
@@ -2104,6 +2129,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Agrupamento GHE — Gráficos -->
+      <div class="filter-card" id="fc-gf-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-gf-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-gf-ghe')">
+            <div class="combo-preview" id="combo-gf-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-gf-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-gf-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-gf-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Funções</div>
         <div class="combo" id="combo-gf-funcao">
@@ -2209,6 +2259,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-ld-setor')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro Agrupamento GHE — Laudo -->
+      <div class="filter-card" id="fc-ld-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-ld-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-ghe')">
+            <div class="combo-preview" id="combo-ld-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-ld-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ld-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -4228,6 +4303,29 @@ let gruposFuncao = [];
 let grupoSelecionados = new Set();
 let grupoEditandoId = null;
 
+// ── Helpers de filtro por Agrupamento GHE ───────────────────────────────────
+
+function _populateGheCombo(comboId, fcId) {
+  const nomes = gruposSetor.map(g => g.nome);
+  const fc = document.getElementById(fcId);
+  if (fc) fc.style.display = nomes.length ? '' : 'none';
+  comboItems[comboId] = () => nomes;
+  comboState[comboId] = new Set(nomes); // todos selecionados = sem filtro ativo
+  buildCombo(comboId);
+}
+
+// Expande grupos selecionados para o conjunto de setores que eles contêm.
+// Retorna null quando nenhum filtro está ativo (todos ou nenhum selecionado).
+function _gheSetoresFiltro(comboId) {
+  const sel = [...comboState[comboId]];
+  if (!sel.length) return null; // vazio = sem filtro (padrão defensivo)
+  const todos = gruposSetor.map(g => g.nome);
+  if (sel.length === todos.length) return null; // todos = sem filtro
+  return new Set(
+    gruposSetor.filter(g => sel.includes(g.nome)).flatMap(g => g.itens)
+  );
+}
+
 // ── Agrupamentos de setores/funções — persistência no banco ────────────────
 async function carregarGruposSetor(empresaId) {
   if (!empresaId || isDemoMode) return;
@@ -5301,11 +5399,14 @@ const comboState = {
   'combo-setor':       new Set(SETORES_DEMO),
   'combo-funcao':      new Set(FUNCOES_DEMO),
   'combo-nivel':       new Set(NIVEIS_ORDEM),
+  'combo-ghe':         new Set(),
   // Tela Distribuição (graficos)
   'combo-gf-setor':    new Set(SETORES_DEMO),
   'combo-gf-funcao':   new Set(FUNCOES_DEMO),
+  'combo-gf-ghe':      new Set(),
   // Tela Laudo
   'combo-ld-setor':    new Set(SETORES_DEMO),
+  'combo-ld-ghe':      new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
 };
@@ -5313,9 +5414,12 @@ const comboItems = {
   'combo-setor':       () => SETORES_DEMO,
   'combo-funcao':      () => FUNCOES_DEMO,
   'combo-nivel':       () => NIVEIS_ORDEM,
+  'combo-ghe':         () => [],
   'combo-gf-setor':    () => SETORES_DEMO,
   'combo-gf-funcao':   () => FUNCOES_DEMO,
+  'combo-gf-ghe':      () => [],
   'combo-ld-setor':    () => SETORES_DEMO,
+  'combo-ld-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
 };
 
@@ -5477,6 +5581,7 @@ async function onEmpresaChange() {
     comboState['combo-funcao'] = new Set(funcoes);
   } catch(e) { console.warn('onEmpresaChange:', e); }
   await carregarGruposSetor(emp);
+  _populateGheCombo('combo-ghe', 'fc-ghe');
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
 }
@@ -5498,13 +5603,15 @@ async function rodarAnalise() {
   const setores  = [...comboState['combo-setor']];
   const funcoes  = [...comboState['combo-funcao']];
   const niveis   = [...comboState['combo-nivel']];
+  const gheSetores = _gheSetoresFiltro('combo-ghe');
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // Aplicar filtro de ciclo se selecionado
   const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
   // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
   const filtrado = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
-    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
   );
 
   if (!filtrado.length) {
@@ -8033,6 +8140,8 @@ async function onGrafFiltroChange() {
       comboState['combo-gf-setor']  = new Set(setores);
       comboState['combo-gf-funcao'] = new Set(funcoes);
     } catch(e) { console.warn('onGrafFiltroChange:', e); }
+    await carregarGruposSetor(empId);
+    _populateGheCombo('combo-gf-ghe', 'fc-gf-ghe');
   }
   buildCombo('combo-gf-setor');
   buildCombo('combo-gf-funcao');
@@ -8077,12 +8186,14 @@ async function renderGraficos() {
   const cicloId  = document.getElementById('gf-ciclo')?.value || '';
   const setores  = [...comboState['combo-gf-setor']];
   const funcoes  = [...comboState['combo-gf-funcao']];
+  const gheSetores = _gheSetoresFiltro('combo-gf-ghe');
   const todosDados = await getLinhasParaAnalise(emp);
   const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
   // Filtro defensivo: set vazio = todos incluídos
   const linhas   = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
-    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
   );
 
   const panel = document.getElementById('graficos-panel');
@@ -8886,6 +8997,7 @@ async function onLaudoFiltro() {
   comboState['combo-ld-setor'] = new Set(allSetores);
   buildCombo('combo-ld-setor');
   await carregarGruposSetor(emp);
+  _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
   const granEl = document.getElementById('laudo-granularidade');
   if (granEl && (granEl.value === 'agrupado' || granEl.value === 'segregado')) {
@@ -8900,10 +9012,14 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
+  const gheSetores = _gheSetoresFiltro('combo-ld-ghe');
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
-  const linhas  = dados.filter(r => setores.length === 0 || setores.includes(r.setor));
+  const linhas  = dados.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
+  );
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
   const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
