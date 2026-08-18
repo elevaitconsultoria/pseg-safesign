@@ -4226,6 +4226,7 @@ let grupoTipo = 'setor';
 let gruposSetor  = [];
 let gruposFuncao = [];
 let grupoSelecionados = new Set();
+let grupoEditandoId = null;
 
 // ── Agrupamentos de setores/funções — persistência no banco ────────────────
 async function carregarGruposSetor(empresaId) {
@@ -4267,6 +4268,12 @@ async function _salvarGrupoNoBanco(tipo, nome, itens) {
 async function _excluirGrupoNoBanco(id) {
   const { error } = await sbAdmin.from('grupos_setor').delete().eq('id', id);
   if (error) { toast('Erro ao excluir agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
+
+async function _editarGrupoNoBanco(id, nome, itens) {
+  const { error } = await sbAdmin.from('grupos_setor').update({ nome, itens, atualizado_em: new Date().toISOString() }).eq('id', id);
+  if (error) { toast('Erro ao atualizar agrupamento: ' + error.message, 'e'); return false; }
   return true;
 }
 
@@ -6661,11 +6668,10 @@ async function removerGrupo(tipo, id) {
   renderTabelaAgrupamentos();
 }
 
-function abrirNovoGrupo(tipo) {
+function _abrirModalGrupo(tipo, nomeInicial, itensSelecionados) {
   grupoTipo = tipo;
-  grupoSelecionados = new Set();
-  document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Novo agrupamento de setores' : 'Novo agrupamento de funções';
-  document.getElementById('grupo-nome').value = '';
+  grupoSelecionados = new Set(itensSelecionados);
+  document.getElementById('grupo-nome').value = nomeInicial;
   // Usar catálogo da empresa (empresa_setores / empresa_funcoes) — fonte autoritativa
   const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
   const hierarquia = emp?.hierarquia || [];
@@ -6678,13 +6684,34 @@ function abrirNovoGrupo(tipo) {
   }
   document.getElementById('grupo-ms-list').innerHTML = !items.length
     ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregue uma empresa com respostas para criar agrupamentos.</div>`
-    : items.map(it=>`
-    <div class="ms-item" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
+    : items.map(it => {
+        const sel = grupoSelecionados.has(it);
+        return `
+    <div class="ms-item${sel?' sel':''}" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
       <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
       ${it}
-    </div>`).join('');
-  document.getElementById('grupo-selecionados').textContent = 'Nenhum item selecionado';
+    </div>`;
+      }).join('');
+  const n = grupoSelecionados.size;
+  document.getElementById('grupo-selecionados').textContent = n > 0
+    ? `Selecionados: ${[...grupoSelecionados].join(', ')}`
+    : 'Nenhum item selecionado';
   document.getElementById('modal-grupo').classList.add('open');
+}
+
+function abrirNovoGrupo(tipo) {
+  grupoEditandoId = null;
+  document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Novo agrupamento de setores' : 'Novo agrupamento de funções';
+  _abrirModalGrupo(tipo, '', []);
+}
+
+function editarGrupo(tipo, id) {
+  const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
+  const g = grupos.find(x => x.id === id);
+  if (!g) return;
+  grupoEditandoId = id;
+  document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Editar agrupamento de setores' : 'Editar agrupamento de funções';
+  _abrirModalGrupo(tipo, g.nome, g.itens || []);
 }
 
 function toggleGrupoItem(it) {
@@ -6698,14 +6725,23 @@ function toggleGrupoItem(it) {
     : 'Nenhum item selecionado';
 }
 
-function fecharGrupo() { document.getElementById('modal-grupo').classList.remove('open'); }
+function fecharGrupo() {
+  grupoEditandoId = null;
+  document.getElementById('modal-grupo').classList.remove('open');
+}
 
 async function salvarGrupo() {
   const nome = document.getElementById('grupo-nome').value.trim();
   if (!nome) { toast('Dê um nome ao agrupamento.','w'); return; }
   if (!grupoSelecionados.size) { toast('Selecione pelo menos 1 item.','w'); return; }
-  const ok = await _salvarGrupoNoBanco(grupoTipo, nome, [...grupoSelecionados]);
+  let ok;
+  if (grupoEditandoId) {
+    ok = await _editarGrupoNoBanco(grupoEditandoId, nome, [...grupoSelecionados]);
+  } else {
+    ok = await _salvarGrupoNoBanco(grupoTipo, nome, [...grupoSelecionados]);
+  }
   if (!ok) return;
+  grupoEditandoId = null;
   fecharGrupo();
   await carregarGruposSetor(_empresaAtiva?.id);
   renderTabelaAgrupamentos();
@@ -6768,8 +6804,12 @@ function renderTabelaAgrupamentos() {
             ${(g.itens||[]).map(it=>`<span class="group-tag">${it}</span>`).join('')}
           </div>
         </div>
-        <button class="btn btn-red" style="font-size:10px;padding:3px 8px;flex-shrink:0"
-          onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px"
+            onclick="editarGrupo('${tipo}','${g.id}')">✎ Editar</button>
+          <button class="btn btn-red" style="font-size:10px;padding:3px 8px"
+            onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+        </div>
       </div>`).join('');
   };
 
