@@ -397,10 +397,11 @@ visitada continuariam valendo fora do modo suporte.
   some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
   `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.
 
-## Agrupamentos GHE (2026-08-17)
+## Agrupamentos GHE (2026-08-17 → 2026-08-18)
 
 Feature de agrupamentos para análise e laudo, sem alterar a hierarquia de cargos da empresa.
-Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` para detalhamento completo.
+Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` e
+`.claude/notes/2026-08-18-agrupamentos-ghe-v2.md` para detalhamento completo.
 
 **Tabela `grupos_setor`** (`migration_grupos_setor.sql` — DEV e PROD):
 - `tipo TEXT CHECK (tipo IN ('setor','funcao'))`, `nome TEXT`, `itens TEXT[]`, `empresa_id`, `tenant_id`
@@ -411,17 +412,27 @@ Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` para detalhamento completo.
 - Sidebar: `nb-agrupamentos` entre GHE e Links de Coleta. Restrita a `cliente_viewer` (não aparece).
 - Dois painéis: Grupos de Setores | Grupos de Funções. Reutiliza `#modal-grupo` já existente.
 - `_setupTelaAgrupamentos()` / `renderTabelaAgrupamentos()` (novas funções).
-- **Fonte de itens em `abrirNovoGrupo()`**: catálogo `_empresas[].hierarquia[]`, não `_respostasCache`
-  — garante que grupos podem ser configurados antes de qualquer resposta existir.
+- **Criar**: `abrirNovoGrupo(tipo)` — modal vazio. **Editar**: `editarGrupo(tipo, id)` — modal pré-populado com nome e itens do grupo (`grupoEditandoId` controla dispatch INSERT vs UPDATE em `salvarGrupo()`).
+- **Fonte de itens**: catálogo `_empresas[].hierarquia[]` — grupos configuráveis antes de qualquer resposta existir.
 
 **Toggle de 3 modos na Análise** (`_segMode`):
 - `'segregado'` → Por Setor (raw) | `'agrupado'` → Por Agrupamento GHE | `'consolidado'` → Geral
 - Botão "Por Agrupamento" desabilitado (opacity 0.4) quando não há grupos cadastrados.
+- Hierarquia de toggles: [Por Setor | Por Agrupamento | Geral] → [Por Risco | Por Questão] → [Gráfico | Tabela] (visível só em "Por Risco")
 - `renderViewGrafica()`, `renderViewRisco()`, `renderViewQuestao()` tratam o novo modo `'agrupado'`.
 
 **Seletor de granularidade no Laudo** (`#laudo-granularidade`):
 - Default `'agrupado'` quando há grupos; `'segregado'` quando não há.
-- `_buildLaudoHTML()` despacha para `agruparPorGrupos()` | setores raw | seção única.
+- `_buildLaudoHTML()` **e** `renderLaudo()` respeitam a granularidade — gráficos e análise por risco iteram sobre `gruposLaudo`.
+
+**Filtros de Agrupamento GHE** (Resultados / Gráficos / Relatório):
+- `_populateGheCombo(comboId, fcId)` — popula combo; oculta filter-card quando não há grupos.
+- `_gheSetoresFiltro(comboId)` — expande grupos selecionados para set de setores brutos; retorna `null` quando todos/nenhum selecionado (= sem filtro ativo).
+- Combos: `combo-ghe` (Resultados), `combo-gf-ghe` (Gráficos), `combo-ld-ghe` (Relatório).
+- Filtro usa apenas grupos de tipo `'setor'` — grupos de funções não aparecem (filtro é sobre `r.setor`).
 
 **Backward compatibility**: `agruparPorGrupos(setores, [])` retorna cada setor como seu próprio
-grupo — "Por Agrupamento" sem grupos cadastrados é idêntico a "Por Setor".
+grupo — empresa sem grupos cadastrados = comportamento idêntico ao anterior em todas as telas.
+
+**Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
+selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
