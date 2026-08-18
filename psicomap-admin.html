@@ -5548,23 +5548,23 @@ async function rodarAnalise() {
           <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
             class="${_sg==='consolidado' ? 'stg-active' : ''}">Geral</button>
         </div>
-        <!-- Toggle Gráfica / Tabela -->
+        <!-- Toggle Por Risco / Por Questão — PRIMÁRIO, sempre visível -->
         <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-          <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
-            style="${_dm==='grafica' ? _TA : _TH}">📊 Gráfica</button>
-          <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
-            style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
-        </div>
-        <!-- Toggle Por risco / Por questão — visível apenas na visão Tabela -->
-        <div id="toggle-view" style="display:${_dm==='tabela'?'flex':'none'};border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <button id="vbtn-risco"   onclick="_setViewMode('risco')"
             style="${_vm==='risco'   ? _TA : _TH}">Por risco</button>
           <button id="vbtn-questao" onclick="_setViewMode('questao')"
             style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
-        <!-- Toggle Detalhes — visível apenas na visão Gráfica -->
+        <!-- Toggle Gráfico / Tabela — visível apenas quando Por Risco -->
+        <div id="toggle-format" style="display:${_vm==='risco'?'flex':'none'};border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
+            style="${_dm==='grafica' ? _TA : _TH}">📊 Gráfico</button>
+          <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
+            style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
+        </div>
+        <!-- Toggle Detalhes — visível apenas quando Por Risco + Gráfico -->
         <button id="btn-detalhes" onclick="_toggleDetalhes()"
-          style="display:${_dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
+          style="display:${_vm==='risco' && _dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
             padding:5px 11px;border:1.5px solid var(--border);border-radius:6px;
             cursor:pointer;font-family:Inter,sans-serif;font-size:11px;
             background:${_dv?'var(--tx)':'white'};color:${_dv?'white':'var(--tm)'};
@@ -5951,46 +5951,46 @@ function _setDisplayMode(mode) {
   window._displayMode = mode;
   const dg = document.getElementById('dbtn-grafica');
   const dt = document.getElementById('dbtn-tabela');
-  const tv = document.getElementById('toggle-view');
   const bd = document.getElementById('btn-detalhes');
   if (dg) dg.style.cssText = mode === 'grafica' ? _TABA : _TABH;
   if (dt) dt.style.cssText = mode === 'tabela'  ? _TABA : _TABH;
-  if (tv) tv.style.display = mode === 'tabela'  ? 'flex' : 'none';
-  if (bd) bd.style.display = mode === 'grafica' ? 'flex' : 'none';
+  if (bd) bd.style.display = (mode === 'grafica' && window._viewMode === 'risco') ? 'flex' : 'none';
   if (!window._analiseData) return;
-  if (mode === 'tabela') {
-    if (window._viewMode === 'questao') renderViewQuestao(window._analiseData);
-    else                                renderViewRisco(window._analiseData);
-  } else {
-    renderViewGrafica(window._analiseData);
-  }
+  if (mode === 'tabela') renderViewRisco(window._analiseData);
+  else                   renderViewGrafica(window._analiseData);
 }
 
 function _setViewMode(mode) {
   window._viewMode = mode;
   const vr = document.getElementById('vbtn-risco');
   const vq = document.getElementById('vbtn-questao');
+  const tf = document.getElementById('toggle-format');
+  const bd = document.getElementById('btn-detalhes');
   if (vr) vr.style.cssText = mode === 'risco'   ? _TABA : _TABH;
   if (vq) vq.style.cssText = mode === 'questao' ? _TABA : _TABH;
+  if (tf) tf.style.display = mode === 'risco'   ? 'flex' : 'none';
+  if (bd) bd.style.display = (mode === 'risco' && window._displayMode === 'grafica') ? 'flex' : 'none';
   if (!window._analiseData) return;
   if (mode === 'questao') renderViewQuestao(window._analiseData);
-  else                    renderViewRisco(window._analiseData);
+  else {
+    if (window._displayMode === 'tabela') renderViewRisco(window._analiseData);
+    else                                  renderViewGrafica(window._analiseData);
+  }
 }
 
 function _setSegMode(mode) {
   window._segMode = mode;
   const bs = document.getElementById('sgbtn-seg');
+  const bg = document.getElementById('sgbtn-grup');
   const bc = document.getElementById('sgbtn-cons');
   if (bs) bs.classList.toggle('stg-active', mode === 'segregado');
+  if (bg) bg.classList.toggle('stg-active', mode === 'agrupado');
   if (bc) bc.classList.toggle('stg-active', mode === 'consolidado');
   if (!window._analiseData) return;
-  const dm = window._displayMode, vm = window._viewMode;
-  if (dm === 'tabela') {
-    if (vm === 'questao') renderViewQuestao(window._analiseData);
-    else                  renderViewRisco(window._analiseData);
-  } else {
-    renderViewGrafica(window._analiseData);
-  }
+  const vm = window._viewMode;
+  if (vm === 'questao') renderViewQuestao(window._analiseData);
+  else if (window._displayMode === 'tabela') renderViewRisco(window._analiseData);
+  else renderViewGrafica(window._analiseData);
 }
 
 // ─── VIEW GRÁFICA ─────────────────────────────────────────────────
@@ -9416,7 +9416,6 @@ tr:last-child td{border-bottom:none}
   // ── PÁGINA 5: Distribuição de respostas (gráficos inline) ────
   let graficosHTML = '';
   if (laudoSecoesAtivas.has('graficos')) {
-    const distAll = calcDistribuicaoQuestoes(linhas.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))})));
     const CATS = [
       {cat:'DEMANDAS DE TRABALHO',   bloco:'A',cor:'#4b5ea8',bg:'#f0f2fb'},
       {cat:'RELAÇÕES INTERPESSOAIS', bloco:'B',cor:'#2d6e9e',bg:'#f0f6fb'},
@@ -9426,24 +9425,38 @@ tr:last-child td{border-bottom:none}
       <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${{1:'#22c55e',2:'#86efac',3:'#f59e0b',4:'#ef4444'}[n]}"></span>
       ${{1:'Nunca ← meta',2:'Às vezes',3:'Frequente',4:'Sempre'}[n]}</span>`).join('');
     graficosHTML = `<div style="display:flex;flex-wrap:wrap;margin-bottom:12px">${legenda}</div>`;
-    CATS.forEach(({cat,bloco,cor,bg})=>{
-      const qs=distAll.filter(d=>d.q.b===bloco);
-      if (!qs.length) return;
-      graficosHTML += `<div style="margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};padding:5px 10px;background:${bg};border-radius:4px;margin-bottom:8px">${cat}</div>
-        ${qs.map(d=>{
-          const rd=d.q.cd?RISCOS_DETALHES[d.q.cd]:null;
-          return `<div style="margin-bottom:10px">
-            <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
-              <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
-              ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
-              ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
-              <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
-            </div>
-            ${_barPrint(d.pcts, d.moda)}
-          </div>`;
-        }).join('')}
-      </div>`;
+    const _normalizeLinhasGraficos = lns => lns.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))}));
+    const _renderDistGrupo = dist => {
+      let html = '';
+      CATS.forEach(({cat,bloco,cor,bg})=>{
+        const qs=dist.filter(d=>d.q.b===bloco);
+        if (!qs.length) return;
+        html += `<div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};padding:5px 10px;background:${bg};border-radius:4px;margin-bottom:8px">${cat}</div>
+          ${qs.map(d=>{
+            const rd=d.q.cd?RISCOS_DETALHES[d.q.cd]:null;
+            return `<div style="margin-bottom:10px">
+              <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
+                <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
+                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
+                ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
+                <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
+              </div>
+              ${_barPrint(d.pcts, d.moda)}
+            </div>`;
+          }).join('')}
+        </div>`;
+      });
+      return html;
+    };
+    gruposLaudo.forEach(grupo => {
+      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      if (!linhasGrupo.length) return;
+      const dist = calcDistribuicaoQuestoes(_normalizeLinhasGraficos(linhasGrupo));
+      if (gruposLaudo.length > 1) {
+        graficosHTML += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
+      }
+      graficosHTML += _renderDistGrupo(dist);
     });
   }
 
@@ -9484,40 +9497,55 @@ tr:last-child td{border-bottom:none}
   if (_hasAR) {
     const NCP = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
     const NTP = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
-    const fatoresAR = calcFatores(linhas).filter(f=>f.nivel!=='IRRELEVANTE')
-      .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
-    if (fatoresAR.length) {
-      const legAR =
-        '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
-        '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>'+
-        '<div><div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
-        ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
-        '</div><div style="display:flex;margin-top:2px">'+
-        ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
-        '</div></div>'+
-        '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span></div>';
-      const corposAR = fatoresAR.map(f => {
-        const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
-        const detalhe = (f.distQuestoes||[]).length
-          ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
-            (f.distQuestoes||[]).map(q=>
-              '<div style="margin-bottom:8px">'+
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-              '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
-              (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
-              '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
-              '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
-            ).join('')+'</div>'
-          : '';
-        return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
-            <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
-          </div>
-          ${_barPrint(f.avgDist,f.p)}${detalhe}
-        </div>`;
-      }).join('');
+    const legAR =
+      '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
+      '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>'+
+      '<div><div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
+      ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
+      '</div><div style="display:flex;margin-top:2px">'+
+      ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
+      '</div></div>'+
+      '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span></div>';
+    const _renderCardsRisco = fatores => fatores.map(f => {
+      const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
+      const detalhe = (f.distQuestoes||[]).length
+        ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
+          (f.distQuestoes||[]).map(q=>
+            '<div style="margin-bottom:8px">'+
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+            '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
+            (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
+            '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
+            '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
+          ).join('')+'</div>'
+        : '';
+      return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
+          <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
+        </div>
+        ${_barPrint(f.avgDist,f.p)}${detalhe}
+      </div>`;
+    }).join('');
+
+    let corposAR = '';
+    gruposLaudo.forEach(grupo => {
+      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      if (!linhasGrupo.length) return;
+      const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE')
+        .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
+      if (gruposLaudo.length > 1) {
+        corposAR += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
+        if (!fatoresGrupo.length) {
+          corposAR += `<p style="color:#6b7280;font-size:11px;margin-bottom:14px">Nenhum fator com nível acima de Irrelevante neste agrupamento.</p>`;
+          return;
+        }
+      }
+      corposAR += _renderCardsRisco(fatoresGrupo);
+    });
+
+    if (corposAR) {
       analiseRiscoHTML = `
 <!-- ── ANÁLISE GRÁFICA POR RISCO ─────────────────────────── -->
 <div class="page">
