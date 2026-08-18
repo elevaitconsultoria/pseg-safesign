@@ -5669,22 +5669,20 @@ async function rodarAnalise() {
           <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
             style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
         </div>
+        <!-- Detalhes — visível apenas quando Por Risco + Gráfico -->
+        <button id="btn-detalhes" onclick="_toggleDetalhes()"
+          style="display:${_vm==='risco' && _dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
+            padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;
+            cursor:pointer;font-family:Inter,sans-serif;font-size:11px;
+            background:${_dv?'var(--tx)':'white'};color:${_dv?'white':'var(--tm)'};
+            white-space:nowrap;flex-shrink:0">
+          ${_dv ? '▲ Ocultar detalhes' : '▼ Mostrar detalhes'}
+        </button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${setoresAtivos.map(s=>`<span class="tag tg">${s}</span>`).join('')}
-        ${niveis.map(n=>`<span class="risk-badge ${NIVEIS_CORES[n].badge}" style="font-size:9px">${n}</span>`).join('')}
-      </div>
-      <!-- Detalhes — visível apenas quando Por Risco + Gráfico -->
-      <button id="btn-detalhes" onclick="_toggleDetalhes()"
-        style="display:${_vm==='risco' && _dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
-          padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;
-          cursor:pointer;font-family:Inter,sans-serif;font-size:11px;
-          background:${_dv?'var(--tx)':'white'};color:${_dv?'white':'var(--tm)'};
-          white-space:nowrap;flex-shrink:0">
-        ${_dv ? '▲ Ocultar detalhes' : '▼ Mostrar detalhes'}
-      </button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      ${setoresAtivos.map(s=>`<span class="tag tg">${s}</span>`).join('')}
+      ${niveis.map(n=>`<span class="risk-badge ${NIVEIS_CORES[n].badge}" style="font-size:9px">${n}</span>`).join('')}
     </div>
   </div>
   <div id="view-content"></div>`;
