@@ -9001,19 +9001,32 @@ async function renderLaudo() {
     </div>`;
   }
 
-  // ── RESULTADOS (5 colunas por setor — conforme documento de referência) ──
+  // ── RESULTADOS (5 colunas — granularidade respeitada) ──
   if (laudoSecoesAtivas.has('resultados')) {
-    const todosSetoresLaudo = [...new Set(linhas.map(r => r.setor))].sort();
-    todosSetoresLaudo.forEach(setor => {
-      const lSetor  = linhas.filter(r => r.setor === setor);
+    const _setoresDisp = [...new Set(linhas.map(r => r.setor))];
+    const _granPreview = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
+    const _gruposPreview = _granPreview === 'consolidado'
+      ? [{nome: 'Todos os setores', setores: _setoresDisp}]
+      : _granPreview === 'segregado'
+        ? _setoresDisp.sort().map(s => ({nome: s, setores: [s]}))
+        : agruparPorGrupos(_setoresDisp, gruposSetor);
+
+    _gruposPreview.forEach(grupo => {
+      const lSetor  = linhas.filter(r => grupo.setores.includes(r.setor));
       if (!lSetor.length) return;
       const fSetor  = calcFatores(lSetor)
         .filter(f => f.nivel !== 'IRRELEVANTE')
         .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
       if (!fSetor.length) return;
 
+      const _tituloGrupo = grupo.nome || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>';
+      const _subtituloGrupo = grupo.setores.length > 1
+        ? `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">Setores incluídos: ${grupo.setores.join(', ')}</div>`
+        : '';
+
       html += `<div class="laudo-section">
-        <div class="laudo-sec-title">Resultados — ${setor || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>'}</div>
+        <div class="laudo-sec-title">Resultados — ${_tituloGrupo}</div>
+        ${_subtituloGrupo}
         <div style="font-size:11px;color:var(--tl);margin-bottom:12px">Respondentes: <strong style="color:var(--tx)">${lSetor.length}</strong></div>
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:11px">
