@@ -7252,12 +7252,16 @@ async function verAdesaoLink(linkId) {
     }).join('');
 
     painel.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${naoClass > 0 ? '4px' : '8px'};flex-wrap:wrap;gap:6px">
         <div style="font-size:11px;font-weight:700;color:var(--tx)">Adesão à pesquisa${link.ciclo ? ` — ${link.ciclo}` : ''}</div>
-        <span style="font-size:11px;font-weight:700;color:${corTotal};background:${bgTotal};border:1px solid ${corTotal};border-radius:4px;padding:2px 10px">
+        <span title="Respostas cujo setor e função constam no quadro de funcionários importado, divididas pelo total cadastrado no GHE. Respostas com setor/função desconhecido não são contadas aqui." style="font-size:11px;font-weight:700;color:${corTotal};background:${bgTotal};border:1px solid ${corTotal};border-radius:4px;padding:2px 10px;cursor:default">
           Total: ${totalResp} / ${totalFunc} = ${totalPct}%
         </span>
       </div>
+      ${naoClass > 0 ? `<div style="margin-bottom:8px;font-size:10px;color:var(--amber,#b45309);display:flex;align-items:center;gap:5px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ${dados.totalRespostas} recebidas no total · ${naoClass} com setor/função fora do quadro (ex.: "Outro" ou não cadastrado) — não entram no cálculo de adesão.
+      </div>` : ''}
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;min-width:360px">
           <thead><tr style="background:var(--bg2,var(--bg))">
@@ -7270,10 +7274,6 @@ async function verAdesaoLink(linkId) {
           <tbody>${linhas}</tbody>
         </table>
       </div>
-      ${naoClass > 0 ? `<div style="margin-top:6px;font-size:10px;color:var(--amber,#b45309);display:flex;align-items:center;gap:5px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        ${naoClass} resposta(s) com setor/função fora do quadro (ex.: "Outro" ou não cadastrado) — não contam na adesão.
-      </div>` : ''}
       <div style="margin-top:6px;font-size:10px;color:var(--tl)">
         Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%
       </div>`;
@@ -11269,7 +11269,7 @@ function renderTelaEmpresas() {
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
           </div>
-          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
+          <div title="Total de respostas recebidas (inclui respostas com setor/função fora do quadro GHE). Veja a adesão classificada na tela Setores &amp; Funções." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
           </div>
@@ -11334,7 +11334,7 @@ function _renderEmpresasLista(filtradas) {
       <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
       <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
         <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
-        <span title="Respostas"><strong>${respTotal}</strong> resp.</span>
+        <span title="Total de respostas recebidas (inclui respostas com setor/função fora do quadro GHE). Veja a adesão classificada na tela Setores &amp; Funções."><strong>${respTotal}</strong> resp.</span>
         <span title="Setores"><strong>${nSetores}</strong> set.</span>
         <span title="Ciclos"><strong>${ciclosEmp.length}</strong> cic.</span>
       </div>
@@ -12189,8 +12189,20 @@ async function carregarAdesaoGHE(empresaId, cicloId) {
       totalBadge.style.display = 'inline-block';
       totalBadge.style.color = cor; totalBadge.style.background = bg; totalBadge.style.border = `1px solid ${cor}`;
       totalBadge.textContent = `Adesão: ${_gheAdesaoData.classificadas}/${_gheAdesaoData.totalHeadcount} = ${pct}%`;
+      totalBadge.title = `${_gheAdesaoData.classificadas} respostas com setor/função no quadro ÷ ${_gheAdesaoData.totalHeadcount} funcionários cadastrados no GHE.\nTotal recebido: ${_gheAdesaoData.totalRespostas} resp. (${_gheAdesaoData.naoClassificadas} fora do quadro não entram no cálculo).`;
+      // Indicador de respostas fora do quadro
+      totalBadge.parentElement.querySelector('#ghe-adesao-extra')?.remove();
+      if (_gheAdesaoData.naoClassificadas > 0) {
+        const extra = document.createElement('span');
+        extra.id = 'ghe-adesao-extra';
+        extra.title = `${_gheAdesaoData.naoClassificadas} resposta(s) recebidas cujo setor/função não consta no quadro (ex.: "Outro" ou não cadastrado) — não são contadas na adesão.`;
+        extra.style.cssText = 'font-size:10px;color:var(--amber,#b45309);cursor:default;margin-left:4px';
+        extra.textContent = `(+${_gheAdesaoData.naoClassificadas} fora do quadro)`;
+        totalBadge.insertAdjacentElement('afterend', extra);
+      }
     } else {
       totalBadge.style.display = 'none';
+      totalBadge.parentElement.querySelector('#ghe-adesao-extra')?.remove();
     }
   }
   _renderGHEDetailPane();
