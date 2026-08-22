@@ -5232,7 +5232,10 @@ function toggleCombo(id) {
 
 // Fechar ao clicar fora
 document.addEventListener('click', e => {
-  if (!e.target.closest('.combo')) {
+  // composedPath() captura o caminho do evento antes de qualquer mutação de DOM
+  // (e.target.closest falha quando buildCombo reconstrói o innerHTML durante o clique)
+  const insideCombo = e.composedPath().some(el => el.classList && el.classList.contains('combo'));
+  if (!insideCombo) {
     document.querySelectorAll('.combo.open').forEach(c => c.classList.remove('open'));
   }
 });
