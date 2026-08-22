@@ -1848,6 +1848,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-setor')">Limpar</span>
+                <button onclick="applyCombo('combo-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -1878,6 +1879,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-funcao')">Todas</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-funcao')">Limpar</span>
+                <button onclick="applyCombo('combo-funcao')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -1902,6 +1904,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
                 <span style="color:var(--amber)" onclick="setComboNivel(['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
                 <span style="color:var(--red)" onclick="setComboNivel(['ALTO','CRÍTICO'])">Só críticos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-nivel')">Limpar</span>
+                <button onclick="applyCombo('combo-nivel')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -1998,6 +2001,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-audit-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-audit-setor')">Limpar</span>
+                <button onclick="applyCombo('combo-audit-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -2102,6 +2106,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-gf-setor')">Limpar</span>
+                <button onclick="applyCombo('combo-gf-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -2126,6 +2131,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-funcao')">Todas</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-gf-funcao')">Limpar</span>
+                <button onclick="applyCombo('combo-gf-funcao')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -2213,6 +2219,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-ld-setor')">Limpar</span>
+                <button onclick="applyCombo('combo-ld-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -5262,8 +5269,6 @@ function toggleComboItem(id, item) {
   if (comboState[id].has(item)) comboState[id].delete(item);
   else comboState[id].add(item);
   buildCombo(id);
-  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
-  if (id.startsWith('combo-ld-')) renderLaudo();
 }
 
 function filterCombo(id, q) { buildCombo(id, q); }
@@ -5271,15 +5276,19 @@ function filterCombo(id, q) { buildCombo(id, q); }
 function selectAllCombo(id) {
   comboItems[id]().forEach(i => comboState[id].add(i));
   buildCombo(id);
-  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
-  if (id.startsWith('combo-ld-')) renderLaudo();
 }
 
 function clearCombo(id) {
   comboState[id].clear();
   buildCombo(id);
-  if (id.startsWith('combo-audit-')) renderTelaAuditoria();
-  if (id.startsWith('combo-ld-')) renderLaudo();
+}
+
+function applyCombo(id) {
+  document.getElementById(id)?.classList.remove('open');
+  if      (id.startsWith('combo-audit-'))                                              renderTelaAuditoria();
+  else if (id.startsWith('combo-ld-'))                                                 renderLaudo();
+  else if (id === 'combo-setor' || id === 'combo-funcao' || id === 'combo-nivel')      rodarAnalise();
+  else if (id.startsWith('combo-gf-'))                                                 renderGraficos();
 }
 
 function setComboNivel(arr) {
