@@ -55,3 +55,17 @@ cada entrada com `porNivel` (herdado do `ACOES_SUGERIDAS`, sem mudança de texto
 (herdado do `ACOES_5W2H` para os `cd_risco` que já batiam — 1, 3, 4, 5, 8, 10, 11 — e reescrito
 a partir das colunas D/E desta planilha para 6, 7, 9; novo para 12, espelhando o 5 com foco em
 discriminação; removido o 2 órfão).
+
+## Enriquecimento de conteúdo (2026-08-24)
+
+Após validar o formato visual, o usuário pediu ações "mais elaboradas e parrudas". Cada nível
+(`porNivel`) de cada um dos 11 fatores passou de 2–3 bullets genéricos para **4 bullets mais
+densos**, seguindo o critério:
+
+- **MÉDIO** (prevenção): diagnóstico/mapeamento + ação de processo + capacitação + indicador de monitoramento
+- **ALTO** (intervenção estrutural): reforça o MÉDIO + ação estrutural mais forte + responsável de nível mais alto + revisão de causa raiz
+- **CRÍTICO** (ação imediata): ação urgente + escalonamento (RH/jurídico/liderança) + suporte às pessoas afetadas + prazo formal de reavaliação
+
+Cada bullet nomeia mecanismo concreto, responsável e, quando aplicável, prazo/indicador — em vez
+de frases genéricas. Nenhum fator mudou de tema; o texto segue fiel à planilha oficial. `w5h2`
+(tela Plano de Ação) não foi alterado nesta rodada — só `porNivel` (laudo).
