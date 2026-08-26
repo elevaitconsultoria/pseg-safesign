@@ -9134,7 +9134,7 @@ async function renderLaudo() {
     grupos.forEach(grupo => {
       const lGrupo = linhas.filter(r=>grupo.setores.includes(r.setor));
       if (!lGrupo.length) return;
-      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE');
+      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO');
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
           <div class="alert alert-g">Todos os fatores estão em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.</div></div>`;
@@ -9386,7 +9386,7 @@ tr:last-child td{border-bottom:none}
   if (laudoSecoesAtivas.has('acoes')) {
     setoresList.forEach(setor => {
       const lS = linhas.filter(r=>r.setor===setor);
-      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
+      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO')
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (!fS.length) return;
       acoesHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
