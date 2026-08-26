@@ -9353,9 +9353,14 @@ tr:last-child td{border-bottom:none}
         const key = f.cd ? String(f.cd) : String(f.id);
         if (vistos.has(key)) return;
         vistos.add(key);
+        const detalhe = RISCOS_DETALHES[f.cd] || {};
         const acoes = CATALOGO_ACOES[key]?.porNivel?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
         acoesHTML += `<div class="acoes-grupo">
           <div class="acoes-risco-title">${e(f.nome)} <span class="nivel-badge ${NB[f.nivel]||'nb-bax'}" style="margin-left:6px">${f.nivel}</span></div>
+          ${detalhe.cons    ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Consequências:</strong> ${e(detalhe.cons)}</div>` : ''}
+          ${detalhe.fontes  ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Fontes geradoras:</strong> ${e(detalhe.fontes)}</div>` : ''}
+          ${detalhe.medidas ? `<div style="font-size:11px;color:#374151;margin-bottom:8px"><strong style="color:#111">Medidas de controle:</strong> ${e(detalhe.medidas)}</div>` : ''}
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a5e2a;margin-bottom:6px">Plano de ação recomendado</div>
           <ul class="acoes-lista">${acoes.map(a=>`<li>${e(a)}</li>`).join('')}</ul>
         </div>`;
       });
