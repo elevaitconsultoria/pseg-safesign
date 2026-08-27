@@ -1922,8 +1922,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <span class="combo-footer-count" id="combo-nivel-count">0 selecionados</span>
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-nivel')">Todos</span>
-                <span style="color:var(--amber)" onclick="setComboNivel(['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
-                <span style="color:var(--red)" onclick="setComboNivel(['ALTO','CRÍTICO'])">Só críticos</span>
+                <span style="color:var(--amber)" onclick="setComboNivel('combo-nivel',['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
+                <span style="color:var(--red)" onclick="setComboNivel('combo-nivel',['ALTO','CRÍTICO'])">Só críticos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-nivel')">Limpar</span>
                 <button onclick="applyCombo('combo-nivel')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
@@ -2266,6 +2266,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-setor')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-ld-setor')">Limpar</span>
                 <button onclick="applyCombo('combo-ld-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro Nível de Risco — Laudo -->
+      <div class="filter-card">
+        <div class="filter-label">Nível de risco</div>
+        <div class="combo" id="combo-ld-nivel">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-nivel')">
+            <div class="combo-preview" id="combo-ld-nivel-preview"><span class="combo-placeholder">Todos os níveis</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-list" id="combo-ld-nivel-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-nivel-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-nivel')">Todos</span>
+                <span style="color:var(--amber)" onclick="setComboNivel('combo-ld-nivel',['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
+                <span style="color:var(--red)" onclick="setComboNivel('combo-ld-nivel',['ALTO','CRÍTICO'])">Só críticos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-nivel')">Limpar</span>
+                <button onclick="applyCombo('combo-ld-nivel')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
               </div>
             </div>
           </div>
@@ -5413,6 +5437,7 @@ const comboState = {
   'combo-gf-ghe':      new Set(),
   // Tela Laudo
   'combo-ld-setor':    new Set(SETORES_DEMO),
+  'combo-ld-nivel':    new Set(NIVEIS_ORDEM),
   'combo-ld-ghe':      new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
@@ -5426,6 +5451,7 @@ const comboItems = {
   'combo-gf-funcao':   () => FUNCOES_DEMO,
   'combo-gf-ghe':      () => [],
   'combo-ld-setor':    () => SETORES_DEMO,
+  'combo-ld-nivel':    () => NIVEIS_ORDEM,
   'combo-ld-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
 };
@@ -5455,7 +5481,7 @@ function buildCombo(id, query='') {
   const list  = document.getElementById(id+'-list');
   if (!list) return;
 
-  if (id === 'combo-nivel') {
+  if (id === 'combo-nivel' || id === 'combo-ld-nivel') {
     list.innerHTML = items.map(n => {
       const c   = NIVEIS_CORES[n];
       const sel = comboState[id].has(n);
@@ -5503,9 +5529,9 @@ function applyCombo(id) {
   else if (id.startsWith('combo-gf-'))                                                 renderGraficos();
 }
 
-function setComboNivel(arr) {
-  comboState['combo-nivel'] = new Set(arr);
-  buildCombo('combo-nivel');
+function setComboNivel(id, arr) {
+  comboState[id] = new Set(arr);
+  buildCombo(id);
 }
 
 function updateComboPreview(id) {
@@ -5523,7 +5549,7 @@ function updateComboPreview(id) {
   }
 
   if (!sel.length) {
-    const ph = id==='combo-nivel'?'Todos os níveis'
+    const ph = id.includes('nivel')?'Todos os níveis'
              : id.includes('funcao')?'Todas as funções'
              : 'Todos os setores';
     preview.innerHTML = `<span class="combo-placeholder">${ph}</span>`;
@@ -5539,7 +5565,9 @@ function updateComboPreview(id) {
     'combo-setor': () => 'background:var(--gl);color:var(--g)',
     'combo-funcao':() => 'background:var(--bluebg);color:var(--blue)',
   };
-  const colorFn = pillColors[id] || (() => 'background:var(--bg);color:var(--tm)');
+  const colorFn = id.includes('nivel')
+    ? pillColors['combo-nivel']
+    : (pillColors[id] || (() => 'background:var(--bg);color:var(--tm)'));
 
   const MAX_PILLS = 2;
   const shown = sel.slice(0, MAX_PILLS);
@@ -9176,6 +9204,8 @@ async function onLaudoFiltro() {
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   buildCombo('combo-ld-setor');
+  comboState['combo-ld-nivel'] = new Set(NIVEIS_ORDEM);
+  buildCombo('combo-ld-nivel');
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
@@ -9193,6 +9223,7 @@ async function renderLaudo() {
   const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
   const gheSetores = _gheSetoresFiltro('combo-ld-ghe');
+  const niveisLd = [...comboState['combo-ld-nivel']];
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
@@ -9311,7 +9342,7 @@ async function renderLaudo() {
       const lSetor  = linhas.filter(r => grupo.setores.includes(r.setor));
       if (!lSetor.length) return;
       const fSetor  = calcFatores(lSetor)
-        .filter(f => f.nivel !== 'IRRELEVANTE')
+        .filter(f => f.nivel !== 'IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
       if (!fSetor.length) return;
 
@@ -9407,7 +9438,7 @@ async function renderLaudo() {
     grupos.forEach(grupo => {
       const lGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
       if (!lGrupo.length) return;
-      const fatores = calcFatores(lGrupo).filter(Boolean);
+      const fatores = calcFatores(lGrupo).filter(f => f && (!niveisLd.length || niveisLd.includes(f.nivel)));
       if (!fatores.length) return;
 
       html += '<div class="laudo-section">'+
@@ -9500,7 +9531,7 @@ async function renderLaudo() {
     grupos.forEach(grupo => {
       const lGrupo = linhas.filter(r=>grupo.setores.includes(r.setor));
       if (!lGrupo.length) return;
-      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO');
+      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)));
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
           <div class="alert alert-g">Todos os fatores estão em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.</div></div>`;
@@ -9581,7 +9612,7 @@ function _barPrint(pcts, moda) {
 }
 
 // ── Gerador do HTML completo do laudo ───────────────────────────
-function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil }) {
+function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil, niveisLd = [] }) {
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
@@ -9701,7 +9732,7 @@ tr:last-child td{border-bottom:none}
   let resultadosHTML = '';
   gruposLaudo.forEach(grupo => {
     const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
-    const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
+    const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
     const tituloSetor = grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>';
@@ -9776,7 +9807,7 @@ tr:last-child td{border-bottom:none}
   if (laudoSecoesAtivas.has('acoes')) {
     setoresList.forEach(setor => {
       const lS = linhas.filter(r=>r.setor===setor);
-      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO')
+      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (!fS.length) return;
       acoesHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
@@ -9854,7 +9885,7 @@ tr:last-child td{border-bottom:none}
     gruposLaudo.forEach(grupo => {
       const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
       if (!linhasGrupo.length) return;
-      const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE')
+      const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (gruposLaudo.length > 1) {
         corposAR += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
@@ -10098,6 +10129,7 @@ async function gerarLaudoPDF() {
   const empId     = document.getElementById('ld-empresa')?.value || '';
   const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
   const setores   = [...(comboState['combo-ld-setor'] || new Set())];
+  const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
   const todos     = await getLinhasParaAnalise(empId);
   const linhas    = setores.length ? todos.filter(r=>setores.includes(r.setor)) : todos;
 
@@ -10111,7 +10143,7 @@ async function gerarLaudoPDF() {
   const cicloId     = document.getElementById('ld-ciclo')?.value || '';
   const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
 
-  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil });
+  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil, niveisLd });
 
   const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
@@ -10816,6 +10848,7 @@ function _iniciarAppAposTenant() {
       if (document.getElementById('combo-gf-setor'))  buildCombo('combo-gf-setor');
       if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
       if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
+      if (document.getElementById('combo-ld-nivel'))  buildCombo('combo-ld-nivel');
     });
   });
 }
@@ -14822,6 +14855,7 @@ try { buildCombo('combo-gf-setor'); }   catch(e) { console.warn('combo-gf-setor:
 try { buildCombo('combo-gf-funcao'); }  catch(e) { console.warn('combo-gf-funcao:', e); }
 try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoChecks:', e); }
 try { buildCombo('combo-ld-setor'); }     catch(e) { console.warn('combo-ld-setor:', e); }
+try { buildCombo('combo-ld-nivel'); }     catch(e) { console.warn('combo-ld-nivel:', e); }
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
 try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
