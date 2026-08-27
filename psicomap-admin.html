@@ -7371,10 +7371,13 @@ async function carregarContagemRespostas() {
   if (currentUser?.id === 'local-admin' || currentUser?.id === 'demo') return;
   try {
     const tokens = _links.map(l => l.token);
-    const { data, error } = await sbAdmin
+    // _fetchAllSupabase pagina em blocos de 1000 — sem isso, tenants com mais de 1000
+    // respostas no total tinham a contagem (e o KPI "Respostas totais") truncada em
+    // 1000 pelo limite silencioso do PostgREST (achado real 2026-08-27).
+    const { data, error } = await _fetchAllSupabase(() => sbAdmin
       .from('respostas')
       .select('link_token')
-      .in('link_token', tokens);
+      .in('link_token', tokens));
     if (error) { console.warn('carregarContagemRespostas (RLS?):', error.message); return; }
     const contagem = {};
     (data || []).forEach(r => { contagem[r.link_token] = (contagem[r.link_token] || 0) + 1; });
