@@ -112,6 +112,44 @@ Ao investigar um comportamento estranho de RBAC/RLS, comparar `pg_policies` (e t
 `information_schema.triggers`) entre DEV e PROD diretamente via MCP é mais confiável que ler
 os arquivos `.sql` — alguém pode ter aplicado algo direto no SQL Editor sem versionar.
 
+**Gap adicional encontrado e corrigido em 2026-08-27**: `respostas` e `resposta_itens` nunca
+tiveram policy de bypass para `super_admin` (as 5 de `migration_painel_eleva.sql` cobriam
+`empresas`, `ciclos`, `links_coleta`, `empresa_setores`, `empresa_funcoes`, mas não essas duas).
+Sintoma: super_admin em Modo Suporte via `entrarComoEST()` com `currentTenantId` correto no
+client, mas as telas Auditoria/Análise/Laudo mostravam "nenhuma resposta encontrada" — porque
+toda policy de SELECT dessas tabelas compara `tenant_id` contra `perfis.tenant_id` do usuário
+logado, e super_admin tem `tenant_id = NULL`, falhando em todas. Corrigido em DEV e PROD com
+`respostas_super_admin_all` / `resposta_itens_super_admin_all` (mesmo padrão `FOR ALL TO
+authenticated USING/WITH CHECK (is_super_admin())` das outras 5). Validado via
+`set_config('request.jwt.claims', ...)` simulando o JWT do super_admin em transação com
+ROLLBACK, sem precisar de sessão HTTP real.
+
+## Copiar dados de uma empresa PROD → DEV (para testar features ainda não deployadas)
+
+Não existe FDW/dblink configurado entre os dois projetos Supabase, e nenhuma credencial de
+conexão direta está disponível — a cópia é feita via MCP, gerando SQL pronto no lado PROD
+(leitura) e executando esse SQL no lado DEV (escrita). **PROD nunca recebe um `INSERT`/`UPDATE`
+nesse fluxo — é estritamente somente leitura.**
+
+Padrão usado (empresa ASSA ABLOY, 2026-08-27, ~3780 linhas de `resposta_itens`):
+
+1. Copiar em ordem de dependência: `empresas` → `empresa_setores`/`empresa_funcoes`/
+   `empresa_headcount` → `ciclos` → `links_coleta` → `respostas` → `resposta_itens`.
+2. Gerar o `INSERT` como texto no PROD com `string_agg(format('(%L,%L,...)', ...), ',')`,
+   já incluindo `WHERE NOT EXISTS (...)` de idempotência — permite reexecutar/reordenar batches
+   sem duplicar linhas mesmo se a ordem dos batches mudar no meio do processo.
+3. `questoes.id` **diverge entre os bancos** — nunca copiar o UUID direto; sempre fazer o
+   `JOIN questoes q ON q.codigo = v.codigo` usando o código da questão (`Q01`..`Q27`) como
+   chave estável entre ambientes.
+4. UUID em `VALUES (...)` precisa de cast explícito (`::uuid`) quando a coluna de destino é
+   `uuid` — senão `ERROR: column "id" is of type uuid but expression is of type text`.
+5. A resposta do MCP tem limite de ~56.000 caracteres — para tabelas grandes, paginar com
+   `LIMIT`/`OFFSET` em lotes de 800–1000 linhas, sempre com `ORDER BY` estável (ex:
+   `resposta_id, codigo`) para não perder nem duplicar linhas entre lotes.
+6. Ao final, validar com `SELECT count(*)` comparando DEV vs PROD para a mesma empresa — se não
+   bater, comparar por `resposta_id` quantos itens cada uma tem (`GROUP BY ... HAVING count(*) <> 27`)
+   para achar a lacuna específica em vez de reprocessar tudo de novo.
+
 ## Pipeline GHE (importação de estrutura organizacional)
 
 Três tabelas formam o catálogo de uma empresa:
