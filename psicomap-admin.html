@@ -7371,10 +7371,13 @@ async function carregarContagemRespostas() {
   if (currentUser?.id === 'local-admin' || currentUser?.id === 'demo') return;
   try {
     const tokens = _links.map(l => l.token);
-    const { data, error } = await sbAdmin
+    // _fetchAllSupabase pagina em blocos de 1000 — sem isso, tenants com mais de 1000
+    // respostas no total tinham a contagem (e o KPI "Respostas totais") truncada em
+    // 1000 pelo limite silencioso do PostgREST (achado real 2026-08-27).
+    const { data, error } = await _fetchAllSupabase(() => sbAdmin
       .from('respostas')
       .select('link_token')
-      .in('link_token', tokens);
+      .in('link_token', tokens));
     if (error) { console.warn('carregarContagemRespostas (RLS?):', error.message); return; }
     const contagem = {};
     (data || []).forEach(r => { contagem[r.link_token] = (contagem[r.link_token] || 0) + 1; });
@@ -7551,11 +7554,15 @@ async function calcRepresentatividade(empId, cicloId) {
     .eq('empresa_id', empId);
   if (!hcRows || !hcRows.length) return null;
 
-  // Busca respostas filtradas por empresa (e ciclo se informado)
-  let q = sbAdmin.from('respostas').select('setor, funcao').eq('empresa_id', empId);
-  if (cicloId) q = q.eq('ciclo_id', cicloId);
-  const { data: resps } = await q;
-  const respList = resps || [];
+  // Reaproveita getLinhasParaAnalise() — mesma fonte usada por Auditoria/Resultados/Laudo —
+  // em vez de uma query própria. Elimina uma segunda consulta redundante ao banco e garante
+  // que "respostas recebidas" nunca diverge do número mostrado nessas outras telas: mesma
+  // exclusão de links de teste, mesmo requisito de ter pelo menos 1 item respondido
+  // (achado real 2026-08-27: Dashboard/Clientes/Links de Coleta mostravam um número e
+  // Adesão/Auditoria mostravam outro para a mesma empresa).
+  const todasLinhas = await getLinhasParaAnalise(empId);
+  const respList = (cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas)
+    .map(r => ({ setor: r.setor, funcao: r.funcao }));
 
   // Índices de contagem de respostas: por (setor×funcao) e por setor
   const porSetorFuncao = new Map();
@@ -8072,16 +8079,21 @@ async function loadRespostasParaEmpresa(empresaId) {
     // Tokens de links de teste desta empresa (excluídos dos cálculos)
     const testTokens = _links.filter(l => l.empresa_id === empresaId && l.is_teste).map(l => l.token);
 
-    // Buscar respostas com itens
-    let rq = sbAdmin
-      .from('respostas')
-      .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
-        session_id, lgpd_aceito, lgpd_aceito_em, device_info,
-        resposta_itens ( questao_id, valor )`)
-      .eq('empresa_id', empresaId)
-      .order('respondido_em', { ascending: false });
-    if (testTokens.length > 0) rq = rq.not('link_token', 'in', `(${testTokens.join(',')})`);
-    const { data, error } = await rq;
+    // Buscar respostas com itens — paginado: esta é a fonte oficial reaproveitada por
+    // Auditoria/Resultados/Laudo/Adesão (calcRepresentatividade), então uma empresa com
+    // mais de 1000 respostas não pode voltar a truncar o "número oficial" em nenhuma
+    // dessas telas (mesma classe de bug encontrada em carregarContagemRespostas()).
+    const { data, error } = await _fetchAllSupabase(() => {
+      let rq = sbAdmin
+        .from('respostas')
+        .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
+          session_id, lgpd_aceito, lgpd_aceito_em, device_info,
+          resposta_itens ( questao_id, valor )`)
+        .eq('empresa_id', empresaId)
+        .order('respondido_em', { ascending: false });
+      if (testTokens.length > 0) rq = rq.not('link_token', 'in', `(${testTokens.join(',')})`);
+      return rq;
+    });
 
     if (error) throw error;
 
