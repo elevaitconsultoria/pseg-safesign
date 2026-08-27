@@ -2476,6 +2476,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Itens incluídos</div>
     <div class="ms-wrap" style="margin-bottom:0">
+      <div class="ms-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" id="grupo-busca" placeholder="Buscar setor ou função..." oninput="filterGrupoItems(this.value)"/>
+      </div>
       <div class="ms-list" id="grupo-ms-list" style="max-height:160px"></div>
     </div>
     <div id="grupo-selecionados" style="margin-top:8px;font-size:11px;color:var(--tl)">Nenhum item selecionado</div>
@@ -4333,6 +4337,8 @@ let gruposSetor  = [];
 let gruposFuncao = [];
 let grupoSelecionados = new Set();
 let grupoEditandoId = null;
+let grupoItensTodos = []; // itens do catálogo GHE + valores livres ("Outro: ...") vindos das respostas — base para a busca do modal
+let grupoItensLivres = new Set(); // subconjunto de grupoItensTodos que só existe nas respostas (fora do catálogo GHE) — usado só para o selo visual
 
 // ── Helpers de filtro por Agrupamento GHE ───────────────────────────────────
 
@@ -6815,35 +6821,57 @@ async function removerGrupo(tipo, id) {
   renderTabelaAgrupamentos();
 }
 
-function _abrirModalGrupo(tipo, nomeInicial, itensSelecionados) {
+async function _abrirModalGrupo(tipo, nomeInicial, itensSelecionados) {
   grupoTipo = tipo;
   grupoSelecionados = new Set(itensSelecionados);
   document.getElementById('grupo-nome').value = nomeInicial;
-  // Usar catálogo da empresa (empresa_setores / empresa_funcoes) — fonte autoritativa
+  document.getElementById('grupo-busca').value = '';
+  document.getElementById('grupo-ms-list').innerHTML = `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregando itens…</div>`;
+  document.getElementById('modal-grupo').classList.add('open');
+
+  // Base 1: catálogo GHE da empresa (empresa_setores / empresa_funcoes) — fonte autoritativa
   const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
   const hierarquia = emp?.hierarquia || [];
-  let items;
-  if (tipo === 'setor') {
-    items = hierarquia.map(h => h.nome).filter(n => n).sort((a,b) => a.localeCompare(b,'pt-BR'));
-  } else {
-    const todas = [...new Set(hierarquia.flatMap(h => h.funcoes || []))];
-    items = todas.filter(f => f).sort((a,b) => a.localeCompare(b,'pt-BR'));
-  }
+  const doCatalogo = tipo === 'setor'
+    ? hierarquia.map(h => h.nome).filter(Boolean)
+    : [...new Set(hierarquia.flatMap(h => h.funcoes || []))].filter(Boolean);
+
+  // Base 2: valores digitados livremente pelos respondentes ("Outro: ...") — não existem no
+  // catálogo GHE porque o funcionário escolheu "Outro (especificar)" no formulário público.
+  // Sem isso, esses setores/funções nunca apareceriam na lista de agrupamento.
+  const linhas = await getLinhasParaAnalise(_empresaAtiva?.id);
+  const doRespostas = [...new Set(linhas.map(r => tipo === 'setor' ? r.setor : r.funcao))].filter(Boolean);
+
+  grupoItensTodos = [...new Set([...doCatalogo, ...doRespostas])].sort((a,b) => a.localeCompare(b,'pt-BR'));
+  const doCatalogoSet = new Set(doCatalogo);
+  grupoItensLivres = new Set(doRespostas.filter(it => !doCatalogoSet.has(it))); // p/ marcar visualmente na lista
+
+  _renderGrupoMsList('');
+}
+
+function _renderGrupoMsList(query = '') {
+  const q = query.trim().toLowerCase();
+  const items = q ? grupoItensTodos.filter(it => it.toLowerCase().includes(q)) : grupoItensTodos;
   document.getElementById('grupo-ms-list').innerHTML = !items.length
-    ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregue uma empresa com respostas para criar agrupamentos.</div>`
+    ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">${grupoItensTodos.length ? 'Nenhum item encontrado para a busca.' : 'Carregue uma empresa com respostas para criar agrupamentos.'}</div>`
     : items.map(it => {
         const sel = grupoSelecionados.has(it);
+        const livre = grupoItensLivres.has(it);
         return `
     <div class="ms-item${sel?' sel':''}" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
       <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-      ${it}
+      <span style="flex:1">${it}</span>
+      ${livre ? `<span style="font-size:9px;font-weight:600;color:var(--tl);background:var(--gp);padding:1px 6px;border-radius:8px;white-space:nowrap">digitado por respondente</span>` : ''}
     </div>`;
       }).join('');
   const n = grupoSelecionados.size;
   document.getElementById('grupo-selecionados').textContent = n > 0
     ? `Selecionados: ${[...grupoSelecionados].join(', ')}`
     : 'Nenhum item selecionado';
-  document.getElementById('modal-grupo').classList.add('open');
+}
+
+function filterGrupoItems(query) {
+  _renderGrupoMsList(query);
 }
 
 function abrirNovoGrupo(tipo) {
