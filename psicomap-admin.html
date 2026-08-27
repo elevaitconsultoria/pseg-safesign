@@ -1882,6 +1882,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Agrupamento de Função — Resultados -->
+      <div class="filter-card" id="fc-fun-ghe" style="display:none">
+        <div class="filter-label">Agrupamento de Função</div>
+        <div class="combo" id="combo-fun-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-fun-ghe')">
+            <div class="combo-preview" id="combo-fun-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-fun-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-fun-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-fun-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-fun-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-fun-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filtro Funções — combo -->
       <div class="filter-card">
         <div class="filter-label">Funções</div>
@@ -2159,6 +2184,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Agrupamento de Função — Gráficos -->
+      <div class="filter-card" id="fc-gf-fun-ghe" style="display:none">
+        <div class="filter-label">Agrupamento de Função</div>
+        <div class="combo" id="combo-gf-fun-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-gf-fun-ghe')">
+            <div class="combo-preview" id="combo-gf-fun-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-gf-fun-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-gf-fun-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-gf-fun-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-fun-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-fun-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Funções</div>
         <div class="combo" id="combo-gf-funcao">
@@ -2315,6 +2365,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
               <div class="combo-footer-actions">
                 <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-ghe')">Todos</span>
                 <span style="color:var(--tm)" onclick="clearCombo('combo-ld-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro Agrupamento de Função — Laudo -->
+      <div class="filter-card" id="fc-ld-fun-ghe" style="display:none">
+        <div class="filter-label">Agrupamento de Função</div>
+        <div class="combo" id="combo-ld-fun-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-fun-ghe')">
+            <div class="combo-preview" id="combo-ld-fun-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-ld-fun-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ld-fun-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-fun-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-fun-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-fun-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -4342,8 +4417,9 @@ let grupoItensLivres = new Set(); // subconjunto de grupoItensTodos que só exis
 
 // ── Helpers de filtro por Agrupamento GHE ───────────────────────────────────
 
-function _populateGheCombo(comboId, fcId) {
-  const nomes = gruposSetor.map(g => g.nome);
+function _populateGheCombo(comboId, fcId, tipo = 'setor') {
+  const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
+  const nomes = grupos.map(g => g.nome);
   const fc = document.getElementById(fcId);
   if (fc) fc.style.display = nomes.length ? '' : 'none';
   comboItems[comboId] = () => nomes;
@@ -4351,15 +4427,19 @@ function _populateGheCombo(comboId, fcId) {
   buildCombo(comboId);
 }
 
-// Expande grupos selecionados para o conjunto de setores que eles contêm.
+// Expande grupos selecionados para o conjunto de valores (setor ou função) que eles contêm.
+// Comparação por _gheNormStrong (sem acento/caixa/espaço) para que variantes digitadas
+// livremente pelo respondente ("Outro: rh", "Outro: RH ") caiam no mesmo grupo que a forma
+// selecionada pelo admin, sem exigir que cada variante exata seja adicionada manualmente.
 // Retorna null quando nenhum filtro está ativo (todos ou nenhum selecionado).
-function _gheSetoresFiltro(comboId) {
+function _grupoValoresFiltro(comboId, tipo = 'setor') {
+  const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
   const sel = [...comboState[comboId]];
   if (!sel.length) return null; // vazio = sem filtro (padrão defensivo)
-  const todos = gruposSetor.map(g => g.nome);
+  const todos = grupos.map(g => g.nome);
   if (sel.length === todos.length) return null; // todos = sem filtro
   return new Set(
-    gruposSetor.filter(g => sel.includes(g.nome)).flatMap(g => g.itens)
+    grupos.filter(g => sel.includes(g.nome)).flatMap(g => g.itens.map(_gheNormStrong))
   );
 }
 
@@ -5437,14 +5517,17 @@ const comboState = {
   'combo-funcao':      new Set(FUNCOES_DEMO),
   'combo-nivel':       new Set(NIVEIS_ORDEM),
   'combo-ghe':         new Set(),
+  'combo-fun-ghe':     new Set(),
   // Tela Distribuição (graficos)
   'combo-gf-setor':    new Set(SETORES_DEMO),
   'combo-gf-funcao':   new Set(FUNCOES_DEMO),
   'combo-gf-ghe':      new Set(),
+  'combo-gf-fun-ghe':  new Set(),
   // Tela Laudo
   'combo-ld-setor':    new Set(SETORES_DEMO),
   'combo-ld-nivel':    new Set(NIVEIS_ORDEM),
   'combo-ld-ghe':      new Set(),
+  'combo-ld-fun-ghe':  new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
 };
@@ -5453,12 +5536,15 @@ const comboItems = {
   'combo-funcao':      () => FUNCOES_DEMO,
   'combo-nivel':       () => NIVEIS_ORDEM,
   'combo-ghe':         () => [],
+  'combo-fun-ghe':     () => [],
   'combo-gf-setor':    () => SETORES_DEMO,
   'combo-gf-funcao':   () => FUNCOES_DEMO,
   'combo-gf-ghe':      () => [],
+  'combo-gf-fun-ghe':  () => [],
   'combo-ld-setor':    () => SETORES_DEMO,
   'combo-ld-nivel':    () => NIVEIS_ORDEM,
   'combo-ld-ghe':      () => [],
+  'combo-ld-fun-ghe':  () => [],
   'combo-audit-setor': () => SETORES_DEMO,
 };
 
@@ -5628,6 +5714,7 @@ async function onEmpresaChange() {
   } catch(e) { console.warn('onEmpresaChange:', e); }
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ghe', 'fc-ghe');
+  _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
 }
@@ -5649,7 +5736,8 @@ async function rodarAnalise() {
   const setores  = [...comboState['combo-setor']];
   const funcoes  = [...comboState['combo-funcao']];
   const niveis   = [...comboState['combo-nivel']];
-  const gheSetores = _gheSetoresFiltro('combo-ghe');
+  const gheSetores = _grupoValoresFiltro('combo-ghe');
+  const gheFuncoes = _grupoValoresFiltro('combo-fun-ghe', 'funcao');
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // Aplicar filtro de ciclo se selecionado
   const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
@@ -5657,7 +5745,8 @@ async function rodarAnalise() {
   const filtrado = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
     (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
-    (gheSetores === null  || gheSetores.has(r.setor))
+    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
   );
 
   if (!filtrado.length) {
@@ -6641,12 +6730,16 @@ function toggleFatorDist(gid) {
   if (icon) icon.classList.toggle('open', !isOpen);
 }
 
+// Matching por _gheNormStrong (sem acento/caixa/espaço), não string exata — variantes de
+// "Outro: X" digitadas de forma ligeiramente diferente ("Outro: RH" vs "outro: rh ") caem no
+// mesmo grupo desde que uma delas tenha sido selecionada pelo admin no cadastro do agrupamento.
 function agruparPorGrupos(setores, grupos) {
   if (!grupos.length) return setores.map(s=>({nome:s,setores:[s]}));
   const usados = new Set();
   const result = grupos.map(g=>{
-    const match = g.itens.filter(i=>setores.includes(i));
-    match.forEach(i=>usados.add(i));
+    const chaves = new Set(g.itens.map(_gheNormStrong));
+    const match = setores.filter(s=>chaves.has(_gheNormStrong(s)));
+    match.forEach(s=>usados.add(s));
     return {nome:g.nome, setores:match};
   }).filter(g=>g.setores.length>0);
   const sem = setores.filter(s=>!usados.has(s)).map(s=>({nome:s,setores:[s]}));
@@ -6839,8 +6932,21 @@ async function _abrirModalGrupo(tipo, nomeInicial, itensSelecionados) {
   // Base 2: valores digitados livremente pelos respondentes ("Outro: ...") — não existem no
   // catálogo GHE porque o funcionário escolheu "Outro (especificar)" no formulário público.
   // Sem isso, esses setores/funções nunca apareceriam na lista de agrupamento.
+  // Dedup por _gheNormStrong (mesmo padrão do import GHE, :13772) — colapsa variantes que só
+  // diferem em caixa/acento/espaço ("Outro: RH" vs "outro: rh ") numa única entrada, mantendo a
+  // forma mais acentuada; descarta variantes que já normalizam igual a um item do catálogo, já
+  // cobertas por ele graças ao matching normalizado de agruparPorGrupos/_grupoValoresFiltro.
   const linhas = await getLinhasParaAnalise(_empresaAtiva?.id);
-  const doRespostas = [...new Set(linhas.map(r => tipo === 'setor' ? r.setor : r.funcao))].filter(Boolean);
+  const doCatalogoNorm = new Set(doCatalogo.map(_gheNormStrong));
+  const respostasDedup = new Map(); // chave normalizada → forma mais acentuada encontrada
+  linhas.forEach(r => {
+    const raw = tipo === 'setor' ? r.setor : r.funcao;
+    if (!raw) return;
+    const key = _gheNormStrong(raw);
+    if (doCatalogoNorm.has(key)) return;
+    respostasDedup.set(key, _ghePrefAcentuado(respostasDedup.get(key) || raw, raw));
+  });
+  const doRespostas = [...respostasDedup.values()];
 
   grupoItensTodos = [...new Set([...doCatalogo, ...doRespostas])].sort((a,b) => a.localeCompare(b,'pt-BR'));
   const doCatalogoSet = new Set(doCatalogo);
@@ -8229,6 +8335,7 @@ async function onGrafFiltroChange() {
     } catch(e) { console.warn('onGrafFiltroChange:', e); }
     await carregarGruposSetor(empId);
     _populateGheCombo('combo-gf-ghe', 'fc-gf-ghe');
+    _populateGheCombo('combo-gf-fun-ghe', 'fc-gf-fun-ghe', 'funcao');
   }
   buildCombo('combo-gf-setor');
   buildCombo('combo-gf-funcao');
@@ -8273,14 +8380,16 @@ async function renderGraficos() {
   const cicloId  = document.getElementById('gf-ciclo')?.value || '';
   const setores  = [...comboState['combo-gf-setor']];
   const funcoes  = [...comboState['combo-gf-funcao']];
-  const gheSetores = _gheSetoresFiltro('combo-gf-ghe');
+  const gheSetores = _grupoValoresFiltro('combo-gf-ghe');
+  const gheFuncoes = _grupoValoresFiltro('combo-gf-fun-ghe', 'funcao');
   const todosDados = await getLinhasParaAnalise(emp);
   const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
   // Filtro defensivo: set vazio = todos incluídos
   const linhas   = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
     (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
-    (gheSetores === null  || gheSetores.has(r.setor))
+    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
   );
 
   const panel = document.getElementById('graficos-panel');
@@ -9257,6 +9366,7 @@ async function onLaudoFiltro() {
   buildCombo('combo-ld-nivel');
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
+  _populateGheCombo('combo-ld-fun-ghe', 'fc-ld-fun-ghe', 'funcao');
   // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
   const granEl = document.getElementById('laudo-granularidade');
   if (granEl && (granEl.value === 'agrupado' || granEl.value === 'segregado')) {
@@ -9271,14 +9381,16 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
-  const gheSetores = _gheSetoresFiltro('combo-ld-ghe');
+  const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
+  const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
   const niveisLd = [...comboState['combo-ld-nivel']];
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
   const linhas  = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
-    (gheSetores === null  || gheSetores.has(r.setor))
+    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
   );
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
@@ -10179,8 +10291,16 @@ async function gerarLaudoPDF() {
   const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
   const setores   = [...(comboState['combo-ld-setor'] || new Set())];
   const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
+  const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
+  const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
   const todos     = await getLinhasParaAnalise(empId);
-  const linhas    = setores.length ? todos.filter(r=>setores.includes(r.setor)) : todos;
+  // Mesmos filtros de renderLaudo() (preview) — sem isso o PDF exportado ignorava a
+  // seleção de Agrupamento GHE feita na tela, mostrando sempre todos os setores/funções.
+  const linhas    = todos.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+  );
 
   if (!linhas.length) { toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
 
