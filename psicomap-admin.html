@@ -7642,6 +7642,10 @@ async function verAdesaoLink(linkId) {
     const corTotal   = totalPct >= 70 ? '#16a34a' : totalPct >= 30 ? '#b45309' : '#dc2626';
     const bgTotal    = totalPct >= 70 ? '#f0fdf4' : totalPct >= 30 ? '#fffbeb' : '#fef2f2';
     const naoClass   = dados.naoClassificadas;
+    // "Total geral" — todas as respostas recebidas (inclusive as fora do quadro GHE) ÷
+    // funcionários cadastrados. Complementa "Adesão" (só as classificadas) para deixar
+    // claro que os dois % medem coisas diferentes, em vez de um texto solto explicando.
+    const totalGeralPct = totalFunc > 0 ? Math.round(dados.totalRespostas / totalFunc * 100) : 0;
 
     const linhas = dados.linhas.map(d => {
       const cor = d.pct >= 70 ? '#16a34a' : d.pct >= 30 ? '#b45309' : '#dc2626';
@@ -7660,13 +7664,18 @@ async function verAdesaoLink(linkId) {
     painel.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${naoClass > 0 ? '4px' : '8px'};flex-wrap:wrap;gap:6px">
         <div style="font-size:11px;font-weight:700;color:var(--tx)">Adesão à pesquisa${link.ciclo ? ` — ${link.ciclo}` : ''}</div>
-        <span title="Respostas cujo setor e função constam no quadro de funcionários importado, divididas pelo total cadastrado no GHE. Respostas com setor/função desconhecido não são contadas aqui." style="font-size:11px;font-weight:700;color:${corTotal};background:${bgTotal};border:1px solid ${corTotal};border-radius:4px;padding:2px 10px;cursor:default">
-          Total: ${totalResp} / ${totalFunc} = ${totalPct}%
-        </span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span title="Respostas cujo setor e função constam no quadro de funcionários importado, divididas pelo total cadastrado no GHE. Respostas fora do quadro (ex.: &quot;Outro&quot;) não entram aqui — veja Total geral." style="font-size:11px;font-weight:700;color:${corTotal};background:${bgTotal};border:1px solid ${corTotal};border-radius:4px;padding:2px 10px;cursor:default">
+            Adesão: ${totalResp} / ${totalFunc} = ${totalPct}%
+          </span>
+          ${naoClass > 0 ? `<span title="Todas as respostas recebidas, inclusive as com setor/função fora do quadro GHE, divididas pelo total cadastrado." style="font-size:11px;font-weight:700;color:var(--tm);background:var(--bg2,var(--bg));border:1px solid var(--border);border-radius:4px;padding:2px 10px;cursor:default">
+            Total geral: ${dados.totalRespostas} / ${totalFunc} = ${totalGeralPct}%
+          </span>` : ''}
+        </div>
       </div>
       ${naoClass > 0 ? `<div style="margin-bottom:8px;font-size:10px;color:var(--amber,#b45309);display:flex;align-items:center;gap:5px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        ${dados.totalRespostas} recebidas no total · ${naoClass} com setor/função fora do quadro (ex.: "Outro" ou não cadastrado) — não entram no cálculo de adesão.
+        ${naoClass} de ${dados.totalRespostas} respostas têm setor/função fora do quadro GHE (ex.: "Outro" ou não cadastrado) — contam no Total geral, mas não entram na Adesão.
       </div>` : ''}
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;min-width:360px">
@@ -12843,16 +12852,19 @@ async function carregarAdesaoGHE(empresaId, cicloId) {
       totalBadge.style.display = 'inline-block';
       totalBadge.style.color = cor; totalBadge.style.background = bg; totalBadge.style.border = `1px solid ${cor}`;
       totalBadge.textContent = `Adesão: ${_gheAdesaoData.classificadas}/${_gheAdesaoData.totalHeadcount} = ${pct}%`;
-      totalBadge.title = `${_gheAdesaoData.classificadas} respostas com setor/função no quadro ÷ ${_gheAdesaoData.totalHeadcount} funcionários cadastrados no GHE.\nTotal recebido: ${_gheAdesaoData.totalRespostas} resp. (${_gheAdesaoData.naoClassificadas} fora do quadro não entram no cálculo).`;
-      // Indicador de respostas fora do quadro
+      totalBadge.title = 'Respostas cujo setor e função constam no quadro de funcionários importado, divididas pelo total cadastrado no GHE. Respostas fora do quadro (ex.: "Outro") não entram aqui — veja Total geral.';
+      // "Total geral" — todas as respostas recebidas (inclusive fora do quadro) ÷ quadro
+      // cadastrado. Substitui a antiga tag "(+N fora do quadro)": mesma informação, mas
+      // como um % comparável lado a lado com "Adesão" em vez de um texto solto.
       totalBadge.parentElement.querySelector('#ghe-adesao-extra')?.remove();
       if (_gheAdesaoData.naoClassificadas > 0) {
-        const extra = document.createElement('span');
-        extra.id = 'ghe-adesao-extra';
-        extra.title = `${_gheAdesaoData.naoClassificadas} resposta(s) recebidas cujo setor/função não consta no quadro (ex.: "Outro" ou não cadastrado) — não são contadas na adesão.`;
-        extra.style.cssText = 'font-size:10px;color:var(--amber,#b45309);cursor:default;margin-left:4px';
-        extra.textContent = `(+${_gheAdesaoData.naoClassificadas} fora do quadro)`;
-        totalBadge.insertAdjacentElement('afterend', extra);
+        const pctGeral = Math.round(_gheAdesaoData.totalRespostas / _gheAdesaoData.totalHeadcount * 100);
+        const geral = document.createElement('span');
+        geral.id = 'ghe-adesao-extra';
+        geral.title = `Todas as respostas recebidas (inclusive as ${_gheAdesaoData.naoClassificadas} fora do quadro GHE), divididas pelo total cadastrado.`;
+        geral.style.cssText = 'font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--bg2,var(--bg));color:var(--tm);border:1px solid var(--border);cursor:default;margin-left:4px';
+        geral.textContent = `Total geral: ${_gheAdesaoData.totalRespostas}/${_gheAdesaoData.totalHeadcount} = ${pctGeral}%`;
+        totalBadge.insertAdjacentElement('afterend', geral);
       }
     } else {
       totalBadge.style.display = 'none';
