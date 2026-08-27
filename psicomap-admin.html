@@ -1259,6 +1259,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Setores &amp; Funções</span>
     </button>
 
+    <button class="nav-item" id="nb-agrupamentos" data-label="Agrupamentos GHE" onclick="goScreen('agrupamentos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><circle cx="16" cy="11" r="3"/><path d="M3 20v-2a6 6 0 0112 0v2"/><path d="M16 14a6 6 0 016 6v2"/></svg>
+      <span class="nav-label">Agrupamentos GHE</span>
+    </button>
+
     <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <span class="nav-label">Links de Coleta</span>
@@ -1828,10 +1833,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Filtro Setores — combo -->
       <div class="filter-card">
-        <div class="filter-hdr">
-          <div class="filter-label" style="margin-bottom:0">Setores</div>
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('setor')">+ Agrupar</button>
-        </div>
+        <div class="filter-label">Setores</div>
         <div class="combo" id="combo-setor">
           <div class="combo-trigger" onclick="toggleCombo('combo-setor')">
             <div class="combo-preview" id="combo-setor-preview"><span class="combo-placeholder">Todos os setores</span></div>
@@ -1853,16 +1855,36 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
-        <!-- Agrupamentos salvos -->
-        <div id="grupos-setor" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Filtro Agrupamento GHE — Resultados -->
+      <div class="filter-card" id="fc-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ghe')">
+            <div class="combo-preview" id="combo-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Filtro Funções — combo -->
       <div class="filter-card">
-        <div class="filter-hdr">
-          <div class="filter-label" style="margin-bottom:0">Funções</div>
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 9px" onclick="abrirNovoGrupo('funcao')">+ Agrupar</button>
-        </div>
+        <div class="filter-label">Funções</div>
         <div class="combo" id="combo-funcao">
           <div class="combo-trigger" onclick="toggleCombo('combo-funcao')">
             <div class="combo-preview" id="combo-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
@@ -1884,7 +1906,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
-        <div id="grupos-funcao" style="margin-top:10px"></div>
       </div>
 
       <!-- Filtro Nível de Risco — combo -->
@@ -2113,6 +2134,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Agrupamento GHE — Gráficos -->
+      <div class="filter-card" id="fc-gf-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-gf-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-gf-ghe')">
+            <div class="combo-preview" id="combo-gf-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-gf-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-gf-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-gf-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Funções</div>
         <div class="combo" id="combo-gf-funcao">
@@ -2224,6 +2270,40 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Filtro Agrupamento GHE — Laudo -->
+      <div class="filter-card" id="fc-ld-ghe" style="display:none">
+        <div class="filter-label">Agrupamento GHE</div>
+        <div class="combo" id="combo-ld-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-ghe')">
+            <div class="combo-preview" id="combo-ld-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-ld-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ld-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-ghe')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-card">
+        <div class="filter-label">Granularidade do relatório</div>
+        <select id="laudo-granularidade" class="filter-select" onchange="renderLaudo()">
+          <option value="agrupado">Por Agrupamento GHE</option>
+          <option value="segregado">Por Setor</option>
+          <option value="consolidado">Geral</option>
+        </select>
       </div>
 
       <div class="filter-card">
@@ -3281,6 +3361,61 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     TELA — AGRUPAMENTOS GHE
+══════════════════════════════════════ -->
+<div class="screen" id="sc-agrupamentos">
+  <div class="page-header">
+    <div class="page-hdr-left">
+      <div class="page-title">Agrupamentos GHE</div>
+      <div class="page-sub">Grupos Homogêneos de Exposição — consolidam setores ou funções para análise e relatórios</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+    <div class="filter-card" style="flex:1;min-width:220px;margin-bottom:0">
+      <div class="filter-label">Cliente</div>
+      <select id="agrup-empresa" class="filter-select" onchange="_onAgrupEmpresaChange()">
+        <option value="" disabled>— Selecione o cliente —</option>
+      </select>
+    </div>
+    <div id="agrup-kpis" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="agrup-paineis">
+    <!-- Grupos de Setores -->
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">Grupos de Setores</div>
+        <button class="btn btn-g" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGrupo('setor')">+ Novo grupo</button>
+      </div>
+      <div id="agrup-lista-setor">
+        <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>
+      </div>
+    </div>
+    <!-- Grupos de Funções -->
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">Grupos de Funções</div>
+        <button class="btn btn-g" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGrupo('funcao')">+ Novo grupo</button>
+      </div>
+      <div id="agrup-lista-funcao">
+        <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;padding:14px 18px;background:var(--bg);border:1px solid var(--border)">
+    <div style="font-size:11px;color:var(--tl);line-height:1.6">
+      <strong style="color:var(--tx)">Como funciona:</strong>
+      Crie grupos que consolidam múltiplos setores (ou funções) em uma única unidade de análise.
+      Na tela de <strong>Resultados</strong> use o toggle <em>Por Agrupamento</em> para ver os dados consolidados.
+      No <strong>Relatório</strong> escolha a granularidade desejada antes de exportar.
+      Os setores e funções cadastrados na empresa nunca são alterados.
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="sc-links" data-modulo="links">
   <div class="page-header"><div class="page-title">Clientes &amp; Coleta</div><div class="page-sub">Gerencie seus clientes e gere links de formulário por ciclo de avaliação</div></div>
 
@@ -3632,10 +3767,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <!-- Toolbar de ações (movida do header para caber no espaço disponível) -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="_gheSugerirGrupos()" title="Sugerir agrupamentos por similaridade de nome">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span class="ghe-btn-txt">Sugerir grupos</span>
-        </button>
         <input type="file" id="ghe-import-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGHEArquivo(this)">
         <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;display:flex;align-items:center;gap:5px" onclick="document.getElementById('ghe-import-input').click()" title="Importar CSV ou Excel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3744,7 +3875,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
           <table style="width:100%;border-collapse:collapse;font-size:12.5px">
             <thead>
               <tr style="background:var(--bg)">
-                <th data-k="grupo" onclick="_gheSortTabela('grupo')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Grupo <span class="ghe-sort-ind" data-k="grupo"></span></th>
                 <th data-k="setor" onclick="_gheSortTabela('setor')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Setor <span class="ghe-sort-ind" data-k="setor"></span></th>
                 <th data-k="funcao" onclick="_gheSortTabela('funcao')" style="position:sticky;top:0;background:var(--bg);text-align:left;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Função <span class="ghe-sort-ind" data-k="funcao"></span></th>
                 <th data-k="qtd" onclick="_gheSortTabela('qtd')" style="position:sticky;top:0;background:var(--bg);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap">Qtd. no quadro <span class="ghe-sort-ind" data-k="qtd"></span></th>
@@ -4175,9 +4305,82 @@ async function carregarMapaQuestoesAdmin() {
 }
 let extIdx    = 0;
 let grupoTipo = 'setor';
-let gruposSetor  = JSON.parse(localStorage.getItem('pseg_grupos_setor') ||'[]');
-let gruposFuncao = JSON.parse(localStorage.getItem('pseg_grupos_funcao')||'[]');
+let gruposSetor  = [];
+let gruposFuncao = [];
 let grupoSelecionados = new Set();
+let grupoEditandoId = null;
+
+// ── Helpers de filtro por Agrupamento GHE ───────────────────────────────────
+
+function _populateGheCombo(comboId, fcId) {
+  const nomes = gruposSetor.map(g => g.nome);
+  const fc = document.getElementById(fcId);
+  if (fc) fc.style.display = nomes.length ? '' : 'none';
+  comboItems[comboId] = () => nomes;
+  comboState[comboId] = new Set(nomes); // todos selecionados = sem filtro ativo
+  buildCombo(comboId);
+}
+
+// Expande grupos selecionados para o conjunto de setores que eles contêm.
+// Retorna null quando nenhum filtro está ativo (todos ou nenhum selecionado).
+function _gheSetoresFiltro(comboId) {
+  const sel = [...comboState[comboId]];
+  if (!sel.length) return null; // vazio = sem filtro (padrão defensivo)
+  const todos = gruposSetor.map(g => g.nome);
+  if (sel.length === todos.length) return null; // todos = sem filtro
+  return new Set(
+    gruposSetor.filter(g => sel.includes(g.nome)).flatMap(g => g.itens)
+  );
+}
+
+// ── Agrupamentos de setores/funções — persistência no banco ────────────────
+async function carregarGruposSetor(empresaId) {
+  if (!empresaId || isDemoMode) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('grupos_setor')
+      .select('id, tipo, nome, itens, ordem')
+      .eq('empresa_id', empresaId)
+      .order('ordem');
+    if (error) throw error;
+    gruposSetor  = (data || []).filter(g => g.tipo === 'setor');
+    gruposFuncao = (data || []).filter(g => g.tipo === 'funcao');
+  } catch(e) {
+    console.warn('[grupos_setor] erro ao carregar, continuando sem agrupamento:', e.message);
+    gruposSetor  = [];
+    gruposFuncao = [];
+  }
+}
+
+async function _salvarGrupoNoBanco(tipo, nome, itens) {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId || !currentTenantId) {
+    toast('Selecione uma empresa antes de criar agrupamentos.', 'w');
+    return false;
+  }
+  const { error } = await sbAdmin.from('grupos_setor').insert({
+    empresa_id: empresaId,
+    tenant_id:  currentTenantId,
+    tipo,
+    nome,
+    itens,
+    ordem: (tipo === 'setor' ? gruposSetor : gruposFuncao).length,
+  });
+  if (error) { toast('Erro ao salvar agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
+
+async function _excluirGrupoNoBanco(id) {
+  const { error } = await sbAdmin.from('grupos_setor').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
+
+async function _editarGrupoNoBanco(id, nome, itens) {
+  const { error } = await sbAdmin.from('grupos_setor').update({ nome, itens, atualizado_em: new Date().toISOString() }).eq('id', id);
+  if (error) { toast('Erro ao atualizar agrupamento: ' + error.message, 'e'); return false; }
+  return true;
+}
 
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
@@ -5203,11 +5406,14 @@ const comboState = {
   'combo-setor':       new Set(SETORES_DEMO),
   'combo-funcao':      new Set(FUNCOES_DEMO),
   'combo-nivel':       new Set(NIVEIS_ORDEM),
+  'combo-ghe':         new Set(),
   // Tela Distribuição (graficos)
   'combo-gf-setor':    new Set(SETORES_DEMO),
   'combo-gf-funcao':   new Set(FUNCOES_DEMO),
+  'combo-gf-ghe':      new Set(),
   // Tela Laudo
   'combo-ld-setor':    new Set(SETORES_DEMO),
+  'combo-ld-ghe':      new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
 };
@@ -5215,9 +5421,12 @@ const comboItems = {
   'combo-setor':       () => SETORES_DEMO,
   'combo-funcao':      () => FUNCOES_DEMO,
   'combo-nivel':       () => NIVEIS_ORDEM,
+  'combo-ghe':         () => [],
   'combo-gf-setor':    () => SETORES_DEMO,
   'combo-gf-funcao':   () => FUNCOES_DEMO,
+  'combo-gf-ghe':      () => [],
   'combo-ld-setor':    () => SETORES_DEMO,
+  'combo-ld-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
 };
 
@@ -5383,6 +5592,8 @@ async function onEmpresaChange() {
     comboState['combo-setor']  = new Set(setores);
     comboState['combo-funcao'] = new Set(funcoes);
   } catch(e) { console.warn('onEmpresaChange:', e); }
+  await carregarGruposSetor(emp);
+  _populateGheCombo('combo-ghe', 'fc-ghe');
   buildCombo('combo-setor');
   buildCombo('combo-funcao');
 }
@@ -5404,13 +5615,15 @@ async function rodarAnalise() {
   const setores  = [...comboState['combo-setor']];
   const funcoes  = [...comboState['combo-funcao']];
   const niveis   = [...comboState['combo-nivel']];
+  const gheSetores = _gheSetoresFiltro('combo-ghe');
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // Aplicar filtro de ciclo se selecionado
   const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
   // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
   const filtrado = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
-    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
   );
 
   if (!filtrado.length) {
@@ -5443,34 +5656,38 @@ async function rodarAnalise() {
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <!-- Toggle Por setor / Geral -->
+        <!-- Toggle Por setor / Por Agrupamento / Geral -->
         <div class="seg-toggle-group">
           <button id="sgbtn-seg"  onclick="_setSegMode('segregado')"
-            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por setor</button>
+            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por Setor</button>
+          <button id="sgbtn-grup" onclick="_setSegMode('agrupado')"
+            class="${_sg==='agrupado'    ? 'stg-active' : ''}"
+            ${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'disabled title="Configure agrupamentos GHE primeiro"' : ''}
+            style="${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'opacity:.4;cursor:not-allowed' : ''}">Por Agrupamento</button>
           <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
             class="${_sg==='consolidado' ? 'stg-active' : ''}">Geral</button>
         </div>
-        <!-- Toggle Gráfica / Tabela -->
+        <!-- Toggle Por Risco / Por Questão — PRIMÁRIO, sempre visível -->
         <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-          <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
-            style="${_dm==='grafica' ? _TA : _TH}">📊 Gráfica</button>
-          <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
-            style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
-        </div>
-        <!-- Toggle Por risco / Por questão — visível apenas na visão Tabela -->
-        <div id="toggle-view" style="display:${_dm==='tabela'?'flex':'none'};border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <button id="vbtn-risco"   onclick="_setViewMode('risco')"
             style="${_vm==='risco'   ? _TA : _TH}">Por risco</button>
           <button id="vbtn-questao" onclick="_setViewMode('questao')"
             style="${_vm==='questao' ? _TA : _TH}">Por questão</button>
         </div>
-        <!-- Toggle Detalhes — visível apenas na visão Gráfica -->
+        <!-- Toggle Gráfico / Tabela — visível apenas quando Por Risco -->
+        <div id="toggle-format" style="display:${_vm==='risco'?'flex':'none'};border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <button id="dbtn-grafica" onclick="_setDisplayMode('grafica')"
+            style="${_dm==='grafica' ? _TA : _TH}">📊 Gráfico</button>
+          <button id="dbtn-tabela"  onclick="_setDisplayMode('tabela')"
+            style="${_dm==='tabela'  ? _TA : _TH}">📋 Tabela</button>
+        </div>
+        <!-- Detalhes — visível apenas quando Por Risco + Gráfico -->
         <button id="btn-detalhes" onclick="_toggleDetalhes()"
-          style="display:${_dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
-            padding:5px 11px;border:1.5px solid var(--border);border-radius:6px;
+          style="display:${_vm==='risco' && _dm==='grafica'?'flex':'none'};align-items:center;gap:5px;
+            padding:4px 10px;border:1.5px solid var(--border);border-radius:6px;
             cursor:pointer;font-family:Inter,sans-serif;font-size:11px;
             background:${_dv?'var(--tx)':'white'};color:${_dv?'white':'var(--tm)'};
-            white-space:nowrap">
+            white-space:nowrap;flex-shrink:0">
           ${_dv ? '▲ Ocultar detalhes' : '▼ Mostrar detalhes'}
         </button>
       </div>
@@ -5853,46 +6070,46 @@ function _setDisplayMode(mode) {
   window._displayMode = mode;
   const dg = document.getElementById('dbtn-grafica');
   const dt = document.getElementById('dbtn-tabela');
-  const tv = document.getElementById('toggle-view');
   const bd = document.getElementById('btn-detalhes');
   if (dg) dg.style.cssText = mode === 'grafica' ? _TABA : _TABH;
   if (dt) dt.style.cssText = mode === 'tabela'  ? _TABA : _TABH;
-  if (tv) tv.style.display = mode === 'tabela'  ? 'flex' : 'none';
-  if (bd) bd.style.display = mode === 'grafica' ? 'flex' : 'none';
+  if (bd) bd.style.display = (mode === 'grafica' && window._viewMode === 'risco') ? 'flex' : 'none';
   if (!window._analiseData) return;
-  if (mode === 'tabela') {
-    if (window._viewMode === 'questao') renderViewQuestao(window._analiseData);
-    else                                renderViewRisco(window._analiseData);
-  } else {
-    renderViewGrafica(window._analiseData);
-  }
+  if (mode === 'tabela') renderViewRisco(window._analiseData);
+  else                   renderViewGrafica(window._analiseData);
 }
 
 function _setViewMode(mode) {
   window._viewMode = mode;
   const vr = document.getElementById('vbtn-risco');
   const vq = document.getElementById('vbtn-questao');
+  const tf = document.getElementById('toggle-format');
+  const bd = document.getElementById('btn-detalhes');
   if (vr) vr.style.cssText = mode === 'risco'   ? _TABA : _TABH;
   if (vq) vq.style.cssText = mode === 'questao' ? _TABA : _TABH;
+  if (tf) tf.style.display = mode === 'risco'   ? 'flex' : 'none';
+  if (bd) bd.style.display = (mode === 'risco' && window._displayMode === 'grafica') ? 'flex' : 'none';
   if (!window._analiseData) return;
   if (mode === 'questao') renderViewQuestao(window._analiseData);
-  else                    renderViewRisco(window._analiseData);
+  else {
+    if (window._displayMode === 'tabela') renderViewRisco(window._analiseData);
+    else                                  renderViewGrafica(window._analiseData);
+  }
 }
 
 function _setSegMode(mode) {
   window._segMode = mode;
   const bs = document.getElementById('sgbtn-seg');
+  const bg = document.getElementById('sgbtn-grup');
   const bc = document.getElementById('sgbtn-cons');
   if (bs) bs.classList.toggle('stg-active', mode === 'segregado');
+  if (bg) bg.classList.toggle('stg-active', mode === 'agrupado');
   if (bc) bc.classList.toggle('stg-active', mode === 'consolidado');
   if (!window._analiseData) return;
-  const dm = window._displayMode, vm = window._viewMode;
-  if (dm === 'tabela') {
-    if (vm === 'questao') renderViewQuestao(window._analiseData);
-    else                  renderViewRisco(window._analiseData);
-  } else {
-    renderViewGrafica(window._analiseData);
-  }
+  const vm = window._viewMode;
+  if (vm === 'questao') renderViewQuestao(window._analiseData);
+  else if (window._displayMode === 'tabela') renderViewRisco(window._analiseData);
+  else renderViewGrafica(window._analiseData);
 }
 
 // ─── VIEW GRÁFICA ─────────────────────────────────────────────────
@@ -5909,18 +6126,21 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
-  const segmentos = window._segMode === 'consolidado'
+  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
+  const _sgMode = window._segMode;
+  const segmentos = _sgMode === 'consolidado'
     ? [{label: null, linhas: filtrado}]
-    : (() => {
-        const map = new Map();
-        filtrado.forEach(r => {
-          const arr = map.get(r.setor);
-          if (arr) arr.push(r); else map.set(r.setor, [r]);
-        });
-        return [...new Set(filtrado.map(r => r.setor))].sort()
-          .map(s => ({label: s, linhas: map.get(s) || []}));
-      })();
+    : _sgMode === 'agrupado'
+      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
+      : (() => {
+          const map = new Map();
+          filtrado.forEach(r => {
+            const arr = map.get(r.setor);
+            if (arr) arr.push(r); else map.set(r.setor, [r]);
+          });
+          return [...new Set(filtrado.map(r => r.setor))].sort()
+            .map(s => ({label: s, linhas: map.get(s) || []}));
+        })();
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -5933,7 +6153,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
     if (!resultado.length) return;
 
     const setor = label;
-    const setorLabel = window._segMode === 'consolidado'
+    const setorLabel = _sgMode === 'consolidado'
       ? `<span style="color:var(--tl);font-weight:500">Todos os setores filtrados</span> <span style="font-size:11px;color:var(--tl);font-weight:400">(${linhasSetor.length} respondentes)</span>`
       : (setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -6025,14 +6245,17 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco com todos; segregado = 1 bloco por setor
-  const segmentos = window._segMode === 'consolidado'
+  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
+  const _sgModeR = window._segMode;
+  const segmentos = _sgModeR === 'consolidado'
     ? [{label: null, linhas: filtrado}]
-    : (() => {
-        const map = new Map();
-        filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
-        return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
-      })();
+    : _sgModeR === 'agrupado'
+      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
+      : (() => {
+          const map = new Map();
+          filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
+          return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
+        })();
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -6045,7 +6268,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
     if (!resultado.length) return;
 
-    const blocoLabel = window._segMode === 'consolidado'
+    const blocoLabel = _sgModeR === 'consolidado'
       ? `Todos os setores filtrados <span style="font-size:11px;font-weight:400;color:var(--tl)">(${linhasSetor.length} respondentes)</span>`
       : (label || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -6088,9 +6311,14 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
 function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
   // Consolidado: substituir grupos por um único bloco com todos os setores filtrados
+  // Segregado: grupos = cada setor como próprio grupo (já calculado por agruparPorGrupos com gruposSetor=[])
+  // Agrupado: grupos GHE — passados diretamente
   if (window._segMode === 'consolidado') {
     const todosSetores = setoresAtivos || [...new Set(filtrado.map(r => r.setor))];
     grupos = [{nome: `Todos os setores filtrados (${filtrado.length} respondentes)`, setores: todosSetores}];
+  } else if (window._segMode === 'segregado') {
+    const setores = [...new Set(filtrado.map(r => r.setor))].sort();
+    grupos = setores.map(s => ({nome: s || 'Setor não informado', setores: [s]}));
   }
   const catCores = {
     'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
@@ -6539,7 +6767,7 @@ function renderGruposLista(tipo, grupos, el) {
         <div class="group-items">${g.itens.map(it=>`<span class="group-tag">${it}</span>`).join('')}</div>
       </div>
       <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="aplicarGrupo('${tipo}',${i})">Aplicar</button>
-      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}',${i})">✕</button>
+      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
     </div>`).join('');
 }
 
@@ -6552,25 +6780,57 @@ function aplicarGrupo(tipo, idx) {
   toast(`Agrupamento "${g.nome}" aplicado.`, 'g');
 }
 
-function removerGrupo(tipo, idx) {
-  if (tipo==='setor') { gruposSetor.splice(idx,1); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.splice(idx,1); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
-  renderGruposSalvos();
+async function removerGrupo(tipo, id) {
+  const ok = await _excluirGrupoNoBanco(id);
+  if (!ok) return;
+  await carregarGruposSetor(_empresaAtiva?.id);
+  renderTabelaAgrupamentos();
+}
+
+function _abrirModalGrupo(tipo, nomeInicial, itensSelecionados) {
+  grupoTipo = tipo;
+  grupoSelecionados = new Set(itensSelecionados);
+  document.getElementById('grupo-nome').value = nomeInicial;
+  // Usar catálogo da empresa (empresa_setores / empresa_funcoes) — fonte autoritativa
+  const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
+  const hierarquia = emp?.hierarquia || [];
+  let items;
+  if (tipo === 'setor') {
+    items = hierarquia.map(h => h.nome).filter(n => n).sort((a,b) => a.localeCompare(b,'pt-BR'));
+  } else {
+    const todas = [...new Set(hierarquia.flatMap(h => h.funcoes || []))];
+    items = todas.filter(f => f).sort((a,b) => a.localeCompare(b,'pt-BR'));
+  }
+  document.getElementById('grupo-ms-list').innerHTML = !items.length
+    ? `<div style="padding:16px;text-align:center;color:var(--tl);font-size:12px">Carregue uma empresa com respostas para criar agrupamentos.</div>`
+    : items.map(it => {
+        const sel = grupoSelecionados.has(it);
+        return `
+    <div class="ms-item${sel?' sel':''}" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
+      <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+      ${it}
+    </div>`;
+      }).join('');
+  const n = grupoSelecionados.size;
+  document.getElementById('grupo-selecionados').textContent = n > 0
+    ? `Selecionados: ${[...grupoSelecionados].join(', ')}`
+    : 'Nenhum item selecionado';
+  document.getElementById('modal-grupo').classList.add('open');
 }
 
 function abrirNovoGrupo(tipo) {
-  grupoTipo = tipo;
-  grupoSelecionados = new Set();
+  grupoEditandoId = null;
   document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Novo agrupamento de setores' : 'Novo agrupamento de funções';
-  document.getElementById('grupo-nome').value = '';
-  const items = tipo==='setor' ? SETORES_DEMO : FUNCOES_DEMO;
-  document.getElementById('grupo-ms-list').innerHTML = items.map(it=>`
-    <div class="ms-item" id="gmsi-${it.replace(/\s/g,'_')}" onclick="toggleGrupoItem('${it}')">
-      <div class="ms-chk"><svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-      ${it}
-    </div>`).join('');
-  document.getElementById('grupo-selecionados').textContent = 'Nenhum item selecionado';
-  document.getElementById('modal-grupo').classList.add('open');
+  _abrirModalGrupo(tipo, '', []);
+}
+
+function editarGrupo(tipo, id) {
+  const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
+  const g = grupos.find(x => x.id === id);
+  if (!g) return;
+  grupoEditandoId = id;
+  document.getElementById('grupo-modal-title').textContent = tipo==='setor' ? 'Editar agrupamento de setores' : 'Editar agrupamento de funções';
+  _abrirModalGrupo(tipo, g.nome, g.itens || []);
 }
 
 function toggleGrupoItem(it) {
@@ -6584,18 +6844,96 @@ function toggleGrupoItem(it) {
     : 'Nenhum item selecionado';
 }
 
-function fecharGrupo() { document.getElementById('modal-grupo').classList.remove('open'); }
+function fecharGrupo() {
+  grupoEditandoId = null;
+  document.getElementById('modal-grupo').classList.remove('open');
+}
 
-function salvarGrupo() {
+async function salvarGrupo() {
   const nome = document.getElementById('grupo-nome').value.trim();
   if (!nome) { toast('Dê um nome ao agrupamento.','w'); return; }
   if (!grupoSelecionados.size) { toast('Selecione pelo menos 1 item.','w'); return; }
-  const g = { nome, itens:[...grupoSelecionados] };
-  if (grupoTipo==='setor') { gruposSetor.push(g); localStorage.setItem('pseg_grupos_setor',JSON.stringify(gruposSetor)); }
-  else { gruposFuncao.push(g); localStorage.setItem('pseg_grupos_funcao',JSON.stringify(gruposFuncao)); }
+  let ok;
+  if (grupoEditandoId) {
+    ok = await _editarGrupoNoBanco(grupoEditandoId, nome, [...grupoSelecionados]);
+  } else {
+    ok = await _salvarGrupoNoBanco(grupoTipo, nome, [...grupoSelecionados]);
+  }
+  if (!ok) return;
+  grupoEditandoId = null;
   fecharGrupo();
-  renderGruposSalvos();
+  await carregarGruposSetor(_empresaAtiva?.id);
+  renderTabelaAgrupamentos();
   toast(`Agrupamento "${nome}" salvo!`,'g');
+}
+
+// ── Tela Agrupamentos GHE ─────────────────────────────────────────────────────
+
+async function _setupTelaAgrupamentos() {
+  const sel = document.getElementById('agrup-empresa');
+  if (!sel) return;
+  // Popular select de empresas
+  const opts = _empresas.map(e => `<option value="${e.id}"${e.id===_empresaAtiva?.id?' selected':''}>${e.nome_fantasia||e.nome||e.id}</option>`).join('');
+  sel.innerHTML = '<option value="" disabled>— Selecione o cliente —</option>' + opts;
+  if (_empresaAtiva?.id) {
+    sel.value = _empresaAtiva.id;
+    await carregarGruposSetor(_empresaAtiva.id);
+    renderTabelaAgrupamentos();
+  }
+}
+
+async function _onAgrupEmpresaChange() {
+  const id = document.getElementById('agrup-empresa')?.value;
+  if (!id) return;
+  // Sincronizar empresa ativa
+  const emp = _empresas.find(e => e.id === id);
+  if (emp) _empresaAtiva = emp;
+  await carregarGruposSetor(id);
+  renderTabelaAgrupamentos();
+}
+
+function renderTabelaAgrupamentos() {
+  const lS = document.getElementById('agrup-lista-setor');
+  const lF = document.getElementById('agrup-lista-funcao');
+  const kpi = document.getElementById('agrup-kpis');
+  if (!lS || !lF) return;
+
+  const nS = gruposSetor.length;
+  const nF = gruposFuncao.length;
+
+  if (kpi) kpi.innerHTML = [
+    `<span style="font-size:12px;color:var(--tl)"><strong style="color:var(--tx)">${nS}</strong> grupo${nS!==1?'s':''} de setores</span>`,
+    `<span style="font-size:12px;color:var(--tl)"><strong style="color:var(--tx)">${nF}</strong> grupo${nF!==1?'s':''} de funções</span>`,
+  ].join('<span style="color:var(--border)">·</span>');
+
+  const renderLista = (grupos, tipo, el) => {
+    if (!_empresaAtiva?.id) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os grupos.</p>';
+      return;
+    }
+    if (!grupos.length) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Nenhum grupo criado ainda.</p>';
+      return;
+    }
+    el.innerHTML = grupos.map(g => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px">${g.nome}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${(g.itens||[]).map(it=>`<span class="group-tag">${it}</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px"
+            onclick="editarGrupo('${tipo}','${g.id}')">✎ Editar</button>
+          <button class="btn btn-red" style="font-size:10px;padding:3px 8px"
+            onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+        </div>
+      </div>`).join('');
+  };
+
+  renderLista(gruposSetor, 'setor', lS);
+  renderLista(gruposFuncao, 'funcao', lF);
 }
 
 // ══════════════════════════════════════════
@@ -7812,6 +8150,8 @@ async function onGrafFiltroChange() {
       comboState['combo-gf-setor']  = new Set(setores);
       comboState['combo-gf-funcao'] = new Set(funcoes);
     } catch(e) { console.warn('onGrafFiltroChange:', e); }
+    await carregarGruposSetor(empId);
+    _populateGheCombo('combo-gf-ghe', 'fc-gf-ghe');
   }
   buildCombo('combo-gf-setor');
   buildCombo('combo-gf-funcao');
@@ -7856,12 +8196,14 @@ async function renderGraficos() {
   const cicloId  = document.getElementById('gf-ciclo')?.value || '';
   const setores  = [...comboState['combo-gf-setor']];
   const funcoes  = [...comboState['combo-gf-funcao']];
+  const gheSetores = _gheSetoresFiltro('combo-gf-ghe');
   const todosDados = await getLinhasParaAnalise(emp);
   const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
   // Filtro defensivo: set vazio = todos incluídos
   const linhas   = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
-    (funcoes.length  === 0 || funcoes.includes(r.funcao))
+    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
   );
 
   const panel = document.getElementById('graficos-panel');
@@ -8834,6 +9176,13 @@ async function onLaudoFiltro() {
   comboItems['combo-ld-setor'] = () => allSetores;
   comboState['combo-ld-setor'] = new Set(allSetores);
   buildCombo('combo-ld-setor');
+  await carregarGruposSetor(emp);
+  _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
+  // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
+  const granEl = document.getElementById('laudo-granularidade');
+  if (granEl && (granEl.value === 'agrupado' || granEl.value === 'segregado')) {
+    granEl.value = gruposSetor.length ? 'agrupado' : 'segregado';
+  }
   renderLaudo();
 }
 
@@ -8843,10 +9192,14 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const setores = [...comboState['combo-ld-setor']];
+  const gheSetores = _gheSetoresFiltro('combo-ld-ghe');
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
-  const linhas  = dados.filter(r => setores.length === 0 || setores.includes(r.setor));
+  const linhas  = dados.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (gheSetores === null  || gheSetores.has(r.setor))
+  );
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
   const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
@@ -8944,19 +9297,32 @@ async function renderLaudo() {
     </div>`;
   }
 
-  // ── RESULTADOS (5 colunas por setor — conforme documento de referência) ──
+  // ── RESULTADOS (5 colunas — granularidade respeitada) ──
   if (laudoSecoesAtivas.has('resultados')) {
-    const todosSetoresLaudo = [...new Set(linhas.map(r => r.setor))].sort();
-    todosSetoresLaudo.forEach(setor => {
-      const lSetor  = linhas.filter(r => r.setor === setor);
+    const _setoresDisp = [...new Set(linhas.map(r => r.setor))];
+    const _granPreview = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
+    const _gruposPreview = _granPreview === 'consolidado'
+      ? [{nome: 'Todos os setores', setores: _setoresDisp}]
+      : _granPreview === 'segregado'
+        ? _setoresDisp.sort().map(s => ({nome: s, setores: [s]}))
+        : agruparPorGrupos(_setoresDisp, gruposSetor);
+
+    _gruposPreview.forEach(grupo => {
+      const lSetor  = linhas.filter(r => grupo.setores.includes(r.setor));
       if (!lSetor.length) return;
       const fSetor  = calcFatores(lSetor)
         .filter(f => f.nivel !== 'IRRELEVANTE')
         .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
       if (!fSetor.length) return;
 
+      const _tituloGrupo = grupo.nome || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>';
+      const _subtituloGrupo = grupo.setores.length > 1
+        ? `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">Setores incluídos: ${grupo.setores.join(', ')}</div>`
+        : '';
+
       html += `<div class="laudo-section">
-        <div class="laudo-sec-title">Resultados — ${setor || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>'}</div>
+        <div class="laudo-sec-title">Resultados — ${_tituloGrupo}</div>
+        ${_subtituloGrupo}
         <div style="font-size:11px;color:var(--tl);margin-bottom:12px">Respondentes: <strong style="color:var(--tx)">${lSetor.length}</strong></div>
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -9219,7 +9585,13 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
-  const setoresList = [...new Set(linhas.map(r=>r.setor))].sort();
+  const setoresAtivos = [...new Set(linhas.map(r=>r.setor))];
+  const _laudoGran = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
+  const gruposLaudo = _laudoGran === 'consolidado'
+    ? [{nome: 'Todos os setores', setores: setoresAtivos}]
+    : _laudoGran === 'segregado'
+      ? setoresAtivos.map(s => ({nome: s, setores: [s]}))
+      : agruparPorGrupos(setoresAtivos, gruposSetor);
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -9327,12 +9699,17 @@ tr:last-child td{border-bottom:none}
 
   // ── PÁGINA 4: Resultados por setor ───────────────────────────
   let resultadosHTML = '';
-  setoresList.forEach(setor => {
-    const lS = linhas.filter(r=>r.setor===setor);
+  gruposLaudo.forEach(grupo => {
+    const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE')
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
-    resultadosHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>
+    const tituloSetor = grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>';
+    const subtituloGrupo = grupo.setores.length > 1
+      ? `<div style="font-size:10px;color:#9ca3af;padding:4px 12px 8px;border:1px solid #e5e7eb;border-top:none;background:#f9fafb;border-radius:0 0 4px 4px;margin-bottom:8px">Setores incluídos: ${grupo.setores.map(e).join(', ')}</div>`
+      : '';
+    resultadosHTML += `<div class="sec-title setor">${tituloSetor}</div>
+    ${subtituloGrupo}
     <div class="tbl-wrap"><table class="tbl-resultados"><thead><tr>
       <th>Risco</th><th>Fator Ergonômico observado</th><th>Consequência</th>
       <th>Classificação Ergonômica da ocorrência de danos</th><th>Nível de Risco</th>
@@ -9350,7 +9727,6 @@ tr:last-child td{border-bottom:none}
   // ── PÁGINA 5: Distribuição de respostas (gráficos inline) ────
   let graficosHTML = '';
   if (laudoSecoesAtivas.has('graficos')) {
-    const distAll = calcDistribuicaoQuestoes(linhas.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))})));
     const CATS = [
       {cat:'DEMANDAS DE TRABALHO',   bloco:'A',cor:'#4b5ea8',bg:'#f0f2fb'},
       {cat:'RELAÇÕES INTERPESSOAIS', bloco:'B',cor:'#2d6e9e',bg:'#f0f6fb'},
@@ -9360,24 +9736,38 @@ tr:last-child td{border-bottom:none}
       <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${{1:'#22c55e',2:'#86efac',3:'#f59e0b',4:'#ef4444'}[n]}"></span>
       ${{1:'Nunca ← meta',2:'Às vezes',3:'Frequente',4:'Sempre'}[n]}</span>`).join('');
     graficosHTML = `<div style="display:flex;flex-wrap:wrap;margin-bottom:12px">${legenda}</div>`;
-    CATS.forEach(({cat,bloco,cor,bg})=>{
-      const qs=distAll.filter(d=>d.q.b===bloco);
-      if (!qs.length) return;
-      graficosHTML += `<div style="margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};padding:5px 10px;background:${bg};border-radius:4px;margin-bottom:8px">${cat}</div>
-        ${qs.map(d=>{
-          const rd=d.q.cd?RISCOS_DETALHES[d.q.cd]:null;
-          return `<div style="margin-bottom:10px">
-            <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
-              <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
-              ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
-              ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
-              <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
-            </div>
-            ${_barPrint(d.pcts, d.moda)}
-          </div>`;
-        }).join('')}
-      </div>`;
+    const _normalizeLinhasGraficos = lns => lns.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))}));
+    const _renderDistGrupo = dist => {
+      let html = '';
+      CATS.forEach(({cat,bloco,cor,bg})=>{
+        const qs=dist.filter(d=>d.q.b===bloco);
+        if (!qs.length) return;
+        html += `<div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};padding:5px 10px;background:${bg};border-radius:4px;margin-bottom:8px">${cat}</div>
+          ${qs.map(d=>{
+            const rd=d.q.cd?RISCOS_DETALHES[d.q.cd]:null;
+            return `<div style="margin-bottom:10px">
+              <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
+                <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
+                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
+                ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
+                <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
+              </div>
+              ${_barPrint(d.pcts, d.moda)}
+            </div>`;
+          }).join('')}
+        </div>`;
+      });
+      return html;
+    };
+    gruposLaudo.forEach(grupo => {
+      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      if (!linhasGrupo.length) return;
+      const dist = calcDistribuicaoQuestoes(_normalizeLinhasGraficos(linhasGrupo));
+      if (gruposLaudo.length > 1) {
+        graficosHTML += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
+      }
+      graficosHTML += _renderDistGrupo(dist);
     });
   }
 
@@ -9428,40 +9818,55 @@ tr:last-child td{border-bottom:none}
   if (_hasAR) {
     const NCP = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
     const NTP = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
-    const fatoresAR = calcFatores(linhas).filter(f=>f.nivel!=='IRRELEVANTE')
-      .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
-    if (fatoresAR.length) {
-      const legAR =
-        '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
-        '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>'+
-        '<div><div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
-        ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
-        '</div><div style="display:flex;margin-top:2px">'+
-        ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
-        '</div></div>'+
-        '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span></div>';
-      const corposAR = fatoresAR.map(f => {
-        const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
-        const detalhe = (f.distQuestoes||[]).length
-          ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
-            (f.distQuestoes||[]).map(q=>
-              '<div style="margin-bottom:8px">'+
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-              '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
-              (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
-              '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
-              '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
-            ).join('')+'</div>'
-          : '';
-        return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
-            <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
-          </div>
-          ${_barPrint(f.avgDist,f.p)}${detalhe}
-        </div>`;
-      }).join('');
+    const legAR =
+      '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
+      '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>'+
+      '<div><div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(0,0,0,.08)">'+
+      ['#22c55e','#86efac','#f59e0b','#ef4444'].map(c=>'<div style="width:36px;height:10px;background:'+c+'"></div>').join('')+
+      '</div><div style="display:flex;margin-top:2px">'+
+      ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
+      '</div></div>'+
+      '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span></div>';
+    const _renderCardsRisco = fatores => fatores.map(f => {
+      const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
+      const detalhe = (f.distQuestoes||[]).length
+        ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
+          (f.distQuestoes||[]).map(q=>
+            '<div style="margin-bottom:8px">'+
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+            '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
+            (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
+            '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
+            '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
+          ).join('')+'</div>'
+        : '';
+      return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
+          <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
+        </div>
+        ${_barPrint(f.avgDist,f.p)}${detalhe}
+      </div>`;
+    }).join('');
+
+    let corposAR = '';
+    gruposLaudo.forEach(grupo => {
+      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      if (!linhasGrupo.length) return;
+      const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE')
+        .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
+      if (gruposLaudo.length > 1) {
+        corposAR += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
+        if (!fatoresGrupo.length) {
+          corposAR += `<p style="color:#6b7280;font-size:11px;margin-bottom:14px">Nenhum fator com nível acima de Irrelevante neste agrupamento.</p>`;
+          return;
+        }
+      }
+      corposAR += _renderCardsRisco(fatoresGrupo);
+    });
+
+    if (corposAR) {
       analiseRiscoHTML = `
 <!-- ── ANÁLISE GRÁFICA POR RISCO ─────────────────────────── -->
 <div class="page">
@@ -12201,9 +12606,7 @@ function exportarAuditoriaCSV() {
 // ══════════════════════════════════════════
 let _gheEmpresaId      = null;
 let _gheTempHierarquia = []; // [{nome, funcoes:[], grupo:''}]
-let _gheGruposAbertos  = new Set(); // nomes de grupos colapsáveis abertos
 let _gheSetoresAbertos = new Set(); // índices dos setores expandidos na árvore
-let _gheEditandoGrupoSi = null;     // índice do setor com edição de grupo inline ativa
 let _gheTempUniversais = []; // cargos sem setor definido
 
 // compat aliases usados no salvar + sugestões
@@ -12262,9 +12665,7 @@ function _gheResetFiltros() {
   // Descarta qualquer import ainda não salvo — evita que o quadro de
   // funcionários previsualizado para uma empresa seja gravado em outra
   // se o cliente for trocado no dropdown antes de clicar em Salvar.
-  _gheGruposAbertos  = new Set();
   _gheSetoresAbertos = new Set();
-  _gheEditandoGrupoSi = null;
   _gheImportSetores = []; _gheImportFuncoes = []; _gheImportCargoSetor = {};
   _gheImportHeadcount = [];
   const preview = document.getElementById('ghe-import-preview');
@@ -12544,21 +12945,20 @@ function _gheLinhasTabela() {
   const linhas = [];
   _gheTempHierarquia.forEach(g => {
     const setorKey = _gheNorm(g.nome);
-    const grupo = g.grupo || '';
     if (!g.funcoes.length) {
       const k = `${setorKey}|||`;
-      linhas.push({ grupo, setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+      linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
       consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
         const k = `${setorKey}|||${_gheNorm(f)}`;
-        linhas.push({ grupo, setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
+        linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
         consumidas.add(k);
       });
     }
   });
   _gheTempUniversais.forEach(f => {
-    linhas.push({ grupo: '', setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
+    linhas.push({ setor: '(universal)', funcao: f, qtd: undefined, adesao: undefined });
   });
 
   // Linhas do quadro sem cargo correspondente no catálogo — ex.: headcount
@@ -12567,7 +12967,7 @@ function _gheLinhasTabela() {
   _gheHcCache.forEach(r => {
     const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
     if (consumidas.has(k)) return;
-    linhas.push({ grupo: '', setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
+    linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
     consumidas.add(k);
   });
 
@@ -12587,7 +12987,7 @@ function _renderGHETabela() {
 
   const filtro = _gheNorm(_gheFiltroTabela);
   let linhas = _gheLinhasTabela().filter(l =>
-    !filtro || _gheNorm(l.grupo).includes(filtro) || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
+    !filtro || _gheNorm(l.setor).includes(filtro) || _gheNorm(l.funcao).includes(filtro)
   );
 
   const key = _gheSortTabelaKey, dir = _gheSortTabelaDir;
@@ -12612,7 +13012,7 @@ function _renderGHETabela() {
   });
 
   if (!linhas.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--tl);padding:30px;font-size:12px">Nenhum resultado.</td></tr>`;
     return;
   }
 
@@ -12621,7 +13021,6 @@ function _renderGHETabela() {
     const { cor: corAd } = ad ? _gheCorAdesao(ad.pct) : { cor: 'var(--tl)' };
     return `
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 14px;color:${l.grupo?'var(--tx)':'var(--tl)'};font-size:11px">${l.grupo ? esc(l.grupo) : '—'}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.setor)}</td>
       <td style="padding:8px 14px;color:var(--tx)">${esc(l.funcao)}</td>
       <td style="padding:8px 14px;text-align:right;color:${l.qtd!==undefined?'var(--tx)':'var(--tl)'};font-weight:${l.qtd!==undefined?'600':'400'}">${l.qtd !== undefined ? l.qtd : '—'}</td>
@@ -12674,75 +13073,6 @@ function moverGHEUniversal(i) {
 
 const renderGHELists = renderGHEModal; // alias (compat)
 
-function _gheToggleGrupo(nome) {
-  if (_gheGruposAbertos.has(nome)) _gheGruposAbertos.delete(nome);
-  else _gheGruposAbertos.add(nome);
-  _renderGHESetoresPanel();
-}
-
-function _gheEditarGrupoInline(si) {
-  _gheEditandoGrupoSi = si;
-  _renderGHESetoresPanel();
-  const inp = document.getElementById(`ghe-grupo-inp-${si}`);
-  if (inp) { inp.focus(); inp.select(); }
-}
-
-function _gheConfirmarGrupoInline(si, val) {
-  if (_gheEditandoGrupoSi === null) return; // guard double-fire (blur + Enter)
-  _gheEditandoGrupoSi = null;
-  const h = _gheTempHierarquia[si]; if (!h) return;
-  h.grupo = val.trim();
-  if (h.grupo) _gheGruposAbertos.add(h.grupo);
-  _renderGHESetoresPanel();
-}
-
-function _gheEditarGrupoSetor(si) { _gheEditarGrupoInline(si); } // compat
-
-function _gheSugerirGrupos() {
-  // Tokeniza nomes de setor e encontra tokens comuns (≥4 chars) entre pares
-  const norm = s => s.toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .replace(/[^a-z0-9 ]/g,' ').trim();
-  const tokenize = s => norm(s).split(/\s+/).filter(t => t.length >= 4);
-
-  const nomes = _gheTempHierarquia.map(h => h.nome);
-  const tokens = nomes.map(tokenize);
-
-  // Contar frequência de cada token
-  const freq = new Map();
-  tokens.forEach(ts => {
-    const uniq = new Set(ts);
-    uniq.forEach(t => freq.set(t, (freq.get(t) || 0) + 1));
-  });
-
-  // Tokens que aparecem em ≥2 setores são candidatos a grupo
-  const candidatos = [...freq.entries()]
-    .filter(([, c]) => c >= 2)
-    .sort((a, b) => b[1] - a[1]);
-
-  if (!candidatos.length) { toast('Nenhum padrão encontrado para sugerir grupos.', 'w'); return; }
-
-  let preenchidos = 0;
-  _gheTempHierarquia.forEach((h, i) => {
-    if (h.grupo) return; // não sobrescreve edições manuais
-    // Pega o token candidato de maior frequência que aparece neste setor
-    const ts = new Set(tokens[i]);
-    for (const [tok] of candidatos) {
-      if (ts.has(tok)) {
-        // Capitalizar primeira letra
-        h.grupo = tok.charAt(0).toUpperCase() + tok.slice(1);
-        preenchidos++;
-        break;
-      }
-    }
-  });
-
-  _renderGHESetoresPanel();
-  _renderGHEDetailPane();
-  if (preenchidos) toast(`${preenchidos} setor(es) agrupados — revise e ajuste antes de salvar.`, 'g');
-  else toast('Todos os setores já possuem grupo ou nenhum padrão foi encontrado.', 'w');
-}
-
 function _renderGHESetoresPanel() {
   const panel = document.getElementById('ghe-setores-panel');
   if (!panel) return;
@@ -12794,22 +13124,6 @@ function _renderGHESetoresPanel() {
     ).join('')}</span><span style="font-size:10px;font-weight:700;color:${cor}">${pct}%</span>`;
   };
 
-  // Badge de grupo inline (ou input quando em edição)
-  const grupoBadge = si => {
-    const g = _gheTempHierarquia[si];
-    if (_gheEditandoGrupoSi === si) {
-      return `<input id="ghe-grupo-inp-${si}" type="text" value="${esc(g.grupo||'')}"
-        style="width:80px;border:1.5px solid var(--g);border-radius:var(--r);padding:1px 5px;font-size:10px;font-family:inherit;outline:none;background:white"
-        onblur="_gheConfirmarGrupoInline(${si},this.value)"
-        onkeydown="if(event.key==='Enter'){_gheConfirmarGrupoInline(${si},this.value)}else if(event.key==='Escape'){_gheEditandoGrupoSi=null;_renderGHESetoresPanel()}"
-        onclick="event.stopPropagation()">`;
-    }
-    return g.grupo
-      ? `<span onclick="event.stopPropagation();_gheEditarGrupoInline(${si})"
-           style="font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 7px;color:var(--tm);cursor:pointer;white-space:nowrap;flex-shrink:0" title="Editar grupo">⊞ ${esc(g.grupo)}</span>`
-      : `<span onclick="event.stopPropagation();_gheEditarGrupoInline(${si})"
-           style="font-size:10px;color:var(--tl);cursor:pointer;white-space:nowrap;flex-shrink:0;opacity:.6" title="Adicionar grupo">+ grupo</span>`;
-  };
 
   // Flyout de cargos (Nível 2) — reaproveita IDs fixos que _renderGHECargosPanel() popula
   const flyoutCargos = si => `
@@ -12863,7 +13177,6 @@ function _renderGHESetoresPanel() {
           <div id="ghe-setor-hdr-${si}" style="font-size:11px;font-weight:600;color:${aberto?'var(--g)':'var(--tx)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.nome)}</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:2px;flex-wrap:wrap">${hcBadge}${adBadge}</div>
         </div>
-        ${grupoBadge(si)}
         <button onclick="event.stopPropagation();editarGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--tl);padding:2px;border-radius:3px;opacity:.5;flex-shrink:0" title="Renomear">${iconEdit}</button>
         <button onclick="event.stopPropagation();removerGHESetor(${si})" style="background:none;border:none;cursor:pointer;color:var(--red,#dc2626);font-size:14px;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1" title="Remover">&times;</button>
       </div>
@@ -12871,71 +13184,8 @@ function _renderGHESetoresPanel() {
     </div>`;
   };
 
-  // Calcula totais agregados de um conjunto de itens para o header de grupo
-  const grupoStats = items => {
-    let hcTotal = 0, resp = 0, tot = 0;
-    items.forEach(({g}) => {
-      const sn = _gheNorm(g.nome);
-      _gheHcCache.filter(r=>_gheNorm(r.setor||'')===sn).forEach(r=>{ hcTotal += r.quantidade||0; });
-      (_gheAdesaoData?.linhas||[]).filter(l=>_gheNorm(l.setor||'')===sn).forEach(l=>{ resp+=l.respostas; tot+=l.total; });
-    });
-    const pct = tot > 0 ? Math.round(resp/tot*100) : null;
-    return { hcTotal, pct };
-  };
-
-  const temGrupos = itens.some(({ g }) => g.grupo);
-
-  if (temGrupos && !_gheFiltroSetor) {
-    // Modo agrupado (Nível 0 → Nível 1 → Nível 2)
-    const buckets = new Map();
-    const semGrupo = [];
-    itens.forEach(item => {
-      const grp = item.g.grupo || '';
-      if (!grp) { semGrupo.push(item); return; }
-      if (!buckets.has(grp)) buckets.set(grp, []);
-      buckets.get(grp).push(item);
-    });
-
-    let html = '';
-    buckets.forEach((items, grp) => {
-      const aberto = _gheGruposAbertos.has(grp);
-      const { hcTotal, pct } = grupoStats(items);
-      const hcStr = hcTotal ? ` · ${hcTotal} func.` : '';
-      const adStr = pct !== null ? ` · ${pct}%` : '';
-      html += `<div style="border-bottom:1px solid var(--border)">
-        <div onclick="_gheToggleGrupo('${esc(grp)}')"
-            style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"
-              style="flex-shrink:0;transition:transform .2s;transform:${aberto?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx);flex:1">${esc(grp)}</span>
-          <span style="font-size:10px;color:var(--tl)">${items.length} setor(es)${hcStr}${adStr}</span>
-        </div>
-        ${aberto ? `<div>${items.map(i=>renderSetor(i,10)).join('')}</div>` : ''}
-      </div>`;
-    });
-
-    if (semGrupo.length) {
-      const abert = _gheGruposAbertos.has('__sem_grupo__');
-      const { hcTotal, pct } = grupoStats(semGrupo);
-      const hcStr = hcTotal ? ` · ${hcTotal} func.` : '';
-      const adStr = pct !== null ? ` · ${pct}%` : '';
-      html += `<div style="border-bottom:1px solid var(--border)">
-        <div onclick="_gheToggleGrupo('__sem_grupo__')"
-            style="display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;background:var(--bg);user-select:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"
-              style="flex-shrink:0;transition:transform .2s;transform:${abert?'rotate(90deg)':'none'};opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);flex:1">Sem grupo</span>
-          <span style="font-size:10px;color:var(--tl)">${semGrupo.length} setor(es)${hcStr}${adStr}</span>
-        </div>
-        ${abert ? `<div>${semGrupo.map(i=>renderSetor(i,10)).join('')}</div>` : ''}
-      </div>`;
-    }
-
-    panel.innerHTML = html;
-  } else {
-    // Modo flat (sem grupos ou filtro ativo)
-    panel.innerHTML = itens.map(item => renderSetor(item, 0)).join('');
-  }
+  // Lista flat de setores
+  panel.innerHTML = itens.map(item => renderSetor(item, 0)).join('');
 
   // Se o setor ativo foi removido, corrige o índice
   if (_gheSetorAtivo !== null && _gheSetorAtivo >= _gheTempHierarquia.length) {
@@ -14406,7 +14656,7 @@ function goScreen(id, btn) {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
     // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','comparativo','auditoria']),
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','agrupamentos','comparativo','auditoria']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -14431,7 +14681,8 @@ function goScreen(id, btn) {
   // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
   const map = {
-    dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', links:'nb-links', q:'nb-q',
+    dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', agrupamentos:'nb-agrupamentos',
+    links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
@@ -14443,7 +14694,7 @@ function goScreen(id, btn) {
   // 4. Propagar empresa ativa para todos os selects da tela
   const temEmpresa = !!_empresaAtiva?.id;
   if (temEmpresa) {
-    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa'].forEach(sid => {
+    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa','agrup-empresa'].forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
@@ -14465,6 +14716,9 @@ function goScreen(id, btn) {
           break;
         case 'ghe':
           _setupTelaGHE(_empresaAtiva?.id || null);
+          break;
+        case 'agrupamentos':
+          _setupTelaAgrupamentos();
           break;
         case 'links':
           renderLinks();
@@ -14570,7 +14824,7 @@ try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoCheck
 try { buildCombo('combo-ld-setor'); }     catch(e) { console.warn('combo-ld-setor:', e); }
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
-try { renderGruposSalvos(); }           catch(e) { console.warn('renderGruposSalvos:', e); }
+try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
 // ── INIT — inicializa app com login real via Supabase ──────────────────
 // Questões sempre inicializadas (necessário para Distribuição e Laudo)
 try {
