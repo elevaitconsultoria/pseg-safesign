@@ -335,6 +335,28 @@ configurável; catálogo de questões ganha uma coluna `direcao` (alto=bom / alt
 não por metodologia inteira, porque a pesquisa de um terceiro instrumento (COPSOQ) revelou que a
 direção da escala é uma propriedade por dimensão, não por instrumento.
 
+## Catálogo de Ações Recomendadas (2026-08-24)
+
+`CATALOGO_ACOES` (`psicomap-admin.html`, ~linha 8421) é a fonte única de textos de ação por
+`cd_risco`, usada tanto no laudo (`porNivel`: MÉDIO/ALTO/CRÍTICO) quanto na tela Plano de Ação
+(`w5h2`: O quê/Por quê/Onde/Quem/Quando/Como/Quanto). Fonte oficial: planilha "Riscos
+Psicossociais e Fontes Geradoras" enviada pelo cliente no início do programa — tabela completa
+extraída e mapeamento `cd_risco ↔ linha da planilha` em
+`.claude/notes/2026-08-24-planilha-riscos-fontes-geradoras.md`.
+
+Antes de 2026-08-24 existiam **dois catálogos separados** (`ACOES_SUGERIDAS` no laudo,
+`ACOES_5W2H` no Plano de Ação) que já haviam divergido: `ACOES_5W2H` tinha 3 entradas
+(`cd_risco` 6, 7, 9) com texto de outra taxonomia (termos do HSE Management Standards Indicator
+Tool — ver "Segunda metodologia" acima — que não correspondem aos fatores reais desses códigos
+nesta planilha), 1 entrada órfã (`cd_risco` 2, que não existe em nenhuma questão do
+questionário) e nenhuma entrada para `cd_risco` 12. Unificado num catálogo só — **ao editar
+texto de ação, editar `CATALOGO_ACOES`, nunca recriar um catálogo paralelo**.
+
+A seção "Ações Recomendadas" do PDF final (`_buildLaudoHTML`) passou a segmentar por setor
+(reaproveitando `setoresList`, já usado por "Resultados por setor" no mesmo documento) — antes
+só o preview interativo (`renderLaudo`) segmentava; o PDF exportado gerava um bloco único
+consolidado apesar do checkbox de seção se chamar "Ações por setor".
+
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
 O super_admin opera normalmente na tela Gestão de ESTs. Para inspecionar/operar no contexto de
