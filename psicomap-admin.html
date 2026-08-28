@@ -5595,10 +5595,29 @@ function buildCombo(id, query='') {
   updateComboPreview(id);
 }
 
+// Combos de "Agrupamento GHE"/"Agrupamento de Função" nunca tiveram botão "Aplicar" (só
+// "Todos"/"Limpar") — a intenção sempre foi aplicar na hora, mas faltava disparar o
+// re-render. Sem isso, a seleção só refletia na tela quando outro combo com "Aplicar" (ex:
+// combo-setor) era aplicado depois, dando a impressão de "delay" nos filtros.
+const COMBOS_AUTO_APPLY = new Set([
+  'combo-ghe',    'combo-fun-ghe',
+  'combo-gf-ghe', 'combo-gf-fun-ghe',
+  'combo-ld-ghe', 'combo-ld-fun-ghe',
+]);
+
+function _renderParaCombo(id) {
+  if      (id.startsWith('combo-audit-'))                                              renderTelaAuditoria();
+  else if (id.startsWith('combo-ld-'))                                                 renderLaudo();
+  else if (id === 'combo-setor' || id === 'combo-funcao' || id === 'combo-nivel'
+        || id === 'combo-ghe'   || id === 'combo-fun-ghe')                             rodarAnalise();
+  else if (id.startsWith('combo-gf-'))                                                 renderGraficos();
+}
+
 function toggleComboItem(id, item) {
   if (comboState[id].has(item)) comboState[id].delete(item);
   else comboState[id].add(item);
   buildCombo(id);
+  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
 }
 
 function filterCombo(id, q) { buildCombo(id, q); }
@@ -5606,19 +5625,18 @@ function filterCombo(id, q) { buildCombo(id, q); }
 function selectAllCombo(id) {
   comboItems[id]().forEach(i => comboState[id].add(i));
   buildCombo(id);
+  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
 }
 
 function clearCombo(id) {
   comboState[id].clear();
   buildCombo(id);
+  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
 }
 
 function applyCombo(id) {
   document.getElementById(id)?.classList.remove('open');
-  if      (id.startsWith('combo-audit-'))                                              renderTelaAuditoria();
-  else if (id.startsWith('combo-ld-'))                                                 renderLaudo();
-  else if (id === 'combo-setor' || id === 'combo-funcao' || id === 'combo-nivel')      rodarAnalise();
-  else if (id.startsWith('combo-gf-'))                                                 renderGraficos();
+  _renderParaCombo(id);
 }
 
 function setComboNivel(id, arr) {
@@ -10287,39 +10305,50 @@ function abrirLaudoJanela() {
 async function gerarLaudoPDF() {
   _registrarLaudo();
 
-  const empId     = document.getElementById('ld-empresa')?.value || '';
-  const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
-  const setores   = [...(comboState['combo-ld-setor'] || new Set())];
-  const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
-  const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
-  const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
-  const todos     = await getLinhasParaAnalise(empId);
-  // Mesmos filtros de renderLaudo() (preview) — sem isso o PDF exportado ignorava a
-  // seleção de Agrupamento GHE feita na tela, mostrando sempre todos os setores/funções.
-  const linhas    = todos.filter(r =>
-    (setores.length === 0 || setores.includes(r.setor)) &&
-    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
-  );
-
-  if (!linhas.length) { toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
-
-  const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-  const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
-  const responsavel = responsavelField
-    || _estPerfil?.responsavel_padrao
-    || 'Responsável Técnico';
-  const cicloId     = document.getElementById('ld-ciclo')?.value || '';
-  const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
-
-  const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil, niveisLd });
-
+  // Abrir a janela ANTES de qualquer await — depois de um await o navegador não reconhece
+  // mais a chamada como resposta direta ao clique do usuário e bloqueia o pop-up em
+  // silêncio (era a causa real do botão "parecer" não fazer nada mesmo clicando várias vezes).
   const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  toast('Laudo aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+  win.document.write('<!doctype html><title>Gerando laudo…</title><body style="font-family:sans-serif;padding:60px;color:#888;text-align:center">Gerando laudo…</body>');
+
+  try {
+    const empId     = document.getElementById('ld-empresa')?.value || '';
+    const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
+    const setores   = [...(comboState['combo-ld-setor'] || new Set())];
+    const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
+    const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
+    const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
+    const todos     = await getLinhasParaAnalise(empId);
+    // Mesmos filtros de renderLaudo() (preview) — sem isso o PDF exportado ignorava a
+    // seleção de Agrupamento GHE feita na tela, mostrando sempre todos os setores/funções.
+    const linhas    = todos.filter(r =>
+      (setores.length === 0 || setores.includes(r.setor)) &&
+      (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+      (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+    );
+
+    if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+
+    const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+    const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
+    const responsavel = responsavelField
+      || _estPerfil?.responsavel_padrao
+      || 'Responsável Técnico';
+    const cicloId     = document.getElementById('ld-ciclo')?.value || '';
+    const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
+
+    const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil, niveisLd });
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    toast('Laudo aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+  } catch(e) {
+    win.close();
+    console.error('[PsicoMap] gerarLaudoPDF:', e);
+    toast('Erro ao gerar laudo: ' + e.message, 'w');
+  }
 }
 
 // ── jsPDF legado removido: usar gerarLaudoPDF() → _buildLaudoHTML() → _barPrint() ──
