@@ -391,9 +391,13 @@ questionário) e nenhuma entrada para `cd_risco` 12. Unificado num catálogo só
 texto de ação, editar `CATALOGO_ACOES`, nunca recriar um catálogo paralelo**.
 
 A seção "Ações Recomendadas" do PDF final (`_buildLaudoHTML`) passou a segmentar por setor
-(reaproveitando `setoresList`, já usado por "Resultados por setor" no mesmo documento) — antes
+(reaproveitando `gruposLaudo`, já usado por "Resultados por setor" no mesmo documento) — antes
 só o preview interativo (`renderLaudo`) segmentava; o PDF exportado gerava um bloco único
-consolidado apesar do checkbox de seção se chamar "Ações por setor".
+consolidado apesar do checkbox de seção se chamar "Ações por setor". **Correção 2026-08-28**:
+essa mudança original referenciava uma variável `setoresList` que nunca chegou a ser declarada
+em `_buildLaudoHTML` — bug real em produção (`"Erro ao gerar laudo: setoresList is not
+defined"`), corrigido usando `gruposLaudo` de fato. Ver nota
+`.claude/notes/2026-08-28-agrupamentos-outro-normalizado-e-bugs-laudo.md`.
 
 ## Modo Suporte (super_admin — `entrarComoEST`)
 
@@ -457,11 +461,17 @@ visitada continuariam valendo fora do modo suporte.
   some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
   `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.
 
-## Agrupamentos GHE (2026-08-17 → 2026-08-18)
+## Agrupamentos GHE (2026-08-17 → 2026-08-28)
 
 Feature de agrupamentos para análise e laudo, sem alterar a hierarquia de cargos da empresa.
-Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` e
-`.claude/notes/2026-08-18-agrupamentos-ghe-v2.md` para detalhamento completo.
+Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md`,
+`.claude/notes/2026-08-18-agrupamentos-ghe-v2.md` e
+`.claude/notes/2026-08-28-agrupamentos-outro-normalizado-e-bugs-laudo.md` para detalhamento
+completo. A nota de 2026-08-28 documenta 3 PRs: normalização de matching (respostas "Outro"
+com variação de caixa/acento/espaço passam a cair no mesmo grupo), conexão de Grupos de Função
+a filtros reais (antes existiam só como cadastro, sem efeito em nenhuma tela), e dois bugs
+reais encontrados em produção logo depois (filtros sem auto-apply, `setoresList` nunca
+declarada em `_buildLaudoHTML`).
 
 **Tabela `grupos_setor`** (`migration_grupos_setor.sql` — DEV e PROD):
 - `tipo TEXT CHECK (tipo IN ('setor','funcao'))`, `nome TEXT`, `itens TEXT[]`, `empresa_id`, `tenant_id`
@@ -485,14 +495,27 @@ Ver `.claude/notes/2026-08-17-agrupamentos-ghe.md` e
 - Default `'agrupado'` quando há grupos; `'segregado'` quando não há.
 - `_buildLaudoHTML()` **e** `renderLaudo()` respeitam a granularidade — gráficos e análise por risco iteram sobre `gruposLaudo`.
 
-**Filtros de Agrupamento GHE** (Resultados / Gráficos / Relatório):
-- `_populateGheCombo(comboId, fcId)` — popula combo; oculta filter-card quando não há grupos.
-- `_gheSetoresFiltro(comboId)` — expande grupos selecionados para set de setores brutos; retorna `null` quando todos/nenhum selecionado (= sem filtro ativo).
-- Combos: `combo-ghe` (Resultados), `combo-gf-ghe` (Gráficos), `combo-ld-ghe` (Relatório).
-- Filtro usa apenas grupos de tipo `'setor'` — grupos de funções não aparecem (filtro é sobre `r.setor`).
+**Filtros de Agrupamento GHE e de Função** (Resultados / Gráficos / Relatório, desde 2026-08-28):
+- `_populateGheCombo(comboId, fcId, tipo='setor')` — popula combo (`gruposSetor` ou `gruposFuncao`); oculta filter-card quando não há grupos daquele tipo.
+- `_grupoValoresFiltro(comboId, tipo='setor')` (renomeado de `_gheSetoresFiltro`) — expande grupos selecionados para Set de chaves **normalizadas** (`_gheNormStrong`, não string exata); retorna `null` quando todos/nenhum selecionado (= sem filtro ativo). Comparar sempre com `.has(_gheNormStrong(r.setor))` / `.has(_gheNormStrong(r.funcao))`, nunca com o valor bruto.
+- Combos de setor: `combo-ghe` (Resultados), `combo-gf-ghe` (Gráficos), `combo-ld-ghe` (Relatório).
+- Combos de função (novos): `combo-fun-ghe`, `combo-gf-fun-ghe`, `combo-ld-fun-ghe` — mesmas 3 telas.
+- **Nenhum desses 6 combos tem botão "Aplicar"** (só "Todos"/"Limpar") — são auto-apply via `COMBOS_AUTO_APPLY` (Set de ids) + `_renderParaCombo(id)`, chamado direto por `toggleComboItem`/`selectAllCombo`/`clearCombo` quando o id está no Set. Ao adicionar um combo novo desse tipo (sem "Aplicar"), lembrar de incluí-lo em `COMBOS_AUTO_APPLY` — esquecer isso foi exatamente o bug real encontrado em 2026-08-28 (seleção não refletia na tela até outro filtro com "Aplicar" ser clicado).
+- `gerarLaudoPDF()` (exportação real do PDF) e `renderLaudo()` (preview) devem ler os mesmos filtros — já existiu um gap onde só o preview aplicava o filtro de Agrupamento GHE, corrigido em 2026-08-28.
+
+**`agruparPorGrupos(setores, grupos)`**: matching via `_gheNormStrong` desde 2026-08-28 (antes
+era string exata) — variantes "Outro: X" que só diferem em caixa/acento/espaço caem no mesmo
+grupo automaticamente, sem precisar que o admin selecione cada variante.
 
 **Backward compatibility**: `agruparPorGrupos(setores, [])` retorna cada setor como seu próprio
 grupo — empresa sem grupos cadastrados = comportamento idêntico ao anterior em todas as telas.
+
+**Limitação conhecida e intencional**: reescrever `respostas.setor`/`funcao` (`UPDATE`) para
+reclassificar respostas "Outro" já enviadas está **fora de escopo por decisão do usuário** —
+a mitigação é sempre cosmética via `grupos_setor`, nunca sobre o dado bruto. Consequência: o
+contador "não classificadas" da tela Adesão GHE (compara contra `empresa_headcount`, não contra
+`grupos_setor`) continua contando resposta "Outro" como não classificada mesmo depois de
+agrupada.
 
 **Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
 selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
