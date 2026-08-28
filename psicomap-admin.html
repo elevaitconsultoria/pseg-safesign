@@ -2346,6 +2346,28 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         </div>
       </div>
 
+      <!-- Filtro Escolaridade — Laudo -->
+      <div class="filter-card">
+        <div class="filter-label">Escolaridade</div>
+        <div class="combo" id="combo-ld-escolaridade">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-escolaridade')">
+            <div class="combo-preview" id="combo-ld-escolaridade-preview"><span class="combo-placeholder">Todas</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-list" id="combo-ld-escolaridade-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-escolaridade-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-escolaridade')">Todos</span>
+                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-escolaridade')">Limpar</span>
+                <button onclick="applyCombo('combo-ld-escolaridade')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filtro Agrupamento GHE — Laudo -->
       <div class="filter-card" id="fc-ld-ghe" style="display:none">
         <div class="filter-label">Agrupamento GHE</div>
@@ -2407,7 +2429,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
       <div class="filter-card">
         <div class="filter-label">Responsável técnico</div>
-        <input id="ld-responsavel" type="text" placeholder="Nome do ergonomista — CREA/CRF" class="filter-select" style="cursor:text"/>
+        <input id="ld-responsavel" type="text" placeholder="Nome do ergonomista" class="filter-select" style="cursor:text" oninput="_salvarResponsavelLaudo()"/>
+      </div>
+
+      <div class="filter-card">
+        <div class="filter-label">Registro profissional</div>
+        <input id="ld-registro" type="text" placeholder="CREA/CRF/CRP nº ..." class="filter-select" style="cursor:text" oninput="_salvarResponsavelLaudo()"/>
       </div>
 
       <div class="filter-card">
@@ -5500,6 +5527,9 @@ async function salvarNovaEmpresa() {
 }
 
 const NIVEIS_ORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
+// Mesmo catálogo do combo <select id="meta-escolaridade"> em psicomap-forms.html — campo
+// opcional no formulário; resposta em branco vira "Não informado" (ver loadRespostasParaEmpresa).
+const ESCOLARIDADE_ORDEM = ['Ensino Fundamental','Ensino Médio','Técnico','Superior','Pós-graduação','Não informado'];
 const NIVEIS_CORES = {
   IRRELEVANTE:{bg:'#f8fafc',cor:'#475569',badge:'rb-IRR'},
   BAIXO:      {bg:'#f0fdf4',cor:'#166534',badge:'rb-BAX'},
@@ -5524,10 +5554,11 @@ const comboState = {
   'combo-gf-ghe':      new Set(),
   'combo-gf-fun-ghe':  new Set(),
   // Tela Laudo
-  'combo-ld-setor':    new Set(SETORES_DEMO),
-  'combo-ld-nivel':    new Set(NIVEIS_ORDEM),
-  'combo-ld-ghe':      new Set(),
-  'combo-ld-fun-ghe':  new Set(),
+  'combo-ld-setor':        new Set(SETORES_DEMO),
+  'combo-ld-nivel':        new Set(NIVEIS_ORDEM),
+  'combo-ld-escolaridade': new Set(ESCOLARIDADE_ORDEM),
+  'combo-ld-ghe':          new Set(),
+  'combo-ld-fun-ghe':      new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
 };
@@ -5541,10 +5572,11 @@ const comboItems = {
   'combo-gf-funcao':   () => FUNCOES_DEMO,
   'combo-gf-ghe':      () => [],
   'combo-gf-fun-ghe':  () => [],
-  'combo-ld-setor':    () => SETORES_DEMO,
-  'combo-ld-nivel':    () => NIVEIS_ORDEM,
-  'combo-ld-ghe':      () => [],
-  'combo-ld-fun-ghe':  () => [],
+  'combo-ld-setor':        () => SETORES_DEMO,
+  'combo-ld-nivel':        () => NIVEIS_ORDEM,
+  'combo-ld-escolaridade': () => ESCOLARIDADE_ORDEM,
+  'combo-ld-ghe':          () => [],
+  'combo-ld-fun-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
 };
 
@@ -6762,6 +6794,21 @@ function agruparPorGrupos(setores, grupos) {
   }).filter(g=>g.setores.length>0);
   const sem = setores.filter(s=>!usados.has(s)).map(s=>({nome:s,setores:[s]}));
   return [...result,...sem];
+}
+
+// Setores exibidos na capa do laudo: só nomes do catálogo GHE (empresa_setores) ou nomes de
+// agrupamento — nunca respostas cruas "Outro: X" (essas continuam aparecendo normalmente no
+// corpo do relatório via gruposLaudo, só não na lista-resumo da capa).
+function _setoresCatalogados(setoresAtivos, gruposLaudo, granularidade, empId) {
+  const catalogNorm = new Set((_empresas.find(e=>e.id===empId)?.setores || []).map(_gheNormStrong));
+  const gruposNomes = new Set(gruposSetor.map(g=>g.nome));
+  if (granularidade === 'consolidado') return ['Todos os setores'];
+  if (granularidade === 'segregado') {
+    const filtrado = setoresAtivos.filter(s => catalogNorm.has(_gheNormStrong(s)));
+    return filtrado.length ? filtrado : setoresAtivos;
+  }
+  const filtrado = gruposLaudo.map(g => g.nome).filter(nome => gruposNomes.has(nome) || catalogNorm.has(_gheNormStrong(nome)));
+  return filtrado.length ? filtrado : gruposLaudo.map(g => g.nome);
 }
 
 const P_LABELS = {
@@ -8219,7 +8266,7 @@ async function loadRespostasParaEmpresa(empresaId) {
     const { data, error } = await _fetchAllSupabase(() => {
       let rq = sbAdmin
         .from('respostas')
-        .select(`id, setor, funcao, ciclo_id, link_token, respondido_em,
+        .select(`id, setor, funcao, escolaridade, ciclo_id, link_token, respondido_em,
           session_id, lgpd_aceito, lgpd_aceito_em, device_info,
           resposta_itens ( questao_id, valor )`)
         .eq('empresa_id', empresaId)
@@ -8234,6 +8281,7 @@ async function loadRespostasParaEmpresa(empresaId) {
     const linhas = (data || []).map(r => ({
       setor:          r.setor || 'Geral',
       funcao:         r.funcao || '—',
+      escolaridade:   r.escolaridade || 'Não informado',
       ciclo_id:       r.ciclo_id || null,
       link_token:     r.link_token || null,
       data_registro:  r.respondido_em || null,
@@ -9315,7 +9363,7 @@ comboState['combo-ld-setor'] = new Set(SETORES_DEMO);
 
 const LAUDO_SECOES = [
   {id:'capa',          label:'Capa & identificação',      on:true},
-  {id:'resumo',        label:'Sumário executivo',          on:true},
+  {id:'indice',        label:'Índice',                    on:true},
   {id:'metodologia',   label:'Metodologia',               on:true},
   {id:'resultados',    label:'Tabela de resultados',       on:true},
   {id:'conduta',       label:'Conduta Administrativa',     on:true},
@@ -9346,6 +9394,27 @@ function toggleLaudoSecao(id) {
   renderLaudo(); // atualizar preview inline
 }
 
+// Persiste "Responsável técnico" / registro profissional por empresa no laudo. Client-side
+// (localStorage, por navegador) porque não há coluna dedicada em `empresas` para isso — evita
+// redigitar a cada sessão e, mais importante, evita que o nome digitado para uma empresa
+// vaze para o laudo de outra ao trocar de cliente sem perceber (os campos não eram limpos
+// nem restaurados na troca de empresa antes desta correção).
+function _laudoRespKey(empId) { return `psicomap_laudo_resp_${empId}`; }
+function _lerResponsavelSalvo(empId) {
+  if (!empId) return {};
+  try {
+    const raw = localStorage.getItem(_laudoRespKey(empId));
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function _salvarResponsavelLaudo() {
+  const empId = document.getElementById('ld-empresa')?.value || '';
+  if (!empId) return;
+  const nome     = (document.getElementById('ld-responsavel')?.value || '').trim();
+  const registro = (document.getElementById('ld-registro')?.value || '').trim();
+  try { localStorage.setItem(_laudoRespKey(empId), JSON.stringify({ nome, registro })); } catch(e) {}
+}
+
 async function onLaudoFiltro() {
   const emp     = document.getElementById('ld-empresa')?.value || '';
   if (emp) {
@@ -9353,6 +9422,14 @@ async function onLaudoFiltro() {
     setEmpresaAtiva(emp, nome);
     limparCacheRespostas();
   }
+  // Restaurar responsável/registro salvos para esta empresa (ou limpar, se nunca foi
+  // preenchido para ela) — sem isso o texto digitado para a empresa anterior continuava
+  // no campo ao trocar de cliente.
+  const respSalvo = _lerResponsavelSalvo(emp);
+  const ldRespEl = document.getElementById('ld-responsavel');
+  if (ldRespEl) ldRespEl.value = respSalvo.nome || _estPerfil?.responsavel_padrao || '';
+  const ldRegEl = document.getElementById('ld-registro');
+  if (ldRegEl) ldRegEl.value = respSalvo.registro || '';
   // Popular ciclos da empresa selecionada
   const elCiclo = document.getElementById('ld-ciclo');
   if (elCiclo) {
@@ -9382,6 +9459,8 @@ async function onLaudoFiltro() {
   buildCombo('combo-ld-setor');
   comboState['combo-ld-nivel'] = new Set(NIVEIS_ORDEM);
   buildCombo('combo-ld-nivel');
+  comboState['combo-ld-escolaridade'] = new Set(ESCOLARIDADE_ORDEM);
+  buildCombo('combo-ld-escolaridade');
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   _populateGheCombo('combo-ld-fun-ghe', 'fc-ld-fun-ghe', 'funcao');
@@ -9398,17 +9477,21 @@ let _laudoRenderSeq = 0;
 async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
+  const cicloId = document.getElementById('ld-ciclo')?.value || '';
   const setores = [...comboState['combo-ld-setor']];
   const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
   const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
   const niveisLd = [...comboState['combo-ld-nivel']];
+  const escolaridadesLd = [...comboState['combo-ld-escolaridade']];
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Filtro defensivo: set vazio = todos incluídos
   const linhas  = dados.filter(r =>
+    (!cicloId || r.ciclo_id === cicloId) &&
     (setores.length === 0 || setores.includes(r.setor)) &&
     (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+    (escolaridadesLd.length === 0 || escolaridadesLd.includes(r.escolaridade || 'Não informado'))
   );
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
@@ -9424,26 +9507,52 @@ async function renderLaudo() {
 
   let html = `<div class="laudo-preview" id="laudo-doc">`;
 
-  // ── CAPA ──
+  // ── CAPA (mesma estrutura de dados da capa exportada em _buildLaudoHTML) ──
   if (laudoSecoesAtivas.has('capa')) {
+    const cicloNomeLd = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
+    const responsavelLd = (document.getElementById('ld-responsavel')?.value||'').trim()
+      || _estPerfil?.responsavel_padrao
+      || 'Responsável Técnico';
+    const estNomeLd = _estPerfil?.nome_empresa || 'PsicoMap';
+    const setoresAtivosLd = [...new Set(linhas.map(r=>r.setor))];
+    const laudoGranLd = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
+    const gruposLaudoLd = laudoGranLd === 'consolidado'
+      ? [{nome: 'Todos os setores', setores: setoresAtivosLd}]
+      : laudoGranLd === 'segregado'
+        ? setoresAtivosLd.map(s => ({nome: s, setores: [s]}))
+        : grupos;
+    const coverSetoresLd = _setoresCatalogados(setoresAtivosLd, gruposLaudoLd, laudoGranLd, emp);
+    const logoLd = _estPerfil?.logo_base64
+      ? `<img src="${_estPerfil.logo_base64}" style="width:100%;height:100%;object-fit:contain">`
+      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="#1a7a3c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>`;
     html += `<div class="laudo-section" style="background:var(--g);border-bottom:none">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-        <div style="width:42px;height:42px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#1a7a3c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <div style="width:42px;height:42px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px">
+          ${logoLd}
         </div>
         <div>
-          <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:white;letter-spacing:1px">PsicoMap</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Engenharia de Segurança do Trabalho</div>
+          <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:800;color:white;letter-spacing:.5px">${estNomeLd}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">${_estPerfil?.endereco || 'Saúde · Ergonomia · Segurança'}</div>
         </div>
       </div>
       <div style="color:white">
-        <div style="font-size:18px;font-weight:800;margin-bottom:4px">Laudo Técnico — Avaliação de Riscos Psicossociais</div>
-        <div style="font-size:13px;opacity:.85;margin-bottom:12px">Conforme NR-17 e NR-01 do MTE · Metodologia Mulhausen &amp; Damiano / BS 8800</div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;opacity:.9">
-          <span>🏢 <strong>${nomeEmp}</strong></span>
-          <span>👥 <strong>${linhas.length}</strong> respondentes</span>
-          <span>📅 <strong>${hoje}</strong></span>
-          <span>📂 Setores: <strong>${[...new Set(linhas.map(r=>r.setor))].join(', ')}</strong></span>
+        <div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px;margin-bottom:10px">Avaliação Ergonômica Preliminar — AEP</div>
+        <div style="font-size:19px;font-weight:800;margin-bottom:4px">Avaliação dos Fatores de Risco Psicossociais</div>
+        <div style="font-size:13px;opacity:.85;margin-bottom:14px">Relatório de Resultados — Módulo Psicossocial</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:12px;opacity:.95;margin-bottom:14px">
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Empresa avaliada</div><strong>${nomeEmp}</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Ciclo de avaliação</div><strong>${cicloNomeLd}</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Total de respondentes</div><strong>${linhas.length} colaboradores</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Data de emissão</div><strong>${hoje}</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Setores avaliados</div><strong>${coverSetoresLd.join(', ')}</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Responsável técnico</div><strong>${responsavelLd}</strong></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">NR-01 / 2024</span>
+          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">NR-17</span>
+          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">BS 8800</span>
+          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">Portaria MTE 1.419/2024</span>
+          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">ISO 45003</span>
         </div>
       </div>
     </div>`;
@@ -9791,7 +9900,7 @@ function _barPrint(pcts, moda) {
 }
 
 // ── Gerador do HTML completo do laudo ───────────────────────────
-function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil, niveisLd = [] }) {
+function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro = '', estPerfil, niveisLd = [], empId = '' }) {
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
@@ -9802,6 +9911,7 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPer
     : _laudoGran === 'segregado'
       ? setoresAtivos.map(s => ({nome: s, setores: [s]}))
       : agruparPorGrupos(setoresAtivos, gruposSetor);
+  const coverSetores = _setoresCatalogados(setoresAtivos, gruposLaudo, _laudoGran, empId);
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -9882,12 +9992,19 @@ tr:last-child td{border-bottom:none}
 .acoes-lista{list-style:none;padding:0;display:flex;flex-direction:column;gap:5px}
 .acoes-lista li{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#374151;line-height:1.6}
 .acoes-lista li::before{content:'';width:5px;height:5px;border-radius:50%;background:#1a5e2a;margin-top:7px;flex-shrink:0}
+.indice-lista{list-style:none;padding:0;display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.indice-lista li{font-size:13px;font-weight:600;color:#1a1a1a;padding:10px 4px;border-bottom:1px solid #e5e7eb}
 .page-footer{margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#9ca3af}
 .footer-left{display:flex;align-items:center;gap:6px}.footer-left svg{width:14px;height:14px;fill:#9ca3af}
 .ref-item{display:flex;gap:8px;font-size:11px;color:#6b7280;line-height:1.6;margin-bottom:6px;align-items:flex-start}
 .ref-tag{font-size:9px;font-weight:700;background:#1a5e2a;color:white;padding:1px 6px;border-radius:3px;white-space:nowrap;margin-top:2px;flex-shrink:0}
 .ref-item strong{color:#374151}
 .fonte-nota{font-size:10px;color:#9ca3af;text-align:right;margin-top:4px;font-style:italic}
+.assinatura-bloco{margin-top:36px;padding-top:4px;width:280px}
+.assinatura-linha{border-top:1px solid #1a1a1a;margin-bottom:6px}
+.assinatura-nome{font-size:12px;font-weight:700;color:#111}
+.assinatura-registro{font-size:11px;color:#4b5563;margin-top:1px}
+.assinatura-rodape{font-size:10px;color:#9ca3af;margin-top:3px}
 .mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}`;
 
   // ── Branding da EST (ou Padrão PsicoMap) ─────────────────────────
@@ -10026,6 +10143,24 @@ tr:last-child td{border-bottom:none}
   const _pnGF  = _hasGF ? ++_pn : null;
   const _pnAC  = _hasAC ? ++_pn : null;
 
+  // ── ÍNDICE (básico — sem número de página, só ordem e título) ──
+  let indiceHTML = '';
+  if (laudoSecoesAtivas.has('indice')) {
+    const itensIndice = [
+      '1. Metodologia de trabalho e normas aplicáveis',
+      '2. Fatores de Risco Psicossociais — Resultados por Setor',
+      _hasAR ? `${_snAR}. Análise Gráfica por Fator de Risco` : null,
+      _hasGF ? `${_snGF}. Distribuição de Respostas por Questão` : null,
+      _hasAC ? `${_snAC}. Ações Recomendadas por Fator de Risco` : null,
+      `${_snRef}. Referências`,
+    ].filter(Boolean);
+    indiceHTML = `<div class="page">
+      <div class="sec-title">Índice</div>
+      <ul class="indice-lista">${itensIndice.map(i=>`<li>${e(i)}</li>`).join('')}</ul>
+      ${footer('Índice')}
+    </div>`;
+  }
+
   // ── ANÁLISE GRÁFICA POR RISCO (nova página) ──────────────────
   let analiseRiscoHTML = '';
   if (_hasAR) {
@@ -10106,7 +10241,7 @@ tr:last-child td{border-bottom:none}
     <span>${estNome ? estNome + ' — ' : ''}Laudo Técnico</span>
   </div>
   <span style="font-size:11px;color:#9ca3af">${e(nomeEmp)} · ${hoje}</span>
-  <button class="btn-print" onclick="window.print()">
+  <button class="btn-print" onclick="if (window.opener && window.opener._registrarLaudo) window.opener._registrarLaudo(); window.print()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     Imprimir / PDF
   </button>
@@ -10131,7 +10266,7 @@ tr:last-child td{border-bottom:none}
       <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Total de respondentes</div><div class="cover-meta-value">${linhas.length} colaboradores</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Data de emissão</div><div class="cover-meta-value">${hoje}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(setoresAtivos.join(', '))}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(coverSetores.join(', '))}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Responsável técnico</div><div class="cover-meta-value">${e(responsavel)}</div></div>
     </div>
     <div class="cover-norm-pills" style="margin-top:18px">
@@ -10145,51 +10280,10 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- ── PÁGINA 2: SUMÁRIO EXECUTIVO ──────────────────────────── -->
-${(() => {
-  if (!laudoSecoesAtivas.has('resumo')) return '';
-  const NORDEM_R = ['CRÍTICO','ALTO','MÉDIO','BAIXO','IRRELEVANTE'];
-  const NB_R = {CRÍTICO:'nb-cri',ALTO:'nb-alt',MÉDIO:'nb-med',BAIXO:'nb-bax',IRRELEVANTE:'nb-irr'};
-  const NC_R = {CRÍTICO:'#ede9fe',ALTO:'#fee2e2',MÉDIO:'#fef9c3',BAIXO:'#dcfce7',IRRELEVANTE:'#f0fdf4'};
-  const NT_R = {CRÍTICO:'#5b21b6',ALTO:'#991b1b',MÉDIO:'#854d0e',BAIXO:'#166534',IRRELEVANTE:'#166534'};
-  const todosF = calcFatores(linhas);
-  const counts = {CRÍTICO:0,ALTO:0,MÉDIO:0,BAIXO:0,IRRELEVANTE:0};
-  todosF.forEach(f => { if (counts[f.nivel] !== undefined) counts[f.nivel]++; });
-  const nivelGeral = NORDEM_R.find(n => counts[n] > 0) || 'IRRELEVANTE';
-  const countItems = NORDEM_R.filter(n => counts[n] > 0).map(n =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:6px;background:${NC_R[n]};margin-bottom:6px">
-      <span style="font-size:12px;font-weight:600;color:${NT_R[n]}">${n}</span>
-      <span style="font-size:20px;font-weight:800;color:${NT_R[n]}">${counts[n]}</span>
-    </div>`
-  ).join('');
-  return `<div class="page">
-  <div class="sec-title">Sumário Executivo</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;text-align:center">
-      <div style="font-size:32px;font-weight:800;color:#111">${linhas.length}</div>
-      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Respondentes</div>
-    </div>
-    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;text-align:center">
-      <div style="font-size:32px;font-weight:800;color:#111">${setoresAtivos.length}</div>
-      <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Setores avaliados</div>
-    </div>
-  </div>
-  <div style="margin-bottom:20px">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:10px">Fatores identificados por nível de risco</div>
-    ${countItems}
-  </div>
-  <div style="padding:14px 16px;border-radius:8px;background:${NC_R[nivelGeral]};border:2px solid ${NT_R[nivelGeral]}20;display:flex;align-items:center;justify-content:space-between">
-    <div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${NT_R[nivelGeral]};opacity:.7">Nível geral da avaliação</div>
-      <div style="font-size:22px;font-weight:800;color:${NT_R[nivelGeral]};margin-top:2px">${nivelGeral}</div>
-    </div>
-    <span class="nivel-badge ${NB_R[nivelGeral]}" style="font-size:11px;padding:6px 14px">${nivelGeral}</span>
-  </div>
-  ${footer('Sumário Executivo')}
-</div>`;
-})()}
+<!-- ── ÍNDICE ─────────────────────────────────────────────────── -->
+${indiceHTML}
 
-<!-- ── PÁGINA 3: METODOLOGIA — P e S ─────────────────────────── -->
+<!-- ── METODOLOGIA — P e S ────────────────────────────────────── -->
 <div class="page">
   <div class="sec-title">1. Metodologia de trabalho e normas aplicáveis</div>
   <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
@@ -10294,6 +10388,12 @@ ${_hasAC && acoesHTML ? `
   <div class="ref-item"><span class="ref-tag">Diretriz</span><div>WHO; ILO. <strong>Mental health at work — Policy brief.</strong> 2022. 12 bilhões de dias de trabalho perdidos/ano por depressão e ansiedade globalmente.</div></div>
   <div class="ref-item"><span class="ref-tag">Norma</span><div>ISO 45003:2021. <strong>Occupational health and safety management — Psychological health and safety at work.</strong> ISO, 2021.</div></div>
   <div class="highlight-box mt20"><strong>Nota metodológica:</strong> O questionário aplicado é composto por <strong>27 questões</strong> em escala Likert de 4 pontos (Nunca · Às vezes · Frequentemente · Sempre), referentes à percepção dos trabalhadores nos últimos 6 meses. Os questionários são sigilosos e sem identificação nominal. Participação mínima recomendada: 30% por GHE/GES.</div>
+  <div class="assinatura-bloco">
+    <div class="assinatura-linha"></div>
+    <div class="assinatura-nome">${e(responsavel)}</div>
+    ${registro ? `<div class="assinatura-registro">${e(registro)}</div>` : ''}
+    <div class="assinatura-rodape">Responsável Técnico · ${hoje}</div>
+  </div>
   ${footer('Referências')}
 </div>
 
@@ -10306,7 +10406,11 @@ function abrirLaudoJanela() {
 }
 
 async function gerarLaudoPDF() {
-  _registrarLaudo();
+  // _registrarLaudo() NÃO é chamado aqui — "Pré-visualizar" e "Exportar/Imprimir" abrem a
+  // mesma janela de revisão, e registrar a cada abertura inflava a auditoria de "laudo
+  // gerado" com cliques de tentativa-e-erro. O registro real acontece só quando o usuário
+  // efetivamente clica em "Imprimir / PDF" dentro da janela aberta — ver botão em
+  // _buildLaudoHTML(), que chama window.opener._registrarLaudo() antes de window.print().
 
   // Abrir a janela ANTES de qualquer await — depois de um await o navegador não reconhece
   // mais a chamada como resposta direta ao clique do usuário e bloqueia o pop-up em
@@ -10318,17 +10422,22 @@ async function gerarLaudoPDF() {
   try {
     const empId     = document.getElementById('ld-empresa')?.value || '';
     const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
+    const cicloId   = document.getElementById('ld-ciclo')?.value || '';
     const setores   = [...(comboState['combo-ld-setor'] || new Set())];
     const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
+    const escolaridadesLd = [...(comboState['combo-ld-escolaridade'] || new Set())];
     const gheSetores = _grupoValoresFiltro('combo-ld-ghe');
     const gheFuncoes = _grupoValoresFiltro('combo-ld-fun-ghe', 'funcao');
     const todos     = await getLinhasParaAnalise(empId);
     // Mesmos filtros de renderLaudo() (preview) — sem isso o PDF exportado ignorava a
-    // seleção de Agrupamento GHE feita na tela, mostrando sempre todos os setores/funções.
+    // seleção de Agrupamento GHE / Ciclo feita na tela, mostrando sempre todos os
+    // setores/funções/ciclos.
     const linhas    = todos.filter(r =>
+      (!cicloId || r.ciclo_id === cicloId) &&
       (setores.length === 0 || setores.includes(r.setor)) &&
       (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-      (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+      (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+      (escolaridadesLd.length === 0 || escolaridadesLd.includes(r.escolaridade || 'Não informado'))
     );
 
     if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
@@ -10338,10 +10447,10 @@ async function gerarLaudoPDF() {
     const responsavel = responsavelField
       || _estPerfil?.responsavel_padrao
       || 'Responsável Técnico';
-    const cicloId     = document.getElementById('ld-ciclo')?.value || '';
+    const registro    = (document.getElementById('ld-registro')?.value||'').trim();
     const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
 
-    const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, estPerfil: _estPerfil, niveisLd });
+    const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro, estPerfil: _estPerfil, niveisLd, empId });
 
     win.document.open();
     win.document.write(html);
@@ -11050,6 +11159,7 @@ function _iniciarAppAposTenant() {
       if (document.getElementById('combo-gf-funcao')) buildCombo('combo-gf-funcao');
       if (document.getElementById('combo-ld-setor'))  buildCombo('combo-ld-setor');
       if (document.getElementById('combo-ld-nivel'))  buildCombo('combo-ld-nivel');
+      if (document.getElementById('combo-ld-escolaridade')) buildCombo('combo-ld-escolaridade');
     });
   });
 }
@@ -15060,6 +15170,7 @@ try { buildCombo('combo-gf-funcao'); }  catch(e) { console.warn('combo-gf-funcao
 try { buildBlocoChecks(); }             catch(e) { console.warn('buildBlocoChecks:', e); }
 try { buildCombo('combo-ld-setor'); }     catch(e) { console.warn('combo-ld-setor:', e); }
 try { buildCombo('combo-ld-nivel'); }     catch(e) { console.warn('combo-ld-nivel:', e); }
+try { buildCombo('combo-ld-escolaridade'); } catch(e) { console.warn('combo-ld-escolaridade:', e); }
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
 try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
