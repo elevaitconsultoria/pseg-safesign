@@ -9982,14 +9982,17 @@ tr:last-child td{border-bottom:none}
   }
 
   // ── PÁGINA 6: Ações recomendadas por setor ────────────
+  // Segmentada pela mesma granularidade (segregado/agrupado/consolidado) das seções
+  // "Resultados por setor" e "Distribuição de respostas" acima — reusa gruposLaudo, já
+  // calculado no topo da função, em vez de uma lista de setores à parte.
   let acoesHTML = '';
   if (laudoSecoesAtivas.has('acoes')) {
-    setoresList.forEach(setor => {
-      const lS = linhas.filter(r=>r.setor===setor);
+    gruposLaudo.forEach(grupo => {
+      const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
       const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (!fS.length) return;
-      acoesHTML += `<div class="sec-title setor">${setor ? e(setor) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
+      acoesHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
       const vistos = new Set();
       fS.forEach(f=>{
         const key = f.cd ? String(f.cd) : String(f.id);
@@ -10128,7 +10131,7 @@ tr:last-child td{border-bottom:none}
       <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Total de respondentes</div><div class="cover-meta-value">${linhas.length} colaboradores</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Data de emissão</div><div class="cover-meta-value">${hoje}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(setoresList.join(', '))}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(setoresAtivos.join(', '))}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Responsável técnico</div><div class="cover-meta-value">${e(responsavel)}</div></div>
     </div>
     <div class="cover-norm-pills" style="margin-top:18px">
@@ -10167,7 +10170,7 @@ ${(() => {
       <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Respondentes</div>
     </div>
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;text-align:center">
-      <div style="font-size:32px;font-weight:800;color:#111">${setoresList.length}</div>
+      <div style="font-size:32px;font-weight:800;color:#111">${setoresAtivos.length}</div>
       <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Setores avaliados</div>
     </div>
   </div>
