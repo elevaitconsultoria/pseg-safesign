@@ -710,6 +710,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .chip-dd-nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── DASHBOARD ── */
+.skel-row{height:62px;border:1px solid var(--border);border-radius:var(--rl,8px);margin-bottom:8px;
+  background:linear-gradient(90deg,var(--bg) 25%,#eef0f2 37%,var(--bg) 63%);
+  background-size:400% 100%;animation:skel 1.3s ease infinite}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
 .dash-kpi{background:white;border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;text-align:center}
 .dash-kpi-val{font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
 .dash-kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);font-weight:600}
@@ -1264,6 +1268,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <span class="nav-label">Agrupamentos GHE</span>
     </button>
 
+    <button class="nav-item" id="nb-adesao" data-modulo="adesao" data-label="Adesão" onclick="goScreen('adesao',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span class="nav-label">Adesão</span>
+      <span class="nav-badge" id="nb-adesao-badge" style="display:none"></span>
+    </button>
+
     <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <span class="nav-label">Links de Coleta</span>
@@ -1666,7 +1676,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     </div>
   </div>
   <!-- KPIs -->
-  <div class="g4" style="margin-bottom:20px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+    <div class="dash-kpi" title="Percentual de respostas recebidas sobre o quadro de funcionários dos clientes com GHE importado.">
+      <div class="dash-kpi-val" id="dash-n-adesao" style="color:var(--tl)">—</div>
+      <div class="dash-kpi-lbl">Adesão da carteira</div>
+    </div>
     <div class="dash-kpi">
       <div class="dash-kpi-val" id="dash-n-empresas" style="color:var(--tx)">—</div>
       <div class="dash-kpi-lbl">Empresas ativas</div>
@@ -1679,9 +1693,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <div class="dash-kpi-val" id="dash-n-links" style="color:var(--blue)">—</div>
       <div class="dash-kpi-lbl">Links ativos</div>
     </div>
-    <div class="dash-kpi">
+    <div class="dash-kpi" id="dash-kpi-alerta" onclick="_dashSetFiltro('parada')">
       <div class="dash-kpi-val" id="dash-n-sem-resp" style="color:var(--amber)">—</div>
-      <div class="dash-kpi-lbl">Links sem resposta</div>
+      <div class="dash-kpi-lbl">Precisam de cobrança</div>
     </div>
   </div>
 
@@ -1689,14 +1703,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   <div id="dash-welcome"></div>
 
   <!-- Lista empresas -->
-  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:10px">Selecione o cliente para iniciar</div>
-  <div id="dash-empresas-list">
-    <div class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      <div class="empty-state-title">Nenhum cliente cadastrado</div>
-      <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">Cadastrar empresa</button>
+  <div id="dash-controls" style="display:none;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);flex-shrink:0">Selecione o cliente</div>
+    <input type="text" id="dash-busca" placeholder="Buscar por nome ou CNPJ..." oninput="_dashSetBusca(this.value)"
+      style="flex:1;min-width:200px;padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Inter',sans-serif;outline:none">
+    <div class="seg-toggle-group" title="Urgência: quem tem mais pessoas faltando e mais tempo sem resposta primeiro">
+      <button id="dashord-urgencia" onclick="_dashSetOrdem('urgencia')">Urgência</button>
+      <button id="dashord-nome" onclick="_dashSetOrdem('nome')">Nome</button>
     </div>
+  </div>
+  <div id="dash-empresas-list">
+    <!-- Skeleton: sem isso a tela ficava vazia durante o boot, indistinguível de
+         "nenhum cliente cadastrado" ou de uma falha de rede. -->
+    <div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>
   </div>
 </div>
 
@@ -3546,8 +3565,50 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     TELA — ACOMPANHAMENTO DE ADESÃO
+══════════════════════════════════════ -->
+<div class="screen" id="sc-adesao" data-modulo="adesao">
+  <div class="page-header">
+    <div class="page-hdr-left">
+      <div class="page-title">Acompanhamento de Adesão</div>
+      <div class="page-sub">Quantas pessoas já responderam, quem ainda falta e se a coleta parou</div>
+    </div>
+    <div class="page-hdr-actions">
+      <button class="btn btn-g" id="ad-btn-export" onclick="exportarAdesaoPrint()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Relatório para o cliente
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap">
+    <div class="filter-card" style="flex:1;min-width:220px;margin-bottom:0">
+      <div class="filter-label">Cliente</div>
+      <select id="ad-empresa" class="filter-select" onchange="_onAdesaoFiltroChange()">
+        <option value="" disabled selected>— Selecione o cliente —</option>
+      </select>
+    </div>
+    <div class="filter-card" style="min-width:200px;margin-bottom:0">
+      <div class="filter-label">Ciclo</div>
+      <select id="ad-ciclo" class="filter-select" onchange="_onAdesaoFiltroChange()">
+        <option value="">Todos os ciclos</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="ad-body">
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <div class="empty-state-title">Selecione um cliente</div>
+      <div class="empty-state-sub">A adesão é calculada contra o quadro de funcionários importado no GHE.</div>
+    </div>
+  </div>
+</div><!-- /sc-adesao -->
+
 <div class="screen" id="sc-links" data-modulo="links">
-  <div class="page-header"><div class="page-title">Clientes &amp; Coleta</div><div class="page-sub">Gerencie seus clientes e gere links de formulário por ciclo de avaliação</div></div>
+  <div class="page-header"><div class="page-title">Coleta &amp; Links</div><div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
     <div>
@@ -3618,14 +3679,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       </button>
     </div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-    <input type="text" id="emp-busca" placeholder="Buscar por nome ou CNPJ..." oninput="renderTelaEmpresas()"
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+    <input type="text" id="emp-busca" placeholder="Buscar por nome, CNPJ, razão social ou código..." oninput="renderTelaEmpresas()"
       style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Inter',sans-serif">
+    <select id="emp-ordem" onchange="_setEmpOrdem(this.value)" class="filter-select" style="width:auto;min-width:150px">
+      <option value="nome">Ordenar: Nome</option>
+      <option value="adesao">Ordenar: Adesão</option>
+      <option value="respostas">Ordenar: Respostas</option>
+    </select>
     <div class="seg-toggle-group">
       <button id="empbtn-grade" onclick="_setEmpresasViewMode('grade')">Grade</button>
       <button id="empbtn-lista" onclick="_setEmpresasViewMode('lista')">Lista</button>
     </div>
   </div>
+  <div id="emp-filtros" style="display:flex;gap:6px;align-items:center;margin-bottom:14px;flex-wrap:wrap"></div>
   <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
   <div id="empresas-lista" style="display:none;flex-direction:column;gap:8px"></div>
 </div>
@@ -3875,6 +3942,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             <option value="">Todos os ciclos</option>
           </select>
           <span id="ghe-adesao-total" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap"
+            title="Abrir o acompanhamento completo: quem falta, evolução no tempo e relatório para o cliente"
+            onclick="_abrirAdesao(_gheEmpresaId, _gheCicloSelecionado)">Acompanhar</button>
         </div>
 
         <!-- Toggle Árvore/Tabela -->
@@ -4301,7 +4371,7 @@ const MODULOS_CATALOGO = [
 // Telas ausentes deste mapa nunca são bloqueadas por módulo.
 const MODULO_POR_TELA = {
   laudo:'laudo', plano:'plano', riscos:'riscos', comparativo:'comparativo',
-  auditoria:'auditoria', graficos:'graficos', links:'links',
+  auditoria:'auditoria', graficos:'graficos', links:'links', adesao:'adesao',
 };
 
 const BLOCOS_INFO = {
@@ -5129,9 +5199,17 @@ async function carregarEmpresas() {
       : (cics || []);
     popularSelectsEmpresas();
   } catch(e) {
+    // Sem isso, uma falha de rede/RLS deixava a tela idêntica a "Nenhum cliente
+    // cadastrado" — o usuário concluía que os dados sumiram.
     console.warn('carregarEmpresas:', e);
+    _empresasErro = e?.message || 'falha ao consultar o banco';
+    toast('Erro ao carregar clientes. Verifique a conexão.', 'w', 5000);
+    renderTelaEmpresas();
+    return;
   }
+  _empresasErro = null;
 }
+let _empresasErro = null;
 
 function popularSelectsEmpresas() {
   const ids = ['sel-emp','f-empresa','gf-empresa','ld-empresa','link-f-empresa','cmp-empresa','plano-empresa'];
@@ -7547,12 +7625,21 @@ async function carregarContagemRespostas() {
     // 1000 pelo limite silencioso do PostgREST (achado real 2026-08-27).
     const { data, error } = await _fetchAllSupabase(() => sbAdmin
       .from('respostas')
-      .select('link_token')
+      .select('link_token, respondido_em')
       .in('link_token', tokens));
     if (error) { console.warn('carregarContagemRespostas (RLS?):', error.message); return; }
     const contagem = {};
-    (data || []).forEach(r => { contagem[r.link_token] = (contagem[r.link_token] || 0) + 1; });
-    _links.forEach(l => { l.respostas = contagem[l.token] || 0; });
+    const ultima   = {};
+    (data || []).forEach(r => {
+      contagem[r.link_token] = (contagem[r.link_token] || 0) + 1;
+      if (!r.respondido_em) return;
+      const t = new Date(r.respondido_em).getTime();
+      if (!isNaN(t) && (!ultima[r.link_token] || t > ultima[r.link_token])) ultima[r.link_token] = t;
+    });
+    _links.forEach(l => {
+      l.respostas = contagem[l.token] || 0;
+      l.ultimaResposta = ultima[l.token] ? new Date(ultima[l.token]) : null;
+    });
   } catch(e) { console.warn('carregarContagemRespostas:', e); }
 }
 
@@ -7591,6 +7678,13 @@ function iniciarRealtimeRespostas() {
             renderDashboard();
 
             // Re-rodar análise automaticamente se a empresa afetada está ativa
+            // Adesão é a tela de acompanhamento ao vivo — recarrega assim que
+            // uma resposta entra para a empresa em foco na própria tela.
+            if (document.getElementById('sc-adesao')?.classList.contains('on')
+                && link.empresa_id === _adEmpresaId) {
+              _carregarAdesaoTela().catch(e => console.warn('[Realtime] adesão:', e.message));
+            }
+
             const empresaAfetada = link.empresa_id && _empresaAtiva?.id === link.empresa_id;
             const telasAnalise   = ['sc-analise','sc-graficos','sc-laudo','sc-comparativo','sc-auditoria'];
             const telaAtiva      = telasAnalise.find(id => document.getElementById(id)?.classList.contains('on'));
@@ -7718,11 +7812,9 @@ function copiarLink(url) {
 }
 
 async function calcRepresentatividade(empId, cicloId) {
-  // Busca headcount cadastrado para a empresa
-  const { data: hcRows } = await sbAdmin
-    .from('empresa_headcount')
-    .select('setor, funcao, quantidade')
-    .eq('empresa_id', empId);
+  // Busca headcount cadastrado para a empresa (cache por empresa — o quadro só muda
+  // por importação GHE, e cada abertura de "Ver adesão" refazia o fetch)
+  const hcRows = await _getHeadcountCached(empId);
   if (!hcRows || !hcRows.length) return null;
 
   // Reaproveita getLinhasParaAnalise() — mesma fonte usada por Auditoria/Resultados/Laudo —
@@ -7732,15 +7824,19 @@ async function calcRepresentatividade(empId, cicloId) {
   // (achado real 2026-08-27: Dashboard/Clientes/Links de Coleta mostravam um número e
   // Adesão/Auditoria mostravam outro para a mesma empresa).
   const todasLinhas = await getLinhasParaAnalise(empId);
+  // `data` preserva respondido_em: sem ela não há curva de adesão nem "parada há N dias".
   const respList = (cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas)
-    .map(r => ({ setor: r.setor, funcao: r.funcao }));
+    .map(r => ({ setor: r.setor, funcao: r.funcao, data: r.data_registro || null }));
 
-  // Índices de contagem de respostas: por (setor×funcao) e por setor
+  // Índices de contagem de respostas: por (setor×funcao) e por setor.
+  // Chave normalizada com _gheNormStrong (sem acento) — mesma usada por agruparPorGrupos()
+  // desde 2026-08-28. Com _gheNorm, "Produção" e "Producao" viravam duas realidades: a
+  // resposta caía no mesmo agrupamento na Análise e contava como fora do quadro na Adesão.
   const porSetorFuncao = new Map();
   const porSetor       = new Map();
   respList.forEach(r => {
-    const sK  = _gheNorm(r.setor || '');
-    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    const sK  = _gheNormStrong(r.setor || '');
+    const sfK = `${sK}|||${_gheNormStrong(r.funcao || '')}`;
     porSetor.set(sK, (porSetor.get(sK) || 0) + 1);
     porSetorFuncao.set(sfK, (porSetorFuncao.get(sfK) || 0) + 1);
   });
@@ -7749,29 +7845,49 @@ async function calcRepresentatividade(empId, cicloId) {
   const hcSetorFuncao = new Set(); // 'setor|||funcao'
   const hcSetorNull   = new Set(); // 'setor' (linha de quadro agregada por setor, funcao NULL)
   hcRows.forEach(h => {
-    const sK = _gheNorm(h.setor || '');
-    if (h.funcao) hcSetorFuncao.add(`${sK}|||${_gheNorm(h.funcao)}`);
+    const sK = _gheNormStrong(h.setor || '');
+    if (h.funcao) hcSetorFuncao.add(`${sK}|||${_gheNormStrong(h.funcao)}`);
     else          hcSetorNull.add(sK);
   });
 
   // Linhas: quadro por função casa em (setor×funcao); quadro por setor (funcao NULL)
   // agrega todas as respostas daquele setor.
+  // `faltam` é o número usado para cobrar — ordenar por % coloca um setor de 0/1 (0%)
+  // à frente de um de 20/100, que tem 80 pessoas pendentes.
   const linhas = hcRows.map(h => {
-    const sK = _gheNorm(h.setor || '');
+    const sK = _gheNormStrong(h.setor || '');
     const respostas = h.funcao
-      ? (porSetorFuncao.get(`${sK}|||${_gheNorm(h.funcao)}`) || 0)
+      ? (porSetorFuncao.get(`${sK}|||${_gheNormStrong(h.funcao)}`) || 0)
       : (porSetor.get(sK) || 0);
     const pct = h.quantidade > 0 ? Math.round(respostas / h.quantidade * 100) : 0;
-    return { setor: h.setor, funcao: h.funcao, respostas, total: h.quantidade, pct };
+    return {
+      setor: h.setor, funcao: h.funcao, respostas, total: h.quantidade, pct,
+      faltam: Math.max(0, (h.quantidade || 0) - respostas),
+    };
   }).sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''));
 
   // Respostas fora do quadro (setor/função não cadastrados, "Outro", cargo universal etc.)
   let naoClassificadas = 0;
   respList.forEach(r => {
-    const sK  = _gheNorm(r.setor || '');
-    const sfK = `${sK}|||${_gheNorm(r.funcao || '')}`;
+    const sK  = _gheNormStrong(r.setor || '');
+    const sfK = `${sK}|||${_gheNormStrong(r.funcao || '')}`;
     if (!hcSetorFuncao.has(sfK) && !hcSetorNull.has(sK)) naoClassificadas++;
   });
+
+  // Série temporal: respondido_em agrupado por dia (chave 'YYYY-MM-DD' em horário local,
+  // não UTC — uma resposta das 21h no Brasil não pode aparecer no dia seguinte).
+  const porDia = new Map();
+  let ultimaResposta = null;
+  respList.forEach(r => {
+    if (!r.data) return;
+    const d = new Date(r.data);
+    if (isNaN(d)) return;
+    if (!ultimaResposta || d > ultimaResposta) ultimaResposta = d;
+    const k = _diaLocalISO(d);
+    porDia.set(k, (porDia.get(k) || 0) + 1);
+  });
+  const corte7 = Date.now() - 7 * 864e5;
+  const ultimos7 = respList.filter(r => r.data && new Date(r.data).getTime() >= corte7).length;
 
   const totalRespostas = respList.length;
   const totalHeadcount = hcRows.reduce((s, h) => s + (h.quantidade || 0), 0);
@@ -7781,7 +7897,502 @@ async function calcRepresentatividade(empId, cicloId) {
     classificadas: totalRespostas - naoClassificadas,
     naoClassificadas,
     totalHeadcount,
+    faltam: Math.max(0, totalHeadcount - (totalRespostas - naoClassificadas)),
+    porDia,
+    ultimaResposta,
+    ultimos7,
   };
+}
+
+// ══════════════════════════════════════════
+// TELA — ACOMPANHAMENTO DE ADESÃO
+// ══════════════════════════════════════════
+// Consome o mesmo calcRepresentatividade() da GHE e do painel de Links: o número
+// mostrado aqui, no badge da GHE, em "Ver adesão" e no PDF exportado é sempre o
+// mesmo (a classe de bug de 2026-08-27 foi exatamente dois números divergentes).
+let _adDados      = null;   // último retorno de calcRepresentatividade
+let _adEmpresaId  = '';
+let _adCicloId    = '';
+let _adFiltro     = '';
+let _adSortKey    = 'faltam';  // default: quem falta em número absoluto, não em %
+let _adSortDir    = -1;
+let _adChart      = null;
+let _adAlvo       = null;   // {empresaId, cicloId} pedido por _abrirAdesao, consumido no setup
+const AD_META_PCT = 70;        // mesma faixa "verde" de _gheCorAdesao
+
+async function _setupTelaAdesao() {
+  const sel = document.getElementById('ad-empresa');
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled>— Selecione o cliente —</option>' +
+    _empresas.map(e => `<option value="${e.id}">${_escAd(e.nome || e.id)}</option>`).join('');
+  // Alvo vindo de "Acompanhar" (GHE / painel de Links) tem precedência sobre a
+  // empresa ativa; é consumido uma única vez.
+  const alvo = _adAlvo; _adAlvo = null;
+  sel.value = alvo?.empresaId || _empresaAtiva?.id || '';
+  _adRenderCicloSel();
+  const selC = document.getElementById('ad-ciclo');
+  if (alvo?.cicloId && selC && [...selC.options].some(o => o.value === alvo.cicloId)) selC.value = alvo.cicloId;
+  await _onAdesaoFiltroChange({ manterCiclo: true });
+}
+
+// Popula o combo de ciclos a partir de _ciclos já em memória (sem fetch novo) —
+// mesmo padrão de _gheRenderCicloSel().
+function _adRenderCicloSel() {
+  const sel = document.getElementById('ad-ciclo');
+  const emp = document.getElementById('ad-empresa')?.value || '';
+  if (!sel) return;
+  const ciclos = _ciclos.filter(c => c.empresa_id === emp);
+  const atual  = sel.value;
+  sel.innerHTML = '<option value="">Todos os ciclos</option>' +
+    ciclos.map(c => `<option value="${c.id}">${_escAd(c.nome || '—')}</option>`).join('');
+  sel.disabled = !ciclos.length;
+  if (atual && ciclos.some(c => c.id === atual)) sel.value = atual;
+}
+
+async function _onAdesaoFiltroChange(opts = {}) {
+  const empId = document.getElementById('ad-empresa')?.value || '';
+  if (empId !== _adEmpresaId) {
+    _adEmpresaId = empId;
+    _adFiltro = '';
+    if (!opts.manterCiclo) { const c = document.getElementById('ad-ciclo'); if (c) c.value = ''; }
+    _adRenderCicloSel();
+    // Mantém a empresa ativa em sincronia com o resto do app (mesmo padrão da
+    // tela de Agrupamentos), para que Resultados/Laudo abram no mesmo cliente.
+    const emp = _empresas.find(e => e.id === empId);
+    if (emp) setEmpresaAtiva(emp.id, emp.nome || '');
+  }
+  _adCicloId = document.getElementById('ad-ciclo')?.value || '';
+  await _carregarAdesaoTela();
+}
+
+async function _carregarAdesaoTela() {
+  const body = document.getElementById('ad-body');
+  const btn  = document.getElementById('ad-btn-export');
+  if (!body) return;
+  if (btn) btn.disabled = true;
+
+  if (!_adEmpresaId) {
+    _adDados = null;
+    body.innerHTML = _adEmptyState('Selecione um cliente',
+      'A adesão é calculada contra o quadro de funcionários importado no GHE.');
+    return;
+  }
+
+  body.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:var(--tl);font-size:13px">Carregando adesão…</div>`;
+  try {
+    _adDados = await calcRepresentatividade(_adEmpresaId, _adCicloId || undefined);
+  } catch (e) {
+    console.warn('[PsicoMap] adesão:', e.message);
+    _adDados = null;
+    body.innerHTML = `<div class="card" style="padding:32px;text-align:center;color:#dc2626;font-size:13px">Erro ao carregar adesão: ${_escAd(e.message)}</div>`;
+    return;
+  }
+
+  if (!_adDados) {
+    // Sem quadro importado não existe denominador — a adesão é indefinida, não zero.
+    body.innerHTML = _adEmptyState('Sem quadro de funcionários',
+      'Importe a planilha de colaboradores em Setores &amp; Funções para que a adesão possa ser calculada.',
+      `<button class="btn btn-g" onclick="goScreen('ghe',document.getElementById('nb-ghe'))">Ir para Setores &amp; Funções</button>`);
+    return;
+  }
+  if (btn) btn.disabled = false;
+  _renderTelaAdesao();
+}
+
+function _escAd(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _adEmptyState(titulo, sub, extra) {
+  return `<div class="empty-state">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    <div class="empty-state-title">${titulo}</div>
+    <div class="empty-state-sub">${sub}</div>
+    ${extra || ''}
+  </div>`;
+}
+
+// Série acumulada de respostas por dia, do primeiro dia com resposta até hoje.
+// Os dias sem resposta entram com o acumulado anterior — sem isso a curva
+// "pula" o período de estagnação, que é justamente o que se quer enxergar.
+function _adSerieAcumulada(porDia) {
+  const chaves = Array.from(porDia.keys()).sort();
+  if (!chaves.length) return [];
+  const ini = new Date(chaves[0] + 'T00:00:00');
+  const fim = new Date(); fim.setHours(0,0,0,0);
+  const pts = [];
+  let acc = 0;
+  for (let d = new Date(ini); d <= fim; d.setDate(d.getDate() + 1)) {
+    acc += (porDia.get(_diaLocalISO(d)) || 0);
+    pts.push({ dia: _diaLocalISO(d), acc });
+    if (pts.length > 400) break; // guarda contra data corrompida no banco
+  }
+  return pts;
+}
+
+function _adKpiCard(valor, label, cor, title) {
+  return `<div class="dash-kpi" title="${_escAd(title || '')}">
+    <div class="dash-kpi-val" style="color:${cor}">${valor}</div>
+    <div class="dash-kpi-lbl">${label}</div>
+  </div>`;
+}
+
+function _renderTelaAdesao() {
+  const body = document.getElementById('ad-body');
+  const d = _adDados;
+  if (!body || !d) return;
+
+  const pct = d.totalHeadcount > 0 ? Math.round(d.classificadas / d.totalHeadcount * 100) : 0;
+  const { cor } = _gheCorAdesao(pct);
+  const dias = _diasDesde(d.ultimaResposta);
+  const diasTxt = dias === null ? '—' : dias === 0 ? 'hoje' : dias === 1 ? 'ontem' : `${dias}d`;
+  // Coleta parada: nenhuma resposta nos últimos 7 dias, mas ainda falta gente.
+  const parada = d.faltam > 0 && (dias === null || dias >= 7);
+
+  const kpis = `<div class="g4" style="margin-bottom:16px">
+    ${_adKpiCard(pct + '%', 'Adesão', cor, `${d.classificadas} respostas dentro do quadro ÷ ${d.totalHeadcount} funcionários cadastrados.`)}
+    ${_adKpiCard(d.classificadas, 'Respostas no quadro', 'var(--tx)', 'Respostas cujo setor e função constam no quadro importado.')}
+    ${_adKpiCard(d.faltam, 'Pessoas faltando', d.faltam > 0 ? 'var(--amber)' : 'var(--g)', 'Funcionários cadastrados que ainda não têm resposta correspondente.')}
+    ${_adKpiCard(diasTxt, 'Última resposta', parada ? '#dc2626' : 'var(--tx)', 'Há quanto tempo chegou a resposta mais recente.')}
+  </div>`;
+
+  const alerta = parada
+    ? `<div class="card" style="margin-bottom:16px;padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;display:flex;align-items:center;gap:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="font-size:12px;color:#991b1b">
+          <strong>Coleta parada.</strong> ${dias === null ? 'Nenhuma resposta registrada' : `Nenhuma resposta há ${dias} dias`} e ainda faltam ${d.faltam} pessoa(s). Vale reforçar a divulgação do link.
+        </div>
+      </div>`
+    : '';
+
+  const naoClass = d.naoClassificadas > 0
+    ? `<div class="card" style="margin-bottom:16px;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:12px;color:#92400e;flex:1;min-width:220px">
+          <strong>${d.naoClassificadas} resposta(s) fora do quadro.</strong>
+          Setor ou função informados não constam no GHE (normalmente "Outro"). Contam no total geral
+          (${d.totalHeadcount > 0 ? Math.round(d.totalRespostas / d.totalHeadcount * 100) : 0}%), mas não na adesão acima.
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;flex-shrink:0" onclick="goScreen('agrupamentos',document.getElementById('nb-agrupamentos'))">Classificar em Agrupamentos GHE</button>
+      </div>`
+    : '';
+
+  const grafico = `<div class="card" style="padding:16px 18px;margin-bottom:16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx)">Evolução da coleta</div>
+      <div style="font-size:11px;color:var(--tm)">${d.ultimos7} resposta(s) nos últimos 7 dias</div>
+    </div>
+    <div id="ad-chart-wrap" style="position:relative;height:220px"><canvas id="ad-chart"></canvas></div>
+  </div>`;
+
+  body.innerHTML = kpis + alerta + naoClass + grafico + _adTabelaHTML();
+  _adDesenharCurva();
+}
+
+// Linhas visíveis, já filtradas e ordenadas
+function _adLinhasVisiveis() {
+  const filtro = _gheNormStrong(_adFiltro);
+  const key = _adSortKey, dir = _adSortDir;
+  return (_adDados?.linhas || [])
+    .filter(l => !filtro || _gheNormStrong(l.setor||'').includes(filtro) || _gheNormStrong(l.funcao||'').includes(filtro))
+    .slice()
+    .sort((a, b) => key === 'setor' || key === 'funcao'
+      ? String(a[key]||'').localeCompare(String(b[key]||'')) * dir
+      : ((a[key] || 0) - (b[key] || 0)) * dir);
+}
+
+function _adCorpoTabela() {
+  const linhas = _adLinhasVisiveis();
+  if (!linhas.length) return `<tr><td colspan="6" style="text-align:center;color:var(--tl);padding:28px;font-size:12px">Nenhuma linha encontrada.</td></tr>`;
+  return linhas.map(l => {
+    const { cor, bg } = _gheCorAdesao(l.pct);
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 12px;font-size:12px;color:var(--tx)">${_escAd(l.setor || '—')}</td>
+      <td style="padding:7px 12px;font-size:12px;color:var(--tx)">${_escAd(l.funcao || '(agregado do setor)')}</td>
+      <td style="padding:7px 12px;font-size:12px;text-align:right;color:var(--tm)">${l.total}</td>
+      <td style="padding:7px 12px;font-size:12px;text-align:right;color:var(--tx);font-weight:600">${l.respostas}</td>
+      <td style="padding:7px 12px;font-size:12px;text-align:right;font-weight:700;color:${l.faltam>0?'#b45309':'#16a34a'}">${l.faltam}</td>
+      <td style="padding:7px 12px;text-align:right"><span style="font-size:10px;font-weight:700;color:${cor};background:${bg};border:1px solid ${cor};border-radius:4px;padding:1px 7px">${l.pct}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function _adTabelaHTML() {
+  const key = _adSortKey, dir = _adSortDir;
+  const th = (k, label, alinha) => `<th data-k="${k}" onclick="_adSort('${k}')" style="padding:7px 12px;text-align:${alinha};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap">${label}<span class="ad-sort-ind" style="margin-left:3px">${k===key?(dir>0?'▲':'▼'):''}</span></th>`;
+
+  const corpo = _adCorpoTabela();
+
+  return `<div class="card" id="ad-tabela-card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">Onde falta gente</div>
+        <div style="font-size:11px;color:var(--tm);margin-top:2px">Ordenado por pessoas pendentes — é o que se usa para cobrar, não o percentual.</div>
+      </div>
+      <input type="text" id="ad-busca" placeholder="🔍 Buscar setor ou função..." value="${_escAd(_adFiltro)}"
+        oninput="_adBuscar(this.value)"
+        style="min-width:200px;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;font-family:'Inter',sans-serif;outline:none">
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:560px">
+        <thead><tr style="background:var(--bg)">
+          ${th('setor','Setor','left')}${th('funcao','Função','left')}
+          ${th('total','Quadro','right')}${th('respostas','Respostas','right')}
+          ${th('faltam','Faltam','right')}${th('pct','Adesão','right')}
+        </tr></thead>
+        <tbody>${corpo}</tbody>
+      </table>
+    </div>
+    <div style="padding:8px 18px;font-size:10px;color:var(--tl);border-top:1px solid var(--border)">Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%</div>
+  </div>`;
+}
+
+function _adSort(key) {
+  // Colunas numéricas abrem em desc (maior lacuna primeiro); textuais em asc.
+  if (_adSortKey === key) _adSortDir *= -1;
+  else { _adSortKey = key; _adSortDir = (key === 'setor' || key === 'funcao') ? 1 : -1; }
+  _adAtualizarTabela();
+}
+
+function _adBuscar(v) {
+  _adFiltro = v;
+  _adAtualizarTabela();
+}
+
+// Repinta só o <tbody> e os indicadores de ordenação. Trocar o card inteiro
+// recriaria o input de busca (perda de foco e do cursor a cada tecla) e
+// destruiria o canvas do gráfico.
+function _adAtualizarTabela() {
+  const card = document.getElementById('ad-tabela-card');
+  if (!card) return;
+  const tbody = card.querySelector('tbody');
+  if (tbody) tbody.innerHTML = _adCorpoTabela();
+  card.querySelectorAll('th[data-k]').forEach(th => {
+    const ind = th.querySelector('.ad-sort-ind');
+    if (ind) ind.textContent = th.dataset.k === _adSortKey ? (_adSortDir > 0 ? '▲' : '▼') : '';
+  });
+}
+
+// ── Relatório de adesão para o cliente ────────────────────────────────────────
+// Documento imprimível (Salvar como PDF) que o RH da empresa usa para cobrar os
+// funcionários. Mesmo molde de exportarResultadosPrint(): janela nova, HTML
+// autônomo, window.print(). Consome _adDados — o mesmo número da tela.
+// Abre a tela de Adesão já filtrada por empresa/ciclo. É o caminho único para o
+// relatório: em vez de duplicar o cálculo na GHE e no painel de Links, esses dois
+// pontos navegam para cá, garantindo que o PDF sai sempre do mesmo estado exibido.
+function _abrirAdesao(empresaId, cicloId) {
+  _adAlvo = empresaId ? { empresaId, cicloId: cicloId || '' } : null;
+  goScreen('adesao', document.getElementById('nb-adesao'));
+}
+
+function exportarAdesaoPrint() {
+  const d = _adDados;
+  if (!d) { toast('Carregue a adesão de um cliente primeiro.', 'w'); return; }
+
+  const emp      = _empresas.find(e => e.id === _adEmpresaId);
+  const empNome  = emp?.nome || '';
+  const ciclo    = _ciclos.find(c => c.id === _adCicloId);
+  const cicloTxt = ciclo?.nome || 'Todos os ciclos';
+  const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  const pct      = d.totalHeadcount > 0 ? Math.round(d.classificadas / d.totalHeadcount * 100) : 0;
+  const dias     = _diasDesde(d.ultimaResposta);
+  const ultimaTxt = d.ultimaResposta
+    ? d.ultimaResposta.toLocaleDateString('pt-BR') + (dias ? ` (há ${dias} dia${dias===1?'':'s'})` : ' (hoje)')
+    : '—';
+  // Branding da consultoria vem sempre do perfil da EST — nunca hardcoded.
+  const estNome  = _estPerfil?.nome_empresa || 'PsicoMap';
+  const estLogo  = _estPerfil?.logo_base64 || '';
+
+  // Gráfico: reaproveita o canvas já renderizado na tela como imagem estática.
+  let curvaImg = '';
+  try {
+    const cv = document.getElementById('ad-chart');
+    if (cv && _adChart) curvaImg = cv.toDataURL('image/png');
+  } catch(e) { console.warn('[PsicoMap] curva no PDF:', e.message); }
+
+  // Ordenado por pendências: a primeira linha é onde o RH deve agir primeiro.
+  const linhas = d.linhas.slice().sort((a, b) => b.faltam - a.faltam || (a.setor||'').localeCompare(b.setor||''));
+  const corpo = linhas.map(l => {
+    const { cor, bg } = _gheCorAdesao(l.pct);
+    return `<tr>
+      <td>${_escAd(l.setor || '—')}</td>
+      <td>${_escAd(l.funcao || '(agregado do setor)')}</td>
+      <td class="num">${l.total}</td>
+      <td class="num">${l.respostas}</td>
+      <td class="num strong">${l.faltam}</td>
+      <td class="num"><span class="pill" style="color:${cor};background:${bg};border-color:${cor}">${l.pct}%</span></td>
+    </tr>`;
+  }).join('');
+
+  const doc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Adesão à Pesquisa${empNome ? ' · ' + empNome : ''}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 16mm 14mm; }
+  @page { @bottom-right { content: "Página " counter(page) " de " counter(pages); font-family: Inter, sans-serif; font-size: 7pt; color: #9ca3af; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: #111827; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cover { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+           border-bottom: 3px solid #16532d; padding-bottom: 10px; margin-bottom: 20px; break-after: avoid; }
+  .cover-l { display: flex; align-items: center; gap: 12px; }
+  .cover-logo { width: 46px; height: 46px; object-fit: contain; }
+  .cover-title { font-size: 17pt; font-weight: 800; color: #16532d; line-height: 1.1; }
+  .cover-sub { font-size: 9pt; color: #6b7280; margin-top: 3px; }
+  .cover-meta { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
+  .cover-meta strong { color: #374151; font-size: 9pt; }
+  .kpis { display: flex; gap: 8px; margin-bottom: 18px; break-inside: avoid; }
+  .kpi { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; text-align: center; }
+  .kpi-v { font-size: 18pt; font-weight: 800; line-height: 1.1; }
+  .kpi-l { font-size: 7.5pt; color: #6b7280; margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+  .sec { font-size: 11pt; font-weight: 700; color: #16532d; margin: 20px 0 8px; break-after: avoid; }
+  .curva { width: 100%; border: 1px solid #e5e7eb; border-radius: 6px; break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  thead { display: table-header-group; }
+  th { text-align: left; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+       color: #6b7280; border-bottom: 1.5px solid #d1d5db; padding: 5px 7px; background: #f8f9fa; }
+  td { padding: 5px 7px; border-bottom: 1px solid #f0f2f4; }
+  tr { break-inside: avoid; }
+  .num { text-align: right; }
+  .strong { font-weight: 700; }
+  .pill { font-size: 7.5pt; font-weight: 700; border: 1px solid; border-radius: 4px; padding: 1px 6px; }
+  .nota { margin-top: 16px; padding: 10px 12px; background: #f8f9fa; border: 1px solid #e5e7eb;
+          border-radius: 6px; font-size: 7.5pt; color: #6b7280; line-height: 1.6; break-inside: avoid; }
+  .alerta { margin-bottom: 16px; padding: 9px 12px; background: #fffbeb; border: 1px solid #fde68a;
+            border-radius: 6px; font-size: 8.5pt; color: #92400e; break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-l">
+    ${estLogo ? `<img class="cover-logo" src="${estLogo}" alt="">` : ''}
+    <div>
+      <div class="cover-title">${_escAd(estNome)}</div>
+      <div class="cover-sub">Adesão à Pesquisa de Riscos Psicossociais</div>
+    </div>
+  </div>
+  <div class="cover-meta">
+    ${empNome ? `<div><strong>${_escAd(empNome)}</strong></div>` : ''}
+    <div>${_escAd(cicloTxt)}</div>
+    <div>Emitido em ${hoje}</div>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-v" style="color:${_gheCorAdesao(pct).cor}">${pct}%</div><div class="kpi-l">Adesão</div></div>
+  <div class="kpi"><div class="kpi-v">${d.classificadas}</div><div class="kpi-l">Responderam</div></div>
+  <div class="kpi"><div class="kpi-v" style="color:${d.faltam>0?'#b45309':'#16a34a'}">${d.faltam}</div><div class="kpi-l">Faltam</div></div>
+  <div class="kpi"><div class="kpi-v">${d.totalHeadcount}</div><div class="kpi-l">Quadro</div></div>
+</div>
+
+${d.naoClassificadas > 0 ? `<div class="alerta"><strong>${d.naoClassificadas} resposta(s) com setor ou função fora do quadro cadastrado</strong> (normalmente a opção "Outro"). Elas foram recebidas, mas não podem ser atribuídas a um setor específico e por isso não entram no percentual acima.</div>` : ''}
+
+${curvaImg ? `<div class="sec">Evolução da coleta</div><img class="curva" src="${curvaImg}" alt="Curva de adesão">` : ''}
+
+<div class="sec">Adesão por setor e função</div>
+<table>
+  <thead><tr>
+    <th>Setor</th><th>Função</th><th class="num">Quadro</th>
+    <th class="num">Responderam</th><th class="num">Faltam</th><th class="num">Adesão</th>
+  </tr></thead>
+  <tbody>${corpo}</tbody>
+</table>
+
+<div class="nota">
+  <strong>Como ler este relatório.</strong> "Quadro" é o número de colaboradores informado pela empresa
+  para cada setor e função. "Responderam" é quantas respostas foram recebidas nesse mesmo grupo, e
+  "Faltam" é a diferença entre os dois. Última resposta recebida: ${ultimaTxt}.<br><br>
+  <strong>Anonimato.</strong> A pesquisa é anônima: o questionário não coleta nome, matrícula, CPF nem
+  qualquer dado que identifique o respondente. Os números acima são agregados por setor e função e não
+  permitem identificar quem respondeu ou deixou de responder — servem apenas para acompanhar a
+  cobertura da coleta.
+</div>
+
+<script>
+window.addEventListener('load', function() { setTimeout(function(){ window.print(); }, 400); });
+<\/script>
+</body>
+</html>`;
+
+  const pw = window.open('', '_blank');
+  if (!pw) { toast('Popup bloqueado. Permita popups para este site.', 'w'); return; }
+  pw.document.open();
+  pw.document.write(doc);
+  pw.document.close();
+  toast('Relatório aberto — use "Salvar como PDF" no diálogo de impressão.', 'g', 4000);
+}
+
+function _adDesenharCurva() {
+  const canvas = document.getElementById('ad-chart');
+  if (!canvas || !window.Chart || !_adDados) return;
+  const pts = _adSerieAcumulada(_adDados.porDia);
+  try { _adChart?.destroy(); } catch(e) {}
+  _adChart = null;
+  if (!pts.length) {
+    const wrap = document.getElementById('ad-chart-wrap');
+    if (wrap) wrap.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--tl);font-size:12px">Nenhuma resposta registrada ainda.</div>';
+    return;
+  }
+  const meta = _adDados.totalHeadcount * AD_META_PCT / 100;
+  _adChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: pts.map(p => p.dia.slice(8) + '/' + p.dia.slice(5,7)),
+      datasets: [
+        { label: 'Respostas acumuladas', data: pts.map(p => p.acc),
+          borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: true, tension: .25, pointRadius: 0, borderWidth: 2 },
+        { label: `Meta (${AD_META_PCT}% = ${Math.round(meta)})`, data: pts.map(() => meta),
+          borderColor: '#94a3b8', borderDash: [5,4], pointRadius: 0, borderWidth: 1.5, fill: false },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } },
+      scales: {
+        y: { beginAtZero: true, suggestedMax: _adDados.totalHeadcount, ticks: { precision: 0 } },
+        x: { ticks: { maxTicksLimit: 12, font: { size: 9 } } },
+      },
+    },
+  });
+}
+
+// Data local no formato 'YYYY-MM-DD' — toISOString() converteria para UTC e deslocaria
+// respostas do fim do dia para o dia seguinte.
+function _diaLocalISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Dias inteiros decorridos desde uma data (0 = hoje). null se a data não existe.
+function _diasDesde(d) {
+  if (!d) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const ref  = new Date(d); ref.setHours(0,0,0,0);
+  return Math.round((hoje - ref) / 864e5);
+}
+
+// ── Cache do quadro de funcionários ───────────────────────────────────────────
+// Mesmo padrão de _respostasCache: o headcount só muda por importação/limpeza da GHE,
+// então é invalidado explicitamente nesses dois pontos (_invalidarHeadcountCache).
+let _hcCache = {};
+async function _getHeadcountCached(empId) {
+  if (!empId || !sbAdmin) return null;
+  if (_hcCache[empId]) return _hcCache[empId];
+  const { data, error } = await sbAdmin
+    .from('empresa_headcount')
+    .select('setor, funcao, quantidade')
+    .eq('empresa_id', empId);
+  if (error) { console.warn('[PsicoMap] headcount:', error.message); return null; }
+  _hcCache[empId] = data || [];
+  return _hcCache[empId];
+}
+function _invalidarHeadcountCache(empId) {
+  if (empId) delete _hcCache[empId];
+  else _hcCache = {};
 }
 
 async function verAdesaoLink(linkId) {
@@ -7817,8 +8428,7 @@ async function verAdesaoLink(linkId) {
     const totalResp  = dados.classificadas;
     const totalFunc  = dados.totalHeadcount;
     const totalPct   = totalFunc > 0 ? Math.round(totalResp / totalFunc * 100) : 0;
-    const corTotal   = totalPct >= 70 ? '#16a34a' : totalPct >= 30 ? '#b45309' : '#dc2626';
-    const bgTotal    = totalPct >= 70 ? '#f0fdf4' : totalPct >= 30 ? '#fffbeb' : '#fef2f2';
+    const { cor: corTotal, bg: bgTotal } = _gheCorAdesao(totalPct);
     const naoClass   = dados.naoClassificadas;
     // "Total geral" — todas as respostas recebidas (inclusive as fora do quadro GHE) ÷
     // funcionários cadastrados. Complementa "Adesão" (só as classificadas) para deixar
@@ -7826,8 +8436,7 @@ async function verAdesaoLink(linkId) {
     const totalGeralPct = totalFunc > 0 ? Math.round(dados.totalRespostas / totalFunc * 100) : 0;
 
     const linhas = dados.linhas.map(d => {
-      const cor = d.pct >= 70 ? '#16a34a' : d.pct >= 30 ? '#b45309' : '#dc2626';
-      const bg  = d.pct >= 70 ? '#f0fdf4' : d.pct >= 30 ? '#fffbeb' : '#fef2f2';
+      const { cor, bg } = _gheCorAdesao(d.pct);
       return `<tr>
         <td style="padding:4px 8px;font-size:11px;color:var(--tx)">${d.setor||'—'}</td>
         <td style="padding:4px 8px;font-size:11px;color:var(--tx)">${d.funcao||'—'}</td>
@@ -7867,8 +8476,12 @@ async function verAdesaoLink(linkId) {
           <tbody>${linhas}</tbody>
         </table>
       </div>
-      <div style="margin-top:6px;font-size:10px;color:var(--tl)">
-        Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%
+      <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--tl)">Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%</span>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px"
+          onclick="_abrirAdesao('${link.empresa_id}','${link.ciclo_id || ''}')">
+          Acompanhar e gerar relatório
+        </button>
       </div>`;
   } catch(e) {
     painel.innerHTML = `<div style="font-size:11px;color:#dc2626">Erro ao carregar adesão: ${e.message}</div>`;
@@ -8303,6 +8916,29 @@ async function loadRespostasParaEmpresa(empresaId) {
     toast('Erro ao carregar respostas do banco.', 'w');
     return null;
   }
+}
+
+// Quadro de funcionários somado por empresa — uma única query para toda a carteira.
+// Serve o denominador dos cards de Dashboard/Clientes: calcular a adesão
+// *classificada* de cada empresa exigiria carregar as respostas de todas elas, o que
+// é caro; aqui usa-se a adesão bruta (respostas ÷ quadro), o mesmo "Total geral" já
+// definido no sistema. A adesão precisa continua sendo a da tela de Adesão.
+let _headcountPorEmpresa = null; // {empresaId: quantidade} — null = ainda não carregado
+async function carregarHeadcountCarteira() {
+  if (isDemoMode || !sbAdmin) return;
+  if (currentUser?.id === 'local-admin' || currentUser?.id === 'demo') return;
+  try {
+    const ids = _empresas.map(e => e.id);
+    if (!ids.length) { _headcountPorEmpresa = {}; return; }
+    const { data, error } = await _fetchAllSupabase(() => sbAdmin
+      .from('empresa_headcount')
+      .select('empresa_id, quantidade')
+      .in('empresa_id', ids));
+    if (error) { console.warn('carregarHeadcountCarteira:', error.message); return; }
+    const acc = {};
+    (data || []).forEach(r => { acc[r.empresa_id] = (acc[r.empresa_id] || 0) + (r.quantidade || 0); });
+    _headcountPorEmpresa = acc;
+  } catch(e) { console.warn('carregarHeadcountCarteira:', e); }
 }
 
 // Retorna as linhas para análise: real se conectado, demo se não
@@ -10883,9 +11519,13 @@ async function entrarComoEST(tenantId, nome) {
   // Módulos da EST visitada — antes de aplicarRestricoesPorRole()
   await carregarModulosTenant();
 
-  // Recarregar dados filtrados ao tenant selecionado
+  // Recarregar dados filtrados ao tenant selecionado. O quadro/adesão da EST
+  // anterior não pode vazar para a visitada.
+  _invalidarHeadcountCache();
+  _headcountPorEmpresa = null;
   await carregarEmpresas();
   await carregarLinks();
+  await carregarHeadcountCarteira();
   renderDashboard();
   renderTelaEmpresas();
 
@@ -10905,6 +11545,8 @@ async function sairModoSuporte() {
   _ciclos         = [];
   _links          = [];
   _respostasCache = {};     // respostas da EST visitada não devem persistir
+  _invalidarHeadcountCache();
+  _headcountPorEmpresa = null;
   _estPerfil      = null;
   _modulosOff     = new Set(); // flags da EST visitada não valem fora do modo suporte
 
@@ -11144,6 +11786,7 @@ function _iniciarAppAposTenant() {
   carregarRiscosDB();
   carregarEstPerfil(); // carrega branding EST em paralelo (não bloqueia boot)
   carregarEmpresas().then(() => {
+    carregarHeadcountCarteira().then(() => renderDashboard());
     carregarLinks().then(() => {
       iniciarRealtimeRespostas();
       renderDashboard();
@@ -11940,17 +12583,55 @@ async function salvarNovoUsuario() {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
+// Estado da Home: busca, ordenação e filtro rápido por status.
+let _dashBusca  = '';
+let _dashOrdem  = 'urgencia';  // 'urgencia' | 'nome'
+let _dashFiltro = '';          // '' = todos; chave de _EMP_STATUS
+
+function _dashSetBusca(v)  { _dashBusca = v; _renderDashLista(); }
+function _dashSetOrdem(v)  { _dashOrdem = v; renderDashboard(); }
+function _dashSetFiltro(v) { _dashFiltro = (_dashFiltro === v) ? '' : v; renderDashboard(); }
+
 function renderDashboard() {
-  const nEmp   = _empresas.length;
+  const metricas = _empresas.map(e => ({ e, m: _calcMetricasEmpresa(e) }));
+
+  // "Empresas ativas" contava também as inativas (emp.ativo === false).
+  const nEmp   = metricas.filter(x => !x.m.inativa).length;
   const nLinks = _links.filter(l => l.ativo).length;
   const nResp  = _links.reduce((s, l) => s + (l.respostas || 0), 0);
-  const nAlert = _links.filter(l => l.ativo && (l.respostas || 0) === 0).length;
+  // Alerta acionável: empresas cuja coleta está parada ou nunca começou.
+  const paradas = metricas.filter(x => ['parada','aguardando'].includes(x.m.st.chave));
+
+  // Adesão bruta da carteira: soma das respostas ÷ soma dos quadros importados.
+  const ativas = metricas.filter(x => !x.m.inativa);
+  const quadroTot = ativas.reduce((s, x) => s + x.m.quadro, 0);
+  const respComQuadro = ativas.filter(x => x.m.quadro > 0).reduce((s, x) => s + x.m.respTotal, 0);
+  const pctCart = quadroTot > 0 ? Math.round(respComQuadro / quadroTot * 100) : null;
 
   const setKpi = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setKpi('dash-n-empresas',  nEmp);
   setKpi('dash-n-respostas', nResp);
   setKpi('dash-n-links',     nLinks);
-  setKpi('dash-n-sem-resp',  nAlert);
+  setKpi('dash-n-sem-resp',  paradas.length);
+
+  const kpiAd = document.getElementById('dash-n-adesao');
+  if (kpiAd) {
+    kpiAd.textContent = pctCart === null ? '—' : pctCart + '%';
+    kpiAd.style.color = pctCart === null ? 'var(--tl)' : _gheCorAdesao(pctCart).cor;
+    const card = kpiAd.closest('.dash-kpi');
+    if (card) card.title = quadroTot > 0
+      ? `${respComQuadro} respostas ÷ ${quadroTot} funcionários no quadro das empresas com GHE importado. Adesão bruta — inclui respostas com setor/função fora do quadro. Veja a adesão classificada por cliente na tela Adesão.`
+      : 'Nenhum cliente tem quadro de funcionários importado — sem denominador não há adesão.';
+  }
+
+  // Card de alerta clicável: filtra a lista abaixo
+  const cardAlerta = document.getElementById('dash-kpi-alerta');
+  if (cardAlerta) {
+    const on = _dashFiltro === 'parada';
+    cardAlerta.style.cursor = paradas.length ? 'pointer' : 'default';
+    cardAlerta.style.outline = on ? '2px solid var(--amber)' : 'none';
+    cardAlerta.title = 'Clique para ver apenas os clientes que precisam de cobrança';
+  }
 
   // ── Banner de boas-vindas / contexto ────────────────────────
   const welcome = document.getElementById('dash-welcome');
@@ -11961,7 +12642,7 @@ function renderDashboard() {
       welcome.innerHTML = `
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div style="flex:1;min-width:200px">
-            <div style="font-size:13px;font-weight:700;color:var(--tx)">Trabalhando em: <span style="color:var(--g)">${_empresaAtiva.nome}</span></div>
+            <div style="font-size:13px;font-weight:700;color:var(--tx)">Trabalhando em: <span style="color:var(--g)">${_escAd(_empresaAtiva.nome)}</span></div>
             <div style="font-size:12px;color:var(--tm);margin-top:2px">Todos os módulos de análise estão filtrados para esta empresa.</div>
           </div>
           <button class="btn btn-ghost" style="font-size:11px;flex-shrink:0" onclick="setEmpresaAtiva('','');renderDashboard()">
@@ -11977,7 +12658,7 @@ function renderDashboard() {
             <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
           </div>
           <div>
-            <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">Bem-vindo, ${userName}!</div>
+            <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">Bem-vindo, ${_escAd(userName)}!</div>
             <div style="font-size:13px;color:var(--tm);line-height:1.6">Para iniciar, <strong>selecione a empresa cliente</strong> abaixo. Todos os módulos de análise, relatórios e distribuição serão carregados automaticamente para a empresa escolhida.</div>
           </div>
         </div>`;
@@ -11985,8 +12666,21 @@ function renderDashboard() {
     }
   }
 
+  // Barra de controles (busca + ordenação) só aparece com clientes cadastrados
+  const ctrl = document.getElementById('dash-controls');
+  if (ctrl) ctrl.style.display = _empresas.length ? 'flex' : 'none';
+  const btnU = document.getElementById('dashord-urgencia');
+  const btnN = document.getElementById('dashord-nome');
+  if (btnU) btnU.classList.toggle('stg-active', _dashOrdem === 'urgencia');
+  if (btnN) btnN.classList.toggle('stg-active', _dashOrdem === 'nome');
+
+  _renderDashLista(metricas);
+}
+
+function _renderDashLista(metricas) {
   const list = document.getElementById('dash-empresas-list');
   if (!list) return;
+  metricas = metricas || _empresas.map(e => ({ e, m: _calcMetricasEmpresa(e) }));
 
   if (!_empresas.length) {
     list.innerHTML = `<div class="empty-state">
@@ -11998,53 +12692,66 @@ function renderDashboard() {
     return;
   }
 
-  list.innerHTML = _empresas.map(e => {
-    const linksEmp  = _links.filter(l => l.empresa_id === e.id);
-    const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
-    const linksAtiv = linksEmp.filter(l => l.ativo).length;
-    const nomeEsc   = (e.nome || '').replace(/'/g, "\\'");
-    const isAtiva   = e.id === _empresaAtiva?.id;
+  const termo = _normEmpBusca(_dashBusca);
+  let itens = metricas.filter(({ e }) =>
+    !termo || _normEmpBusca(e.nome).includes(termo) || _normEmpBusca(e.cnpj).includes(termo));
+  if (_dashFiltro === 'parada') itens = itens.filter(x => ['parada','aguardando'].includes(x.m.st.chave));
 
-    let statusTag, statusDot;
-    if (!linksAtiv) {
-      statusTag = '<span class="tag tgr">Sem links ativos</span>';
-      statusDot = '#9ca3af';
-    } else if (respTotal === 0) {
-      statusTag = '<span class="tag ty">⏳ Aguardando respostas</span>';
-      statusDot = '#d97706';
-    } else if (respTotal < 10) {
-      statusTag = '<span class="tag tb">📊 Coletando (' + respTotal + ' resp.)</span>';
-      statusDot = '#2563eb';
-    } else {
-      statusTag = '<span class="tag tg">✅ Dados disponíveis (' + respTotal + ' resp.)</span>';
-      statusDot = '#16a34a';
-    }
+  itens.sort((a, b) => _dashOrdem === 'nome'
+    ? (a.e.nome || '').localeCompare(b.e.nome || '')
+    : _urgenciaEmpresa(b.m) - _urgenciaEmpresa(a.m) || (a.e.nome || '').localeCompare(b.e.nome || ''));
+
+  if (!itens.length) {
+    list.innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--tl);font-size:13px">
+      Nenhum cliente ${_dashFiltro ? 'precisando de cobrança' : 'encontrado'}.
+      ${_dashFiltro ? '<div style="margin-top:10px"><button class="btn btn-ghost" style="font-size:11px" onclick="_dashSetFiltro(\'parada\')">Ver todos</button></div>' : ''}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = itens.map(({ e, m }) => {
+    const isAtiva = e.id === _empresaAtiva?.id;
+    const st = m.st;
+    // Chip de adesão: só existe quando há quadro importado — sem denominador
+    // "43 respostas" não diz nada sobre cobertura.
+    const chipAd = m.quadro > 0
+      ? `<span title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} no quadro" style="font-size:10px;font-weight:700;color:${_gheCorAdesao(m.pctBruto).cor};background:${_gheCorAdesao(m.pctBruto).bg};border:1px solid ${_gheCorAdesao(m.pctBruto).cor};border-radius:4px;padding:1px 6px">${m.respTotal}/${m.quadro} · ${m.pctBruto}%</span>`
+      : `<span title="Sem quadro de funcionários importado — não há denominador para calcular adesão" style="font-size:10px;color:#6b7280">${m.respTotal} resp. · sem quadro</span>`;
+    // Empresa inativa não está sendo cobrada — o alarme vermelho só confunde.
+    const chipParado = m.inativa ? ''
+      : (m.diasParado !== null && m.diasParado >= 7)
+      ? `<span style="font-size:10px;color:#dc2626;font-weight:600">sem resposta há ${m.diasParado}d</span>`
+      : (m.diasParado !== null ? `<span style="font-size:10px;color:#6b7280">última há ${m.diasParado === 0 ? 'menos de 1d' : m.diasParado + 'd'}</span>` : '');
 
     return `<div class="dash-empresa-card" style="${isAtiva ? 'border-color:#86efac;background:#f0fdf4' : ''}">
       <div style="display:flex;align-items:center;gap:10px;min-width:0">
-        <div style="width:8px;height:8px;border-radius:50%;background:${statusDot};flex-shrink:0"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
         <div style="min-width:0">
           <div class="dash-empresa-nome" style="${isAtiva ? 'color:var(--g)' : ''}">
-            ${e.nome || '—'}
+            ${_escAd(e.nome || '—')}
             ${isAtiva ? '<span style="font-size:10px;font-weight:600;background:var(--g);color:white;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle">ativo</span>' : ''}
           </div>
-          <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            ${statusTag}
-            <span style="font-size:10px;color:#6b7280">${linksAtiv} link(s) ativo(s)</span>
-            ${e.cnpj ? `<span style="font-size:10px;color:#6b7280">${e.cnpj}</span>` : ''}
+          <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="tag ${st.tag}">${st.rotulo}</span>
+            ${chipAd}
+            ${chipParado}
+            <span style="font-size:10px;color:#6b7280">${m.linksAtiv} link(s) ativo(s)</span>
           </div>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
-        ${!isAtiva ? `<button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');renderDashboard()">Selecionar</button>` : ''}
-        <button class="btn btn-ghost" data-modulo="links" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('links',document.getElementById('nb-links'))">Links</button>
+        ${!isAtiva ? `<button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${m.nomeEsc}');renderDashboard()">Selecionar</button>` : ''}
+        <button class="btn btn-ghost" data-modulo="adesao" style="font-size:11px" onclick="_abrirAdesao('${e.id}','')">Adesão</button>
         <button class="btn btn-g" style="font-size:11px"
-          onclick="setEmpresaAtiva('${e.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
+          onclick="setEmpresaAtiva('${e.id}','${m.nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
           Analisar
         </button>
       </div>
     </div>`;
   }).join('');
+
+  // Botões nascem neste render — reaplicar o flag de módulo da EST
+  if (_modulosOff.size) _esconderElementosModulos();
 }
 
 // ══════════════════════════════════════════
@@ -12115,24 +12822,82 @@ function _normEmpBusca(s) {
   return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-// Calcula métricas/status compartilhados entre grade e lista
+// Status de coleta de uma empresa — FONTE ÚNICA.
+// Antes existiam duas lógicas divergentes (renderDashboard tinha a sua inline, com 4
+// faixas e limiar de 10 respostas; _calcMetricasEmpresa tinha 3 faixas com outros
+// rótulos), então a mesma empresa aparecia como "Aguardando respostas" na Home e
+// "Aguardando" em Clientes.
+const _EMP_STATUS = {
+  inativa:    { chave:'inativa',    rotulo:'Inativa',     dot:'#9ca3af', bg:'var(--bg)',       cor:'var(--tl)',   tag:'tgr' },
+  semLinks:   { chave:'semLinks',   rotulo:'Sem links',   dot:'#9ca3af', bg:'var(--bg)',       cor:'var(--tl)',   tag:'tgr' },
+  aguardando: { chave:'aguardando', rotulo:'Aguardando',  dot:'#d97706', bg:'var(--amberbg)',  cor:'var(--amber)',tag:'ty'  },
+  parada:     { chave:'parada',     rotulo:'Coleta parada',dot:'#dc2626',bg:'#fef2f2',         cor:'#dc2626',     tag:'tgr' },
+  coletando:  { chave:'coletando',  rotulo:'Coletando',   dot:'#2563eb', bg:'var(--bluebg)',   cor:'var(--blue)', tag:'tb'  },
+  completa:   { chave:'completa',   rotulo:'Meta atingida',dot:'#16a34a',bg:'var(--gl)',       cor:'var(--g)',    tag:'tg'  },
+};
+
+function _statusEmpresa(m) {
+  if (m.inativa)       return _EMP_STATUS.inativa;
+  if (!m.linksAtiv)    return _EMP_STATUS.semLinks;
+  if (!m.respTotal)    return _EMP_STATUS.aguardando;
+  // "Parada" só faz sentido quando ainda há gente faltando; sem quadro importado
+  // (quadro = 0) não há como afirmar que falta alguém.
+  if (m.diasParado !== null && m.diasParado >= 7 && (m.quadro === 0 || m.pctBruto < 100)) return _EMP_STATUS.parada;
+  if (m.quadro > 0 && m.pctBruto >= 70) return _EMP_STATUS.completa;
+  return _EMP_STATUS.coletando;
+}
+
+// Calcula métricas/status compartilhados entre Dashboard, grade e lista
 function _calcMetricasEmpresa(emp) {
   const linksEmp  = _links.filter(l => l.empresa_id === emp.id);
   const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
   const linksAtiv = linksEmp.filter(l => l.ativo).length;
   const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
   const nSetores  = (emp.setores || []).length;
-  const nFuncoes  = (emp.funcoes || []).length;
   const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
   const codigo    = emp.numero_cliente ? `CLI-${String(emp.numero_cliente).padStart(3,'0')}` : '';
+  const inativa   = emp.ativo === false;
 
-  let status, statusBg, statusColor;
-  if (!linksAtiv)       { status='Sem links'; statusBg='var(--bg)'; statusColor='var(--tl)'; }
-  else if (!respTotal)  { status='Aguardando'; statusBg='var(--amberbg)'; statusColor='var(--amber)'; }
-  else                  { status=`${respTotal} resp.`; statusBg='var(--gl)'; statusColor='var(--g)'; }
+  // Adesão BRUTA (todas as respostas ÷ quadro cadastrado). Não é a adesão
+  // classificada da tela de Adesão — respostas com setor/função fora do GHE
+  // entram aqui. O rótulo na UI diz "adesão bruta" para não recriar a
+  // divergência de números de 2026-08-27.
+  const quadro   = _headcountPorEmpresa?.[emp.id] || 0;
+  const pctBruto = quadro > 0 ? Math.round(respTotal / quadro * 100) : null;
 
-  return { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nFuncoes, nomeEsc, codigo, status, statusBg, statusColor };
+  // Última resposta entre todos os links da empresa
+  let ultima = null;
+  linksEmp.forEach(l => { if (l.ultimaResposta && (!ultima || l.ultimaResposta > ultima)) ultima = l.ultimaResposta; });
+  const diasParado = linksAtiv ? _diasDesde(ultima) : null;
+
+  const m = { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo,
+              inativa, quadro, pctBruto, ultima, diasParado };
+  const st = _statusEmpresa(m);
+  m.st = st;
+  // Compat: campos usados pelos renders existentes
+  m.status      = st.chave === 'coletando' || st.chave === 'completa' ? `${respTotal} resp.` : st.rotulo;
+  m.statusBg    = st.bg;
+  m.statusColor = st.cor;
+  return m;
 }
+
+// Peso de urgência: quanto maior, mais precisa de cobrança. Ordena a Home.
+function _urgenciaEmpresa(m) {
+  if (m.inativa || !m.linksAtiv) return -1;         // nada a cobrar
+  if (m.st.chave === 'completa') return 0;          // já bateu a meta
+  const alvo   = m.quadro > 0 ? Math.ceil(m.quadro * AD_META_PCT / 100) : 0;
+  const faltam = Math.max(0, alvo - m.respTotal);
+  const dias   = m.diasParado === null ? 30 : Math.min(m.diasParado, 60);
+  // Pendências pesam mais que tempo parado, mas empresa sem quadro importado
+  // ainda pontua pelo tempo — senão sumiria da lista de urgência.
+  return faltam * 10 + dias;
+}
+
+let _empFiltroStatus = '';      // '' = todos; chave de _EMP_STATUS
+let _empOrdem        = 'nome';  // 'nome' | 'adesao' | 'respostas'
+
+function _setEmpFiltro(v) { _empFiltroStatus = (_empFiltroStatus === v) ? '' : v; renderTelaEmpresas(); }
+function _setEmpOrdem(v)  { _empOrdem = v; renderTelaEmpresas(); }
 
 function _setEmpresasViewMode(mode) {
   _empresasViewMode = mode;
@@ -12152,6 +12917,18 @@ function renderTelaEmpresas() {
   grid.style.display  = _empresasViewMode === 'grade' ? 'grid' : 'none';
   lista.style.display = _empresasViewMode === 'lista' ? 'flex' : 'none';
 
+  if (!_empresas.length && _empresasErro) {
+    const erro = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.4" style="margin:0 auto 12px;display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#991b1b">Não foi possível carregar os clientes</div>
+      <div style="font-size:12px;margin-bottom:16px">${_escAd(_empresasErro)}</div>
+      <button class="btn btn-g" onclick="carregarEmpresas().then(renderTelaEmpresas)">Tentar novamente</button>
+    </div>`;
+    grid.innerHTML = erro;
+    lista.innerHTML = erro;
+    return;
+  }
+
   if (!_empresas.length) {
     const vazio = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 12px;display:block"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -12164,20 +12941,44 @@ function renderTelaEmpresas() {
     return;
   }
 
+  // Busca cobre nome, CNPJ, razão social e o código CLI-xxx — o código aparece no
+  // card mas não era pesquisável, então buscar por ele não achava nada.
   const termo = _normEmpBusca(document.getElementById('emp-busca')?.value);
-  const filtradas = termo
-    ? _empresas.filter(emp => _normEmpBusca(emp.nome).includes(termo) || _normEmpBusca(emp.cnpj).includes(termo))
-    : _empresas;
+  let filtradas = termo
+    ? _empresas.filter(emp => {
+        const cod = emp.numero_cliente ? `CLI-${String(emp.numero_cliente).padStart(3,'0')}` : '';
+        return _normEmpBusca(emp.nome).includes(termo)
+            || _normEmpBusca(emp.cnpj).includes(termo)
+            || _normEmpBusca(emp.razao_social).includes(termo)
+            || _normEmpBusca(cod).includes(termo);
+      })
+    : _empresas.slice();
+
+  if (_empFiltroStatus) filtradas = filtradas.filter(e => _calcMetricasEmpresa(e).st.chave === _empFiltroStatus);
+
+  if (_empOrdem !== 'nome') {
+    filtradas.sort((a, b) => {
+      const ma = _calcMetricasEmpresa(a), mb = _calcMetricasEmpresa(b);
+      if (_empOrdem === 'respostas') return mb.respTotal - ma.respTotal;
+      // 'adesao': sem quadro importado não há percentual — vai para o fim.
+      return (mb.pctBruto ?? -1) - (ma.pctBruto ?? -1);
+    });
+  }
+
+  _renderEmpFiltros();
 
   if (!filtradas.length) {
     const semResultado = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
       <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente encontrado</div>
-      <div style="font-size:12px">Tente buscar por outro nome ou CNPJ.</div>
+      <div style="font-size:12px">Ajuste a busca ou o filtro de status.</div>
     </div>`;
     grid.innerHTML = semResultado;
     lista.innerHTML = semResultado;
     return;
   }
+
+  // Renderizar apenas a visão ativa — a grade era montada mesmo em modo lista.
+  if (_empresasViewMode === 'lista') { _renderEmpresasLista(filtradas); return; }
 
   grid.innerHTML = filtradas.map(emp => {
     const { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo, status, statusBg, statusColor } = _calcMetricasEmpresa(emp);
@@ -12210,7 +13011,7 @@ function renderTelaEmpresas() {
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
           </div>
-          <div title="Total de respostas recebidas (inclui respostas com setor/função fora do quadro GHE). Veja a adesão classificada na tela Setores &amp; Funções." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
+          <div title="Respostas recebidas. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
           </div>
@@ -12223,6 +13024,7 @@ function renderTelaEmpresas() {
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Ciclos</div>
           </div>
         </div>
+        ${_empBarraAdesao(emp)}
         ${nSetores ? `<div style="font-size:10px;color:#6b7280;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
       </div>
       <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
@@ -12254,7 +13056,46 @@ function renderTelaEmpresas() {
     </div>`;
   }).join('');
 
-  if (_empresasViewMode === 'lista') _renderEmpresasLista(filtradas);
+
+}
+
+// Barra de adesão com denominador. "43 respostas" sozinho não diz nada sobre
+// cobertura — é adesão BRUTA (inclui respostas fora do quadro); a classificada
+// fica na tela de Adesão.
+function _empBarraAdesao(emp) {
+  const m = _calcMetricasEmpresa(emp);
+  if (!m.quadro) {
+    return `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">Sem quadro de funcionários importado — adesão indisponível.</div>`;
+  }
+  const { cor } = _gheCorAdesao(m.pctBruto);
+  const larg = Math.min(100, m.pctBruto);
+  return `<div style="margin-bottom:8px" title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} funcionários no quadro. Inclui respostas com setor/função fora do GHE.">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:10px;margin-bottom:3px">
+      <span style="color:var(--tm);font-weight:600">Adesão</span>
+      <span style="color:${cor};font-weight:700">${m.respTotal} / ${m.quadro} · ${m.pctBruto}%</span>
+    </div>
+    <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${larg}%;background:${cor}"></div>
+    </div>
+  </div>`;
+}
+
+// Chips de status: contagem calculada sobre a carteira inteira, não sobre o
+// resultado filtrado — senão o chip ativo mostraria sempre o próprio total.
+function _renderEmpFiltros() {
+  const box = document.getElementById('emp-filtros');
+  if (!box) return;
+  const cont = {};
+  _empresas.forEach(e => { const k = _calcMetricasEmpresa(e).st.chave; cont[k] = (cont[k]||0)+1; });
+  const ordem = ['parada','aguardando','coletando','completa','semLinks','inativa'];
+  const chips = ordem.filter(k => cont[k]).map(k => {
+    const st = _EMP_STATUS[k];
+    const on = _empFiltroStatus === k;
+    return `<button onclick="_setEmpFiltro('${k}')" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;cursor:pointer;white-space:nowrap;background:${on?st.cor:st.bg};color:${on?'#fff':st.cor};border:1px solid ${st.cor}">${st.rotulo} ${cont[k]}</button>`;
+  }).join('');
+  box.innerHTML = chips
+    ? chips + (_empFiltroStatus ? `<button onclick="_setEmpFiltro('${_empFiltroStatus}')" style="font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;background:none;border:1px solid var(--border);color:var(--tm)">Limpar</button>` : '')
+    : '';
 }
 
 function _renderEmpresasLista(filtradas) {
@@ -12264,7 +13105,7 @@ function _renderEmpresasLista(filtradas) {
   const btn = (title, svg, onclick, extraStyle) => `<button class="btn btn-ghost" title="${title}" style="padding:5px 7px;${extraStyle||''}" onclick="${onclick}">${svg}</button>`;
 
   lista.innerHTML = filtradas.map(emp => {
-    const { linksAtiv, respTotal, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp } = _calcMetricasEmpresa(emp);
+    const { linksAtiv, respTotal, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp, quadro } = _calcMetricasEmpresa(emp);
 
     return `<div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="emp-row-${emp.id}">
       <span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;min-width:56px;text-align:center">${codigo||'—'}</span>
@@ -12275,7 +13116,7 @@ function _renderEmpresasLista(filtradas) {
       <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
       <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
         <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
-        <span title="Total de respostas recebidas (inclui respostas com setor/função fora do quadro GHE). Veja a adesão classificada na tela Setores &amp; Funções."><strong>${respTotal}</strong> resp.</span>
+        <span title="Respostas recebidas ÷ quadro de funcionários (adesão bruta). A adesão classificada fica na tela Adesão."><strong>${respTotal}</strong>${quadro ? ` / ${quadro}` : ''} resp.</span>
         <span title="Setores"><strong>${nSetores}</strong> set.</span>
         <span title="Ciclos"><strong>${ciclosEmp.length}</strong> cic.</span>
       </div>
@@ -13172,9 +14013,9 @@ function _renderHeadcountGHE(rows) {
   if (btnClr) btnClr.style.display = 'inline';
 
   // Divergência: linhas do quadro cujo setor não existe na estrutura cadastrada
-  const setoresNorm = new Set(_gheTempHierarquia.map(g => _gheNorm(g.nome)));
+  const setoresNorm = new Set(_gheTempHierarquia.map(g => _gheNormStrong(g.nome)));
   const orfaos = setoresNorm.size
-    ? rows.filter(r => !setoresNorm.has(_gheNorm(r.setor || ''))).length
+    ? rows.filter(r => !setoresNorm.has(_gheNormStrong(r.setor || ''))).length
     : 0;
   const alerta = orfaos > 0
     ? `<div style="margin-top:5px;font-size:10px;color:var(--amber,#b45309)">⚠️ ${orfaos} linha(s) do quadro com setor que não está na estrutura acima.</div>`
@@ -13222,6 +14063,7 @@ async function limparHeadcount() {
   if (!_gheEmpresaId || !sbAdmin) return;
   if (!confirm('Remover o quadro de funcionários desta empresa?')) return;
   await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+  _invalidarHeadcountCache(_gheEmpresaId);
   _gheImportHeadcount = [];
   _renderHeadcountGHE([]);
   toast('Quadro de funcionários removido.', 'g');
@@ -13277,28 +14119,28 @@ function setGHEViewMode(mode) {
 function _gheLinhasTabela() {
   const hcMap = new Map(); // 'setorNorm|||funcaoNorm' -> quantidade
   _gheHcCache.forEach(r => {
-    hcMap.set(`${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`, r.quantidade);
+    hcMap.set(`${_gheNormStrong(r.setor||'')}|||${_gheNormStrong(r.funcao||'')}`, r.quantidade);
   });
   // Adesão (respostas × total) por chave setor|||funcao — mesma normalização
   // usada pelo headcount, alimentada por calcRepresentatividade via carregarAdesaoGHE.
   const adesaoMap = new Map();
   if (_gheAdesaoData) {
     _gheAdesaoData.linhas.forEach(l => {
-      adesaoMap.set(`${_gheNorm(l.setor||'')}|||${_gheNorm(l.funcao||'')}`, { respostas: l.respostas, pct: l.pct });
+      adesaoMap.set(`${_gheNormStrong(l.setor||'')}|||${_gheNormStrong(l.funcao||'')}`, { respostas: l.respostas, pct: l.pct });
     });
   }
   const consumidas = new Set(); // chaves do headcount já representadas por uma linha do catálogo
 
   const linhas = [];
   _gheTempHierarquia.forEach(g => {
-    const setorKey = _gheNorm(g.nome);
+    const setorKey = _gheNormStrong(g.nome);
     if (!g.funcoes.length) {
       const k = `${setorKey}|||`;
       linhas.push({ setor: g.nome, funcao: '—', qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
       consumidas.add(k);
     } else {
       g.funcoes.forEach(f => {
-        const k = `${setorKey}|||${_gheNorm(f)}`;
+        const k = `${setorKey}|||${_gheNormStrong(f)}`;
         linhas.push({ setor: g.nome, funcao: f, qtd: hcMap.get(k), adesao: adesaoMap.get(k) });
         consumidas.add(k);
       });
@@ -13312,7 +14154,7 @@ function _gheLinhasTabela() {
   // agregado por setor (função nula) importado junto com linhas por função
   // no mesmo arquivo. Sem isso a quantidade some da auditoria silenciosamente.
   _gheHcCache.forEach(r => {
-    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
+    const k = `${_gheNormStrong(r.setor||'')}|||${_gheNormStrong(r.funcao||'')}`;
     if (consumidas.has(k)) return;
     linhas.push({ setor: r.setor || '—', funcao: r.funcao || '(agregado do setor)', qtd: r.quantidade, adesao: adesaoMap.get(k) });
     consumidas.add(k);
@@ -13453,17 +14295,20 @@ function _renderGHESetoresPanel() {
   // Pré-calcula mapas de headcount e adesão uma única vez (O(n) em vez de O(n²))
   const hcMap = new Map();
   _gheHcCache.forEach(r => {
-    const k = `${_gheNorm(r.setor||'')}|||${_gheNorm(r.funcao||'')}`;
+    const k = `${_gheNormStrong(r.setor||'')}|||${_gheNormStrong(r.funcao||'')}`;
     hcMap.set(k, (hcMap.get(k)||0) + (r.quantidade||0));
   });
   const adesaoMap = new Map();
   (_gheAdesaoData?.linhas||[]).forEach(l => {
-    adesaoMap.set(`${_gheNorm(l.setor||'')}|||${_gheNorm(l.funcao||'')}`, l);
+    adesaoMap.set(`${_gheNormStrong(l.setor||'')}|||${_gheNormStrong(l.funcao||'')}`, l);
   });
 
-  // Mini barra de progresso para adesão (10 blocos de 5px)
+  // Mini barra de progresso para adesão (10 blocos de 5px).
+  // Cor vem de _gheCorAdesao — antes esta barra usava 80/50 enquanto todo o resto
+  // da UI de adesão usava 70/30, então um setor a 75% aparecia verde no badge e
+  // amarelo na barra ao lado.
   const miniBar = pct => {
-    const cor = pct >= 80 ? 'var(--g)' : pct >= 50 ? 'var(--amber,#d97706)' : 'var(--red,#dc2626)';
+    const cor = _gheCorAdesao(pct).cor;
     const filled = Math.round(pct / 100 * 10);
     return `<span style="display:inline-flex;gap:1px;vertical-align:middle;margin-right:3px">${
       Array.from({length:10},(_,i) =>
@@ -13497,9 +14342,9 @@ function _renderGHESetoresPanel() {
 
   // Calcula totais de headcount e adesão para um setor
   const setorStats = nome => {
-    const sn = _gheNorm(nome);
-    const hcTotal = _gheHcCache.filter(r => _gheNorm(r.setor||'') === sn).reduce((s,r)=>s+(r.quantidade||0),0);
-    const linhasAd = (_gheAdesaoData?.linhas||[]).filter(l => _gheNorm(l.setor||'') === sn);
+    const sn = _gheNormStrong(nome);
+    const hcTotal = _gheHcCache.filter(r => _gheNormStrong(r.setor||'') === sn).reduce((s,r)=>s+(r.quantidade||0),0);
+    const linhasAd = (_gheAdesaoData?.linhas||[]).filter(l => _gheNormStrong(l.setor||'') === sn);
     const respAd = linhasAd.reduce((s,l)=>s+l.respostas,0);
     const totAd  = linhasAd.reduce((s,l)=>s+l.total,0);
     const pctAd  = totAd > 0 ? Math.round(respAd/totAd*100) : null;
@@ -13558,10 +14403,10 @@ function _renderGHEDetailPane__legacy() {
   }
 
   const grupo = _gheTempHierarquia[_gheSetorAtivo];
-  const setorNorm = _gheNorm(grupo.nome);
-  const hcSetor = _gheHcCache.filter(r => _gheNorm(r.setor || '') === setorNorm);
+  const setorNorm = _gheNormStrong(grupo.nome);
+  const hcSetor = _gheHcCache.filter(r => _gheNormStrong(r.setor || '') === setorNorm);
   const hcTotal = hcSetor.reduce((s, r) => s + (r.quantidade || 0), 0);
-  const cargosComHc = grupo.funcoes.filter(f => hcSetor.some(r => _gheNorm(r.funcao || '') === _gheNorm(f))).length;
+  const cargosComHc = grupo.funcoes.filter(f => hcSetor.some(r => _gheNormStrong(r.funcao || '') === _gheNormStrong(f))).length;
   const pct = grupo.funcoes.length ? Math.round(cargosComHc / grupo.funcoes.length * 100) : null;
   const cor = pct === null ? 'var(--tl)' : pct >= 70 ? 'var(--g)' : pct >= 30 ? 'var(--amber,#d97706)' : 'var(--red,#dc2626)';
 
@@ -13570,7 +14415,7 @@ function _renderGHEDetailPane__legacy() {
   // (carregarAdesaoGHE) e há linhas de quadro para este setor específico.
   let adesaoHtml = '';
   if (_gheAdesaoData) {
-    const linhasSetor = _gheAdesaoData.linhas.filter(l => _gheNorm(l.setor || '') === setorNorm);
+    const linhasSetor = _gheAdesaoData.linhas.filter(l => _gheNormStrong(l.setor || '') === setorNorm);
     if (linhasSetor.length) {
       const respSetor  = linhasSetor.reduce((s, l) => s + l.respostas, 0);
       const totalSetor = linhasSetor.reduce((s, l) => s + l.total, 0);
@@ -13674,14 +14519,14 @@ function _renderGHECargosPanel() {
   }
 
   // Headcount por função deste setor (badge)
-  const setorNorm = _gheNorm(grupo.nome);
+  const setorNorm = _gheNormStrong(grupo.nome);
   const hcPorFuncao = new Map();
   _gheHcCache.forEach(r => {
-    if (_gheNorm(r.setor || '') === setorNorm) hcPorFuncao.set(_gheNorm(r.funcao || ''), r.quantidade);
+    if (_gheNormStrong(r.setor || '') === setorNorm) hcPorFuncao.set(_gheNormStrong(r.funcao || ''), r.quantidade);
   });
 
   panel.innerHTML = itens.map(({ f, fi }) => {
-    const qtd = hcPorFuncao.get(_gheNorm(f));
+    const qtd = hcPorFuncao.get(_gheNormStrong(f));
     const badge = qtd !== undefined
       ? `<span title="Funcionários (quadro importado)" style="flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600;color:var(--tm)">${qtd}</span>`
       : '';
@@ -14340,6 +15185,9 @@ async function salvarGHE() {
         const { error: hcDelErr } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', empId);
         if (hcDelErr) throw new Error('Quadro de funcionários (limpeza): ' + hcDelErr.message);
       }
+
+      // O quadro pode ter sido reescrito ou apagado acima — a adesão precisa reler.
+      _invalidarHeadcountCache(empId);
 
       const hcMsg = hcSalvo > 0 ? ` + quadro de ${hcSalvo} linha(s)` : '';
       toast(`GHE salvo com sucesso!${hcMsg}`, 'g');
@@ -15003,7 +15851,7 @@ function goScreen(id, btn) {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
     // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','agrupamentos','comparativo','auditoria']),
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','agrupamentos','adesao','comparativo','auditoria']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -15029,7 +15877,7 @@ function goScreen(id, btn) {
   if (btn) btn.classList.add('on');
   const map = {
     dashboard:'nb-dashboard', empresas:'nb-empresas', ghe:'nb-ghe', agrupamentos:'nb-agrupamentos',
-    links:'nb-links', q:'nb-q',
+    adesao:'nb-adesao', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
@@ -15056,7 +15904,8 @@ function goScreen(id, btn) {
       switch(id) {
         case 'dashboard':
           // Atualizar contagem de respostas antes de renderizar o dashboard
-          carregarContagemRespostas().then(() => renderDashboard());
+          Promise.all([carregarContagemRespostas(), carregarHeadcountCarteira()])
+            .then(() => renderDashboard());
           break;
         case 'empresas':
           renderTelaEmpresas();
@@ -15066,6 +15915,9 @@ function goScreen(id, btn) {
           break;
         case 'agrupamentos':
           _setupTelaAgrupamentos();
+          break;
+        case 'adesao':
+          _setupTelaAdesao();
           break;
         case 'links':
           renderLinks();
