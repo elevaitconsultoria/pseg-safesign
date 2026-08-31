@@ -124,6 +124,19 @@ authenticated USING/WITH CHECK (is_super_admin())` das outras 5). Validado via
 `set_config('request.jwt.claims', ...)` simulando o JWT do super_admin em transação com
 ROLLBACK, sem precisar de sessão HTTP real.
 
+**Gap adicional encontrado e corrigido em 2026-08-28**: `empresa_headcount` (tabela criada por
+`migration_empresa_headcount.sql`, **depois** de `migration_painel_eleva.sql`) nunca recebeu a
+mesma policy de bypass — mesma classe de bug do gap de `respostas`/`resposta_itens` acima, só
+que na escrita: super_admin em Modo Suporte reimportando o quadro de funcionários de uma EST
+via GHE recebia `"Erro ao salvar GHE: Quadro de funcionários: new row violates row-level
+security policy for table \"empresa_headcount\""`, porque `salvarGHE()` insere com
+`tenant_id = currentTenantId` (o tenant da EST visitada), mas a única policy de INSERT exigia
+`tenant_id = get_my_tenant_id()`, que para super_admin é `NULL`. Corrigido em DEV e PROD com
+`empresa_headcount_super_admin_all` (mesmo padrão das outras), formalizado em
+`migration_empresa_headcount_super_admin.sql`. Validado com o mesmo método
+`set_config`/`ROLLBACK`: super_admin falhava antes do fix, admin/consultor do próprio tenant
+nunca foi afetado.
+
 ## Copiar dados de uma empresa PROD → DEV (para testar features ainda não deployadas)
 
 Não existe FDW/dblink configurado entre os dois projetos Supabase, e nenhuma credencial de
