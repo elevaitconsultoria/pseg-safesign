@@ -124,6 +124,19 @@ authenticated USING/WITH CHECK (is_super_admin())` das outras 5). Validado via
 `set_config('request.jwt.claims', ...)` simulando o JWT do super_admin em transação com
 ROLLBACK, sem precisar de sessão HTTP real.
 
+**Gap adicional encontrado e corrigido em 2026-08-28**: `empresa_headcount` (tabela criada por
+`migration_empresa_headcount.sql`, **depois** de `migration_painel_eleva.sql`) nunca recebeu a
+mesma policy de bypass — mesma classe de bug do gap de `respostas`/`resposta_itens` acima, só
+que na escrita: super_admin em Modo Suporte reimportando o quadro de funcionários de uma EST
+via GHE recebia `"Erro ao salvar GHE: Quadro de funcionários: new row violates row-level
+security policy for table \"empresa_headcount\""`, porque `salvarGHE()` insere com
+`tenant_id = currentTenantId` (o tenant da EST visitada), mas a única policy de INSERT exigia
+`tenant_id = get_my_tenant_id()`, que para super_admin é `NULL`. Corrigido em DEV e PROD com
+`empresa_headcount_super_admin_all` (mesmo padrão das outras), formalizado em
+`migration_empresa_headcount_super_admin.sql`. Validado com o mesmo método
+`set_config`/`ROLLBACK`: super_admin falhava antes do fix, admin/consultor do próprio tenant
+nunca foi afetado.
+
 ## Copiar dados de uma empresa PROD → DEV (para testar features ainda não deployadas)
 
 Não existe FDW/dblink configurado entre os dois projetos Supabase, e nenhuma credencial de
@@ -460,6 +473,67 @@ visitada continuariam valendo fora do modo suporte.
   export de Gráficos e toolbar do `_buildLaudoHTML` usam o nome dinâmico da EST. Se ausente, o campo
   some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
   `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.
+
+## Acompanhamento de Adesão (2026-08-28)
+
+Tela `#sc-adesao` (`nb-adesao`, entre Agrupamentos GHE e Links), módulo `adesao`, bloqueada
+para `cliente_viewer`. Existe porque a adesão só vivia num badge do header da GHE e num painel
+colapsado por link — não havia tela de acompanhamento, nenhum export, e nenhuma noção de tempo.
+
+- **`calcRepresentatividade()` continua sendo o único motor de adesão.** A tela, o badge da GHE,
+  o painel `verAdesaoLink` e o PDF exportado leem todos dele — nunca recalcular adesão em
+  outro lugar (a divergência de números de 2026-08-27 nasceu exatamente assim).
+- **Matching migrou de `_gheNorm` para `_gheNormStrong`** (alinhado a `agruparPorGrupos`, 2026-08-28).
+  Vale também para os joins de catálogo × quadro × adesão em `_gheLinhasTabela()`,
+  `_renderGHESetoresPanel()`, `_renderGHEDetailPane()` e na detecção de linhas órfãs do quadro.
+  Consequência: "Produção" e "Producao" passam a ser a mesma linha — `naoClassificadas` só pode
+  cair, nunca subir.
+- **Campos novos no retorno** (aditivos, consumo antigo não quebra): `faltam` por linha e no
+  total, `porDia` (Map `'YYYY-MM-DD'→n`), `ultimaResposta`, `ultimos7`. `respondido_em` era
+  carregado e descartado; agora alimenta a curva e o "parado há N dias".
+- **Ordenação default é por `faltam`, não por `%`** — quem cobra precisa do número absoluto;
+  por percentual um setor de 0/1 (0%) aparece antes de um de 20/100.
+- **`_gheCorAdesao()` é a fonte única de cor** (70/30). A miniBar do painel de setor usava 80/50
+  e `verAdesaoLink` tinha os ternários duplicados inline — unificados.
+- **`_hcCache` / `_getHeadcountCached()`**: cache do quadro por empresa, invalidado em
+  `salvarGHE()`, `limparHeadcount()` e ao entrar/sair do Modo Suporte via
+  `_invalidarHeadcountCache()`.
+- **`exportarAdesaoPrint()`**: relatório imprimível para o RH do cliente (molde de
+  `exportarResultadosPrint`). Branding via `_estPerfil.nome_empresa`, curva embutida como
+  `canvas.toDataURL()`, tabela ordenada por faltantes e **nota de anonimato obrigatória** — o
+  documento sai da consultoria para a empresa e não pode sugerir rastreabilidade individual.
+- `_abrirAdesao(empresaId, cicloId)` grava `_adAlvo` e chama `goScreen` — **não** chamar
+  `_setupTelaAdesao()` junto: `goScreen` já o dispara no próprio `setTimeout` e as duas cargas
+  corriam em paralelo.
+- `_adAtualizarTabela()` repinta **só o `<tbody>`** e os indicadores de sort. Trocar o card
+  inteiro recriava o input de busca (perda de foco/cursor a cada tecla) e destruía o canvas.
+
+## Dashboard e Clientes — status, adesão e urgência (2026-08-28)
+
+- **`_statusEmpresa(m)` + `_EMP_STATUS` são a fonte única de status de coleta.** Antes o
+  Dashboard tinha a lógica inline (4 faixas, limiar `<10` respostas) e `_calcMetricasEmpresa`
+  tinha outra (3 faixas, outros rótulos) — a mesma empresa aparecia como "Aguardando respostas"
+  na Home e "Aguardando" em Clientes. Estados: `inativa | semLinks | aguardando | parada |
+  coletando | completa`.
+- **Adesão exibida em Home/Clientes é BRUTA** (`respostas ÷ quadro`, o mesmo "Total geral" já
+  definido no sistema) — a *classificada* exige carregar as respostas de cada empresa e continua
+  exclusiva da tela de Adesão. A UI diz isso nos tooltips; não trocar um pelo outro.
+- **`carregarHeadcountCarteira()`** — uma única query agregada de `empresa_headcount` por
+  tenant, popula `_headcountPorEmpresa`. Limpo ao entrar/sair do Modo Suporte.
+- **`carregarContagemRespostas()` agora traz `respondido_em`** na mesma query e preenche
+  `l.ultimaResposta` por link — "parado há N dias" sem nenhuma consulta adicional.
+- **`_urgenciaEmpresa(m)`** ordena a Home: `faltam_até_a_meta * 10 + dias_parado`. O alvo é a
+  **meta (`AD_META_PCT` = 70%)**, não 100% — com 100% um cliente a 80% (já "Meta atingida")
+  pontuava mais alto que um que nunca recebeu resposta e liderava a lista de cobrança.
+- KPI "Empresas ativas" passou a respeitar `emp.ativo`; o card de alerta virou
+  "Precisam de cobrança" e filtra a lista ao ser clicado.
+- Busca de Clientes cobre nome, CNPJ, **razão social e o código `CLI-xxx`**; a tela ganhou
+  filtro por status e ordenação (Nome | Adesão | Respostas), e passou a renderizar **apenas a
+  visão ativa** (a grade era montada mesmo em modo lista).
+- `carregarEmpresas()` grava `_empresasErro` e a tela mostra estado de erro com "Tentar
+  novamente" — antes uma falha de rede era indistinguível de "Nenhum cliente cadastrado".
+- Título da tela de links passou a ser **"Coleta & Links"** (era "Clientes & Coleta", ambíguo
+  com o menu "Clientes"). Só o rótulo — nenhum id, rota ou arquivo renomeado.
 
 ## Agrupamentos GHE (2026-08-17 → 2026-08-28)
 
