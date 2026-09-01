@@ -376,6 +376,44 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 /* .btn-amber nunca teve :hover — única variante sem retorno visual */
 .btn-amber:hover{background:var(--amber);color:var(--n0);border-color:var(--amber)}
 
+/* botão de fechar de modal — era um ✕ solto com estilo inline */
+.btn-fechar{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border:none;background:none;cursor:pointer;color:var(--tl);border-radius:var(--r);
+  transition:background .12s,color .12s;flex-shrink:0}
+.btn-fechar svg{width:var(--ic-md);height:var(--ic-md)}
+.btn-fechar:hover{background:var(--bs);color:var(--tx)}
+.btn-fechar:focus-visible{outline:none;box-shadow:0 0 0 3px var(--g-ring)}
+
+/* ── UTILITÁRIOS DE TELA (Fase 5) ── */
+
+/* Grade de KPIs — era um style="display:grid;..." repetido tela a tela */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--sp-4);margin-bottom:var(--sp-6)}
+
+/* Cores semânticas do número do KPI, no lugar de style="color:..." inline */
+.kpi-val.is-mute,.sum-val.is-mute,.dash-kpi-val.is-mute{color:var(--tl)}
+.kpi-val.is-ok,.sum-val.is-ok,.dash-kpi-val.is-ok{color:var(--g)}
+.kpi-val.is-info,.sum-val.is-info,.dash-kpi-val.is-info{color:var(--blue)}
+.kpi-val.is-warn,.sum-val.is-warn,.dash-kpi-val.is-warn{color:var(--amber)}
+/* KPI clicável (ex.: "Precisam de cobrança" filtra a lista) — antes nada
+   indicava que o card respondia ao clique */
+.kpi-card.is-clickable,.sum-card.is-clickable,.dash-kpi.is-clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.kpi-card.is-clickable:hover,.sum-card.is-clickable:hover,.dash-kpi.is-clickable:hover{border-color:var(--n300);box-shadow:var(--sh-md)}
+
+/* Campo de busca — 4 telas repetiam o mesmo bloco inline, uma delas com um
+   emoji 🔍 dentro do placeholder no lugar de um ícone */
+.input-busca{flex:1;min-width:200px;padding:var(--sp-3) var(--sp-4) var(--sp-3) 32px;
+  border:1.5px solid var(--border);border-radius:var(--r);background:var(--w) no-repeat 10px 50%/14px 14px;
+  background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  font-family:var(--font-ui);font-size:var(--fs-md);color:var(--tx);outline:none;
+  transition:border-color .15s,box-shadow .15s}
+.input-busca:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
+.input-busca::placeholder{color:var(--tl)}
+
+/* Barra de controles acima de uma lista (busca + ordenação + toggles) */
+.list-controls{display:flex;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-4);flex-wrap:wrap}
+.list-controls-label{font-size:var(--fs-sm);font-weight:var(--fw-b);text-transform:uppercase;
+  letter-spacing:.6px;color:var(--tm);flex-shrink:0}
+
 /* ── TAGS ── */
 /* Casca compartilhada por todos os badges do app. Cada um mantém abaixo
    apenas o tamanho/paleta que lhe é próprio. */
@@ -1788,25 +1826,27 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
   </div>
   <!-- KPIs -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+  <div class="kpi-grid">
     <div class="dash-kpi" title="Percentual de respostas recebidas sobre o quadro de funcionários dos clientes com GHE importado.">
-      <div class="dash-kpi-val" id="dash-n-adesao" style="color:var(--tl)">—</div>
+      <div class="dash-kpi-val is-mute" id="dash-n-adesao">—</div>
       <div class="dash-kpi-lbl">Adesão da carteira</div>
     </div>
     <div class="dash-kpi">
-      <div class="dash-kpi-val" id="dash-n-empresas" style="color:var(--tx)">—</div>
+      <div class="dash-kpi-val" id="dash-n-empresas">—</div>
       <div class="dash-kpi-lbl">Empresas ativas</div>
     </div>
     <div class="dash-kpi">
-      <div class="dash-kpi-val" id="dash-n-respostas" style="color:var(--g)">—</div>
+      <div class="dash-kpi-val is-ok" id="dash-n-respostas">—</div>
       <div class="dash-kpi-lbl">Respostas totais</div>
     </div>
     <div class="dash-kpi">
-      <div class="dash-kpi-val" id="dash-n-links" style="color:var(--blue)">—</div>
+      <div class="dash-kpi-val is-info" id="dash-n-links">—</div>
       <div class="dash-kpi-lbl">Links ativos</div>
     </div>
-    <div class="dash-kpi" id="dash-kpi-alerta" onclick="_dashSetFiltro('parada')">
-      <div class="dash-kpi-val" id="dash-n-sem-resp" style="color:var(--amber)">—</div>
+    <div class="dash-kpi is-clickable" id="dash-kpi-alerta" onclick="_dashSetFiltro('parada')"
+      role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_dashSetFiltro('parada')}"
+      title="Clientes com coleta parada — clique para filtrar a lista abaixo">
+      <div class="dash-kpi-val is-warn" id="dash-n-sem-resp">—</div>
       <div class="dash-kpi-lbl">Precisam de cobrança</div>
     </div>
   </div>
@@ -1815,10 +1855,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div id="dash-welcome"></div>
 
   <!-- Lista empresas -->
-  <div id="dash-controls" style="display:none;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);flex-shrink:0">Selecione o cliente</div>
-    <input type="text" id="dash-busca" placeholder="Buscar por nome ou CNPJ..." oninput="_dashSetBusca(this.value)"
-      style="flex:1;min-width:200px;padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Inter',sans-serif;outline:none">
+  <div id="dash-controls" class="list-controls" style="display:none">
+    <div class="list-controls-label">Selecione o cliente</div>
+    <input type="text" id="dash-busca" class="input-busca" placeholder="Buscar por nome ou CNPJ…"
+      aria-label="Buscar cliente por nome ou CNPJ" oninput="_dashSetBusca(this.value)">
     <div class="seg-toggle-group" title="Urgência: quem tem mais pessoas faltando e mais tempo sem resposta primeiro">
       <button id="dashord-urgencia" onclick="_dashSetOrdem('urgencia')">Urgência</button>
       <button id="dashord-nome" onclick="_dashSetOrdem('nome')">Nome</button>
@@ -1827,7 +1867,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div id="dash-empresas-list">
     <!-- Skeleton: sem isso a tela ficava vazia durante o boot, indistinguível de
          "nenhum cliente cadastrado" ou de uma falha de rede. -->
-    <div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>
+    <div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div>
   </div>
 </div>
 
@@ -2098,7 +2138,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </button>
       <button class="btn btn-ghost" onclick="exportarResultados('pdf')" id="btn-export-pdf" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 15h3.5a1.5 1.5 0 000-3H7v6m7-6h1a2 2 0 010 4h-1m4-4v6"/></svg>
-        Imprimir / PDF
+        Exportar PDF
       </button>
       <button class="btn btn-ghost" onclick="exportarResultados('png')" id="btn-export-png" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -2194,8 +2234,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <label class="filter-label" for="audit-busca">Buscar</label>
-        <input type="text" id="audit-busca" placeholder="Buscar por setor, função ou ID…" oninput="renderTelaAuditoria()"
-          class="filter-select" style="cursor:text"/>
+        <input type="text" id="audit-busca" class="input-busca" placeholder="Buscar por setor, função ou ID…"
+          aria-label="Buscar resposta" oninput="renderTelaAuditoria()"/>
       </div>
 
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -2404,7 +2444,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </button>
       <button class="btn btn-g" onclick="gerarLaudoPDF()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        Exportar / Imprimir
+        Exportar PDF
       </button>
     </div>
   </div>
@@ -3227,162 +3267,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   </div>
 </div>
 
-<!-- TELA BACKLOG — oculta (conteúdo em ROADMAP.md) -->
-<div class="screen" id="sc-backlog" style="display:none!important">
-  <div class="page-header">
-    <div class="page-title">Backlog de Melhorias</div>
-    <div class="page-sub">Ideias e funcionalidades planejadas para versões futuras do Eleva IT</div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Portal do Cliente (Dashboard de Resultados)</div>
-        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
-      </div>
-      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <p style="margin-bottom:8px">Área dedicada onde cada empresa cliente pode visualizar seus próprios resultados — sem precisar da intermediação da consultoria para cada análise.</p>
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Login separado por empresa</li>
-        <li>Dashboard resumido: score médio, top riscos, evolução temporal</li>
-        <li>Gráficos de distribuição por setor e função (somente leitura)</li>
-        <li>Download de relatório PDF sem marca da consultoria</li>
-        <li>Comparativo entre ciclos (quando houver ≥ 2 ciclos de coleta)</li>
-      </ul>
-    </div>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
-      ℹ️ Exportação pelo consultor continua sendo a forma primária até implementação desta feature.
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Personalização do Questionário por Cliente</div>
-        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
-      </div>
-      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <p style="margin-bottom:8px">Permitir que o consultor desative ou adicione questões específicas por empresa, mantendo o núcleo NR-17 obrigatório.</p>
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Tabela <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_questoes_config</code> com overrides por empresa</li>
-        <li>Questões NR-17 obrigatórias não podem ser desativadas</li>
-        <li>Questões complementares podem ser acrescentadas pelo consultor</li>
-        <li>Formulário de coleta carrega configuração via token do link</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Notificações &amp; Alertas Automáticos</div>
-        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
-      </div>
-      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>E-mail automático ao consultor quando nova resposta é recebida</li>
-        <li>Alerta quando link está próximo de expirar (≤ 48 horas)</li>
-        <li>Resumo semanal de novas respostas por empresa</li>
-        <li>Webhook configurável para integração com sistemas externos</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Plano de Ação (5W2H)</div>
-        <div class="card-sub">Prioridade: Baixa · Versão futura</div>
-      </div>
-      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Geração automática de plano 5W2H a partir dos riscos identificados</li>
-        <li>Atribuição de responsável, prazo e status por ação</li>
-        <li>Acompanhamento de progresso (% concluído por empresa)</li>
-        <li>Inclusão no relatório PDF como seção de "Plano de Intervenção"</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Landing Page / Página de Vendas</div>
-        <div class="card-sub">Prioridade: Média · Site separado</div>
-      </div>
-      <span style="background:var(--amberbg);color:var(--amber);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">📋 Planejado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <p style="margin-bottom:8px">Site separado voltado para conversão — apresenta o Eleva IT para potenciais clientes sem misturar com o app operacional.</p>
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Domínio próprio (ex: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">psicomap.com.br</code>) separado do app</li>
-        <li>Seções: hero + proposta de valor, como funciona, planos, contato</li>
-        <li>SEO-ready: meta tags, OG, Schema.org, carregamento sem Supabase</li>
-        <li>CTA para trial/contato; onboarding leva ao app (app.psicomap.com.br)</li>
-        <li>Sem autenticação — página pública, otimizada para conversão</li>
-      </ul>
-    </div>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
-      ℹ️ Modelo atual (B2B consultivo) pede landing separada — visitante frio não deve cair no app diretamente.
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Ajuste de Probabilidade pelo Consultor</div>
-        <div class="card-sub">Prioridade: Média · Próxima versão</div>
-      </div>
-      <span style="background:var(--bluebg);color:var(--blue);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">🔬 Especificado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <p style="margin-bottom:8px">Permitir que o consultor/admin sobrescreva a probabilidade calculada (P) de um fator de risco específico, registrando a justificativa técnica — sem perder rastreabilidade do valor original.</p>
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Botão <strong>✎</strong> discreto ao lado do badge P, visível apenas para admin/consultor</li>
-        <li>Painel inline (não modal): P calculado (readonly) + seletor P ajustado (1–4) + campo de justificativa obrigatório</li>
-        <li>Badge muda para <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">P3*</code> com tooltip mostrando ajuste, autor e data</li>
-        <li>Tabela <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">ajuste_probabilidade</code> (empresa_id, ciclo_id, cd_risco, p_calculado, p_ajustado, justificativa, ajustado_por, created_at)</li>
-        <li>Laudo exibe ambos os valores (calculado e ajustado) com nota de rodapé</li>
-        <li>Reset para P calculado com um clique</li>
-      </ul>
-    </div>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
-      ℹ️ Caso de uso principal: amostras pequenas (n &lt; 5), ciclos atípicos (férias coletivas, greve) ou fatores contextuais que o algoritmo não captura.
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:12px">
-    <div class="card-hdr">
-      <div>
-        <div class="card-title">Agrupamento de Setores Pequenos</div>
-        <div class="card-sub">Prioridade: Média · Próxima versão</div>
-      </div>
-      <span style="background:var(--bluebg);color:var(--blue);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;white-space:nowrap">🔬 Especificado</span>
-    </div>
-    <div style="font-size:13px;color:var(--tm);line-height:1.7">
-      <p style="margin-bottom:8px">Empresas com dezenas de setores pequenos (caso real: 53 setores, muitos com 0–1 cargo) ficam difíceis de analisar — cada setor vira uma fatia estatisticamente irrelevante nos gráficos de distribuição. Precisa de um jeito de agrupar setores correlatos (ex. várias linhas de produção → "Produção") sem perder o setor original no cadastro/formulário.</p>
-      <p style="margin-bottom:8px"><strong>Recomendação: cadastrar o agrupamento em Setores &amp; Funções (GHE), não em Resultados.</strong></p>
-      <ul style="margin-left:18px;list-style:disc;font-size:12px;color:var(--tm);line-height:1.8">
-        <li>Setor continua sendo a unidade atômica no formulário, no <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_headcount</code> e no cálculo de representatividade (calcRepresentatividade) — nada muda aí</li>
-        <li>Novo campo opcional <code style="background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11px">empresa_setores.grupo</code> (texto livre) — o consultor marca "Produção A", "Produção B", "Produção C" como pertencentes ao grupo "Produção" direto na árvore do GHE</li>
-        <li>Cadastrado uma vez, o agrupamento reaparece automaticamente em todas as telas que consomem setor: Distribuição, Comparativo, Auditoria, Laudo/PDF — sem precisar reconfigurar em cada uma</li>
-        <li>Resultados/Distribuição ganha um toggle "Ver por: Setor | Grupo" que só troca a dimensão de agregação da query — não duplica a definição do agrupamento</li>
-      </ul>
-    </div>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--tl)">
-      ℹ️ Por que não em Resultados: se o agrupamento existisse só na tela de análise, cada tela (Distribuição, Comparativo, Laudo) teria que reimplementar/reconfigurar o mesmo agrupamento — risco real de o consultor agrupar diferente na tela e no laudo exportado, gerando inconsistência. Definir uma vez no cadastro (GHE) mantém uma única fonte de verdade.
-    </div>
-  </div>
-
-</div>
 
 <!-- ══════════════════════════════════════
      TELA GESTÃO DE ESTs (super_admin only)
@@ -3476,7 +3360,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="card" style="width:420px;max-width:94vw;padding:28px;border-radius:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div style="font-size:14px;font-weight:700;color:var(--tx)">Convidar nova EST</div>
-      <button onclick="fecharModalConvidarEST()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:18px;line-height:1">✕</button>
+      <button class="btn-fechar" onclick="fecharModalConvidarEST()" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div>
@@ -3505,7 +3389,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="card" style="width:520px;max-width:94vw;padding:28px;border-radius:14px;max-height:88vh;display:flex;flex-direction:column">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div style="font-size:14px;font-weight:700;color:var(--tx)">Módulos habilitados</div>
-      <button onclick="fecharModalModulosEST()" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:18px;line-height:1">✕</button>
+      <button class="btn-fechar" onclick="fecharModalModulosEST()" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div id="modulos-est-nome" style="font-size:12px;color:var(--tl);margin-bottom:16px"></div>
     <div id="modulos-est-lista" style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1;margin:0 -6px;padding:0 6px"></div>
@@ -3792,8 +3676,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-    <input type="text" id="emp-busca" placeholder="Buscar por nome, CNPJ, razão social ou código..." oninput="renderTelaEmpresas()"
-      style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-family:'Inter',sans-serif">
+    <input type="text" id="emp-busca" class="input-busca" placeholder="Buscar por nome, CNPJ, razão social ou código…"
+      aria-label="Buscar cliente" oninput="renderTelaEmpresas()">
     <select id="emp-ordem" onchange="_setEmpOrdem(this.value)" class="filter-select" style="width:auto;min-width:150px">
       <option value="nome">Ordenar: Nome</option>
       <option value="adesao">Ordenar: Adesão</option>
@@ -7148,8 +7032,8 @@ function renderGruposLista(tipo, grupos, el) {
         <div class="group-name">${g.nome}</div>
         <div class="group-items">${g.itens.map(it=>`<span class="group-tag">${it}</span>`).join('')}</div>
       </div>
-      <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="aplicarGrupo('${tipo}',${i})">Aplicar</button>
-      <button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="aplicarGrupo('${tipo}',${i})">Aplicar</button>
+      <button class="btn btn-red btn-sm" onclick="removerGrupo('${tipo}','${g.id}')" aria-label="Remover agrupamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>`).join('');
 }
 
@@ -7341,10 +7225,8 @@ function renderTabelaAgrupamentos() {
           </div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
-          <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px"
-            onclick="editarGrupo('${tipo}','${g.id}')">✎ Editar</button>
-          <button class="btn btn-red" style="font-size:10px;padding:3px 8px"
-            onclick="removerGrupo('${tipo}','${g.id}')">✕</button>
+          <button class="btn btn-ghost btn-sm" onclick="editarGrupo('${tipo}','${g.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Editar</button>
+          <button class="btn btn-red btn-sm" onclick="removerGrupo('${tipo}','${g.id}')" aria-label="Remover agrupamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
       </div>`).join('');
   };
@@ -8245,9 +8127,8 @@ function _adTabelaHTML() {
         <div style="font-size:13px;font-weight:700;color:var(--tx)">Onde falta gente</div>
         <div style="font-size:11px;color:var(--tm);margin-top:2px">Ordenado por pessoas pendentes — é o que se usa para cobrar, não o percentual.</div>
       </div>
-      <input type="text" id="ad-busca" placeholder="🔍 Buscar setor ou função..." value="${_escAd(_adFiltro)}"
-        oninput="_adBuscar(this.value)"
-        style="min-width:200px;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;font-family:'Inter',sans-serif;outline:none">
+      <input type="text" id="ad-busca" class="input-busca" placeholder="Buscar setor ou função…" value="${_escAd(_adFiltro)}"
+        aria-label="Buscar setor ou função" oninput="_adBuscar(this.value)">
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;min-width:560px">
@@ -16048,7 +15929,7 @@ function goScreen(id, btn) {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
     // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','backlog','ghe','agrupamentos','adesao','comparativo','auditoria']),
+    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','ghe','agrupamentos','adesao','comparativo','auditoria']),
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
@@ -16078,7 +15959,7 @@ function goScreen(id, btn) {
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
     metodologia:'nb-metodologia', riscos:'nb-riscos',
-    usuarios:'nb-usuarios', backlog:'nb-backlog', assinatura:'nb-assinatura',
+    usuarios:'nb-usuarios', assinatura:'nb-assinatura',
     'gestao-ests':'nb-gestao-ests', 'est-perfil':'nb-est-perfil'
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
@@ -16179,9 +16060,6 @@ function goScreen(id, btn) {
             preencherSelectCiclos('plano-ciclo', _empresaAtiva.id);
             renderPlanoAcao();
           }
-          break;
-        case 'backlog':
-          // Tela estática — nada a renderizar
           break;
         case 'q':
           // Carregar questionário da empresa ativa sempre que navegar para a tela
