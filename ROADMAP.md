@@ -22,6 +22,33 @@ Permitir que o consultor/admin sobrescreva a probabilidade calculada (P) de um f
 
 ---
 
+### Melhorias no Formulário de Coleta — Identificação e Setor/Função
+**Prioridade: a definir**
+
+Dois ajustes em `psicomap-forms.html`, independentes entre si:
+
+1. **Remover a opção "Outro (especificar)"** dos combos de Setor e Função. Hoje o
+   respondente pode digitar um valor livre quando não encontra seu setor/função na lista
+   (gera respostas como `"Outro: Almoxarifado"`). Esses valores nunca entram no catálogo
+   GHE, ficam de fora do cálculo de Adesão (ver `calcRepresentatividade`) e exigem
+   tratamento manual depois (ver busca + itens livres em Agrupamentos GHE, PR #54).
+   Passaria a ser obrigatório escolher um setor/função já cadastrado — reforça a regra de
+   negócio existente ("GHE é pré-requisito para o formulário funcionar") em vez de dar um
+   escape hatch que quebra a rastreabilidade.
+   - Pré-condição: a importação GHE do cliente precisa estar completa e correta antes de
+     distribuir o link — sem "Outro", um setor faltando no cadastro vira um bloqueio real
+     para o respondente, não só um dado sujo.
+
+2. **Mover a etapa de Identificação (Setor, Função, Escolaridade) para o topo do
+   formulário**, antes das 27 questões. Hoje ela vem depois de `#questoes-wrap` — só
+   aparece junto do aviso de LGPD e do botão de enviar, no fim. Se o respondente tiver
+   dúvida sobre qual setor/função escolher, ele só percebe isso depois de já ter
+   respondido tudo; não dá pra perguntar pro RH/gestor sem expor que já respondeu (ou
+   arriscar perder as respostas ao recarregar a página). Identificação primeiro resolve
+   isso.
+
+---
+
 ## 📋 Planejado (versão futura)
 
 ### Portal do Cliente (Dashboard de Resultados)
