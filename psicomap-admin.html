@@ -438,6 +438,29 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .list-controls-label{font-size:var(--fs-sm);font-weight:var(--fw-b);text-transform:uppercase;
   letter-spacing:.6px;color:var(--tm);flex-shrink:0}
 
+/* Fluxo em passos (tela Coleta & Links) — eram 4 blocos com o mesmo
+   emaranhado de estilo inline repetido item a item */
+.flow-card{margin-bottom:var(--sp-5);padding:var(--sp-5) var(--sp-6)}
+.flow-titulo{font-size:var(--fs-base);font-weight:var(--fw-b);color:var(--blue);margin-bottom:var(--sp-4);text-transform:uppercase;letter-spacing:.5px}
+.flow-steps{display:flex;align-items:flex-start;flex-wrap:wrap;gap:0;list-style:none;margin:0;padding:0;counter-reset:none}
+.flow-step{display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-5);border-right:1px dashed var(--border)}
+.flow-step:first-child{padding-left:0}
+.flow-step:last-child{border-right:none;padding-right:0}
+.flow-num{width:26px;height:26px;border-radius:50%;background:var(--g);color:var(--n0);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:var(--fs-sm);font-weight:var(--fw-b);flex-shrink:0}
+.flow-txt{display:flex;flex-direction:column;gap:2px}
+.flow-txt b{font-size:var(--fs-base);font-weight:var(--fw-sb);color:var(--tx)}
+.flow-txt span{font-size:var(--fs-sm);color:var(--tm);line-height:1.5}
+@media(max-width:900px){
+  .flow-step{border-right:none;padding:var(--sp-2) 0;flex:1 1 100%}
+  .flow-step:first-child{padding-top:0}
+}
+
+/* select que se ajusta ao conteudo, dentro de uma barra de controles */
+.filter-select.select-auto,.select-auto{width:auto;min-width:220px}
+.list-controls-hint{font-size:var(--fs-base);color:var(--tl)}
+
 /* ── TAGS ── */
 /* Casca compartilhada por todos os badges do app. Cada um mantém abaixo
    apenas o tamanho/paleta que lhe é próprio. */
@@ -3628,55 +3651,65 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 </div><!-- /sc-adesao -->
 
 <div class="screen" id="sc-links" data-modulo="links">
-  <div class="page-header"><div class="page-title">Coleta &amp; Links</div><div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div></div>
-
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-    <div>
-      
-      
+  <div class="page-header">
+    <div class="page-hdr-left">
+      <div class="page-title">Coleta &amp; Links</div>
+      <div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div>
     </div>
-    <div style="display:flex;gap:8px" id="links-action-btns">
+    <div class="page-hdr-actions" id="links-action-btns">
       <button class="btn btn-ghost" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Nova empresa
       </button>
       <button class="btn btn-g" onclick="abrirModalLink()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo link
       </button>
     </div>
   </div>
 
   <!-- Fluxo do funcionário -->
-  <div class="card card-b" style="margin-bottom:16px;padding:16px 20px">
-    <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Como funciona o acesso do funcionário</div>
-    <div style="display:flex;align-items:flex-start;gap:0;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px;padding:0 14px 0 0;border-right:1px dashed var(--border)">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Admin gera link</div><div style="font-size:11px;color:#374151">Token único por empresa<br>+ setor sugerido opcional</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px dashed var(--border)">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Envia por WhatsApp / e-mail / QR</div><div style="font-size:11px;color:#374151">Funcionário abre no celular<br>Sem login. Anônimo.</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px dashed var(--border)">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Preenche 1 vez por dispositivo</div><div style="font-size:11px;color:#374151">Token salvo no localStorage<br>Bloqueio automático após envio</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;padding:0 0 0 14px">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--g);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">4</div>
-        <div><div style="font-size:12px;font-weight:600;color:var(--tx)">Resposta salva no Supabase</div><div style="font-size:11px;color:#374151">Admin vê respostas em<br>tempo real no painel</div></div>
-      </div>
-    </div>
+  <div class="card card-b flow-card">
+    <div class="flow-titulo">Como funciona o acesso do funcionário</div>
+    <ol class="flow-steps">
+      <li class="flow-step">
+        <span class="flow-num">1</span>
+        <span class="flow-txt">
+          <b>Admin gera link</b>
+          <span>Token único por empresa<br>+ setor sugerido opcional</span>
+        </span>
+      </li>
+      <li class="flow-step">
+        <span class="flow-num">2</span>
+        <span class="flow-txt">
+          <b>Envia por WhatsApp / e-mail / QR</b>
+          <span>Funcionário abre no celular<br>Sem login. Anônimo.</span>
+        </span>
+      </li>
+      <li class="flow-step">
+        <span class="flow-num">3</span>
+        <span class="flow-txt">
+          <b>Preenche 1 vez por dispositivo</b>
+          <span>Token salvo no localStorage<br>Bloqueio automático após envio</span>
+        </span>
+      </li>
+      <li class="flow-step">
+        <span class="flow-num">4</span>
+        <span class="flow-txt">
+          <b>Resposta salva no Supabase</b>
+          <span>Admin vê respostas em<br>tempo real no painel</span>
+        </span>
+      </li>
+    </ol>
   </div>
 
   <!-- Filtro empresa -->
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-    <label class="filter-label" style="margin-bottom:0;white-space:nowrap">Cliente</label>
-    <select id="link-f-empresa" onchange="renderLinks()" class="filter-select" style="min-width:220px;width:auto">
+  <div class="list-controls">
+    <label class="list-controls-label" for="link-f-empresa">Cliente</label>
+    <select id="link-f-empresa" onchange="renderLinks()" class="filter-select select-auto">
       <option value="" disabled>— Selecione o cliente —</option>
     </select>
-    <span style="font-size:12px;color:var(--tl)" id="links-count"></span>
+    <span class="list-controls-hint" id="links-count"></span>
   </div>
 
   <!-- Lista de links -->
