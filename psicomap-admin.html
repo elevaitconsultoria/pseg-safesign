@@ -592,7 +592,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .combo-footer,.ms-footer{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-top:1px solid var(--bs);font-size:10px}
 .combo-footer-count{color:var(--tl)}
 .combo-footer-actions{display:flex;gap:10px}
-.combo-footer-actions span{cursor:pointer;font-weight:600}
+.combo-footer-actions span{cursor:pointer;font-weight:var(--fw-sb)}
+.combo-footer-actions .cfa-todos{color:var(--g)}
+.combo-footer-actions .cfa-limpar{color:var(--tm)}
+.combo-footer-actions span:hover{text-decoration:underline}
 
 /* MS (modal de grupo) — mesmo visual do .combo, mas com a lista sempre
    aberta em vez de dropdown. As regras compartilhadas foram agrupadas acima;
@@ -2044,7 +2047,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Filtro Ciclo -->
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="f-ciclo" class="filter-select">
+        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);rodarAnalise()">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2066,9 +2069,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-setor-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-setor')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-setor')">Limpar</span>
-                <button onclick="applyCombo('combo-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-setor')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-setor')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2092,8 +2094,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2117,8 +2119,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-fun-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-fun-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-fun-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-fun-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-fun-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2142,9 +2144,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-funcao-count">0 selecionadas</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-funcao')">Todas</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-funcao')">Limpar</span>
-                <button onclick="applyCombo('combo-funcao')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-funcao')">Todas</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-funcao')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2164,11 +2165,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-nivel-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-nivel')">Todos</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-nivel')">Todos</span>
                 <span style="color:var(--amber)" onclick="setComboNivel('combo-nivel',['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
                 <span style="color:var(--red)" onclick="setComboNivel('combo-nivel',['ALTO','CRÍTICO'])">Só críticos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-nivel')">Limpar</span>
-                <button onclick="applyCombo('combo-nivel')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-limpar" onclick="clearCombo('combo-nivel')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2235,14 +2235,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <label class="filter-label" for="audit-empresa">Cliente</label>
-        <select id="audit-empresa" onchange="onAuditEmpresaChange()" class="filter-select">
+        <select id="audit-empresa" onchange="_sincronizarEmpresaDoSelect(this);onAuditEmpresaChange()" class="filter-select">
           <option value="" disabled>— Selecione o cliente —</option>
         </select>
       </div>
 
       <div class="filter-card">
         <label class="filter-label" for="audit-ciclo">Ciclo</label>
-        <select id="audit-ciclo" onchange="renderTelaAuditoria()" class="filter-select">
+        <select id="audit-ciclo" onchange="setCicloAtivo(this.value);renderTelaAuditoria()" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2263,9 +2263,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-audit-setor-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-audit-setor')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-audit-setor')">Limpar</span>
-                <button onclick="applyCombo('combo-audit-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-audit-setor')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-audit-setor')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2347,7 +2346,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="gf-ciclo" class="filter-select">
+        <select id="gf-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);renderGraficos()">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2368,9 +2367,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-gf-setor-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-setor')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-setor')">Limpar</span>
-                <button onclick="applyCombo('combo-gf-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-gf-setor')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-gf-setor')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2394,8 +2392,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-gf-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-gf-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-gf-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2419,8 +2417,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-gf-fun-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-fun-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-fun-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-gf-fun-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-gf-fun-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2443,9 +2441,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-gf-funcao-count">0 selecionadas</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-gf-funcao')">Todas</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-gf-funcao')">Limpar</span>
-                <button onclick="applyCombo('combo-gf-funcao')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-gf-funcao')">Todas</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-gf-funcao')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2510,7 +2507,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="ld-ciclo" onchange="renderLaudo()" class="filter-select">
+        <select id="ld-ciclo" onchange="setCicloAtivo(this.value);renderLaudo()" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2531,9 +2528,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ld-setor-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-setor')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-setor')">Limpar</span>
-                <button onclick="applyCombo('combo-ld-setor')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-setor')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-setor')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2553,11 +2549,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ld-nivel-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-nivel')">Todos</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-nivel')">Todos</span>
                 <span style="color:var(--amber)" onclick="setComboNivel('combo-ld-nivel',['MÉDIO','ALTO','CRÍTICO'])">Médio+</span>
                 <span style="color:var(--red)" onclick="setComboNivel('combo-ld-nivel',['ALTO','CRÍTICO'])">Só críticos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-nivel')">Limpar</span>
-                <button onclick="applyCombo('combo-ld-nivel')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-nivel')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2577,9 +2572,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ld-escolaridade-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-escolaridade')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-escolaridade')">Limpar</span>
-                <button onclick="applyCombo('combo-ld-escolaridade')" style="font-size:10px;padding:2px 10px;border-radius:4px;background:var(--primary,#2563eb);color:#fff;border:none;cursor:pointer;font-weight:600">Aplicar</button>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-escolaridade')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-escolaridade')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2603,8 +2597,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ld-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2628,8 +2622,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <div class="combo-footer">
               <span class="combo-footer-count" id="combo-ld-fun-ghe-count">0 selecionados</span>
               <div class="combo-footer-actions">
-                <span style="color:var(--g)" onclick="selectAllCombo('combo-ld-fun-ghe')">Todos</span>
-                <span style="color:var(--tm)" onclick="clearCombo('combo-ld-fun-ghe')">Limpar</span>
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-fun-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-fun-ghe')">Limpar</span>
               </div>
             </div>
           </div>
@@ -3258,7 +3252,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
     <div class="filter-grp">
       <label class="filter-lbl">Cliente</label>
-      <select id="cmp-empresa" class="filter-sel" onchange="renderComparativo()">
+      <select id="cmp-empresa" class="filter-sel" onchange="_sincronizarEmpresaDoSelect(this);renderComparativo()">
         <option value="">— selecione —</option>
       </select>
     </div>
@@ -3286,13 +3280,13 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
     <div class="filter-grp">
       <label class="filter-lbl">Cliente</label>
-      <select id="plano-empresa" class="filter-sel" onchange="renderPlanoAcao()">
+      <select id="plano-empresa" class="filter-sel" onchange="_sincronizarEmpresaDoSelect(this);renderPlanoAcao()">
         <option value="">— selecione —</option>
       </select>
     </div>
     <div class="filter-grp">
       <label class="filter-lbl">Ciclo</label>
-      <select id="plano-ciclo" class="filter-sel" onchange="renderPlanoAcao()">
+      <select id="plano-ciclo" class="filter-sel" onchange="setCicloAtivo(this.value);renderPlanoAcao()">
         <option value="">Todos os ciclos</option>
       </select>
     </div>
@@ -3706,7 +3700,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <!-- Filtro empresa -->
   <div class="list-controls">
     <label class="list-controls-label" for="link-f-empresa">Cliente</label>
-    <select id="link-f-empresa" onchange="renderLinks()" class="filter-select select-auto">
+    <select id="link-f-empresa" onchange="_sincronizarEmpresaDoSelect(this);renderLinks()" class="filter-select select-auto">
       <option value="" disabled>— Selecione o cliente —</option>
     </select>
     <span class="list-controls-hint" id="links-count"></span>
@@ -5749,25 +5743,45 @@ function buildCombo(id, query='') {
 // "Todos"/"Limpar") — a intenção sempre foi aplicar na hora, mas faltava disparar o
 // re-render. Sem isso, a seleção só refletia na tela quando outro combo com "Aplicar" (ex:
 // combo-setor) era aplicado depois, dando a impressão de "delay" nos filtros.
-const COMBOS_AUTO_APPLY = new Set([
-  'combo-ghe',    'combo-fun-ghe',
-  'combo-gf-ghe', 'combo-gf-fun-ghe',
-  'combo-ld-ghe', 'combo-ld-fun-ghe',
-]);
+// Mapa declarativo id-do-combo -> funcao de render. Antes o roteamento era
+// por prefixo de id, o que ja tinha exigido enumerar combo-ghe/combo-fun-ghe
+// a mao para nao caírem no ramo errado.
+const COMBO_RENDER = {
+  'combo-setor':        rodarAnalise,
+  'combo-funcao':       rodarAnalise,
+  'combo-nivel':        rodarAnalise,
+  'combo-ghe':          rodarAnalise,
+  'combo-fun-ghe':      rodarAnalise,
+  'combo-gf-setor':     renderGraficos,
+  'combo-gf-funcao':    renderGraficos,
+  'combo-gf-ghe':       renderGraficos,
+  'combo-gf-fun-ghe':   renderGraficos,
+  'combo-ld-setor':     renderLaudo,
+  'combo-ld-nivel':     renderLaudo,
+  'combo-ld-escolaridade': renderLaudo,
+  'combo-ld-ghe':       renderLaudo,
+  'combo-ld-fun-ghe':   renderLaudo,
+  'combo-audit-setor':  renderTelaAuditoria,
+};
 
-function _renderParaCombo(id) {
-  if      (id.startsWith('combo-audit-'))                                              renderTelaAuditoria();
-  else if (id.startsWith('combo-ld-'))                                                 renderLaudo();
-  else if (id === 'combo-setor' || id === 'combo-funcao' || id === 'combo-nivel'
-        || id === 'combo-ghe'   || id === 'combo-fun-ghe')                             rodarAnalise();
-  else if (id.startsWith('combo-gf-'))                                                 renderGraficos();
+// Todo combo agora aplica sozinho. Antes so os 6 de agrupamento faziam isso;
+// os demais exigiam clique em "Aplicar", e o proprio codigo ja registrava que
+// esse modo "dava impressao de delay".
+const _comboDebounce = {};
+function _renderParaCombo(id, imediato) {
+  const fn = COMBO_RENDER[id];
+  if (typeof fn !== 'function') return;
+  clearTimeout(_comboDebounce[id]);
+  // sem debounce, marcar 5 setores dispararia 5 renders completos
+  if (imediato) fn();
+  else _comboDebounce[id] = setTimeout(fn, 180);
 }
 
 function toggleComboItem(id, item) {
   if (comboState[id].has(item)) comboState[id].delete(item);
   else comboState[id].add(item);
   buildCombo(id);
-  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
+  _renderParaCombo(id);
 }
 
 function filterCombo(id, q) { buildCombo(id, q); }
@@ -5775,23 +5789,27 @@ function filterCombo(id, q) { buildCombo(id, q); }
 function selectAllCombo(id) {
   comboItems[id]().forEach(i => comboState[id].add(i));
   buildCombo(id);
-  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
+  _renderParaCombo(id);
 }
 
 function clearCombo(id) {
   comboState[id].clear();
   buildCombo(id);
-  if (COMBOS_AUTO_APPLY.has(id)) _renderParaCombo(id);
+  _renderParaCombo(id);
 }
 
+// Mantida porque o dropdown ainda fecha por aqui em alguns fluxos.
 function applyCombo(id) {
   document.getElementById(id)?.classList.remove('open');
-  _renderParaCombo(id);
+  _renderParaCombo(id, true);
 }
 
 function setComboNivel(id, arr) {
   comboState[id] = new Set(arr);
   buildCombo(id);
+  // faltava: os atalhos "Medio+" e "So criticos" mudavam a selecao mas nao
+  // re-renderizavam, ao contrario de selectAllCombo/clearCombo
+  _renderParaCombo(id, true);
 }
 
 function updateComboPreview(id) {
@@ -5887,13 +5905,9 @@ async function onEmpresaChange() {
   buildCombo('combo-funcao');
 }
 
+// Mantida como nome proprio da tela Resultados; a logica agora e a compartilhada.
 function _popularFiltroCiclo(empresaId) {
-  const el = document.getElementById('f-ciclo');
-  if (!el) return;
-  const ciclosEmp = empresaId ? _ciclos.filter(c => c.empresa_id === empresaId) : [];
-  const cur = el.value;
-  el.innerHTML = '<option value="">Todos os ciclos</option>' +
-    ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
+  preencherSelectCiclos('f-ciclo', empresaId);
 }
 
 async function rodarAnalise() {
@@ -9080,13 +9094,7 @@ async function onGrafFiltroChange() {
     setEmpresaAtiva(empId, nome);
     limparCacheRespostas();
   }
-  const el = document.getElementById('gf-ciclo');
-  if (el) {
-    const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
-    const cur = el.value;
-    el.innerHTML = '<option value="">Todos os ciclos</option>' +
-      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
-  }
+  preencherSelectCiclos('gf-ciclo', empId);
   if (!isDemoMode && empId && sbAdmin) {
     try {
       const { data } = await sbAdmin
@@ -10133,13 +10141,7 @@ async function onLaudoFiltro() {
   const ldRegEl = document.getElementById('ld-registro');
   if (ldRegEl) ldRegEl.value = respSalvo.registro || '';
   // Popular ciclos da empresa selecionada
-  const elCiclo = document.getElementById('ld-ciclo');
-  if (elCiclo) {
-    const ciclosEmp = emp ? _ciclos.filter(c => c.empresa_id === emp) : [];
-    const cur = elCiclo.value;
-    elCiclo.innerHTML = '<option value="">Todos os ciclos</option>' +
-      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
-  }
+  preencherSelectCiclos('ld-ciclo', emp);
   const emp_obj = _empresas.find(e => e.id === emp);
 
   let allSetores = [];
@@ -12065,13 +12067,23 @@ let _empresaAtiva = (() => {
   catch(e) { return { id: '', nome: '' }; }
 })();
 
+// Todos os selects de empresa do app. Fonte unica: quem precisa sincronizar
+// empresa chama setEmpresaAtiva, nunca repete a lista.
+const SELECTS_EMPRESA = ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa',
+                         'plano-empresa','audit-empresa','link-f-empresa','agrup-empresa'];
+// Selects de ciclo, na mesma logica.
+const SELECTS_CICLO = ['f-ciclo','gf-ciclo','ld-ciclo','audit-ciclo','plano-ciclo'];
+
 function setEmpresaAtiva(id, nome) {
+  const mudou = _empresaAtiva?.id !== (id || '');
   _empresaAtiva = { id: id || '', nome: nome || '' };
   try { sessionStorage.setItem('pseg_empresa_ativa', JSON.stringify(_empresaAtiva)); } catch(e) {}
-  ['sel-emp','f-empresa','gf-empresa','ld-empresa'].forEach(sid => {
+  SELECTS_EMPRESA.forEach(sid => {
     const el = document.getElementById(sid);
     if (el && el.value !== id) el.value = id;
   });
+  // Ciclo pertence a uma empresa: trocar de empresa invalida o ciclo escolhido.
+  if (mudou) setCicloAtivo('');
   // Chip topbar
   const chip = document.getElementById('empresa-chip');
   const chipNome = document.getElementById('empresa-chip-nome');
@@ -12093,6 +12105,40 @@ function setEmpresaAtiva(id, nome) {
     else banner.style.display = 'none';
   }
 }
+
+// ══════════════════════════════════════════
+// CONTEXTO DE CICLO
+// Nao existia contexto global de ciclo: cada tela tinha o seu select,
+// repopulado do zero, e o ciclo escolhido em Resultados nao sobrevivia a
+// navegacao para o Laudo.
+// ══════════════════════════════════════════
+let _cicloAtivo = '';
+try { _cicloAtivo = sessionStorage.getItem('pseg_ciclo_ativo') || ''; } catch(e) {}
+
+// Chamado pelos selects de empresa das telas que so liam o valor do DOM.
+// Sem isso, o chip da topbar podia mostrar uma empresa diferente da exibida.
+function _sincronizarEmpresaDoSelect(el) {
+  const id = el?.value || '';
+  if (!id || id === _empresaAtiva?.id) return;
+  const emp = (typeof _empresas !== 'undefined' ? _empresas : []).find(e => e.id === id);
+  // fallback no texto da propria <option>: o chip da topbar nao pode ficar
+  // vazio se a empresa ainda nao estiver em _empresas
+  const nome = emp?.nome || el.options[el.selectedIndex]?.textContent?.trim() || '';
+  setEmpresaAtiva(id, nome);
+}
+
+function setCicloAtivo(id) {
+  _cicloAtivo = id || '';
+  try { sessionStorage.setItem('pseg_ciclo_ativo', _cicloAtivo); } catch(e) {}
+  SELECTS_CICLO.forEach(sid => {
+    const el = document.getElementById(sid);
+    // so aplica se a opcao existir naquele select (nem toda tela lista os mesmos ciclos)
+    if (el && el.value !== _cicloAtivo && [...el.options].some(o => o.value === _cicloAtivo)) el.value = _cicloAtivo;
+  });
+}
+
+// preencherSelectCiclos: definicao unica mais abaixo (ordena por periodo).
+
 
 function renderChipDropdown() {
   const list = document.getElementById('chip-dd-list');
@@ -13661,13 +13707,7 @@ function _popularSelectAudit() {
 async function onAuditEmpresaChange() {
   const empId = document.getElementById('audit-empresa')?.value || '';
   limparCacheRespostas();
-  const el = document.getElementById('audit-ciclo');
-  if (el) {
-    const ciclosEmp = empId ? _ciclos.filter(c => c.empresa_id === empId) : [];
-    const cur = el.value;
-    el.innerHTML = '<option value="">Todos os ciclos</option>' +
-      ciclosEmp.map(c => `<option value="${c.id}"${c.id===cur?' selected':''}>${c.nome}</option>`).join('');
-  }
+  preencherSelectCiclos('audit-ciclo', empId);
   // Carregar setores das respostas reais (funções são populadas dinamicamente em renderTelaAuditoria)
   if (!isDemoMode && empId && sbAdmin) {
     try {
@@ -15575,16 +15615,22 @@ function _ordenarCiclosPorPeriodo(lista) {
   });
 }
 
+// Definicao unica usada por todas as telas (Resultados, Distribuicao, Laudo,
+// Auditoria e Plano). Antes cada uma tinha a sua copia da mesma logica, e
+// nenhuma delas ordenava por periodo como esta.
 function preencherSelectCiclos(selId, empId) {
   const sel = document.getElementById(selId);
   if (!sel) return;
   sel.innerHTML = '<option value="">Todos os ciclos</option>';
   if (!empId) return;
-  _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId)).forEach(c => {
+  const lista = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
+  lista.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.id; opt.textContent = c.nome;
     sel.appendChild(opt);
   });
+  // preserva o ciclo do contexto global quando ele pertence a esta empresa
+  if (_cicloAtivo && lista.some(c => c.id === _cicloAtivo)) sel.value = _cicloAtivo;
 }
 
 // ══════════════════════════════════════════
@@ -16009,10 +16055,12 @@ function goScreen(id, btn) {
   };
   if (map[id]) document.getElementById(map[id])?.classList.add('on');
 
-  // 4. Propagar empresa ativa para todos os selects da tela
+  // 4. Propagar empresa e ciclo ativos para os selects da tela.
+  //    A lista de ids vive em SELECTS_EMPRESA / SELECTS_CICLO — antes estava
+  //    duplicada aqui e em setEmpresaAtiva, com conjuntos diferentes.
   const temEmpresa = !!_empresaAtiva?.id;
   if (temEmpresa) {
-    ['sel-emp','f-empresa','gf-empresa','ld-empresa','cmp-empresa','plano-empresa','audit-empresa','link-f-empresa','agrup-empresa'].forEach(sid => {
+    SELECTS_EMPRESA.forEach(sid => {
       const el = document.getElementById(sid);
       if (el && el.value !== _empresaAtiva.id) el.value = _empresaAtiva.id;
     });
