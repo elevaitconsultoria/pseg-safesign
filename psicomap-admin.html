@@ -167,12 +167,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 #sc-ghe.on{display:flex}
 /* ── GHE responsive ── */
 @media(max-width:1100px){
-  .ghe-hdr{padding:12px 16px 8px!important}
-  .ghe-body{padding:10px 16px!important}
+  .ghe-hdr{padding:12px 16px 8px}
+  .ghe-body{padding:10px 16px}
 }
 @media(max-width:768px){
-  .ghe-hdr{padding:10px 12px 8px!important}
-  .ghe-body{padding:8px 12px!important}
+  .ghe-hdr{padding:10px 12px 8px}
+  .ghe-body{padding:8px 12px}
   #ghe-empresa-sub{display:none}
   #ghe-adesao-row label{display:none}
   #ghe-adesao-row select{max-width:130px}
@@ -180,8 +180,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 }
 @media(max-width:480px){
   .ghe-btn-txt{display:none}
-  #ghe-view-toggle button{padding:4px 8px!important}
-  #ghe-kpis span{padding:2px 6px!important}
+  #ghe-view-toggle button{padding:4px 8px}
+  #ghe-kpis .ghe-pill{padding:2px 6px}
 }
 .page-header{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
 .page-header:has(.page-hdr-actions){display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
@@ -384,6 +384,28 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .btn-fechar:hover{background:var(--bs);color:var(--tx)}
 .btn-fechar:focus-visible{outline:none;box-shadow:0 0 0 3px var(--g-ring)}
 
+/* ── TELA GHE ──
+   Era a única tela com layout 100% inline: .ghe-hdr e .ghe-body só existiam
+   como style="", e por isso os media queries precisavam de !important para
+   vencê-los. Com classes reais, os !important saem. */
+#sc-ghe{padding:0;flex-direction:column;height:calc(100vh - 52px);height:calc(100dvh - 52px)}
+.ghe-hdr{padding:var(--sp-5) 22px var(--sp-4);border-bottom:1px solid var(--border);flex-shrink:0;background:var(--w)}
+.ghe-body{flex:1;overflow-y:auto;padding:var(--sp-4) 22px}
+.ghe-hdr-top{display:flex;align-items:baseline;gap:var(--sp-3);margin-bottom:var(--sp-4);flex-wrap:wrap}
+.ghe-hdr-bar{display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap}
+.ghe-empresa-row{margin:0;flex:1;min-width:180px;max-width:280px}
+.ghe-empresa-row select{width:100%}
+#ghe-kpis{display:flex;gap:var(--sp-2);flex-shrink:0;flex-wrap:wrap}
+.ghe-pill{background:var(--bg);border:1px solid var(--border);border-radius:var(--rpill);padding:3px var(--sp-3);font-size:var(--fs-sm);display:inline-flex;align-items:baseline;gap:var(--sp-1);color:var(--tm)}
+.ghe-pill b{font-weight:var(--fw-xb);color:var(--tx)}
+.ghe-pill.is-ok{background:var(--gl);border-color:var(--g);color:var(--g)}
+.ghe-pill.is-ok b{color:var(--g)}
+#ghe-adesao-row{display:flex;gap:var(--sp-2);align-items:center;flex-shrink:0}
+.ghe-ciclo-lbl{font-size:var(--fs-xs);font-weight:var(--fw-b);text-transform:uppercase;letter-spacing:.4px;color:var(--tm);white-space:nowrap}
+.select-inline{border:1.5px solid var(--border);border-radius:var(--r);padding:var(--sp-1) var(--sp-3);font-size:var(--fs-base);font-family:var(--font-ui);outline:none;background:var(--w);color:var(--tx);max-width:180px}
+.select-inline:focus{border-color:var(--g)}
+#ghe-adesao-total{display:none;font-size:var(--fs-sm);font-weight:var(--fw-b);padding:3px var(--sp-3);border-radius:var(--rpill)}
+
 /* ── UTILITÁRIOS DE TELA (Fase 5) ── */
 
 /* Grade de KPIs — era um style="display:grid;..." repetido tela a tela */
@@ -408,6 +430,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   transition:border-color .15s,box-shadow .15s}
 .input-busca:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
 .input-busca::placeholder{color:var(--tl)}
+/* variante compacta, para os campos dentro dos painéis do GHE */
+.input-busca.is-compact{min-width:0;width:100%;padding:var(--sp-1) var(--sp-3) var(--sp-1) 28px;font-size:var(--fs-sm);background-position:8px 50%;background-size:12px 12px}
 
 /* Barra de controles acima de uma lista (busca + ordenação + toggles) */
 .list-controls{display:flex;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-4);flex-wrap:wrap}
@@ -3896,60 +3920,50 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 </div>
 
 <!-- TELA GESTÃO DE GHEs (Setores & Funções) -->
-<div class="screen" id="sc-ghe" style="padding:0;flex-direction:column;height:calc(100vh - 52px);height:calc(100dvh - 52px)">
+<div class="screen" id="sc-ghe">
 
     <!-- ── Cabeçalho compacto ── -->
-    <div class="ghe-hdr" style="padding:14px 22px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-        <div class="modal-title" style="margin:0;flex-shrink:0">Setores &amp; Funções</div>
-        <div class="modal-sub" id="ghe-empresa-sub" style="margin:0;flex:1;min-width:200px">Configure os grupos homogêneos de exposição do cliente.</div>
+    <div class="ghe-hdr">
+      <div class="ghe-hdr-top">
+        <div class="page-title">Setores &amp; Funções</div>
+        <div class="page-sub" id="ghe-empresa-sub" style="flex:1;min-width:200px">Configure os grupos homogêneos de exposição do cliente.</div>
       </div>
 
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="ghe-hdr-bar">
         <!-- Seletor de cliente -->
-        <div class="field" id="ghe-empresa-row" style="margin:0;flex:1;min-width:180px;max-width:280px">
-          <select id="ghe-empresa-sel" onchange="mudarEmpresaGHE(this.value)" style="width:100%">
-            <option value="">Selecione um cliente...</option>
+        <div class="field ghe-empresa-row" id="ghe-empresa-row">
+          <select id="ghe-empresa-sel" onchange="mudarEmpresaGHE(this.value)" aria-label="Cliente">
+            <option value="">Selecione um cliente…</option>
           </select>
         </div>
 
         <!-- KPI badges compactos -->
-        <div id="ghe-kpis" style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
-          <span style="background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:inline-flex;align-items:baseline;gap:4px">
-            <span id="ghe-kpi-setores" style="font-weight:800;color:var(--tx)">0</span>
-            <span style="color:var(--tm)">setores</span>
-          </span>
-          <span style="background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:inline-flex;align-items:baseline;gap:4px">
-            <span id="ghe-kpi-funcoes" style="font-weight:800;color:var(--tx)">0</span>
-            <span style="color:var(--tm)">funções</span>
-          </span>
-          <span style="background:var(--gl,#f0fdf4);border:1px solid var(--g);border-radius:20px;padding:3px 10px;font-size:11px;display:inline-flex;align-items:baseline;gap:4px">
-            <span id="ghe-kpi-funcionarios" style="font-weight:800;color:var(--g)">—</span>
-            <span style="color:var(--g)">func.</span>
-          </span>
+        <div id="ghe-kpis">
+          <span class="ghe-pill"><b id="ghe-kpi-setores">0</b> setores</span>
+          <span class="ghe-pill"><b id="ghe-kpi-funcoes">0</b> funções</span>
+          <span class="ghe-pill is-ok"><b id="ghe-kpi-funcionarios">—</b> func.</span>
         </div>
 
         <!-- Ciclo + adesão -->
-        <div id="ghe-adesao-row" data-modulo="adesao" style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-          <label for="ghe-ciclo-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tm);white-space:nowrap">Ciclo</label>
-          <select id="ghe-ciclo-sel"
-            onchange="_gheCicloSelecionado=this.value;carregarAdesaoGHE(_gheEmpresaId,_gheCicloSelecionado)"
-            style="border:1.5px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white;color:var(--tx);max-width:180px">
+        <div id="ghe-adesao-row" data-modulo="adesao">
+          <label for="ghe-ciclo-sel" class="ghe-ciclo-lbl">Ciclo</label>
+          <select id="ghe-ciclo-sel" class="select-inline"
+            onchange="_gheCicloSelecionado=this.value;carregarAdesaoGHE(_gheEmpresaId,_gheCicloSelecionado)">
             <option value="">Todos os ciclos</option>
           </select>
-          <span id="ghe-adesao-total" style="display:none;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
-          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap"
+          <span id="ghe-adesao-total" class="tag"></span>
+          <button class="btn btn-ghost btn-sm"
             title="Abrir o acompanhamento completo: quem falta, evolução no tempo e relatório para o cliente"
             onclick="_abrirAdesao(_gheEmpresaId, _gheCicloSelecionado)">Acompanhar</button>
         </div>
 
         <!-- Toggle Árvore/Tabela -->
-        <div id="ghe-view-toggle" style="display:flex;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;flex-shrink:0">
-          <button id="ghe-view-btn-tree" onclick="setGHEViewMode('tree')" style="padding:4px 12px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--tx);color:white;display:flex;align-items:center;gap:5px">
+        <div id="ghe-view-toggle" class="seg-toggle-group">
+          <button id="ghe-view-btn-tree" class="stg-active" onclick="setGHEViewMode('tree')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="3" y1="6" x2="9" y2="6"/><line x1="3" y1="12" x2="13" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
             Árvore
           </button>
-          <button id="ghe-view-btn-table" onclick="setGHEViewMode('table')" style="padding:4px 12px;font-size:11px;font-weight:700;border:none;border-left:1.5px solid var(--border);cursor:pointer;background:white;color:var(--tm);display:flex;align-items:center;gap:5px">
+          <button id="ghe-view-btn-table" onclick="setGHEViewMode('table')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
             Tabela
           </button>
@@ -3958,7 +3972,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
 
     <!-- ── Painel hierárquico (scrollável) ── -->
-    <div class="ghe-body" style="flex:1;overflow-y:auto;padding:12px 22px">
+    <div class="ghe-body">
     <div id="ghe-tree-view">
 
       <!-- Toolbar de ações (movida do header para caber no espaço disponível) -->
@@ -4003,8 +4017,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <span id="ghe-set-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tl)"></span>
         </div>
         <div style="padding:5px 6px;border-bottom:1px solid var(--border);background:var(--bg)">
-          <input id="ghe-busca-setor" type="text" placeholder="🔍 Buscar setor..."
-            style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+          <input id="ghe-busca-setor" type="text" class="input-busca is-compact" placeholder="Buscar setor…" aria-label="Buscar setor"
             oninput="_gheFiltroSetor=this.value;_renderGHESetoresPanel()"
             onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroSetor='';_renderGHESetoresPanel()}"/>
         </div>
@@ -4038,8 +4051,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             ⚠️ Muitos cargos aqui geralmente vieram de um import sem setor identificado. Use <b>Mover</b> para reatribuí-los ao setor correto.
           </div>
           <div id="ghe-uni-busca-row" style="display:none;padding:5px 8px;border-bottom:1px solid var(--border);background:var(--bg)">
-            <input id="ghe-busca-uni" type="text" placeholder="🔍 Buscar cargo universal..."
-              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:11px;font-family:Inter,sans-serif;outline:none;background:white"
+            <input id="ghe-busca-uni" type="text" class="input-busca is-compact" placeholder="Buscar cargo universal…" aria-label="Buscar cargo universal"
               oninput="_gheFiltroUni=this.value;_renderGHEUniversaisPanel()"
               onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroUni='';_renderGHEUniversaisPanel()}"/>
           </div>
@@ -4061,8 +4073,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <!-- ── Modo Tabela: auditoria plana Setor|Função|Qtd ── -->
     <div id="ghe-table-view" style="display:none">
       <div style="margin-bottom:10px;position:relative;max-width:340px">
-        <input id="ghe-busca-tabela" type="text" placeholder="🔍 Buscar setor ou função..."
-          style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;background:white"
+        <input id="ghe-busca-tabela" type="text" class="input-busca is-compact" placeholder="Buscar setor ou função…" aria-label="Buscar setor ou função"
           oninput="_gheFiltroTabela=this.value;_renderGHETabela()"
           onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroTabela='';_renderGHETabela()}"/>
       </div>
@@ -14186,8 +14197,10 @@ function setGHEViewMode(mode) {
   const btnTable  = document.getElementById('ghe-view-btn-table');
   if (treeView)  treeView.style.display  = mode === 'tree'  ? '' : 'none';
   if (tableView) tableView.style.display = mode === 'table' ? '' : 'none';
-  if (btnTree)  { btnTree.style.background  = mode === 'tree'  ? 'var(--tx)' : 'white'; btnTree.style.color  = mode === 'tree'  ? 'white' : 'var(--tm)'; }
-  if (btnTable) { btnTable.style.background = mode === 'table' ? 'var(--tx)' : 'white'; btnTable.style.color = mode === 'table' ? 'white' : 'var(--tm)'; }
+  // o toggle virou um .seg-toggle-group: o estado ativo e a classe .stg-active,
+  // nao mais background/color escritos direto no style do botao
+  if (btnTree)  btnTree.classList.toggle('stg-active',  mode === 'tree');
+  if (btnTable) btnTable.classList.toggle('stg-active', mode === 'table');
   if (mode === 'table') _renderGHETabela();
 }
 
@@ -14400,8 +14413,7 @@ function _renderGHESetoresPanel() {
     <div style="padding:6px 12px 10px 28px;border-top:1px solid var(--border);background:var(--gp,#f7fdf9)">
       <div id="ghe-cargos-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 6px">
         <span id="ghe-cargos-titulo" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tm)">Cargos</span>
-        <input id="ghe-busca-cargo" type="text" placeholder="🔍 Buscar..."
-          style="flex:1;max-width:160px;border:1px solid var(--border);border-radius:var(--r);padding:3px 8px;font-size:11px;font-family:inherit;outline:none;background:white"
+        <input id="ghe-busca-cargo" type="text" class="input-busca is-compact" placeholder="Buscar cargo…" aria-label="Buscar cargo" style="max-width:160px"
           oninput="_gheFiltroCargo=this.value;_renderGHECargosPanel()"
           onkeydown="if(event.key==='Escape'){this.value='';_gheFiltroCargo='';_renderGHECargosPanel()}"/>
         <span id="ghe-fun-count" style="color:var(--tl);font-size:10px"></span>
