@@ -7572,7 +7572,7 @@ async function carregarLinks() {
       {id:'lk2', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Produção A',     ciclo:'PGR — Ciclo 2025/1', token:'f6e5d4c3', ativo:true,  respostas:9,  criado:'10/03/2025', expira:'10/04/2025'},
       {id:'lk3', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Produção B',     ciclo:'PGR — Ciclo 2025/1', token:'b3c4d5e6', ativo:true,  respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
       {id:'lk4', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Engenharia',     ciclo:'PGR — Ciclo 2025/1', token:'1a2b3c4d', ativo:false, respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
-      {id:'lk5', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Manutenção',     ciclo:'PGR — Ciclo 2025/1', token:'e5f6a7b8', ativo:false, respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
+      {id:'lk5', empresa_id:'abc', nomeEmpresa:'Construtora ABC Ltda.', setor_sugerido:'Manutenção',     ciclo:'PGR — Ciclo 2025/1', token:'e5f6a7b8', ativo:false, encerrado_em:'2025-04-15T12:00:00Z', respostas:4,  criado:'10/03/2025', expira:'10/04/2025'},
       {id:'lk6', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'RH',             ciclo:'Avaliação Inicial 2025', token:'aa11bb22', ativo:true,  respostas:4, criado:'20/03/2025', expira:'20/04/2025'},
       {id:'lk7', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'Financeiro',     ciclo:'Avaliação Inicial 2025', token:'cc33dd44', ativo:true,  respostas:5, criado:'20/03/2025', expira:'20/04/2025'},
       {id:'lk8', empresa_id:'xyz', nomeEmpresa:'Indústria XYZ S.A.',    setor_sugerido:'Operacional',    ciclo:'Avaliação Inicial 2025', token:'ee55ff66', ativo:true,  respostas:5, criado:'20/03/2025', expira:'20/04/2025'},
@@ -7583,7 +7583,7 @@ async function carregarLinks() {
   }
   try {
     const tid = _supportMode && _supportTenant?.id;
-    let q = sbAdmin.from('links_coleta').select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
+    let q = sbAdmin.from('links_coleta').select('id, token, ativo, encerrado_em, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)');
     if (tid) q = q.eq('tenant_id', tid);
     // viewer: restringir ao banco para a empresa vinculada ao perfil
     if (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id) {
@@ -7600,6 +7600,7 @@ async function carregarLinks() {
       ciclo:         l.ciclos?.nome || '',
       token:         l.token,
       ativo:         l.ativo,
+      encerrado_em:  l.encerrado_em || null,
       is_teste:      l.is_teste || false,
       permite_multi_resposta: l.permite_multi_resposta || false,
       respostas:     0,
@@ -7758,7 +7759,7 @@ function renderLinks() {
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px${l.is_teste?';border-color:#f59e0b;border-style:dashed':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:${l.is_teste?'#fffbeb':l.ativo?'white':'var(--bg)'}">
         <div style="display:flex;align-items:center;gap:12px;min-width:0">
-          <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':'#bbb'};flex-shrink:0"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':l.encerrado_em?'#7c3aed':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--tx)">${l.nomeEmpresa}</div>
             <div style="font-size:11px;color:#374151;margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
@@ -7767,7 +7768,7 @@ function renderLinks() {
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
           ${l.is_teste?'<span class="tag ty" style="font-size:10px">⚗ Teste</span>':''}
           ${l.permite_multi_resposta?'<span class="tag tb" style="font-size:10px">↻ Multi-dispositivo</span>':''}
-          <span class="tag ${l.ativo?'tg':'tgr'}" style="font-size:10px">${l.ativo?'Ativo':'Inativo'}</span>
+          <span class="tag ${l.ativo?'tg':l.encerrado_em?'tp':'tgr'}" style="font-size:10px">${l.ativo?'Ativo':l.encerrado_em?'Finalizado':'Inativo'}</span>
           <span class="tag tb" style="font-size:10px">${l.respostas} resp.</span>
         </div>
       </div>
@@ -7785,8 +7786,12 @@ function renderLinks() {
         </button>
         ${currentUser?.role !== 'cliente_viewer' ? `
         <button class="btn ${l.ativo?'btn-amber':'btn-g'}" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="toggleLink('${l.id}')">
-          ${l.ativo?'Desativar':'Ativar'}
+          ${l.ativo?'Desativar':'Reativar'}
         </button>
+        ${!l.encerrado_em ? `
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--purple);border-color:var(--purple)" onclick="finalizarLink('${l.id}')" title="Marca a campanha deste link como concluída — deixa de aceitar novas respostas, se ainda não deixou">
+          🏁 Finalizar campanha
+        </button>` : ''}
         <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);${(!l.is_teste&&l.respostas>0)?'opacity:.4;cursor:not-allowed':''}" onclick="excluirLink('${l.id}',${l.respostas},${l.is_teste},'${l.token}')" title="${(!l.is_teste&&l.respostas>0)?'Link com respostas — não pode ser excluído':l.is_teste?'Excluir link de teste e suas respostas':'Excluir link'}">
           🗑 Excluir
         </button>` : ''}
@@ -8540,16 +8545,37 @@ async function toggleLink(id) {
   const l = _links.find(x=>x.id===id);
   if (!l) return;
   const novoAtivo = !l.ativo;
+  // Reativar um link sempre limpa a marca de "finalizado" — não existe
+  // estado "ativo e finalizado" ao mesmo tempo.
+  const update = novoAtivo ? { ativo: true, encerrado_em: null } : { ativo: false };
   if (!isDemoMode) {
     const { error } = await sbAdmin
       .from('links_coleta')
-      .update({ ativo: novoAtivo })
+      .update(update)
       .eq('id', id);
     if (error) { toast('Erro ao atualizar link.', 'w'); return; }
   }
-  l.ativo = novoAtivo;
+  Object.assign(l, update);
   renderLinks();
   toast(novoAtivo ? 'Link ativado.' : 'Link desativado.', novoAtivo?'g':'w');
+}
+
+async function finalizarLink(id) {
+  const l = _links.find(x=>x.id===id);
+  if (!l) return;
+  if (!confirm('Finalizar esta campanha? O link deixará de aceitar novas respostas (se ainda estava ativo) e ficará marcado como concluído.')) return;
+  const encerradoEm = new Date().toISOString();
+  if (!isDemoMode) {
+    const { error } = await sbAdmin
+      .from('links_coleta')
+      .update({ ativo: false, encerrado_em: encerradoEm })
+      .eq('id', id);
+    if (error) { toast('Erro ao finalizar campanha.', 'w'); return; }
+  }
+  l.ativo = false;
+  l.encerrado_em = encerradoEm;
+  renderLinks();
+  toast('Campanha finalizada.', 'g');
 }
 
 async function excluirLink(id, nRespostas, isTeste, token) {
@@ -8631,7 +8657,7 @@ async function gerarLink() {
         setor_sugerido: data.setor_sugerido || '',
         ciclo:         data.ciclos?.nome || '',
         token:         data.token,
-        ativo:         true, respostas: 0,
+        ativo:         true, encerrado_em: null, respostas: 0,
         is_teste:      data.is_teste || false,
         permite_multi_resposta: data.permite_multi_resposta || false,
         criado:        new Date(data.criado_em).toLocaleDateString('pt-BR'),
@@ -8645,7 +8671,7 @@ async function gerarLink() {
       id:'lk'+Date.now(), empresa_id: empresaId,
       nomeEmpresa: emp?.nome || empresaId,
       setor_sugerido: setor, ciclo: cic?.nome || '',
-      token, ativo: true, respostas: 0,
+      token, ativo: true, encerrado_em: null, respostas: 0,
       is_teste: is_teste,
       permite_multi_resposta: permite_multi_resposta,
       criado: new Date().toLocaleDateString('pt-BR'),
@@ -8813,7 +8839,7 @@ async function gerarLinksBatch() {
           nomeEmpresa: data.empresas?.nome || '—',
           setor_sugerido: data.setor_sugerido || '',
           ciclo: data.ciclos?.nome || '',
-          token: data.token, ativo: true, respostas: 0,
+          token: data.token, ativo: true, encerrado_em: null, respostas: 0,
           permite_multi_resposta: data.permite_multi_resposta || false,
           criado: new Date(data.criado_em).toLocaleDateString('pt-BR'),
           expira: data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
@@ -8827,7 +8853,7 @@ async function gerarLinksBatch() {
         id: 'lk' + Date.now() + criados, empresa_id: empresaId,
         nomeEmpresa: emp?.nome || empresaId,
         setor_sugerido: setor, ciclo: cic?.nome || '',
-        token, ativo: true, respostas: 0,
+        token, ativo: true, encerrado_em: null, respostas: 0,
         permite_multi_resposta: permite_multi_resposta,
         criado: new Date().toLocaleDateString('pt-BR'),
         expira: expira_em ? new Date(expira_em).toLocaleDateString('pt-BR') : '—',
@@ -12844,11 +12870,12 @@ const _EMP_STATUS = {
   parada:     { chave:'parada',     rotulo:'Coleta parada',dot:'#dc2626',bg:'#fef2f2',         cor:'#dc2626',     tag:'tgr' },
   coletando:  { chave:'coletando',  rotulo:'Coletando',   dot:'#2563eb', bg:'var(--bluebg)',   cor:'var(--blue)', tag:'tb'  },
   completa:   { chave:'completa',   rotulo:'Meta atingida',dot:'#16a34a',bg:'var(--gl)',       cor:'var(--g)',    tag:'tg'  },
+  finalizada: { chave:'finalizada', rotulo:'Finalizada',  dot:'#7c3aed', bg:'var(--purplebg)', cor:'var(--purple)',tag:'tp' },
 };
 
 function _statusEmpresa(m) {
   if (m.inativa)       return _EMP_STATUS.inativa;
-  if (!m.linksAtiv)    return _EMP_STATUS.semLinks;
+  if (!m.linksAtiv)    return m.finalizada ? _EMP_STATUS.finalizada : _EMP_STATUS.semLinks;
   if (!m.respTotal)    return _EMP_STATUS.aguardando;
   // "Parada" só faz sentido quando ainda há gente faltando; sem quadro importado
   // (quadro = 0) não há como afirmar que falta alguém.
@@ -12862,6 +12889,9 @@ function _calcMetricasEmpresa(emp) {
   const linksEmp  = _links.filter(l => l.empresa_id === emp.id);
   const respTotal = linksEmp.reduce((s, l) => s + (l.respostas || 0), 0);
   const linksAtiv = linksEmp.filter(l => l.ativo).length;
+  // "Finalizada" = nenhum link ativo, mas pelo menos um foi encerrado de
+  // propósito (não apenas pausado/nunca ativado) — distingue de "Sem links".
+  const finalizada = !linksAtiv && linksEmp.some(l => l.encerrado_em);
   const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
   const nSetores  = (emp.setores || []).length;
   const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
@@ -12880,7 +12910,7 @@ function _calcMetricasEmpresa(emp) {
   linksEmp.forEach(l => { if (l.ultimaResposta && (!ultima || l.ultimaResposta > ultima)) ultima = l.ultimaResposta; });
   const diasParado = linksAtiv ? _diasDesde(ultima) : null;
 
-  const m = { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo,
+  const m = { linksEmp, respTotal, linksAtiv, finalizada, ciclosEmp, nSetores, nomeEsc, codigo,
               inativa, quadro, pctBruto, ultima, diasParado };
   const st = _statusEmpresa(m);
   m.st = st;
@@ -13097,7 +13127,7 @@ function _renderEmpFiltros() {
   if (!box) return;
   const cont = {};
   _empresas.forEach(e => { const k = _calcMetricasEmpresa(e).st.chave; cont[k] = (cont[k]||0)+1; });
-  const ordem = ['parada','aguardando','coletando','completa','semLinks','inativa'];
+  const ordem = ['parada','aguardando','coletando','completa','finalizada','semLinks','inativa'];
   const chips = ordem.filter(k => cont[k]).map(k => {
     const st = _EMP_STATUS[k];
     const on = _empFiltroStatus === k;
