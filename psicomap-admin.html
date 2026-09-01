@@ -800,10 +800,36 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .chip-dd-nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── DASHBOARD ── */
-.skel-row{height:62px;border:1px solid var(--border);border-radius:var(--rl,8px);margin-bottom:8px;
+/* ── ESTADOS DE SISTEMA — carregando / vazio / erro ──
+   Três estados com a mesma casca. Antes: um único skeleton no app inteiro,
+   ~10 strings "Carregando…" distintas e erro de render silencioso. */
+.skel,.skel-row{
+  border-radius:var(--rl);
   background:linear-gradient(90deg,var(--bg) 25%,#eef0f2 37%,var(--bg) 63%);
-  background-size:400% 100%;animation:skel 1.3s ease infinite}
+  background-size:400% 100%;animation:skel 1.3s ease infinite
+}
+.skel-row{height:62px;border:1px solid var(--border);margin-bottom:var(--sp-3)}
+.skel-card{height:88px;border:1px solid var(--border);margin-bottom:var(--sp-3)}
+.skel-line{height:12px;border-radius:var(--r);margin-bottom:var(--sp-2)}
+.skel-line:last-child{width:60%}
+.skel-tabela{height:34px;border-bottom:1px solid var(--bs)}
 @keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@media(prefers-reduced-motion:reduce){.skel,.skel-row{animation:none}}
+
+.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:56px var(--sp-8);gap:var(--sp-3);
+  border:1.5px dashed var(--border);border-radius:var(--rl);background:var(--w)}
+.state-box svg{opacity:.2;margin-bottom:var(--sp-1)}
+.state-title{font-size:var(--fs-xl);font-weight:var(--fw-sb);color:var(--tm)}
+.state-sub{font-size:var(--fs-base);color:var(--tl);line-height:1.6;max-width:320px}
+.state-box .btn{margin-top:var(--sp-3)}
+.state-box.is-error{border-style:solid;border-color:var(--red-bd);background:var(--redbg)}
+.state-box.is-error svg{opacity:.5;color:var(--red)}
+.state-box.is-error .state-title{color:var(--red)}
+.state-box.is-loading{border-style:solid;border-color:var(--border)}
+.state-spinner{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--border);
+  border-top-color:var(--g);animation:btn-spin .7s linear infinite}
+@media(prefers-reduced-motion:reduce){.state-spinner{animation-duration:2s}}
 /* .dash-kpi / -val / -lbl: ver KPI CARD acima */
 .dash-empresa-card{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;transition:border-color .15s}
 .dash-empresa-card:hover{border-color:var(--tl)}
@@ -816,11 +842,13 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .empresa-banner strong{font-weight:700}
 .empresa-banner-troca{margin-left:auto;font-size:10px;color:var(--g);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:var(--font-ui);white-space:nowrap}
 
-/* ── EMPTY STATE ── */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:64px 32px;border:1.5px dashed var(--border);border-radius:var(--rl);background:var(--w);gap:8px}
-.empty-state svg{opacity:.18;margin:0 auto 6px;display:block}
-.empty-state-title{font-size:15px;font-weight:600;color:var(--tm);margin-bottom:2px}
-.empty-state-sub{font-size:12px;color:var(--tl);margin-bottom:16px;line-height:1.6;max-width:280px}
+/* ── EMPTY STATE ──
+   Alias do .state-box (ver ESTADOS DE SISTEMA): as 5 ocorrências estáticas no
+   markup continuam usando estas classes e herdam o visual novo sem edição. */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px var(--sp-8);border:1.5px dashed var(--border);border-radius:var(--rl);background:var(--w);gap:var(--sp-3)}
+.empty-state svg{opacity:.2;margin:0 auto var(--sp-1);display:block}
+.empty-state-title{font-size:var(--fs-xl);font-weight:var(--fw-sb);color:var(--tm)}
+.empty-state-sub{font-size:var(--fs-base);color:var(--tl);margin-bottom:var(--sp-3);line-height:1.6;max-width:320px}
 .empty-steps{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center}
 /* MODAL PARÂMETROS */
 .mp-info-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bs)}
@@ -1597,7 +1625,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div id="usuarios-list">
     <div class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      <div class="empty-state-title">Carregando usuários…</div>
+      <div class="empty-state-title">Carregando usuários…</div><!-- substituido por _loadingState() em carregarUsuarios() -->
     </div>
   </div>
 </div>
@@ -3425,7 +3453,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           </tr>
         </thead>
         <tbody id="ests-tbody">
-          <tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>
+          <tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -5942,7 +5970,7 @@ function _popularFiltroCiclo(empresaId) {
 
 async function rodarAnalise() {
   const panel = document.getElementById('resultado-panel');
-  panel.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--tl)">Carregando respostas...</div>';
+  panel.innerHTML = _loadingState('Carregando respostas…');
   const emp      = document.getElementById('f-empresa').value;
   const cicloId  = document.getElementById('f-ciclo')?.value || '';
   const setores  = [...comboState['combo-setor']];
@@ -8067,13 +8095,13 @@ async function _carregarAdesaoTela() {
     return;
   }
 
-  body.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:var(--tl);font-size:13px">Carregando adesão…</div>`;
+  body.innerHTML = _loadingState('Carregando adesão…');
   try {
     _adDados = await calcRepresentatividade(_adEmpresaId, _adCicloId || undefined);
   } catch (e) {
     console.warn('[PsicoMap] adesão:', e.message);
     _adDados = null;
-    body.innerHTML = `<div class="card" style="padding:32px;text-align:center;color:#dc2626;font-size:13px">Erro ao carregar adesão: ${_escAd(e.message)}</div>`;
+    body.innerHTML = _errorState('Erro ao carregar adesão: ' + e.message, '_carregarAdesaoTela()');
     return;
   }
 
@@ -8092,14 +8120,7 @@ function _escAd(v) {
   return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function _adEmptyState(titulo, sub, extra) {
-  return `<div class="empty-state">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-    <div class="empty-state-title">${titulo}</div>
-    <div class="empty-state-sub">${sub}</div>
-    ${extra || ''}
-  </div>`;
-}
+// _adEmptyState: ver ESTADOS DE SISTEMA (delega para _emptyState)
 
 // Série acumulada de respostas por dia, do primeiro dia com resposta até hoje.
 // Os dias sem resposta entram com o acumulado anterior — sem isso a curva
@@ -11543,7 +11564,7 @@ async function carregarKPIsEleva() {
 async function carregarESTs() {
   const tbody = document.getElementById('ests-tbody');
   if (!tbody || !sbAdmin) return;
-  tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--tl);font-size:12px">Carregando…</td></tr>';
 
   carregarKPIsEleva();
 
@@ -11695,7 +11716,7 @@ async function abrirModalModulosEST(tenantId, nome) {
   if (!modal || !lista || !sbAdmin) return;
   _modulosEstTenantId = tenantId;
   document.getElementById('modulos-est-nome').textContent = nome || '';
-  lista.innerHTML = '<div style="font-size:12px;color:var(--tl);padding:8px 0">Carregando…</div>';
+  lista.innerHTML = _loadingState();
   modal.style.display = 'flex';
 
   // Ausência de linha = habilitado, então só as linhas com habilitado=false
@@ -12207,28 +12228,85 @@ function _hideNudge(screenId) {
   if (nudge) nudge.style.display = 'none';
 }
 
+// ══════════════════════════════════════════
+// ESTADOS DE SISTEMA — carregando / vazio / erro
+// Três helpers com a mesma casca (.state-box), usados por todas as telas.
+// Antes cada tela improvisava o seu, com ~10 grafias de "Carregando…"
+// diferentes e nenhum tratamento visível de erro fora de 2 telas.
+// ══════════════════════════════════════════
+const CARREGANDO = 'Carregando…';
+
+// Ícones neutros reaproveitados pelos estados (nunca emoji: o app é SVG-first).
+const _ST_ICON = {
+  vazio:  '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  cliente:'<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4"/>',
+  erro:   '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+};
+
+function _stIcon(nome, tam) {
+  return `<svg width="${tam || 38}" height="${tam || 38}" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${_ST_ICON[nome] || _ST_ICON.vazio}</svg>`;
+}
+
+// Placeholder animado. tipo: 'linha' | 'card' | 'tabela'
+function _skeleton(tipo, n) {
+  const cls = { linha: 'skel skel-row', card: 'skel skel-card', tabela: 'skel skel-tabela' }[tipo] || 'skel skel-row';
+  return Array.from({ length: n || 3 }, () => `<div class="${cls}"></div>`).join('');
+}
+
+function _loadingState(msg) {
+  return `<div class="state-box is-loading" role="status" aria-live="polite">
+    <div class="state-spinner"></div>
+    <div class="state-sub">${_escAd(msg || CARREGANDO)}</div>
+  </div>`;
+}
+
+// { icone, titulo, texto, acao } — `acao` é HTML pronto (normalmente um <button class="btn">).
+function _emptyState(o) {
+  o = o || {};
+  return `<div class="state-box">
+    ${_stIcon(o.icone || 'vazio')}
+    <div class="state-title">${_escAd(o.titulo || 'Nada por aqui ainda')}</div>
+    ${o.texto ? `<div class="state-sub">${o.texto}</div>` : ''}
+    ${o.acao || ''}
+  </div>`;
+}
+
+// onRetry: string com a chamada JS a executar no botão "Tentar novamente".
+function _errorState(msg, onRetry) {
+  return `<div class="state-box is-error" role="alert">
+    ${_stIcon('erro')}
+    <div class="state-title">Não foi possível carregar</div>
+    <div class="state-sub">${_escAd(msg || 'Verifique a conexão e tente de novo.')}</div>
+    ${onRetry ? `<button class="btn btn-g" onclick="${onRetry}">Tentar novamente</button>` : ''}
+  </div>`;
+}
+
+// Mantido como wrapper: várias telas de Adesão já chamam por este nome.
+function _adEmptyState(titulo, sub, extra) {
+  return _emptyState({ titulo, texto: sub, acao: extra });
+}
+
+// Tela sem empresa selecionada. Aplicado por goScreen em analise/graficos/
+// auditoria/laudo. Antes era montado com hexes hardcoded e um emoji 🏢.
 function _nudgeEmpresa(screenId) {
   const sc = document.getElementById(screenId);
   if (!sc) return;
-  // Oculta o conteúdo real e mostra apenas o nudge
-  const inner = sc.querySelector('.screen-inner, .card, [id$="-content"], .results-wrap, .graficos-wrap, .laudo-wrap, .audit-wrap, .comparativo-wrap, .plano-wrap');
   const nudgeId = screenId + '-nudge';
   let nudge = document.getElementById(nudgeId);
   if (!nudge) {
     nudge = document.createElement('div');
     nudge.id = nudgeId;
-    nudge.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:18px;text-align:center';
-    nudge.innerHTML = `
-      <div style="width:56px;height:56px;background:#fef9c3;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px">🏢</div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px">Nenhuma empresa selecionada</div>
-        <div style="font-size:13px;color:#6b7280;max-width:320px;line-height:1.6">Selecione uma empresa cliente na aba Início para visualizar esta análise.</div>
-      </div>
-      <button onclick="goScreen('dashboard')" style="padding:9px 22px;background:#1a5e2a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Ir para o Início</button>
-    `;
+    nudge.innerHTML = _emptyState({
+      icone: 'cliente',
+      titulo: 'Nenhum cliente selecionado',
+      texto: 'Escolha um cliente no Dashboard para visualizar esta análise.',
+      acao: `<button class="btn btn-g" onclick="goScreen('dashboard', document.getElementById('nb-dashboard'))">Ir para o Dashboard</button>`,
+    });
     sc.appendChild(nudge);
   }
-  nudge.style.display = 'flex';
+  nudge.style.display = 'block';
 }
 
 // ══════════════════════════════════════════
@@ -12342,7 +12420,7 @@ async function carregarUsuarios() {
     el.innerHTML = '<div class="alert alert-r" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Acesso restrito.</div>';
     return;
   }
-  el.innerHTML = '<div style="color:var(--tl);font-size:12px;padding:16px">Carregando…</div>';
+  el.innerHTML = _loadingState('Carregando usuários…');
   try {
     // perfis_com_status() já filtra por tenant internamente (admin/consultor vs
     // super_admin) e expõe auth.users.last_sign_in_at, que o client não alcança
@@ -12452,7 +12530,7 @@ async function carregarUsuarios() {
       }).join('');
     }
   } catch(e) {
-    el.innerHTML = `<div class="alert alert-r">Erro ao carregar usuários: ${e.message}</div>`;
+    el.innerHTML = _errorState('Erro ao carregar usuários: ' + e.message, 'carregarUsuarios()');
   }
 }
 
@@ -13042,24 +13120,19 @@ function renderTelaEmpresas() {
   lista.style.display = _empresasViewMode === 'lista' ? 'flex' : 'none';
 
   if (!_empresas.length && _empresasErro) {
-    const erro = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.4" style="margin:0 auto 12px;display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#991b1b">Não foi possível carregar os clientes</div>
-      <div style="font-size:12px;margin-bottom:16px">${_escAd(_empresasErro)}</div>
-      <button class="btn btn-g" onclick="carregarEmpresas().then(renderTelaEmpresas)">Tentar novamente</button>
-    </div>`;
+    const erro = `<div style="grid-column:1/-1">${_errorState('Não foi possível carregar os clientes: ' + _empresasErro, 'carregarEmpresas().then(renderTelaEmpresas)')}</div>`;
     grid.innerHTML = erro;
     lista.innerHTML = erro;
     return;
   }
 
   if (!_empresas.length) {
-    const vazio = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin:0 auto 12px;display:block"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente cadastrado</div>
-      <div style="font-size:12px;margin-bottom:16px">Cadastre a primeira empresa cliente para iniciar.</div>
-      <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Nova empresa</button>
-    </div>`;
+    const vazio = `<div style="grid-column:1/-1">${_emptyState({
+      icone: 'cliente',
+      titulo: 'Nenhum cliente cadastrado',
+      texto: 'Cadastre a primeira empresa cliente para iniciar a coleta.',
+      acao: '<button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Nova empresa</button>',
+    })}</div>`;
     grid.innerHTML = vazio;
     lista.innerHTML = vazio;
     return;
@@ -15601,7 +15674,7 @@ async function renderComparativo() {
     return;
   }
 
-  panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Carregando dados dos ciclos…</div></div>';
+  panel.innerHTML = _loadingState('Carregando dados dos ciclos…');
 
   // Buscar todos os ciclos da empresa
   const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
@@ -16121,7 +16194,20 @@ function goScreen(id, btn) {
           }
           break;
       }
-    } catch(e) { console.warn('goScreen render error:', id, e); }
+    } catch(e) {
+      // Antes, um erro de render deixava a tela em branco sem nenhuma pista
+      // para o usuario — so um console.warn.
+      console.warn('goScreen render error:', id, e);
+      const sc = document.getElementById('sc-' + id);
+      if (sc) {
+        let box = sc.querySelector('.js-screen-error');
+        if (!box) { box = document.createElement('div'); box.className = 'js-screen-error'; sc.appendChild(box); }
+        box.innerHTML = _errorState(
+          'Falha ao montar esta tela: ' + (e?.message || 'erro inesperado') + '.',
+          `goScreen('${id}')`
+        );
+      }
+    }
     // Reaplicar módulos DEPOIS do render — pega blocos criados por template
     // string (ex.: botão "Ver adesão" na lista de links)
     if (_modulosOff.size) _esconderElementosModulos();
