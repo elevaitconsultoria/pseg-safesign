@@ -514,7 +514,7 @@ colapsado por link — não havia tela de acompanhamento, nenhum export, e nenhu
   Dashboard tinha a lógica inline (4 faixas, limiar `<10` respostas) e `_calcMetricasEmpresa`
   tinha outra (3 faixas, outros rótulos) — a mesma empresa aparecia como "Aguardando respostas"
   na Home e "Aguardando" em Clientes. Estados: `inativa | semLinks | aguardando | parada |
-  coletando | completa`.
+  coletando | completa | finalizada` (ver seção "Finalização de campanha" abaixo).
 - **Adesão exibida em Home/Clientes é BRUTA** (`respostas ÷ quadro`, o mesmo "Total geral" já
   definido no sistema) — a *classificada* exige carregar as respostas de cada empresa e continua
   exclusiva da tela de Adesão. A UI diz isso nos tooltips; não trocar um pelo outro.
@@ -534,6 +534,34 @@ colapsado por link — não havia tela de acompanhamento, nenhum export, e nenhu
   novamente" — antes uma falha de rede era indistinguível de "Nenhum cliente cadastrado".
 - Título da tela de links passou a ser **"Coleta & Links"** (era "Clientes & Coleta", ambíguo
   com o menu "Clientes"). Só o rótulo — nenhum id, rota ou arquivo renomeado.
+
+## Finalização de campanha de link de coleta (2026-08-31)
+
+Antes, um link só tinha `ativo`/`inativo` — não dava pra distinguir uma pausa temporária de
+uma campanha concluída de verdade. As duas situações caíam na mesma tag cinza "Inativo", e uma
+empresa que terminou a coleta com sucesso aparecia igual a uma que nunca recebeu link nenhum
+(rótulo "Sem links" no Dashboard/Clientes). PR
+[#64](https://github.com/elevaitconsultoria/pseg-safesign/pull/64).
+
+- **Coluna nova, aditiva**: `links_coleta.encerrado_em TIMESTAMPTZ` (`migration_links_encerrado_em.sql`,
+  DEV + PROD). **Não é** o gate de aceitação de respostas — `ativo` continua sendo o único campo
+  lido por RLS, pela RPC `salvar_resposta` e pelo `psicomap-forms.html`; `encerrado_em` é só
+  metadado de UI que anota a *intenção* por trás de um `ativo=false`.
+- **3 estados por link**: Ativo (`ativo=true`) / Pausado (`ativo=false, encerrado_em=NULL`,
+  badge "Inativo" cinza) / Finalizado (`ativo=false, encerrado_em` preenchido, badge roxo `.tp`).
+  **Reativar sempre limpa `encerrado_em`** — não existe "ativo e finalizado" ao mesmo tempo
+  (`toggleLink()`, `psicomap-admin.html`).
+- **Ação é por link individual, não em lote por empresa/ciclo** — decisão de escopo tomada com
+  o usuário: uma empresa pode ter vários links simultâneos (um por setor via "Gerar em lote"),
+  e cada um se finaliza separadamente. Botão "🏁 Finalizar campanha" → `finalizarLink(id)`.
+- **Desativar um link nunca escondeu respostas já coletadas** de nenhuma análise/laudo/adesão —
+  `loadRespostasParaEmpresa()` sempre filtrou só por `is_teste`, nunca por `link.ativo`. Isso
+  continua valendo para links finalizados: o dado coletado segue entrando normalmente em tudo.
+- **`_EMP_STATUS`/`_statusEmpresa()` ganharam o status `finalizada`** (roxo): empresa sem
+  nenhum link ativo, mas com pelo menos um link finalizado (`!linksAtiv && linksEmp.some(l =>
+  l.encerrado_em)`) — substitui "Sem links" nesse caso. `_urgenciaEmpresa()` já excluía
+  `!linksAtiv` da lista de cobrança, então cobre "finalizada" automaticamente, sem mudança.
+  Chip de filtro adicionado em `_renderEmpFiltros()` (array `ordem`).
 
 ## Agrupamentos GHE (2026-08-17 → 2026-08-28)
 
