@@ -1,4 +1,4 @@
-﻿# PsicoMap — Guia para o Agente
+# PsicoMap — Guia para o Agente
 
 ## Contexto de negócio
 
@@ -674,3 +674,14 @@ foi tocado.
   de PDFs já homologados** (blocos de setor deixam de ser cortados, em troca de espaço em
   branco no fim da página) — validar visualmente antes de levar para PROD.
 - Typo de plural em `updateComboPreview()` (`"2 funçãoões selecionadas"`).
+
+**Bug de produção corrigido no mesmo dia (`btn-export-all` intermitente):**
+`_podeBaixarTodos()` lia `currentUser.role` cru, que carrega `'authenticated'` (role do JWT)
+até `loadPerfil()` sobrescrever — e o guard em `aplicarRestricoesPorRole()` **só escondia**,
+nunca mostrava, então o botão não voltava quando o perfil chegava. Corrigido com
+`_roleAtual()` (normalização, agora fonte única — era inline em `aplicarRestricoesPorRole`) e
+`_sincronizarBotaoPacote()` (visibilidade **simétrica**, condicionada a
+`_podeBaixarTodos() && window._analiseData`, chamada pelas duas funções).
+**Regra geral:** nesta SPA, guard de visibilidade por role que só esconde trava a UI no
+estado restritivo quando o role chega depois — sempre escrever a função capaz de restaurar.
+Ler `currentUser.role` cru para decidir permissão tem a mesma armadilha: usar `_roleAtual()`.
