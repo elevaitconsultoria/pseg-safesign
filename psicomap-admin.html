@@ -2909,6 +2909,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <!-- Trilha de etapas -->
     <div style="display:flex;gap:6px;margin:14px 0 16px" id="ghei-trilha"></div>
 
+    <!-- Colunas que o importador ligou a cada campo — visível na conciliação e na prévia -->
+    <div id="ghei-colunas"></div>
+
     <!-- ETAPA 1 — arquivo -->
     <div id="ghei-etapa-1">
       <input type="file" id="ghei-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGheArquivo(this)">
@@ -8251,6 +8254,7 @@ function _gheiProcessar(rows) {
   _gheiState.linhas    = linhas;
   _gheiState.ignoradas = ignoradas;
   _gheiState.colunas   = { agrup: colAgrup, setor: colSetor, funcao: colFuncao };
+  _gheiState.headers   = headers;   // para mostrar o que o arquivo trazia quando algo não casar
   _gheiMontarConciliacao();
   _gheiState.etapa = 2;
   _gheiRender();
@@ -8312,6 +8316,38 @@ const GHEI_BADGE = {
   manter:   { txt: 'sem correspondência', bg: '#ffedd5', cor: '#9a3412' },
   orfao:    { txt: 'sem correspondência', bg: '#fee2e2', cor: '#991b1b' },
 };
+
+// Declara em voz alta a que coluna do arquivo cada campo foi ligado.
+// Existe por causa de um caso real: o cabeçalho "Funções" (plural) não era reconhecido, a
+// coluna inteira era ignorada, todo par virava coringa "(qualquer função)" e a importação
+// terminava sem um único aviso. O GHE ficava plausível e errado. Um importador que adivinha
+// colunas tem obrigação de dizer no que acertou — e de gritar quando não achou.
+function _gheiColunasHTML() {
+  const c = _gheiState?.colunas;
+  if (!c) return '';
+  const item = (rotulo, valor, obrigatorio) => {
+    const ok = !!valor;
+    const cor = ok ? 'var(--g)' : (obrigatorio ? '#991b1b' : '#9a3412');
+    const txt = ok ? _esc(valor) : 'não encontrada';
+    return `<span style="font-size:11px;color:var(--tl)">${rotulo}: <strong style="color:${cor}">${txt}</strong></span>`;
+  };
+  const faltaFuncao = !c.funcao;
+  const outras = (_gheiState.headers || []).filter(h => h !== c.agrup && h !== c.setor && h !== c.funcao);
+  return `
+    <div style="border:1px solid var(--border);border-left:3px solid ${faltaFuncao ? '#991b1b' : 'var(--g)'};border-radius:var(--r);padding:8px 11px;margin-bottom:10px;background:var(--bg)">
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        ${item('Agrupamento', c.agrup, true)}
+        ${item('Setor', c.setor, true)}
+        ${item('Função', c.funcao, false)}
+      </div>
+      ${faltaFuncao ? `<div style="font-size:11px;color:#991b1b;margin-top:6px;line-height:1.6">
+        <strong>Sem coluna de função, todo par vira "(qualquer função)"</strong> — cada GHE passa a cobrir o
+        setor inteiro em vez dos cargos declarados no PGR.
+        ${outras.length ? `Colunas não usadas do arquivo: <em>${outras.map(_esc).join(', ')}</em>. ` : ''}
+        Renomeie a coluna dos cargos para <strong>Função</strong> ou <strong>Cargo</strong> e importe de novo.
+      </div>` : ''}
+    </div>`;
+}
 
 function _gheiRenderConciliacao() {
   const st = _gheiState;
@@ -8377,6 +8413,7 @@ function _gheiMontarPrevia() {
   const porGhe = new Map();    // chave normalizada do GHE → {nome, pares:[], chaves:Set}
   const reivindicado = new Map(); // chave do par → nome do GHE que ficou com ele
   const conflitos = [];
+  const conflitosVistos = new Set(); // dedup: um par repetido em N linhas é UM conflito
   const orfaos = new Set();
 
   st.linhas.forEach(l => {
@@ -8401,7 +8438,14 @@ function _gheiMontarPrevia() {
     if (dono && dono !== g.nome) {
       // Par declarado em dois GHE. O primeiro por ordem de planilha fica com ele — é a única
       // regra que preserva "cada resposta conta uma vez". Mas o conflito é reportado.
-      conflitos.push({ setor: s, funcao: f, manteve: dono, descartou: g.nome });
+      // Dedup: o conflito é detectado por LINHA da planilha, e um mesmo par repetido em várias
+      // linhas geraria a mesma frase N vezes na prévia (visto de verdade: a mesma linha listada
+      // duas vezes seguidas). O que interessa é o par, não quantas linhas o declararam.
+      const kConf = chave + '|||' + dono + '|||' + g.nome;
+      if (!conflitosVistos.has(kConf)) {
+        conflitosVistos.add(kConf);
+        conflitos.push({ setor: s, funcao: f, manteve: dono, descartou: g.nome });
+      }
       return;
     }
     reivindicado.set(chave, g.nome);
@@ -8558,6 +8602,9 @@ function _gheiRender() {
   // _gheiAplicar desabilita o botão enquanto grava e, no sucesso, fecha o modal sem reabilitar:
   // sem este reset a SEGUNDA importação da sessão abriria com "Aplicar" morto.
   btnA.disabled = false;
+
+  const elCols = document.getElementById('ghei-colunas');
+  if (elCols) elCols.innerHTML = st.etapa > 1 ? _gheiColunasHTML() : '';
 
   if (st.etapa === 2) _gheiRenderConciliacao();
   if (st.etapa === 3) _gheiRenderPrevia();
