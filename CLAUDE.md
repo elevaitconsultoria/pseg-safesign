@@ -793,6 +793,30 @@ função**, fora do trecho substituído. Remover só o bloco de cima deixou duas
 quebravam as duas views em todos os modos — pegas só porque o teste executou as funções de
 verdade, não apenas a sintaxe.
 
+### Filtro "GHE (setor × função)" — isolar um GHE
+
+Segmentar mostra **todos** os GHE de uma vez; filtrar isola **um ou alguns**. São necessidades
+diferentes: o consultor entrega ora um documento consolidado, ora um documento por GHE.
+Combos novos `combo-ghe-par` (Resultados), `combo-gf-ghe-par` (Gráficos) e `combo-ld-ghe-par`
+(Relatório), populados por `_populateGheCombo(..., 'ghe')` e registrados em `COMBO_RENDER`
+(auto-apply). O filter-card some quando a empresa não tem GHE importado.
+
+**`_filtroPorGhe(comboId, linhas)` recebe as LINHAS e passa por `agruparPorPares`** em vez de
+simplesmente expandir os pares do GHE selecionado. Não é desperdício: um par pode estar
+declarado em dois GHE, e um GHE coringa ("qualquer função do setor X") se sobrepõe a pares
+exatos de outro. Resolver a precedência aqui de um jeito e na segmentação de outro faria o
+filtro "Operacional" trazer um conjunto diferente do bloco "Operacional" — o mesmo GHE com
+`n` diferente conforme a tela, sem erro aparente. Reusando `agruparPorPares`, filtro e
+segmentação são consistentes por construção (verificado GHE a GHE).
+
+Aplicado nas **quatro** cadeias de filtro, incluindo `gerarLaudoPDF` — o export precisa ler os
+mesmos filtros do preview, gap que já existiu antes com o filtro de Agrupamento GHE.
+
+**O que este filtro NÃO resolve** (pedidos reais do usuário, ainda em aberto): não há histórico
+de análises geradas — a tabela `laudos` recebe um registro a cada PDF (com `granularidade` e
+grupos desde 2026-09-11) mas **nunca é lida por nenhuma tela**; e não há como salvar um recorte
+de filtros como preset para reaplicar depois.
+
 **`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
 bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
 **ignoravam a granularidade escolhida**, enquanto `_buildLaudoHTML` a respeitava — preview e PDF

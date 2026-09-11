@@ -2102,6 +2102,32 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
+      <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
+           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+      <div class="filter-card" id="fc-ghe-par" style="display:none">
+        <div class="filter-label">GHE (setor × função)</div>
+        <div class="combo" id="combo-ghe-par">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ghe-par')">
+            <div class="combo-preview" id="combo-ghe-par-preview"><span class="combo-placeholder">Todos os GHE</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar GHE..." oninput="filterCombo('combo-ghe-par',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ghe-par-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ghe-par-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ghe-par')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ghe-par')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filtro Agrupamento de Função — Resultados -->
       <div class="filter-card" id="fc-fun-ghe" style="display:none">
         <div class="filter-label">Agrupamento de Função</div>
@@ -2418,6 +2444,32 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
 
       <!-- Filtro Agrupamento de Função — Gráficos -->
+      <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
+           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+      <div class="filter-card" id="fc-gf-ghe-par" style="display:none">
+        <div class="filter-label">GHE (setor × função)</div>
+        <div class="combo" id="combo-gf-ghe-par">
+          <div class="combo-trigger" onclick="toggleCombo('combo-gf-ghe-par')">
+            <div class="combo-preview" id="combo-gf-ghe-par-preview"><span class="combo-placeholder">Todos os GHE</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar GHE..." oninput="filterCombo('combo-gf-ghe-par',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-gf-ghe-par-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-gf-ghe-par-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-gf-ghe-par')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-gf-ghe-par')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-card" id="fc-gf-fun-ghe" style="display:none">
         <div class="filter-label">Agrupamento de Função</div>
         <div class="combo" id="combo-gf-fun-ghe">
@@ -2623,6 +2675,32 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
 
       <!-- Filtro Agrupamento de Função — Laudo -->
+      <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
+           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+      <div class="filter-card" id="fc-ld-ghe-par" style="display:none">
+        <div class="filter-label">GHE (setor × função)</div>
+        <div class="combo" id="combo-ld-ghe-par">
+          <div class="combo-trigger" onclick="toggleCombo('combo-ld-ghe-par')">
+            <div class="combo-preview" id="combo-ld-ghe-par-preview"><span class="combo-placeholder">Todos os GHE</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar GHE..." oninput="filterCombo('combo-ld-ghe-par',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-ld-ghe-par-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-ld-ghe-par-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-ld-ghe-par')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-ld-ghe-par')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-card" id="fc-ld-fun-ghe" style="display:none">
         <div class="filter-label">Agrupamento de Função</div>
         <div class="combo" id="combo-ld-fun-ghe">
@@ -4645,7 +4723,7 @@ let grupoItensLivres = new Set(); // subconjunto de grupoItensTodos que só exis
 // ── Helpers de filtro por Agrupamento GHE ───────────────────────────────────
 
 function _populateGheCombo(comboId, fcId, tipo = 'setor') {
-  const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
+  const grupos = tipo === 'ghe' ? gruposGhe : tipo === 'setor' ? gruposSetor : gruposFuncao;
   const nomes = grupos.map(g => g.nome);
   const fc = document.getElementById(fcId);
   if (fc) fc.style.display = nomes.length ? '' : 'none';
@@ -4668,6 +4746,27 @@ function _grupoValoresFiltro(comboId, tipo = 'setor') {
   return new Set(
     grupos.filter(g => sel.includes(g.nome)).flatMap(g => g.itens.map(_gheNormStrong))
   );
+}
+
+// Filtro por GHE (par setor × função). Devolve um Set de CHAVES DE PAR, ou null quando não há
+// filtro ativo (nenhum ou todos selecionados) — mesmo contrato de _grupoValoresFiltro.
+//
+// Por que passa pelas linhas e por agruparPorPares em vez de só expandir os pares do GHE:
+// um par pode estar declarado em dois GHE, e um GHE coringa ("qualquer função do setor X")
+// se sobrepõe a pares exatos de outro GHE. Resolver isso aqui de um jeito e na segmentação de
+// outro faria o filtro "Operacional" trazer um conjunto diferente do bloco "Operacional" —
+// o consultor veria n diferente entre filtrar e segmentar, sem nenhum erro aparente.
+// Reusando agruparPorPares, filtro e segmentação são consistentes por construção.
+function _filtroPorGhe(comboId, linhas) {
+  const sel = [...(comboState[comboId] || [])];
+  const todos = gruposGhe.map(g => g.nome);
+  if (!todos.length || !sel.length || sel.length === todos.length) return null;
+  const escolhidos = new Set(sel);
+  const chaves = new Set();
+  agruparPorPares(linhas, gruposGhe).grupos.forEach(g => {
+    if (!g._residual && escolhidos.has(g.nome)) g._chaves.forEach(k => chaves.add(k));
+  });
+  return chaves;
 }
 
 // ── Agrupamentos de setores/funções — persistência no banco ────────────────
@@ -6044,15 +6143,18 @@ const COMBO_RENDER = {
   'combo-nivel':        rodarAnalise,
   'combo-ghe':          rodarAnalise,
   'combo-fun-ghe':      rodarAnalise,
+  'combo-ghe-par':      rodarAnalise,
   'combo-gf-setor':     renderGraficos,
   'combo-gf-funcao':    renderGraficos,
   'combo-gf-ghe':       renderGraficos,
   'combo-gf-fun-ghe':   renderGraficos,
+  'combo-gf-ghe-par':   renderGraficos,
   'combo-ld-setor':     renderLaudo,
   'combo-ld-nivel':     renderLaudo,
   'combo-ld-escolaridade': renderLaudo,
   'combo-ld-ghe':       renderLaudo,
   'combo-ld-fun-ghe':   renderLaudo,
+  'combo-ld-ghe-par':   renderLaudo,
   'combo-audit-setor':  renderTelaAuditoria,
 };
 
@@ -6251,6 +6353,7 @@ async function onEmpresaChange() {
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ghe', 'fc-ghe');
   _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
+  _populateGheCombo('combo-ghe-par', 'fc-ghe-par', 'ghe');
   _atualizarSegSelect();        // habilita/desabilita "Por Agrupamento" pela empresa
   buildCombo('combo-setor');
   _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
@@ -6274,12 +6377,17 @@ async function rodarAnalise() {
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // Aplicar filtro de ciclo se selecionado
   const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
+  // Precisa das linhas: a atribuicao de um par ao seu GHE e resolvida por agruparPorPares, a
+  // mesma da segmentacao — filtrar "Operacional" e segmentar por "Operacional" tem de dar o
+  // mesmo conjunto.
+  const gheParesF = _filtroPorGhe('combo-ghe-par', dados);
   // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
   const filtrado = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
     (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
     (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+    (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao)))
   );
 
   if (!filtrado.length) {
@@ -10375,6 +10483,7 @@ async function onGrafFiltroChange() {
     await carregarGruposSetor(empId);
     _populateGheCombo('combo-gf-ghe', 'fc-gf-ghe');
     _populateGheCombo('combo-gf-fun-ghe', 'fc-gf-fun-ghe', 'funcao');
+    _populateGheCombo('combo-gf-ghe-par', 'fc-gf-ghe-par', 'ghe');
   }
   buildCombo('combo-gf-setor');
   buildCombo('combo-gf-funcao');
@@ -10423,12 +10532,14 @@ async function renderGraficos() {
   const gheFuncoes = _grupoValoresFiltro('combo-gf-fun-ghe', 'funcao');
   const todosDados = await getLinhasParaAnalise(emp);
   const dados    = cicloId ? todosDados.filter(r => r.ciclo_id === cicloId) : todosDados;
+  const gheParesF = _filtroPorGhe('combo-gf-ghe-par', dados);
   // Filtro defensivo: set vazio = todos incluídos
   const linhas   = dados.filter(r =>
     (setores.length === 0 || setores.includes(r.setor)) &&
     (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
     (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao)))
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+    (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao)))
   );
 
   const panel = document.getElementById('graficos-panel');
@@ -11431,6 +11542,7 @@ async function onLaudoFiltro() {
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   _populateGheCombo('combo-ld-fun-ghe', 'fc-ld-fun-ghe', 'funcao');
+  _populateGheCombo('combo-ld-ghe-par', 'fc-ld-ghe-par', 'ghe');
   // Default de granularidade: GHE por par > agrupamento de setores > por setor.
   // Só reescreve os modos auto-gerenciados — 'consolidado' é escolha explícita do usuário e
   // nunca é sobrescrito.
@@ -11457,12 +11569,14 @@ async function renderLaudo() {
   const escolaridadesLd = [...comboState['combo-ld-escolaridade']];
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
+  const gheParesF = _filtroPorGhe('combo-ld-ghe-par', dados);
   // Filtro defensivo: set vazio = todos incluídos
   const linhas  = dados.filter(r =>
     (!cicloId || r.ciclo_id === cicloId) &&
     (setores.length === 0 || setores.includes(r.setor)) &&
     (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
     (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+    (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao))) &&
     (escolaridadesLd.length === 0 || escolaridadesLd.includes(r.escolaridade || 'Não informado'))
   );
   const panel   = document.getElementById('laudo-preview-panel');
@@ -12412,11 +12526,13 @@ async function gerarLaudoPDF() {
     // Mesmos filtros de renderLaudo() (preview) — sem isso o PDF exportado ignorava a
     // seleção de Agrupamento GHE / Ciclo feita na tela, mostrando sempre todos os
     // setores/funções/ciclos.
+    const gheParesF = _filtroPorGhe('combo-ld-ghe-par', todos);
     const linhas    = todos.filter(r =>
       (!cicloId || r.ciclo_id === cicloId) &&
       (setores.length === 0 || setores.includes(r.setor)) &&
       (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
       (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+      (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao))) &&
       (escolaridadesLd.length === 0 || escolaridadesLd.includes(r.escolaridade || 'Não informado'))
     );
 
