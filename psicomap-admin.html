@@ -1869,7 +1869,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="page-sub">Visão geral dos seus clientes, coleta ativa e respostas recebidas</div>
     </div>
     <div class="page-hdr-actions" id="dash-hdr-actions">
-      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
+      <button class="btn btn-g" onclick="irParaNovaEmpresa()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova empresa
       </button>
@@ -3838,7 +3838,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div>
     </div>
     <div class="page-hdr-actions" id="links-action-btns">
-      <button class="btn btn-ghost" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">
+      <button class="btn btn-ghost" onclick="irParaNovaEmpresa()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Nova empresa
       </button>
@@ -13572,6 +13572,17 @@ function aplicarRestricoesPorRole() {
   // por isso _sincronizarBotaoPacote() mostra e esconde, em vez de so esconder.
   _sincronizarBotaoPacote();
 
+  // Botoes de escrita que vivem FORA do sidebar: resetar aqui, antes dos branches,
+  // pelo mesmo motivo que .nav-item e resetado em cada um deles. Os branches de
+  // consultor e viewer escondiam estes ids e NENHUM branch os restaurava, entao
+  // qualquer transicao de role na mesma aba (entrarComoEST / sairModoSuporte)
+  // deixava um admin sem os botoes de escrita ate dar F5. Mesma regra do
+  // _sincronizarBotaoPacote: guard de visibilidade precisa saber mostrar.
+  ['links-action-btns', 'dash-hdr-actions', 'usuarios-new-btn-area'].forEach(eid => {
+    const el = document.getElementById(eid);
+    if (el) el.style.display = '';
+  });
+
   if (role === 'super_admin') {
     if (_supportMode) {
       // Em modo suporte (Entrar como EST): sidebar igual ao admin — sem gestao-ests
@@ -14473,7 +14484,7 @@ function _renderDashLista(metricas) {
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <div class="empty-state-title">Nenhum cliente cadastrado</div>
       <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="goScreen('empresas',document.getElementById('nb-empresas'));setTimeout(()=>abrirModalClientePerfil(null),100)">Cadastrar empresa</button>
+      <button class="btn btn-g" onclick="irParaNovaEmpresa()">Cadastrar empresa</button>
     </div>`;
     return;
   }
@@ -17652,9 +17663,14 @@ async function exportarPlanoCSV() {
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
+// Retorna true se a navegação aconteceu, false se foi bloqueada (role ou módulo).
+// Quem encadeia uma ação depois de navegar precisa checar — ver irParaNovaEmpresa().
 function goScreen(id, btn) {
-  // Controle de acesso por role
-  const role = currentUser?.role;
+  // Controle de acesso por role. _roleAtual() e nao currentUser.role cru: o
+  // Supabase poe 'authenticated' (role do JWT) ate loadPerfil() sobrescrever, e
+  // restritos['authenticated'] e undefined — esta camada inteira ficava
+  // desligada nessa janela, liberando qualquer tela.
+  const role = _roleAtual();
   const restritos = {
     consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
     admin:          new Set(['gestao-ests']),
@@ -17663,14 +17679,14 @@ function goScreen(id, btn) {
   };
   if (restritos[role]?.has(id)) {
     toast('Acesso restrito ao seu perfil.', 'r');
-    return;
+    return false;
   }
 
   // Controle por módulo da EST (independente do role) — ver MODULOS_CATALOGO
   const modTela = MODULO_POR_TELA[id];
   if (modTela && _modulosOff.has(modTela)) {
     toast('Módulo não disponível para esta EST.', 'r');
-    return;
+    return false;
   }
 
   // 1. Esconder todas as telas e desativar todos os nav items
@@ -17829,6 +17845,16 @@ function goScreen(id, btn) {
     const ov = document.getElementById('sidebar-overlay');
     if (ov) ov.classList.remove('mobile-open');
   }
+  return true;
+}
+
+// Navegar para Clientes e já abrir o modal de cadastro.
+// Existia inline em 3 botões como `goScreen(...); setTimeout(() => abrirModal...)`
+// — e o setTimeout disparava MESMO quando goScreen bloqueava por role, abrindo o
+// cadastro por cima da tela atual para quem não pode cadastrar.
+function irParaNovaEmpresa() {
+  if (!goScreen('empresas', document.getElementById('nb-empresas'))) return;
+  setTimeout(() => abrirModalClientePerfil(null), 100);
 }
 
 // ══════════════════════════════════════════
