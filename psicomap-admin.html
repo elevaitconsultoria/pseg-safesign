@@ -2192,9 +2192,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         Exportar Imagem
       </button>
       <!-- Restrito a admin/super_admin - visibilidade controlada por _podeBaixarTodos() -->
-      <button class="btn btn-g" onclick="baixarTodosFormatos(this)" id="btn-export-all" style="display:none">
+      <button class="btn btn-g" onclick="baixarTodasAnalises(this)" id="btn-export-all" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Baixar todos os formatos
+        Baixar todas as análises
       </button>
     </div>
 
@@ -6214,13 +6214,15 @@ function _calcPageBreaks(canvasH, pageH, scale, breakHints) {
   return pages;
 }
 
-async function exportarResultados(fmt) {
+// opts.sufixo   -> distingue o arquivo quando varias analises sao exportadas na mesma rodada
+// opts.silencioso -> suprime os toasts (o orquestrador do pacote emite os seus)
+async function exportarResultados(fmt, opts = {}) {
   if (fmt === 'pdf') { exportarResultadosPrint(); return; }
 
   // ── PNG: mantém html2canvas com scale alto ──
   const vc = document.getElementById('view-content');
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
-  toast('Gerando PNG — aguarde...', 'g');
+  if (!opts.silencioso) toast('Gerando PNG — aguarde...', 'g');
 
   const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
@@ -6250,68 +6252,122 @@ async function exportarResultados(fmt) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${today}.png` });
+  const sufixo = opts.sufixo ? opts.sufixo + '-' : '';
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${sufixo}${today}.png` });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('✓ PNG exportado.', 'g');
+  if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
 }
 
-// Melhoria 1 - pacote de exportacao (admin / super_admin em Modo Suporte).
+// Pacote de analises (admin / super_admin em Modo Suporte).
 function _podeBaixarTodos() {
   const r = currentUser?.role;
   return r === 'admin' || r === 'super_admin';
 }
 
-// Orquestra as exportacoes JA EXISTENTES. Sequencial (nao Promise.all) de proposito:
-// exportarResultados('png') clona e muta #view-content, e exportarResultadosPrint()
-// expande as secoes colapsadas - rodar em paralelo produziria arquivos corrompidos.
-async function baixarTodosFormatos(btn) {
-  if (!_podeBaixarTodos()) { toast('Ação restrita ao perfil de administrador.', 'r'); return; }
+// As tres analises da tela de Resultados. A combinacao (viewMode, displayMode)
+// e a mesma que os toggles do header produzem; "Por questao" nao tem variante
+// de tabela (o toggle Grafico/Tabela fica oculto nesse modo).
+const ANALISES_PACOTE = [
+  { vm: 'risco',   dm: 'grafica', slug: 'risco-grafico', titulo: 'Análise por risco — visão gráfica' },
+  { vm: 'risco',   dm: 'tabela',  slug: 'risco-tabela',  titulo: 'Análise por risco — tabela' },
+  { vm: 'questao', dm: 'grafica', slug: 'por-questao',   titulo: 'Análise por questão' },
+];
+
+// Mesmo dispatch usado por _setViewMode/_setSegMode, sem mexer nos botoes do
+// header (o estado visual e restaurado de uma vez so no fim do pacote).
+function _renderAnaliseParaExport(vm, dm) {
+  window._viewMode    = vm;
+  window._displayMode = dm;
+  if (vm === 'questao')     renderViewQuestao(window._analiseData);
+  else if (dm === 'tabela') renderViewRisco(window._analiseData);
+  else                      renderViewGrafica(window._analiseData);
+}
+
+// Captura #view-content com as secoes colapsadas abertas, restaurando depois
+// apenas as que este helper abriu (as que o usuario ja tinha aberto continuam abertas).
+function _capturarViewContentExpandido() {
   const vc = document.getElementById('view-content');
-  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
+  if (!vc || !vc.children.length) return null;
+  const abertas = [];
+  vc.querySelectorAll('.qa-arr').forEach(arrow => {
+    const body = arrow.parentElement?.nextElementSibling;
+    if (body && body.style.display === 'none') {
+      body.style.display = 'block'; arrow.textContent = '▼';
+      abertas.push({ arrow, body });
+    }
+  });
+  const html = vc.innerHTML;
+  abertas.forEach(({ arrow, body }) => { body.style.display = 'none'; arrow.textContent = '▶'; });
+  return html;
+}
+
+// Baixa o visual das tres analises: uma imagem PNG de cada + UM PDF com as tres
+// secoes. Sequencial (nao Promise.all) porque todas compartilham o mesmo
+// #view-content: cada analise precisa ser renderizada, capturada e so entao
+// substituida pela proxima. O PDF vai por ultimo e numa janela unica — tres
+// chamadas a exportarResultadosPrint abririam tres popups.
+async function baixarTodasAnalises(btn) {
+  if (!_podeBaixarTodos()) { toast('Ação restrita ao perfil de administrador.', 'r'); return; }
+  if (!window._analiseData) { toast('Rode a análise primeiro.', 'w'); return; }
   if (btn?.dataset.busy === '1') return;
 
-  const htmlOrig = btn ? btn.innerHTML : '';
-  const passo = (n, txt) => { if (btn) btn.textContent = `Gerando ${n}/3 — ${txt}…`; };
+  const htmlOrig  = btn ? btn.innerHTML : '';
+  const vmOrig    = window._viewMode;
+  const dmOrig    = window._displayMode;
+  const total     = ANALISES_PACOTE.length + 1;   // N imagens + 1 PDF
+  const passo = (n, txt) => { if (btn) btn.textContent = `Gerando ${n}/${total} — ${txt}…`; };
   if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
 
+  const secoes = [];
   const falhas = [];
   try {
-    passo(1, 'CSV');
-    try { exportarCSV(); } catch (e) { console.warn('baixarTodos CSV:', e); falhas.push('CSV'); }
-    await new Promise(r => setTimeout(r, 400));   // navegadores engasgam com downloads simultaneos
+    for (let i = 0; i < ANALISES_PACOTE.length; i++) {
+      const a = ANALISES_PACOTE[i];
+      passo(i + 1, a.titulo);
+      try {
+        _renderAnaliseParaExport(a.vm, a.dm);
+        await new Promise(r => setTimeout(r, 120));   // deixa o layout assentar antes da captura
+        const html = _capturarViewContentExpandido();
+        if (html) secoes.push({ titulo: a.titulo, html });
+        await exportarResultados('png', { sufixo: a.slug, silencioso: true });
+      } catch (e) {
+        console.warn('baixarTodasAnalises ' + a.slug + ':', e);
+        falhas.push(a.titulo);
+      }
+      await new Promise(r => setTimeout(r, 400));     // navegadores engasgam com downloads simultaneos
+    }
 
-    passo(2, 'Imagem');
-    try { await exportarResultados('png'); } catch (e) { console.warn('baixarTodos PNG:', e); falhas.push('Imagem'); }
-    await new Promise(r => setTimeout(r, 400));
+    passo(total, 'PDF');   // por ultimo: abre janela de impressao e interrompe o fluxo
+    try {
+      if (secoes.length) exportarResultadosPrint(secoes);
+      else falhas.push('PDF');
+    } catch (e) { console.warn('baixarTodasAnalises PDF:', e); falhas.push('PDF'); }
 
-    passo(3, 'PDF');   // por ultimo: abre janela de impressao e interrompe o fluxo
-    try { exportarResultadosPrint(); } catch (e) { console.warn('baixarTodos PDF:', e); falhas.push('PDF'); }
-
-    toast(falhas.length ? `Concluído com falhas: ${falhas.join(', ')}.` : '✓ Todos os formatos baixados.',
+    toast(falhas.length ? `Concluído com falhas: ${falhas.join(', ')}.` : '✓ Todas as análises baixadas.',
           falhas.length ? 'w' : 'g');
   } finally {
+    // Restaura a view que o usuario estava vendo. _setViewMode ressincroniza os
+    // botoes do header e re-renderiza respeitando window._displayMode.
+    window._displayMode = dmOrig;
+    try { _setViewMode(vmOrig); } catch (e) { console.warn('restaurar view:', e); }
     if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
   }
 }
 
-function exportarResultadosPrint() {
-  const vc = document.getElementById('view-content');
-  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
-
-  // 1. Expandir todas as seções colapsadas para o print
-  vc.querySelectorAll('.qa-arr').forEach(arrow => {
-    const body = arrow.parentElement?.nextElementSibling;
-    if (body) { body.style.display = 'block'; arrow.textContent = '▼'; }
-  });
-
-  // 2. Capturar HTML já expandido
-  const contentHTML = vc.innerHTML;
-
-  // 3. Restaurar estado colapsado
-  vc.querySelectorAll('.qa-arr').forEach(arrow => {
-    const body = arrow.parentElement?.nextElementSibling;
-    if (body && body.style.display === 'block') { body.style.display = 'none'; arrow.textContent = '▶'; }
-  });
+// secoes (opcional): [{titulo, html}] — quando informado, monta UM documento com
+// varias analises, uma por pagina. Sem o parametro, imprime a view atual (uso dos
+// botoes "Exportar PDF" e do dropdown), com o comportamento de sempre.
+function exportarResultadosPrint(secoes) {
+  const multi = Array.isArray(secoes) && secoes.length > 0;
+  let capturas;
+  if (multi) {
+    capturas = secoes;
+  } else {
+    // 1-3. Capturar HTML com as seções colapsadas expandidas
+    const contentHTML = _capturarViewContentExpandido();
+    if (contentHTML === null) { toast('Rode a análise primeiro.', 'w'); return; }
+    capturas = [{ titulo: null, html: contentHTML }];
+  }
 
   // 4. Resolver CSS vars (mapa hardcoded = sem acesso ao DOM da janela filha)
   const CV = {
@@ -6324,15 +6380,24 @@ function exportarResultadosPrint() {
     '--purple':'#7c3aed','--purplebg':'#f5f3ff',
     '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
   };
-  const html = contentHTML.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  const resolverVars = s => s.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  const html = multi
+    ? capturas.map(s =>
+        '<section class="psicomap-secao">' +
+          '<h2 class="psicomap-secao-titulo">' + s.titulo + '</h2>' +
+          resolverVars(s.html) +
+        '</section>').join('')
+    : resolverVars(capturas[0].html);
 
   // 5. Metadados do relatório
   const empSel   = document.getElementById('gf-empresa');
   const empNome  = empSel?.options[empSel?.selectedIndex]?.text || '';
   const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  const viewMode = window._displayMode === 'tabela'
-    ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
-    : 'Visão Gráfica';
+  const viewMode = multi
+    ? 'Análise completa (' + capturas.length + ' visões)'
+    : (window._displayMode === 'tabela'
+        ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
+        : 'Visão Gráfica');
   const adData  = window._analiseData;
   const nResp   = adData?.filtrado?.length ?? 0;
   const setores = adData?.setoresAtivos ?? [];
@@ -6363,6 +6428,14 @@ function exportarResultadosPrint() {
   .psicomap-cover-sub   { font-size: 9pt; color: #6b7280; margin-top: 3px; }
   .psicomap-cover-meta  { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
   .psicomap-cover-meta strong { color: #374151; }
+
+  /* Secoes do pacote "Baixar todas as analises" — uma analise por pagina */
+  .psicomap-secao + .psicomap-secao { page-break-before: always; break-before: page; }
+  .psicomap-secao-titulo {
+    font-size: 12pt; font-weight: 800; color: #16532d;
+    margin: 0 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;
+    page-break-after: avoid; break-after: avoid;
+  }
 
   /* Tags de filtro */
   .psicomap-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
