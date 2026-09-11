@@ -6492,8 +6492,11 @@ ${setores.length > 1 ? '<div class="psicomap-tags">' + setores.map(s => '<span c
 <script>
 // Adiciona classes de controle de quebra de página aos blocos gerados dinamicamente
 document.addEventListener('DOMContentLoaded', function() {
-  // Bloco de setor (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px)
-  document.querySelectorAll('#pseg-content > div').forEach(function(el) {
+  // Bloco de setor/grupo (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px).
+  // O id era '#pseg-content' desde antes do rebrand e nunca casava com a div real
+  // ('psicomap-content'), entao .psicomap-setor jamais era aplicada. No pacote
+  // multi-analises os blocos ficam um nivel abaixo, dentro de cada <section>.
+  document.querySelectorAll('#psicomap-content > div, #psicomap-content > .psicomap-secao > div').forEach(function(el) {
     el.classList.add('psicomap-setor');
   });
 
