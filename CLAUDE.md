@@ -848,3 +848,18 @@ nunca mostrava, então o botão não voltava quando o perfil chegava. Corrigido 
 **Regra geral:** nesta SPA, guard de visibilidade por role que só esconde trava a UI no
 estado restritivo quando o role chega depois — sempre escrever a função capaz de restaurar.
 Ler `currentUser.role` cru para decidir permissão tem a mesma armadilha: usar `_roleAtual()`.
+
+**Ajustes do PDF/imagem (mesma data, pos-producao):**
+- `.psicomap-setor` **nao** leva `page-break-inside: avoid` — aplicar no bloco de setor
+  inteiro empurrava o bloco para a folha seguinte e deixava paginas quase em branco. A
+  granularidade correta e `.psicomap-card` (card de risco), que mantem o `avoid`.
+- **`_resumoFiltrosHTML()`** — bloco "Filtros aplicados" (setores + funcoes), fonte unica
+  do recorte no cabecalho do PDF **e** da imagem. Antes o PDF so listava setores quando
+  havia mais de um (`setores.length > 1`, errando no recorte de um setor so) e a imagem
+  nunca listou nada, porque `exportarResultados('png')` captura `#view-content` e as tags
+  ficavam no header, fora dela. Deriva dos dados filtrados, nao da selecao do combo, e diz
+  "Todos os setores"/"Todas as funcoes" quando o recorte cobre tudo. Usa **estilos inline**
+  porque precisa funcionar nos dois destinos (`resolverVars` no doc, `_resolveStyleVars` no
+  clone do html2canvas); no PNG e injetado no clone, nunca no `#view-content` real.
+- **Cuidado ao editar `exportarResultadosPrint`:** tudo que entra na template string do
+  documento vira conteudo do PDF entregue ao cliente — inclusive comentarios de codigo.

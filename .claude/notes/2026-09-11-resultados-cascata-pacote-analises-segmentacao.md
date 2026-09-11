@@ -343,3 +343,57 @@ Este bug **não teria sido pego** pelos testes desta sessão: todos avaliavam `_
 com `currentUser` já populado. Faltava exercitar a **ordem** dos eventos, não só o estado
 final. O teste de regressão agora reproduz a sequência (análise antes do perfil → perfil
 chega → botão deve voltar).
+
+
+---
+
+## 6. Ajustes do PDF/imagem pos-producao (2026-09-11, mesma noite)
+
+Dois pontos reportados pelo usuario depois do deploy.
+
+### 6.1 Paginas em branco — `page-break-inside: avoid` no alvo errado
+
+O fix do item 4 passou a aplicar `.psicomap-setor` de verdade, e o efeito colateral
+apareceu na hora: **paginas quase em branco**. Um bloco de setor costuma ser maior que o
+espaco restante da folha, entao `avoid` empurrava o bloco inteiro para a proxima pagina.
+
+A granularidade certa de "nao cortar no meio" e o **card de risco**, nao o setor inteiro.
+`.psicomap-setor` ficou so com `margin-bottom`; `.psicomap-card` mantem o `avoid`.
+A classe continua sendo aplicada (o seletor corrigido segue valendo) — o que mudou foi a
+regra CSS, com comentario no proprio arquivo explicando por que ela **nao** leva `avoid`,
+para ninguem "consertar" de volta.
+
+### 6.2 O recorte de setores/funcoes nao aparecia no documento
+
+Pergunta do usuario: "no caso de relatorios onde eu aplico filtro de setores, ele nao
+mostra os setores filtrados no inicio do pdf ou imagem. esse comportamento era assim
+antes?" — **sim, era**, e em ambos os casos por motivo diferente:
+
+- **PDF**: a linha existia, mas condicionada a `setores.length > 1`. Filtrar exatamente
+  um setor — o recorte mais especifico, onde a informacao mais importa — nao mostrava nada.
+- **Imagem**: nunca mostrou. `exportarResultados('png')` captura `#view-content`, e as
+  tags de setor vivem no header do `resultado-panel`, **fora** dessa div.
+
+Ambos pre-existentes, nenhum introduzido nesta sessao.
+
+**Decisao do usuario:** bloco "Filtros aplicados" **sempre** presente, nos **dois**
+formatos, listando **setores e funcoes** (as demais dimensoes — ciclo, nivel, segmentacao,
+agrupamentos — ficaram de fora por escolha dele; a segmentacao ja aparece no subtitulo).
+
+`_resumoFiltrosHTML()` e a fonte unica:
+- Deriva dos **dados filtrados** (`setoresAtivos` e `filtrado`), nao da selecao do combo —
+  reflete o que de fato esta no documento.
+- Diz "Todos os setores" / "Todas as funcoes" quando o recorte cobre todo o universo do
+  combo, em vez de despejar a lista inteira. Isso tambem distingue *sem filtro* de
+  *filtro omitido*, que era a ambiguidade do comportamento antigo.
+- Carrega **estilos inline** (com `var(--...)`) de proposito: serve aos dois destinos —
+  `resolverVars()` resolve no doc de impressao, `_resolveStyleVars()` resolve no clone do
+  html2canvas. Classes do `<style>` do doc nao chegariam ao PNG.
+- No PNG e injetado no **clone**, nunca no `#view-content` real — a tela nao e poluida
+  (coberto por teste).
+
+As regras `.psicomap-tags` / `.psicomap-tag` ficaram orfas e foram removidas.
+
+**Detalhe de processo:** a primeira versao do comentario explicativo foi escrita dentro da
+template string do documento, entao viajava para dentro de todo PDF gerado. Movido para o
+codigo. Vale a atencao: tudo que entra naquela string vira conteudo do arquivo entregue.
