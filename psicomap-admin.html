@@ -6365,8 +6365,7 @@ async function rodarAnalise() {
   const btnPng = document.getElementById('btn-export-png');
   if (btnPng) btnPng.style.display = 'inline-flex';
   // RBAC: pacote completo so para admin (e super_admin em Modo Suporte)
-  const btnAll = document.getElementById('btn-export-all');
-  if (btnAll) btnAll.style.display = _podeBaixarTodos() ? 'inline-flex' : 'none';
+  _sincronizarBotaoPacote();
 }
 
 function exportarCSV() {
@@ -6540,10 +6539,30 @@ async function exportarResultados(fmt, opts = {}) {
   if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
 }
 
+// Role do app, normalizado. currentUser.role carrega 'authenticated' (role do JWT
+// do Supabase) ate loadPerfil() sobrescrever com o valor de `perfis` — ler o campo
+// cru abre uma janela em que um admin e avaliado como se nao tivesse perfil.
+// Mesma normalizacao que aplicarRestricoesPorRole() sempre fez inline.
+function _roleAtual() {
+  const raw = currentUser?.role;
+  return (raw === 'super_admin' || raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
+    ? raw : 'consultor';
+}
+
 // Pacote de analises (admin / super_admin em Modo Suporte).
 function _podeBaixarTodos() {
-  const r = currentUser?.role;
+  const r = _roleAtual();
   return r === 'admin' || r === 'super_admin';
+}
+
+// Fonte unica da visibilidade do botao de pacote. SIMETRICA de proposito: precisa
+// MOSTRAR, nao so esconder. aplicarRestricoesPorRole() roda depois de loadPerfil();
+// se rodarAnalise() acontecer antes do role chegar do banco, o botao era escondido
+// e nada o trazia de volta ate a analise seguinte (bug real em producao 2026-09-11).
+function _sincronizarBotaoPacote() {
+  const btn = document.getElementById('btn-export-all');
+  if (!btn) return;
+  btn.style.display = (_podeBaixarTodos() && window._analiseData) ? 'inline-flex' : 'none';
 }
 
 // As tres analises da tela de Resultados. A combinacao (viewMode, displayMode)
@@ -13162,14 +13181,12 @@ function aplicarRestricoesPorRole() {
   // Normalizar: Supabase coloca 'authenticated' em currentUser.role (JWT role).
   // Sobrescrever com o role real do app após loadPerfil(); caso loadPerfil falhe,
   // usar 'consultor' como fallback seguro em vez de cair no bloco cliente_viewer.
-  const raw = currentUser?.role;
-  const role = (raw === 'super_admin' || raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
-    ? raw : 'consultor';
+  const role = _roleAtual();
 
-  // Pacote "Baixar todos os formatos" (Resultados) - admin e super_admin apenas.
-  // Reavaliado aqui porque sairModoSuporte() muda o contexto sem recarregar a pagina.
-  const btnExportAll = document.getElementById('btn-export-all');
-  if (btnExportAll && !(role === 'admin' || role === 'super_admin')) btnExportAll.style.display = 'none';
+  // Pacote "Baixar todas as análises" (Resultados). Esta chamada e o que traz o
+  // botao de volta quando loadPerfil() termina depois de uma analise ja rodada —
+  // por isso _sincronizarBotaoPacote() mostra e esconde, em vez de so esconder.
+  _sincronizarBotaoPacote();
 
   if (role === 'super_admin') {
     if (_supportMode) {

@@ -287,3 +287,59 @@ da tag, paginação do PDF) ficou com o usuário em DEV.
 - `empresa_setores` / `empresa_funcoes` / `empresa_headcount` / `grupos_setor` — intocados.
 - Nenhuma migration; nenhuma policy RLS tocada.
 - Telas Gráficos, Relatório, Comparativo, Auditoria, Adesão — sem alteração de comportamento.
+
+
+---
+
+## 5. Bug de produção pós-merge — botão sumindo de forma intermitente (2026-09-11)
+
+Reportado pelo usuário minutos depois do merge da PR #67: o botão "Baixar todas as
+análises" **não aparecia**, e depois "voltou sozinho". Intermitência = race condition.
+
+### Causa
+
+`_podeBaixarTodos()` lia `currentUser.role` **cru**. Esse campo carrega
+`'authenticated'` (o role do JWT do Supabase) até `loadPerfil()` sobrescrevê-lo com o
+valor de `perfis` — fato que o projeto já conhecia e documentava no comentário de
+`aplicarRestricoesPorRole()`, mas que eu não repliquei.
+
+Sequência do bug:
+
+1. Usuário roda a análise enquanto `loadPerfil()` ainda está em voo →
+   `currentUser.role === 'authenticated'` → `_podeBaixarTodos()` falso → botão escondido.
+2. `loadPerfil()` termina → `_iniciarAppAposTenant()` → `aplicarRestricoesPorRole()` roda
+   com `role === 'admin'` — **e não faz nada**, porque o guard que eu escrevi só sabia
+   esconder:
+   ```js
+   if (btnExportAll && !(role === 'admin' || role === 'super_admin')) btnExportAll.style.display = 'none';
+   ```
+3. Botão fica escondido até a análise seguinte, quando `rodarAnalise()` reavalia. Daí o
+   "voltou sozinho".
+
+Os outros três botões (CSV/PDF/Imagem) não checam role nenhum — por isso continuavam
+visíveis, o que tornava o sintoma "só esse botão sumiu".
+
+### Correção
+
+- **`_roleAtual()`** — a normalização que estava inline em `aplicarRestricoesPorRole()`
+  virou helper, e `_podeBaixarTodos()` passou a usá-la. Fonte única do role do app.
+- **`_sincronizarBotaoPacote()`** — fonte única da visibilidade, **simétrica**: mostra
+  *e* esconde, condicionada a `_podeBaixarTodos() && window._analiseData`. Chamada tanto
+  por `rodarAnalise()` quanto por `aplicarRestricoesPorRole()`. É essa simetria que traz o
+  botão de volta quando o perfil chega depois.
+
+### Lição aplicável a qualquer controle com RBAC nesta SPA
+
+**Guard de visibilidade que só esconde é um bug esperando acontecer** em telas cujo estado
+de permissão chega de forma assíncrona. Se a função que reage à mudança de role não for
+capaz de *restaurar* o elemento, qualquer ordem de eventos diferente da feliz deixa a UI
+travada no estado restritivo. O mesmo vale para `links-action-btns` / `dash-hdr-actions` /
+`usuarios-new-btn-area`, que hoje também só são escondidos — não deu problema porque
+`aplicarRestricoesPorRole()` é a única coisa que mexe neles, mas o padrão é frágil.
+
+### Nota de método
+
+Este bug **não teria sido pego** pelos testes desta sessão: todos avaliavam `_podeBaixarTodos()`
+com `currentUser` já populado. Faltava exercitar a **ordem** dos eventos, não só o estado
+final. O teste de regressão agora reproduz a sequência (análise antes do perfil → perfil
+chega → botão deve voltar).
