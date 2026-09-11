@@ -2928,6 +2928,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <strong style="color:var(--tx)">Antes de importar:</strong> a estrutura da empresa (setores e cargos) precisa já estar
         cadastrada, porque é contra ela que os nomes da planilha serão conciliados.
         Esta importação <strong>não cria nem altera</strong> setores e cargos do catálogo.
+        <div style="margin-top:8px">
+          Não tem a matriz pronta? <a href="#" onclick="exportarParesGhe();return false" style="color:var(--g);font-weight:600">Baixe os pares que já têm resposta</a>
+          — vem no formato certo, com os <em>"Outro:"</em> digitados pelos respondentes, e é só preencher a coluna do agrupamento.
+        </div>
+        <div style="margin-top:6px">
+          Os nomes das colunas são reconhecidos automaticamente, mas se a detecção errar
+          <strong>você escolhe a coluna na próxima etapa</strong>.
+        </div>
       </div>
     </div>
 
@@ -3728,10 +3736,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div style="font-size:13px;font-weight:700;color:var(--tx)">GHE (setor × função)</div>
         <div style="font-size:11px;color:var(--tl);margin-top:2px">Matriz do PGR da empresa. Cada GHE é um conjunto de pares, então o mesmo setor pode estar em mais de um GHE.</div>
       </div>
-      <button class="btn btn-g" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="abrirImportGhe()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Importar GHE
-      </button>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px" onclick="exportarParesGhe()" title="CSV com os pares Setor × Função que têm resposta, incluindo os &quot;Outro:&quot; digitados. Sai no formato que a importação lê.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar pares
+        </button>
+        <button class="btn btn-g" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px" onclick="abrirImportGhe()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importar GHE
+        </button>
+      </div>
     </div>
     <div id="agrup-lista-ghe" style="margin-top:8px">
       <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os GHE.</p>
@@ -8213,51 +8227,117 @@ function importarGheArquivo(input) {
   }
 }
 
+// Separadores aceitos dentro de uma célula quando o modo multi-valor está ligado.
+// Matriz de PGR costuma listar vários cargos numa célula só ("Analista, Coordenador, Auxiliar").
+const GHE_SEP_MULTI = /\s*[;,/|]\s*|\s+e\s+/i;
+
+// Liga o modo multi-valor sozinho quando a planilha claramente usa esse formato — mas o
+// usuário continua mandando, pelo checkbox. Nada de adivinhação irreversível.
+function _gheiDetectarMulti(rows, colSetor, colFuncao) {
+  const amostra = rows.slice(0, 50);
+  const comSep = (col) => !col ? 0 : amostra.filter(r => /[;,/|]/.test(String(r[col] ?? ''))).length;
+  const n = amostra.length || 1;
+  return (comSep(colFuncao) / n) > 0.3 || (comSep(colSetor) / n) > 0.3;
+}
+
+function _gheiSplit(txt) {
+  return String(txt ?? '').split(GHE_SEP_MULTI).map(s => s.trim()).filter(Boolean);
+}
+
+// Cruza N setores com M funções de uma mesma linha. O produto cartesiano puro inventaria pares
+// ("Gerente Financeiro no setor RH") que o PGR nunca declarou — e pares inventados disputam
+// precedência com pares reais de outro GHE, o que muda de verdade quem cai onde.
+// O catálogo sabe qual cargo pertence a qual setor (empresa_funcoes.setor_id, exposto em
+// `hierarquia`), então usamos isso para ficar só com as combinações que existem. Quando o
+// catálogo não reconhece nada da linha, aí sim caímos no cruzamento completo — é o melhor
+// palpite disponível, e a conciliação/prévia mostram o resultado antes de gravar.
+function _gheiCruzar(setores, funcoes, hierarquia) {
+  if (!setores.length) return funcoes.map(f => ({ setor: '', funcao: f }));
+  if (!funcoes.length) return setores.map(s => ({ setor: s, funcao: '' }));
+  if (setores.length === 1 && funcoes.length === 1) return [{ setor: setores[0], funcao: funcoes[0] }];
+
+  const porSetor = new Map();
+  (hierarquia || []).forEach(h => porSetor.set(_gheNormStrong(h.nome), new Set((h.funcoes || []).map(_gheNormStrong))));
+
+  const validos = [];
+  setores.forEach(s => funcoes.forEach(f => {
+    const cat = porSetor.get(_gheNormStrong(s));
+    if (cat && cat.has(_gheNormStrong(f))) validos.push({ setor: s, funcao: f });
+  }));
+  if (validos.length) return validos;
+
+  return setores.flatMap(s => funcoes.map(f => ({ setor: s, funcao: f })));
+}
+
 function _gheiProcessar(rows) {
   if (!_gheiState) return;
   if (!rows || !rows.length) return _gheiErro('O arquivo está vazio ou sem dados válidos.');
 
   const headers = Object.keys(rows[0]);
   const colAgrup = _detectarColAgrupamento(headers);
-  if (!colAgrup) {
-    return _gheiErro(
-      `Não encontrei a coluna de agrupamento. Colunas do arquivo: ${headers.join(', ')}.\n` +
-      'Renomeie a coluna do GHE para "Agrupamento GHE".'
-    );
-  }
   // A coluna de agrupamento é reservada antes de procurar setor/função: o match é por
   // substring e "Agrupamento GHE" casaria candidatos de setor.
-  const reservado = new Set([colAgrup]);
+  const reservado = new Set(colAgrup ? [colAgrup] : []);
   const colSetor = _detectarColuna(headers, GHE_CAND_SETOR, reservado);
   if (colSetor) reservado.add(colSetor);
   const colFuncao = _detectarColuna(headers, GHE_CAND_FUNCAO, reservado);
-  if (!colSetor && !colFuncao) {
-    return _gheiErro(
-      `Encontrei "${colAgrup}", mas nenhuma coluna de Setor ou Função. Colunas do arquivo: ${headers.join(', ')}.`
-    );
+
+  // Guarda as linhas cruas: trocar a coluna no passo 2 reprocessa sem reabrir o arquivo.
+  _gheiState.rows    = rows;
+  _gheiState.headers = headers;
+  _gheiState.colunas = { agrup: colAgrup, setor: colSetor, funcao: colFuncao };
+  _gheiState.multi   = _gheiDetectarMulti(rows, colSetor, colFuncao);
+
+  // Detecção falha não é mais beco sem saída: cai na etapa 2 com os seletores de coluna,
+  // onde o usuário aponta manualmente qual é qual.
+  _gheiReprocessar(true);
+}
+
+// Extrai os pares a partir das colunas escolhidas. Chamado na leitura do arquivo e de novo a
+// cada troca de coluna ou do modo multi-valor.
+function _gheiReprocessar(primeiraVez) {
+  const st = _gheiState;
+  if (!st || !st.rows) return;
+  const { agrup, setor: colSetor, funcao: colFuncao } = st.colunas;
+  const hierarquia = _empresas.find(e => e.id === st.empresaId)?.hierarquia || [];
+
+  st.linhas = [];
+  st.ignoradas = 0;
+  if (agrup && (colSetor || colFuncao)) {
+    st.rows.forEach(r => {
+      const ghe = String(r[agrup] ?? '').trim();
+      const sRaw = colSetor  ? String(r[colSetor]  ?? '').trim() : '';
+      const fRaw = colFuncao ? String(r[colFuncao] ?? '').trim() : '';
+      if (!ghe || (!sRaw && !fRaw)) { st.ignoradas++; return; }
+      const setores = st.multi ? _gheiSplit(sRaw) : (sRaw ? [sRaw] : []);
+      const funcoes = st.multi ? _gheiSplit(fRaw) : (fRaw ? [fRaw] : []);
+      _gheiCruzar(setores, funcoes, hierarquia)
+        .forEach(p => st.linhas.push({ ghe, setor: p.setor, funcao: p.funcao }));
+    });
   }
 
-  const linhas = [];
-  let ignoradas = 0;
-  rows.forEach(r => {
-    const ghe    = String(r[colAgrup] ?? '').trim();
-    const setor  = colSetor  ? String(r[colSetor]  ?? '').trim() : '';
-    const funcao = colFuncao ? String(r[colFuncao] ?? '').trim() : '';
-    // Linha sem GHE não configura nada; sem setor E sem função não tem par para gravar.
-    if (!ghe || (!setor && !funcao)) { ignoradas++; return; }
-    linhas.push({ ghe, setor, funcao });
-  });
-  if (!linhas.length) {
-    return _gheiErro(`Nenhuma linha utilizável em "${colAgrup}". ${ignoradas} linha(s) sem agrupamento ou sem setor/função.`);
-  }
-
-  _gheiState.linhas    = linhas;
-  _gheiState.ignoradas = ignoradas;
-  _gheiState.colunas   = { agrup: colAgrup, setor: colSetor, funcao: colFuncao };
-  _gheiState.headers   = headers;   // para mostrar o que o arquivo trazia quando algo não casar
   _gheiMontarConciliacao();
-  _gheiState.etapa = 2;
+  st.etapa = 2;
   _gheiRender();
+
+  // Aviso, não bloqueio: a etapa 2 já mostra as colunas detectadas e os seletores para corrigir.
+  if (!agrup)                     _gheiErro('Escolha qual coluna do arquivo tem o Agrupamento GHE.');
+  else if (!colSetor && !colFuncao) _gheiErro('Escolha ao menos a coluna de Setor.');
+  else if (!st.linhas.length)     _gheiErro(`Nenhuma linha utilizável: ${st.ignoradas} linha(s) sem agrupamento ou sem setor/função.`);
+  else if (!primeiraVez)          _gheiLimparErro();
+}
+
+function _gheiSetColuna(campo, valor) {
+  if (!_gheiState) return;
+  _gheiState.colunas[campo] = valor || null;
+  _gheiLimparErro();
+  _gheiReprocessar(false);
+}
+
+function _gheiSetMulti(ligado) {
+  if (!_gheiState) return;
+  _gheiState.multi = !!ligado;
+  _gheiReprocessar(false);
 }
 
 // ── Etapa 2: conciliação ─────────────────────────────────────────────────────
@@ -8323,28 +8403,48 @@ const GHEI_BADGE = {
 // terminava sem um único aviso. O GHE ficava plausível e errado. Um importador que adivinha
 // colunas tem obrigação de dizer no que acertou — e de gritar quando não achou.
 function _gheiColunasHTML() {
-  const c = _gheiState?.colunas;
+  const st = _gheiState;
+  const c = st?.colunas;
   if (!c) return '';
-  const item = (rotulo, valor, obrigatorio) => {
-    const ok = !!valor;
-    const cor = ok ? 'var(--g)' : (obrigatorio ? '#991b1b' : '#9a3412');
-    const txt = ok ? _esc(valor) : 'não encontrada';
-    return `<span style="font-size:11px;color:var(--tl)">${rotulo}: <strong style="color:${cor}">${txt}</strong></span>`;
-  };
   const faltaFuncao = !c.funcao;
-  const outras = (_gheiState.headers || []).filter(h => h !== c.agrup && h !== c.setor && h !== c.funcao);
+  const faltaObrig  = !c.agrup || (!c.setor && !c.funcao);
+
+  // Seletor por campo: a detecção automática vira apenas o PALPITE INICIAL. Nome de coluna é
+  // território de planilha de cliente — nenhuma lista de sinônimos cobre todos, e o custo de
+  // errar é alto porque a importação segue em silêncio. Aqui o usuário tem a palavra final.
+  const sel = (campo, rotulo, obrigatorio) => {
+    const atual = c[campo] || '';
+    const opts = (st.headers || []).map(h =>
+      `<option value="${_esc(h)}"${h === atual ? ' selected' : ''}>${_esc(h)}</option>`).join('');
+    const vazio = `<option value=""${atual ? '' : ' selected'}>— ${obrigatorio ? 'escolha' : 'nenhuma'} —</option>`;
+    const cor = atual ? 'var(--g)' : (obrigatorio ? '#991b1b' : '#9a3412');
+    return `
+      <div style="flex:1;min-width:150px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cor};margin-bottom:3px">${rotulo}</div>
+        <select class="filter-select" style="font-size:12px" onchange="_gheiSetColuna('${campo}', this.value)">${vazio}${opts}</select>
+      </div>`;
+  };
+
   return `
-    <div style="border:1px solid var(--border);border-left:3px solid ${faltaFuncao ? '#991b1b' : 'var(--g)'};border-radius:var(--r);padding:8px 11px;margin-bottom:10px;background:var(--bg)">
-      <div style="display:flex;gap:14px;flex-wrap:wrap">
-        ${item('Agrupamento', c.agrup, true)}
-        ${item('Setor', c.setor, true)}
-        ${item('Função', c.funcao, false)}
+    <div style="border:1px solid var(--border);border-left:3px solid ${faltaObrig || faltaFuncao ? '#991b1b' : 'var(--g)'};border-radius:var(--r);padding:10px 12px;margin-bottom:10px;background:var(--bg)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:6px">Colunas do arquivo</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${sel('agrup',  'Agrupamento GHE', true)}
+        ${sel('setor',  'Setor', true)}
+        ${sel('funcao', 'Função', false)}
       </div>
-      ${faltaFuncao ? `<div style="font-size:11px;color:#991b1b;margin-top:6px;line-height:1.6">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--tm);cursor:pointer">
+        <input type="checkbox" ${st.multi ? 'checked' : ''} onchange="_gheiSetMulti(this.checked)">
+        Uma célula pode conter vários setores ou funções (separados por <code>, ; / |</code> ou “e”)
+      </label>
+      ${faltaFuncao ? `<div style="font-size:11px;color:#991b1b;margin-top:8px;line-height:1.6">
         <strong>Sem coluna de função, todo par vira "(qualquer função)"</strong> — cada GHE passa a cobrir o
-        setor inteiro em vez dos cargos declarados no PGR.
-        ${outras.length ? `Colunas não usadas do arquivo: <em>${outras.map(_esc).join(', ')}</em>. ` : ''}
-        Renomeie a coluna dos cargos para <strong>Função</strong> ou <strong>Cargo</strong> e importe de novo.
+        setor inteiro em vez dos cargos declarados no PGR. Se a coluna existe com outro nome, escolha ela acima.
+      </div>` : ''}
+      ${st.multi ? `<div style="font-size:11px;color:var(--tm);margin-top:6px;line-height:1.6">
+        Ao cruzar vários setores com várias funções da mesma linha, só ficam as combinações que
+        <strong>existem no cadastro da empresa</strong> — evita inventar par que o PGR não declarou.
+        Quando o cadastro não reconhece nenhuma, o cruzamento completo é mantido.
       </div>` : ''}
     </div>`;
 }
@@ -8674,6 +8774,73 @@ async function _gheiAplicar() {
   await carregarGruposSetor(empresaId);
   renderTabelaAgrupamentos();
   toast(`${n} Agrupamento(s) GHE importado(s).` + (aprender.length ? ` ${aprender.length} correspondência(s) memorizada(s).` : ''), 'g', 5000);
+}
+
+// ── Exportar pares Setor × Função observados nas respostas ───────────────────
+// Sai no MESMO formato que o importador lê (Agrupamento GHE / Setor / Função), então o arquivo
+// serve para três coisas de uma vez: relatório do que existe, modelo de planilha para preencher
+// (o sistema não tinha nenhum), e round-trip — exporta, ajusta no Excel, reimporta.
+//
+// Inclui os valores "Outro: ..." digitados pelo respondente de propósito. São justamente os que
+// não estão no cadastro e por isso somem de qualquer lista montada a partir do catálogo — e são
+// eles que caem fora dos GHE e aparecem como residual no laudo. Quem monta a matriz do PGR
+// precisa vê-los.
+async function exportarParesGhe() {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId) { toast('Selecione um cliente.', 'w'); return; }
+  const emp = _empresas.find(e => e.id === empresaId);
+
+  const linhas = await getLinhasParaAnalise(empresaId);
+  if (!linhas.length) { toast('Esta empresa ainda não tem respostas.', 'w'); return; }
+
+  // A qual GHE cada par pertence hoje — mesma função da segmentação, para o arquivo refletir
+  // exatamente o que o laudo faria.
+  const donoDoPar = new Map();
+  if (gruposGhe.length) {
+    agruparPorPares(linhas, gruposGhe).grupos.forEach(g => {
+      if (!g._residual) g._chaves.forEach(k => donoDoPar.set(k, g.nome));
+    });
+  }
+
+  const catSetor  = new Set((emp?.setores || []).map(_gheNormStrong));
+  const catFuncao = new Set((emp?.funcoes || []).map(_gheNormStrong));
+
+  const pares = new Map();
+  linhas.forEach(r => {
+    const k = _chavePar(r.setor, r.funcao);
+    if (!pares.has(k)) {
+      const digitado = /^outro:/i.test((r.setor || '').trim()) || /^outro:/i.test((r.funcao || '').trim());
+      const noCat = catSetor.has(_gheNormStrong(r.setor)) && catFuncao.has(_gheNormStrong(r.funcao));
+      pares.set(k, {
+        setor: r.setor || '', funcao: r.funcao || '', n: 0,
+        origem: digitado ? 'digitado pelo respondente' : (noCat ? 'cadastro' : 'fora do cadastro'),
+        ghe: donoDoPar.get(k) || '',
+      });
+    }
+    pares.get(k).n++;
+  });
+
+  const rows = [...pares.values()].sort((a, b) =>
+    a.setor.localeCompare(b.setor, 'pt-BR') || a.funcao.localeCompare(b.funcao, 'pt-BR'));
+
+  // ';' e BOM: é o que o Excel em pt-BR abre direto, e _parseGHECSV detecta ';' sozinho —
+  // o arquivo volta para a importação sem nenhum ajuste.
+  const cab = ['Agrupamento GHE', 'Setor', 'Função', 'Respostas', 'Origem'];
+  const csv = [cab, ...rows.map(p => [p.ghe, p.setor, p.funcao, p.n, p.origem])]
+    .map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `ghe_pares_${(emp?.nome || 'empresa').replace(/\s+/g, '-')}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const semGhe = rows.filter(p => !p.ghe).length;
+  const digitados = rows.filter(p => p.origem === 'digitado pelo respondente').length;
+  toast(`${rows.length} par(es) exportado(s) · ${digitados} digitado(s) pelo respondente · ${semGhe} sem GHE.`, 'g', 6000);
 }
 
 // ── Painel de GHE na tela de Agrupamentos ────────────────────────────────────
