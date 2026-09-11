@@ -6240,6 +6240,10 @@ async function exportarResultados(fmt, opts = {}) {
   wrap.style.cssText = 'position:absolute;left:0;top:' + (document.documentElement.scrollHeight + 100) + 'px;width:' + A4W + 'px;background:#fff;overflow:visible;font-family:Inter,sans-serif';
   const clone = vc.cloneNode(true);
   clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
+  // Recorte aplicado — a captura pega so #view-content, entao o bloco precisa
+  // entrar aqui ou a imagem sai sem dizer a que setores/funcoes se refere.
+  const resumo = _resumoFiltrosHTML();
+  if (resumo) clone.insertAdjacentHTML('afterbegin', resumo);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
 
@@ -6306,6 +6310,40 @@ function _renderAnaliseParaExport(vm, dm) {
   if (vm === 'questao')     renderViewQuestao(window._analiseData);
   else if (dm === 'tabela') renderViewRisco(window._analiseData);
   else                      renderViewGrafica(window._analiseData);
+}
+
+// Resumo do recorte (setores e funcoes) para o cabecalho do PDF e da imagem.
+// Fonte unica: sem isso, dois relatorios de recortes diferentes saem visualmente
+// identicos — o documento vai da consultoria para a empresa e precisa declarar o
+// proprio escopo. Antes, o PDF so listava setores quando havia MAIS DE UM (errava
+// justamente no recorte mais especifico) e a imagem nunca listou nada, porque a
+// captura pega #view-content e as tags ficam no header, fora dela.
+// Usa var(--...) de proposito: _resolveStyleVars (PNG) e resolverVars (PDF) resolvem.
+// O bloco carrega estilos inline (e nao classes do <style> do documento) porque
+// serve aos DOIS destinos: o doc de impressao e o clone capturado por html2canvas.
+function _resumoFiltrosHTML() {
+  const ad = window._analiseData;
+  if (!ad) return '';
+  const ordena = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const setores = ordena(ad.setoresAtivos || []);
+  const funcoes = ordena((ad.filtrado || []).map(r => r.funcao));
+  // "Todos/Todas" quando o recorte cobre tudo que o combo oferece — mais legivel
+  // que despejar a lista inteira, e distingue "sem filtro" de "filtro omitido".
+  const univSet = (comboItems['combo-setor']  && comboItems['combo-setor']())  || [];
+  const univFun = (comboItems['combo-funcao'] && comboItems['combo-funcao']()) || [];
+  const label = (sel, univ, todos) =>
+    (!sel.length ? '—' : (univ.length && sel.length >= univ.length ? todos : sel.join(' · ')));
+  const linha = (rotulo, valor) =>
+    '<div style="display:flex;gap:6px;align-items:baseline;margin-top:2px">' +
+      '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;' +
+        'color:var(--tl);white-space:nowrap;min-width:52px">' + rotulo + '</span>' +
+      '<span style="font-size:10px;color:var(--tx);line-height:1.5">' + valor + '</span>' +
+    '</div>';
+  return '<div class="psicomap-filtros" style="border:1px solid var(--border);border-left:3px solid var(--g);' +
+    'border-radius:4px;padding:8px 12px;margin-bottom:14px;background:var(--bg)">' +
+    linha('Setores', label(setores, univSet, 'Todos os setores')) +
+    linha('Funções', label(funcoes, univFun, 'Todas as funções')) +
+    '</div>';
 }
 
 // Captura #view-content com as secoes colapsadas abertas, restaurando depois
@@ -6464,11 +6502,15 @@ function exportarResultadosPrint(secoes) {
   }
 
   /* Tags de filtro */
-  .psicomap-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
-  .psicomap-tag  { font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: #f0f2f4; color: #374151; border: 1px solid #e5e7eb; }
+  .psicomap-filtros { page-break-after: avoid; break-after: avoid; }
 
   /* Bloco de setor — nunca corta */
-  .psicomap-setor { page-break-inside: avoid; break-inside: avoid; margin-bottom: 32px; }
+  /* Bloco de setor: NAO leva page-break-inside:avoid de proposito. Um bloco de setor
+     costuma ser maior que o espaco restante da pagina, e o avoid empurrava o bloco
+     inteiro para a folha seguinte, deixando meia pagina em branco (reportado em
+     producao 2026-09-11). A granularidade certa para "nao cortar no meio" e o card
+     de risco, logo abaixo. */
+  .psicomap-setor { margin-bottom: 32px; }
 
   /* Card de risco — nunca corta */
   .psicomap-card  { page-break-inside: avoid; break-inside: avoid; }
@@ -6503,7 +6545,7 @@ function exportarResultadosPrint(secoes) {
   </div>
 </div>
 
-${setores.length > 1 ? '<div class="psicomap-tags">' + setores.map(s => '<span class="psicomap-tag">' + s + '</span>').join('') + '</div>' : ''}
+${resolverVars(_resumoFiltrosHTML())}
 
 <!-- Conteúdo da análise -->
 <div id="psicomap-content">${html}</div>
