@@ -2159,7 +2159,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <select id="f-segmentacao" class="filter-select" onchange="_setSegMode(this.value)">
           <option value="segregado">Por Setor</option>
           <option value="agrupado">Por Agrupamento</option>
-          <option value="consolidado">Geral</option>
+          <option value="consolidado" selected>Geral</option>
         </select>
       </div>
 
@@ -6023,7 +6023,7 @@ async function rodarAnalise() {
   window._displayMode      = window._displayMode      || 'grafica';
   window._viewMode         = window._viewMode         || 'risco';
   window._detalhesVisiveis = window._detalhesVisiveis ?? false;   // default: oculto
-  window._segMode          = window._segMode          || 'segregado'; // segregado | agrupado | consolidado
+  window._segMode          = window._segMode          || SEG_PADRAO;  // segregado | agrupado | consolidado
   _atualizarSegSelect();   // mantem o filtro da sidebar coerente com os grupos da empresa
   const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
   const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
@@ -6065,7 +6065,7 @@ async function rodarAnalise() {
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-      <span class="tag tb" id="an-seg-label">${SEG_LABEL[_sg] || SEG_LABEL.segregado}</span>
+      <span class="tag tb" id="an-seg-label">${SEG_LABEL[_sg] || SEG_LABEL[SEG_PADRAO]}</span>
       ${setoresAtivos.map(s=>`<span class="tag tg">${s}</span>`).join('')}
       ${niveis.map(n=>`<span class="risk-badge ${NIVEIS_CORES[n].badge}" style="font-size:9px">${n}</span>`).join('')}
     </div>
@@ -6399,7 +6399,7 @@ function exportarResultadosPrint(secoes) {
   const empSel   = document.getElementById('gf-empresa');
   const empNome  = empSel?.options[empSel?.selectedIndex]?.text || '';
   const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  const segLabel = SEG_LABEL[window._segMode] || SEG_LABEL.segregado;
+  const segLabel = SEG_LABEL[window._segMode] || SEG_LABEL[SEG_PADRAO];
   const viewMode = (multi
     ? 'Análise completa (' + capturas.length + ' visões)'
     : (window._displayMode === 'tabela'
@@ -6591,6 +6591,11 @@ function _setViewMode(mode) {
 
 // Rotulos da segmentacao — usados no filtro da sidebar, na tag do resultado e
 // no subtitulo do PDF. Fonte unica para nao divergirem.
+// Segmentacao inicial da tela de Resultados. A escolha do usuario persiste na
+// sessao; isto e so o ponto de partida (e o fallback quando o modo vigente deixa
+// de ser valido). Nao confundir com #laudo-granularidade, que tem regra propria.
+const SEG_PADRAO = 'consolidado';   // Geral
+
 const SEG_LABEL = {
   segregado:   'Por setor',
   agrupado:    'Por agrupamento',
@@ -6605,8 +6610,8 @@ function _atualizarSegSelect() {
   const sel = document.getElementById('f-segmentacao');
   const temGrupos = gruposSetor.length > 0 || gruposFuncao.length > 0;
   // Empresa sem grupos nao pode herdar o modo 'agrupado' da empresa anterior
-  if (!temGrupos && window._segMode === 'agrupado') window._segMode = 'segregado';
-  window._segMode = window._segMode || 'segregado';
+  if (!temGrupos && window._segMode === 'agrupado') window._segMode = SEG_PADRAO;
+  window._segMode = window._segMode || SEG_PADRAO;
   if (!sel) return;
   const optGrup = sel.querySelector('option[value="agrupado"]');
   if (optGrup) {
