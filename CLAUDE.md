@@ -622,6 +622,146 @@ agrupada.
 **Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
 selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
 
+## Importação de Agrupamentos GHE por par (2026-09-11) — Fase 1
+
+**O problema que motivou.** A configuração de GHE era manual. O catálogo
+(`empresa_setores`/`empresa_funcoes`) vem da planilha de colaboradores do cliente; a matriz de
+GHE vem do **PGR da empresa** — outro documento, com nomenclatura quase sempre defasada
+("Supervisor RH" no catálogo × "Coordenador de RH" no PGR). O consultor refazia o casamento de
+cabeça a cada empresa e a cada reimportação.
+
+**Por que os dois eixos existentes não serviam.** `tipo='setor'` e `tipo='funcao'` modelam
+UM eixo cada. A matriz do PGR é um conjunto de **pares** (setor, função). Usar os dois eixos
+viraria produto cartesiano, e `agruparPorGrupos()` põe cada setor no **primeiro** grupo que
+casar — num PGR real "Produção" está no GHE dos operadores E no da supervisão, e um dos dois
+seria esvaziado em silêncio, gerando laudo errado sem nenhum erro.
+
+**`grupos_setor` ganhou `tipo='ghe'` + `pares jsonb`** (`migration_grupos_setor_ghe.sql`):
+- `pares` = `[{"s": setor, "f": funcao|null}]`, grafia **crua** do catálogo. `f` nulo/vazio =
+  **coringa do setor** (linha do PGR sem função).
+- `itens` também é preenchido nas linhas `ghe` (setores distintos dos pares) — derivado, para
+  que qualquer caminho legado que leia `itens` degrade para grupo de setor, não para grupo vazio.
+- `ordem` é sequencial pela planilha: a regra de desempate quando um par cai em dois GHE é
+  "o primeiro por `ordem` vence". Tudo em `ordem=0` tornaria o laudo não reproduzível.
+- Índice único **parcial** `(empresa_id, lower(nome)) WHERE tipo='ghe'` — global falharia contra
+  duplicatas já existentes nos tipos legados.
+- RLS e GRANT: zero mudança, as policies não olham `tipo`.
+
+**Tabela nova `empresa_apelidos`** (`migration_empresa_apelidos.sql`) — o de-para aprendido,
+**escopo por empresa** (decisão explícita: "Supervisor" em duas empresas pode ser cargo
+diferente). `apelido_norm` é **coluna, não expressão**: o banco não tem `unaccent`/`citext`, e
+`lower()` sozinho não colapsaria acento — é gravada pelo frontend com o mesmo `_gheNormStrong`
+usado na leitura. Texto, não FK, pelo mesmo motivo de `grupos_setor`: `salvarGHE()` apaga e
+recria o catálogo a cada reimportação e regenera todos os `id`.
+
+**Estado real (verificado via `pg_constraint`/`pg_policies`, não pelos arquivos): as duas
+migrations já estão aplicadas em DEV e PROD** (2026-09-11), com os dois bancos idênticos —
+CHECK `('setor','funcao','ghe')`, `pares jsonb NOT NULL DEFAULT '[]'`, índice parcial
+`uq_grupos_setor_ghe_nome`, `empresa_apelidos` com RLS + GRANT + as duas policies. Linhas
+legadas intactas e nenhuma com `pares <> '[]'`. **Falta só publicar o HTML.**
+RLS validada com `set_config('request.jwt.claims',...)` + ROLLBACK: admin e consultor escrevem,
+`cliente_viewer` lê e é bloqueado na escrita das duas tabelas, `super_admin` com `tenant_id NULL`
+lê e escreve pelo `OR is_super_admin()`, e `anon` não tem GRANT.
+
+**Divergência DEV↔PROD encontrada ao aplicar (nova, vale para QUALQUER tabela futura):** o
+schema `public` de **PROD** tem `ALTER DEFAULT PRIVILEGES` concedendo **ALL ao `anon`** em toda
+tabela nova; **DEV não tem**. Ou seja, toda tabela criada em PROD nasce com CRUD completo para o
+papel anônimo e passa a depender **exclusivamente do RLS** — o `GRANT ... TO authenticated` do
+padrão da casa não substitui um `REVOKE`. `empresa_apelidos` nasceu assim e foi fechada com
+`REVOKE ALL ... FROM anon` nos dois bancos (verificado via REST: `anon` agora recebe 42501 no
+SELECT e no INSERT).
+
+Varredura completa de `grantee='anon'` feita em PROD na mesma sessão — **não há vazamento
+ativo**, é lacuna de defesa em profundidade:
+- 12 tabelas têm grant do `anon` sem nenhuma policy para `anon` (`grupos_setor`,
+  `empresa_headcount`, `perfis`, `respostas_fila`, `resposta_itens`, `laudos`, `tenants`,
+  `subscriptions`, `pagamentos`, `planos_config`, `riscos_config`, `tenant_contadores`).
+  Todas com RLS ligada, então o `anon` recebe `[]` — mas **só o RLS segura**.
+- As 5 views (`v_respostas_admin`, `v_questoes_empresa`, `v_cobertura_questionario`,
+  `v_subscription_ativa`, `tenant_usage`) aparecem como "sem RLS" numa varredura ingênua, mas
+  **todas têm `security_invoker=on`** e portanto herdam o RLS das tabelas de base. O que o
+  `anon` lê em `v_questoes_empresa` (nome de empresa + questões) vem das policies `pub_read_*`
+  que o formulário público já precisa — é exposição intencional, não regressão.
+- Conclusão: nada a corrigir com urgência; se for endurecer, é `REVOKE ALL ... FROM anon` nas
+  12 tabelas acima, o que não deve afetar nenhum fluxo (o formulário só lê `empresas`,
+  `empresa_setores`, `empresa_funcoes`, `links_coleta`, `ciclos`, `questoes*`, `est_perfil`).
+
+**⚠️ ORDEM DE DEPLOY.** As duas migrations vão para DEV e PROD **antes** do HTML.
+`carregarGruposSetor()` usa lista explícita de colunas; pedir `pares` antes de a coluna existir
+devolve 42703 e o catch antigo zerava `gruposSetor` **e** `gruposFuncao` — toda empresa perderia
+os agrupamentos em Resultados/Gráficos/Laudo sem erro visível. Existe rede de proteção: o select
+tem **retry sem `pares`**, que preserva os tipos legados e só desliga o GHE.
+
+**Assistente de 3 etapas** (`#modal-import-ghe`, botão na tela Agrupamentos):
+1. Arquivo (CSV/XLSX, reusa `_parseGHECSV` e o SheetJS já carregado)
+2. Conciliação — resolução na ordem **exato → de-para aprendido → sugestão → órfão**. Só os dois
+   primeiros são automáticos; sugestão exige confirmação (guard no Avançar). Índice, e não nome,
+   nos handlers: nomes vêm de planilha de terceiro e quebrariam `onchange="...('${nome}')"`.
+3. Prévia — diff `criar/atualizar/remover`, conflitos de par, órfãos e **cobertura contra as
+   respostas**. Nada toca o banco antes do Aplicar.
+
+**`_simNomes`** = maior entre coeficiente de sobreposição de tokens e Dice de bigramas.
+Usa **stopwords**, não corte por tamanho: cortar tokens com menos de 3 chars descartava
+`RH`/`TI`/`SG`, e "Supervisor RH" × "Coordenador de RH" caía para 0 — exatamente o caso que
+motivou a feature. Limiar `GHE_SIM_MINIMA = 0.45`.
+
+**Órfãos** (nome da planilha sem correspondente no catálogo): são **gravados com a grafia da
+planilha e marcados como pendência** no painel da tela. Nunca criam setor/cargo — isso
+contrariaria a regra 4 ("o catálogo reflete a planilha do cliente, não o contrário") e seria
+apagado na reimportação de estrutura seguinte.
+
+**Correções de bugs vivos que vieram junto:**
+- `_detectarColuna` casa por `includes` e `'ghe'` estava na lista de candidatos de **setor**:
+  uma planilha com header "Agrupamento GHE" tinha essa coluna eleita como setor na importação
+  de estrutura, deslocando tudo em silêncio. Agora há `excluir` (Set de headers já reivindicados)
+  e `_detectarColAgrupamento`, que é conservador — exige a palavra "agrupamento", então um header
+  chamado só "GHE" continua valendo como setor (comportamento histórico preservado).
+- `_onAgrupEmpresaChange` atribuía `_empresaAtiva` direto em vez de chamar `setEmpresaAtiva` —
+  não persistia em `sessionStorage`, não sincronizava os outros selects nem o chip da topbar.
+
+### Fase 2 — granularidade "Por GHE" no laudo
+
+`#laudo-granularidade` ganhou `ghe` como primeira opção, e ela vira o default quando a empresa
+tem GHE importado (`ghe` > `agrupado` > `segregado`; `consolidado` é escolha explícita e nunca é
+sobrescrita). A opção fica `hidden` quando não há GHE, e `_granularidadeLaudo()` degrada sozinha
+se o modo escolhido ficar sem base (ex.: GHE apagado depois de selecionado).
+
+**`agruparPorPares(linhas, ghes)`** — recebe as LINHAS de resposta, não nomes de setor, porque a
+unidade de pertencimento é o par. Três passadas: **par exato → coringa de setor → residual**.
+- Cada resposta entra em exatamente um grupo. É o que garante `Σ n(grupo) === linhas.length`;
+  sem isso o mesmo respondente contaria duas vezes no laudo.
+- Par declarado em dois GHE: o primeiro por `ordem` fica com ele; o conflito volta em
+  `conflitos` e vai para o `console.warn`, nunca some.
+- Resposta fora de todo GHE vai para grupo **residual por setor** (não por par). Sem isso ela
+  sumiria do corpo do laudo continuando contada na capa — o laudo **sub-reportaria risco**.
+  `_gruposPorGranularidade` verifica a invariante e grita no console se ela quebrar.
+
+**`_linhasDoGrupo(grupo, linhas)`** é o único lugar que decide membership: grupo com `_chaves`
+casa por par; grupo legado continua casando por nome de setor, byte a byte como antes.
+Substituiu os 6 `linhas.filter(r => grupo.setores.includes(r.setor))` do laudo. Os 3 equivalentes
+da tela **Resultados** (`renderViewGrafica`/`renderViewRisco`/`renderViewQuestao`) **não** foram
+tocados — `_segMode='ghe'` é Fase 2b e continua pendente.
+
+**`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
+bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
+**ignoravam a granularidade escolhida**, enquanto `_buildLaudoHTML` a respeitava — preview e PDF
+mostravam agrupamentos diferentes nas mesmas seções. O parâmetro `ordenar` existe só para
+preservar a ordenação alfabética que a seção "Resultados" do preview já fazia no modo segregado.
+
+**Capa e subtítulos.** `_rotuloGranularidade` troca "Setores avaliados" por **"GHE avaliados"**
+(e "Escopo" no consolidado) — chamar nome de GHE de setor numa capa é lido por auditor como
+setor. `_setoresCatalogados` ganhou ramo `'ghe'` próprio: lista nomes de GHE e só inclui grupo
+residual se o setor estiver no catálogo. `_descricaoGrupo` declara o **par** ("Setor × função:
+Produção — Operador; RH — (qualquer função)") em vez de "Setores incluídos" — dizer que um GHE
+cobre um setor quando cobre 2 de 9 funções dele é afirmação falsa num documento de NR-01.
+
+`_registrarLaudo` passou a gravar `granularidade` e os nomes dos grupos no `snapshot_json`: sem
+isso não há como provar depois sob qual agrupamento um laudo entregue foi gerado.
+
+Verificado com preview e `_buildLaudoHTML` lado a lado nas 4 granularidades (mesmos grupos em
+todas), invariante fechando (6 respostas → 6 distribuídas, 1 no residual) e rótulo de capa
+mudando conforme o modo.
+
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
 Cinco commits em `develop` (`944c66b`, `c6cff58`, `9368a0c`, `0260775`, `1b0ce78`), **ainda
