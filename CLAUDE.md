@@ -74,6 +74,34 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   PRs criados via `gh` CLI (autenticado — conta `elevaitconsultoria`, token no keyring Windows).
   Usar skill `/commitar-e-pr` para o fluxo completo.
 - **Build**: `build.js` injeta `SUPA_URL` e `SUPA_ANON_KEY` nos HTMLs antes do deploy no CF Pages.
+- **`develop` é branch compartilhada, com mais de um desenvolvedor trabalhando em paralelo.**
+  Um commit que você não reconhece em `develop` é o normal, não uma anomalia — e há duas
+  consequências que a ferramenta **não** deixa evidentes:
+
+  1. **Todo mundo commita com a mesma identidade git** (`Eleva_admin
+     <eleva.it.consultoria@gmail.com>`). `git log --format=%an` não distingue autor nenhum:
+     não dá para saber de quem é um commit pela autoria, só pela mensagem e pelo conteúdo.
+     Nunca conclua "isto é meu" a partir do autor.
+  2. **`psicomap-admin.html` é um único arquivo de ~950KB com todo o JS inline.** Trabalho
+     paralelo cai no mesmo arquivo quase sempre. Antes de commitar: `git fetch` e conferir
+     `git log HEAD..origin/develop`. **Nunca usar `git add -A` / `git commit -a`** — sempre
+     nomear os arquivos e reler o próprio diff (`git show --stat` + o conteúdo), ou você
+     varre trabalho não commitado de outra pessoa para dentro do seu commit.
+
+  Duas coisas que afetam terceiros no mesmo instante do push, sem aviso:
+  - **`git push origin develop` publica o DEV para todos** (Cloudflare Pages). Se alguém está
+    homologando algo em DEV, o ambiente muda por baixo dessa pessoa.
+  - **Migration aplicada em DEV/PROD vale para todas as sessões imediatamente**, inclusive as
+    de quem está rodando um build antigo. Por isso o padrão de `.select()` tolerante (ver
+    "Importação de Agrupamentos GHE por par" adiante).
+
+  **Consequência para decisão de release — a mais importante:** "minha mudança é segura" não é
+  a mesma afirmação que "`develop` está pronta para promover". `develop` pode carregar trabalho
+  de outras pessoas que você não revisou nem testou. Antes de promover `develop` → `main`,
+  rodar `git log origin/main..origin/develop --oneline` e confirmar que **cada** commit do
+  intervalo foi validado — não só os seus. Validar o próprio delta contra `origin/main` mede o
+  seu risco, não o risco do release.
+
 - **`develop` não sincroniza com `main` sozinho.** Não existe automação (CI, branch protection
   com auto-merge) que mantenha os dois alinhados — é manual. Achado real 2026-07-30: `develop`
   ficou 31 commits atrás, sem nenhum commit próprio, e nunca recebeu o rebrand — o deploy DEV
