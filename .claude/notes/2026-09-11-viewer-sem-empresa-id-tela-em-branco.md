@@ -99,3 +99,75 @@ cliente. `cliente_viewer` é o acesso read-only do cliente final, escopado a uma
 intenção era dar acesso a um membro da equipe PSEG, o role correto é `consultor` ou `admin` —
 que não dependem de `empresa_id` e não caem neste bug. Confirmar a intenção antes de apenas
 preencher o `empresa_id`.
+
+---
+
+## Desfecho (mesma sessão)
+
+**O caso do Phelipe não era um viewer sem vínculo — era o role errado.** Confirmado com o
+usuário: ele é da **EST PSEG**, não de uma empresa cliente. `cliente_viewer` não significa
+"somente leitura", significa "somente leitura **de uma empresa cliente específica**".
+
+Promovido a `consultor` em PROD (`empresa_id` segue `NULL`, que é o correto para o role):
+
+```sql
+update perfis set role='consultor'
+ where id='f1c5e194-6639-475b-9c0a-c8620e4852d8' and role='cliente_viewer';
+```
+
+Revalidado com o JWT dele (`set_config` + `ROLLBACK`) — de `0/0/0/0` para:
+
+| empresas | ciclos | links | respostas | setores | grupos |
+|---|---|---|---|---|---|
+| 9 | 8 | 11 | 1791 | 304 | 1 |
+
+Basta recarregar a página: `auth_role()` lê de `perfis`, o role não vem no JWT, então não é
+preciso reemitir sessão.
+
+## Correções aplicadas
+
+Commit `fix: convite de Viewer sem empresa vinculada gerava painel vazio`:
+- `convidar-usuario` aceita e **exige** `empresa_id` quando `role='cliente_viewer'` (400), e
+  valida que a empresa é do tenant resolvido. Demais roles gravam `null` explicitamente.
+- Modal de convite ganhou o campo "Empresa", visível só para Viewer.
+- `alterarRoleUsuario` avisa ao promover alguém a Viewer sem vínculo (essa rota não pede empresa).
+- Tela Equipe: badge "Sem empresa vinculada".
+
+**Deploy:** Edge Function publicada apenas em **DEV** (`szqatgvgghxvyyncsjxl`, v3,
+`verify_jwt` inalterado). **PROD pendente** — decisão do usuário de validar em DEV primeiro.
+
+## Backlog levantado: "Viewer da EST" (escopo tenant)
+
+Pedido do usuário nesta sessão; **não implementado**, decidido deixar para depois.
+
+Hoje não existe um viewer com escopo de EST inteira — as opções que enxergam toda a carteira
+(`consultor`, `admin`) escrevem. Mas o mecanismo já está quase todo pronto, e vale registrar o
+levantamento para não refazê-lo:
+
+**São 8 policies RESTRICTIVE, todas com a mesma forma**, em `empresas`, `ciclos`,
+`links_coleta`, `respostas`, `laudos`, `empresa_setores`, `empresa_funcoes` e
+`empresa_headcount`:
+
+```sql
+(role <> 'cliente_viewer') OR (<col_empresa> = get_my_empresa_id())
+```
+
+O que importa: **read-only e recorte-por-empresa são independentes.** O read-only vem de
+*outras* policies RESTRICTIVE que só testam `<> 'cliente_viewer'` e não olham empresa; o escopo
+do tenant já vem das PERMISSIVE (`tenant_id = get_my_tenant_id()`). Um "Viewer da EST" é só
+relaxar o recorte por empresa nessas 8 — **sem role novo** (o CLAUDE.md proíbe, e com razão:
+as RESTRICTIVE de escrita testam literalmente `<> 'cliente_viewer'`, então role novo nasce com
+escrita liberada).
+
+**Não usar "`empresa_id` NULL = vê tudo"**: inverte o significado de NULL de *quebrado* para
+*vê a carteira inteira* — fail-open, e foi exatamente esse NULL que causou este bug. A forma
+segura é coluna explícita `perfis.viewer_escopo` (`'empresa'` | `'tenant'`, default
+`'empresa'`) + helper `SECURITY DEFINER`, com as policies virando
+`… OR (get_my_viewer_escopo() = 'tenant') OR (col = get_my_empresa_id())`. Fail-closed sem
+ação deliberada.
+
+**Lacuna adjacente encontrada na varredura:** `resposta_itens` e `grupos_setor` **não têm**
+policy RESTRICTIVE de viewer — são cobertas só por tenant. Um `cliente_viewer` de uma empresa
+enxerga os `resposta_itens` de todas as empresas do tenant. Na prática o dado é anônimo e ele
+não vê as `respostas` que os ligariam a empresa/setor, mas é inconsistente com as outras 8 e
+deveria entrar junto se a feature avançar.
