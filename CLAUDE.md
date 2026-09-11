@@ -95,6 +95,25 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
     de quem está rodando um build antigo. Por isso o padrão de `.select()` tolerante (ver
     "Importação de Agrupamentos GHE por par" adiante).
 
+  **Duas sessões de agente no mesmo diretório não funcionam.** Aconteceu de verdade em
+  2026-09-11: entre dois comandos, a branch do checkout mudou por baixo da sessão e um commit
+  foi parar na branch de outra pessoa; o `git push origin develop` seguinte respondeu
+  "Everything up-to-date" — correto, porque a branch local `develop` não havia mudado — e o
+  commit ficou só local. O remédio é **git worktree**: cada sessão com seu próprio diretório e
+  checkout, mesmo repositório e mesmo remote.
+  - Criar **fora da pasta do repo** (`git worktree add -b <branch> ../<pasta> origin/develop`):
+    `.claude/worktrees/` **não** está no `.gitignore` e apareceria como untracked no `git
+    status` de quem está na pasta principal.
+  - **Numa branch própria, nunca em `develop`** — um branch só pode ter checkout em um worktree
+    por vez, e prender `develop` impediria a outra pessoa de trocar para ela.
+  - Publicar com `git push origin HEAD:develop` (fast-forward conferido antes com
+    `git merge-base --is-ancestor origin/develop HEAD`), sem nunca dar checkout em `develop`.
+  - Copiar o `.env` para o worktree (é gitignored) e buildar com `node --env-file=.env build.js`.
+  - **Nunca usar `git stash` sem tag**: a pilha de stash é compartilhada entre worktrees, e um
+    `pop` pega o que a outra sessão empilhou. Prefira um commit WIP.
+  - **Sempre conferir `git branch --show-current` antes de commitar** (não só `git status`) e
+    **validar que o push subiu** (`git log origin/<branch>..HEAD`) em vez de confiar na mensagem.
+
   **Consequência para decisão de release — a mais importante:** "minha mudança é segura" não é
   a mesma afirmação que "`develop` está pronta para promover". `develop` pode carregar trabalho
   de outras pessoas que você não revisou nem testou. Antes de promover `develop` → `main`,
