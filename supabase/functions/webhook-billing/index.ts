@@ -48,8 +48,14 @@ async function handleStripe(req: Request, body: string, supabase: any) {
   const sig     = req.headers.get('stripe-signature') || ''
   const secret  = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
 
-  // Verificar assinatura Stripe (HMAC-SHA256)
-  if (secret && !await verifyStripeSignature(body, sig, secret)) {
+  // Sem secret configurado, RECUSAR. Este endpoint roda com verify_jwt=false
+  // (é publico) e escreve no banco com service_role — se a verificacao for
+  // pulada, qualquer um altera o plano de qualquer tenant.
+  if (!secret) {
+    console.error('[webhook-billing] STRIPE_WEBHOOK_SECRET não configurado — recusando')
+    return new Response('Webhook não configurado', { status: 500 })
+  }
+  if (!await verifyStripeSignature(body, sig, secret)) {
     return new Response('Assinatura inválida', { status: 400 })
   }
 
@@ -153,7 +159,13 @@ async function handleAsaas(req: Request, body: string, supabase: any) {
   const token         = req.headers.get('asaas-access-token') || ''
   const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN') || ''
 
-  if (expectedToken && token !== expectedToken) {
+  // Mesmo raciocínio do ramo Stripe: sem token configurado, recusar em vez de
+  // aceitar qualquer POST anônimo. Era este o caminho aberto em PROD.
+  if (!expectedToken) {
+    console.error('[webhook-billing] ASAAS_WEBHOOK_TOKEN não configurado — recusando')
+    return new Response('Webhook não configurado', { status: 500 })
+  }
+  if (!timingSafeEqual(token, expectedToken)) {
     return new Response('Token inválido', { status: 401 })
   }
 
@@ -188,11 +200,34 @@ async function handleAsaas(req: Request, body: string, supabase: any) {
 }
 
 // ─── Verificação de assinatura Stripe ──────────────────────────
+// Tolerância de replay: o Stripe assina com timestamp; sem checá-lo, um evento
+// válido capturado pode ser reenviado indefinidamente. 5 min é o padrão Stripe.
+const STRIPE_TOLERANCIA_SEG = 300
+
 async function verifyStripeSignature(payload: string, header: string, secret: string): Promise<boolean> {
   try {
-    const parts    = Object.fromEntries(header.split(',').map(p => p.split('=')))
-    const ts       = parts['t']
-    const sig      = parts['v1']
+    // split('=') quebraria assinaturas com '=' no valor; limitar ao 1º separador.
+    const parts: Record<string, string> = {}
+    for (const p of header.split(',')) {
+      const i = p.indexOf('=')
+      if (i > 0) {
+        const k = p.slice(0, i).trim()
+        // o header pode trazer varios v1; o primeiro basta, mas nao sobrescreve
+        if (!(k in parts)) parts[k] = p.slice(i + 1).trim()
+      }
+    }
+    const ts  = parts['t']
+    const sig = parts['v1']
+    if (!ts || !sig) return false
+
+    // Rejeitar evento fora da janela (protege contra replay).
+    const tsNum = Number(ts)
+    if (!Number.isFinite(tsNum)) return false
+    if (Math.abs(Math.floor(Date.now() / 1000) - tsNum) > STRIPE_TOLERANCIA_SEG) {
+      console.warn('[webhook-billing] timestamp fora da tolerância — possível replay')
+      return false
+    }
+
     const signed   = `${ts}.${payload}`
     const key      = await crypto.subtle.importKey(
       'raw', new TextEncoder().encode(secret),
@@ -200,8 +235,20 @@ async function verifyStripeSignature(payload: string, header: string, secret: st
     )
     const mac      = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signed))
     const expected = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2,'0')).join('')
-    return expected === sig
+    return timingSafeEqual(expected, sig)
   } catch {
     return false
   }
+}
+
+// Comparação de tempo constante — `a === b` vaza, pelo tempo de resposta, quantos
+// bytes iniciais bateram, o que permite forjar a assinatura byte a byte.
+function timingSafeEqual(a: string, b: string): boolean {
+  const ba = new TextEncoder().encode(a)
+  const bb = new TextEncoder().encode(b)
+  // Comprimento diferente já falha, mas ainda percorre tudo para não vazar o tamanho.
+  let diff = ba.length ^ bb.length
+  const n = Math.max(ba.length, bb.length)
+  for (let i = 0; i < n; i++) diff |= (ba[i] ?? 0) ^ (bb[i] ?? 0)
+  return diff === 0
 }
