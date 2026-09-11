@@ -2157,6 +2157,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="filter-card">
         <div class="filter-label">Segmentação</div>
         <select id="f-segmentacao" class="filter-select" onchange="_setSegMode(this.value)">
+          <option value="ghe">Por GHE (setor × função)</option>
           <option value="segregado">Por Setor</option>
           <option value="agrupado">Por Agrupamento</option>
           <option value="consolidado" selected>Geral</option>
@@ -6872,6 +6873,7 @@ function _setViewMode(mode) {
 const SEG_PADRAO = 'consolidado';   // Geral
 
 const SEG_LABEL = {
+  ghe:         'Por GHE',
   segregado:   'Por setor',
   agrupado:    'Por agrupamento',
   consolidado: 'Geral',
@@ -6881,11 +6883,15 @@ const SEG_LABEL = {
 // sidebar, ele precisa refletir isso ANTES de qualquer analise rodar — por isso a
 // habilitacao acontece quando os grupos da empresa sao carregados
 // (onEmpresaChange), nao mais no template do resultado.
+// "Por GHE" segue a mesma regra, olhando gruposGhe. Mesmo criterio de
+// #laudo-granularidade, para que as duas telas nao ofereçam modos diferentes.
 function _atualizarSegSelect() {
   const sel = document.getElementById('f-segmentacao');
   const temGrupos = gruposSetor.length > 0 || gruposFuncao.length > 0;
-  // Empresa sem grupos nao pode herdar o modo 'agrupado' da empresa anterior
+  const temGhe    = gruposGhe.length > 0;
+  // Empresa sem grupos nao pode herdar o modo da empresa anterior
   if (!temGrupos && window._segMode === 'agrupado') window._segMode = SEG_PADRAO;
+  if (!temGhe    && window._segMode === 'ghe')      window._segMode = SEG_PADRAO;
   window._segMode = window._segMode || SEG_PADRAO;
   if (!sel) return;
   const optGrup = sel.querySelector('option[value="agrupado"]');
@@ -6893,6 +6899,10 @@ function _atualizarSegSelect() {
     optGrup.disabled    = !temGrupos;
     optGrup.textContent = temGrupos ? 'Por Agrupamento' : 'Por Agrupamento (sem grupos)';
   }
+  // GHE some da lista quando a empresa nao tem matriz importada — nao ha o que oferecer,
+  // e um "(sem GHE)" desabilitado so ocuparia espaco no filtro.
+  const optGhe = sel.querySelector('option[value="ghe"]');
+  if (optGhe) optGhe.hidden = !temGhe;
   sel.value = window._segMode;
 }
 
@@ -6919,25 +6929,35 @@ const _GF_HDR = {
   ALTO:'#fff7ed', CRÍTICO:'#faf5ff'
 };
 
+// Segmentos da tela Resultados. As três views tinham cópias quase idênticas desta lógica —
+// acrescentar um modo exigia lembrar de editar as três. Agora é um ponto só, e ele reaproveita
+// _gruposPorGranularidade/_linhasDoGrupo do laudo: as duas telas não podem divergir sobre o que
+// "Por GHE" significa.
+//   consolidado = 1 bloco · ghe = 1 bloco por GHE (par setor × função)
+//   agrupado    = 1 bloco por agrupamento de setores · segregado = 1 bloco por setor
+function _segmentosResultado(filtrado, grupos) {
+  const modo = window._segMode;
+  if (modo === 'consolidado') return [{label: null, linhas: filtrado}];
+  if (modo === 'ghe') {
+    return _gruposPorGranularidade(filtrado, 'ghe')
+      .map(g => ({label: g.nome, linhas: _linhasDoGrupo(g, filtrado)}));
+  }
+  if (modo === 'agrupado') {
+    // `grupos` já vem pronto de rodarAnalise (agruparPorGrupos sobre gruposSetor) — mantido
+    // como estava para não alterar em nada o comportamento existente deste modo.
+    return grupos.map(g => ({label: g.nome, linhas: _linhasDoGrupo(g, filtrado)}));
+  }
+  const map = new Map();
+  filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
+  return [...new Set(filtrado.map(r => r.setor))].sort()
+    .map(s => ({label: s, linhas: map.get(s) || []}));
+}
+
 function renderViewGrafica({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
-  const _sgMode = window._segMode;
-  const segmentos = _sgMode === 'consolidado'
-    ? [{label: null, linhas: filtrado}]
-    : _sgMode === 'agrupado'
-      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
-      : (() => {
-          const map = new Map();
-          filtrado.forEach(r => {
-            const arr = map.get(r.setor);
-            if (arr) arr.push(r); else map.set(r.setor, [r]);
-          });
-          return [...new Set(filtrado.map(r => r.setor))].sort()
-            .map(s => ({label: s, linhas: map.get(s) || []}));
-        })();
+  const segmentos = _segmentosResultado(filtrado, grupos);
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -6950,7 +6970,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
     if (!resultado.length) return;
 
     const setor = label;
-    const setorLabel = _sgMode === 'consolidado'
+    const setorLabel = window._segMode === 'consolidado'
       ? `<span style="color:var(--tl);font-weight:500">Todos os setores filtrados</span> <span style="font-size:11px;color:var(--tl);font-weight:400">(${linhasSetor.length} respondentes)</span>`
       : (setor || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -7042,17 +7062,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
 
-  // Segmentos: consolidado = 1 bloco; agrupado = 1 bloco por grupo GHE; segregado = 1 bloco por setor
-  const _sgModeR = window._segMode;
-  const segmentos = _sgModeR === 'consolidado'
-    ? [{label: null, linhas: filtrado}]
-    : _sgModeR === 'agrupado'
-      ? grupos.map(g => ({label: g.nome, linhas: filtrado.filter(r => g.setores.includes(r.setor))}))
-      : (() => {
-          const map = new Map();
-          filtrado.forEach(r => { const a = map.get(r.setor); if (a) a.push(r); else map.set(r.setor, [r]); });
-          return [...new Set(filtrado.map(r => r.setor))].sort().map(s => ({label: s, linhas: map.get(s)||[]}));
-        })();
+  const segmentos = _segmentosResultado(filtrado, grupos);
 
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
@@ -7065,7 +7075,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
     if (!resultado.length) return;
 
-    const blocoLabel = _sgModeR === 'consolidado'
+    const blocoLabel = window._segMode === 'consolidado'
       ? `Todos os setores filtrados <span style="font-size:11px;font-weight:400;color:var(--tl)">(${linhasSetor.length} respondentes)</span>`
       : (label || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
@@ -7107,15 +7117,18 @@ function renderViewRisco({grupos, filtrado, niveis}) {
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
 function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
-  // Consolidado: substituir grupos por um único bloco com todos os setores filtrados
-  // Segregado: grupos = cada setor como próprio grupo (já calculado por agruparPorGrupos com gruposSetor=[])
-  // Agrupado: grupos GHE — passados diretamente
+  // Consolidado: um único bloco com todos os setores filtrados
+  // Segregado: cada setor como próprio grupo
+  // GHE: um bloco por GHE (par setor × função), com residual por setor
+  // Agrupado: grupos de setores — passados diretamente por rodarAnalise
   if (window._segMode === 'consolidado') {
     const todosSetores = setoresAtivos || [...new Set(filtrado.map(r => r.setor))];
     grupos = [{nome: `Todos os setores filtrados (${filtrado.length} respondentes)`, setores: todosSetores}];
   } else if (window._segMode === 'segregado') {
     const setores = [...new Set(filtrado.map(r => r.setor))].sort();
     grupos = setores.map(s => ({nome: s || 'Setor não informado', setores: [s]}));
+  } else if (window._segMode === 'ghe') {
+    grupos = _gruposPorGranularidade(filtrado, 'ghe');
   }
   const catCores = {
     'DEMANDAS DE TRABALHO':    {cor:'#4b5ea8',bg:'#f0f2fb'},
@@ -7128,7 +7141,7 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
 
   let html = '';
   grupos.forEach(grupo => {
-    const linhas = filtrado.filter(r => grupo.setores.includes(r.setor));
+    const linhas = _linhasDoGrupo(grupo, filtrado);
     if (!linhas.length) return;
     const distQs = calcDistribuicaoQuestoes(linhas);
     if (!distQs.length) return;
@@ -7556,11 +7569,11 @@ function _setoresCatalogados(setoresAtivos, gruposLaudo, granularidade, empId) {
     // 'agrupado' abaixo faria a capa listá-los sob "Setores avaliados" — um auditor lê isso
     // como setor. Grupos residuais (setor cru, sem GHE) só entram se estiverem no catálogo.
     const gheNomes = new Set(gruposGhe.map(g => g.nome));
+    // Filtra os objetos e só depois mapeia: a versão anterior mapeava para nomes e reindexava
+    // `gruposLaudo[i]` dentro do filter — correto por acidente, e frágil a qualquer reordenação.
     const nomes = gruposLaudo
-      .map(g => g.nome)
-      .filter((nome, i) => gruposLaudo[i]._residual
-        ? catalogNorm.has(_gheNormStrong(nome))
-        : gheNomes.has(nome));
+      .filter(g => g._residual ? catalogNorm.has(_gheNormStrong(g.nome)) : gheNomes.has(g.nome))
+      .map(g => g.nome);
     return nomes.length ? nomes : gruposLaudo.map(g => g.nome);
   }
   const filtrado = gruposLaudo.map(g => g.nome).filter(nome => gruposNomes.has(nome) || catalogNorm.has(_gheNormStrong(nome)));
@@ -11513,9 +11526,12 @@ async function renderLaudo() {
 
   // ── RESULTADOS (5 colunas — granularidade respeitada) ──
   if (laudoSecoesAtivas.has('resultados')) {
-    // `ordenar` preserva a ordenação alfabética que esta seção (e só ela) já fazia no modo
-    // segregado — o resto do laudo usa a ordem natural.
-    const _gruposPreview = _gruposPorGranularidade(linhas, _granLd, { ordenar: true });
+    // `ordenar` só muda algo no modo segregado, e esta seção (só ela) já ordenava. Nos demais
+    // modos reusa `grupos`: recalcular rodaria agruparPorPares de novo e duplicaria os avisos
+    // de invariante no console.
+    const _gruposPreview = _granLd === 'segregado'
+      ? _gruposPorGranularidade(linhas, _granLd, { ordenar: true })
+      : grupos;
 
     _gruposPreview.forEach(grupo => {
       const lSetor  = _linhasDoGrupo(grupo, linhas);
@@ -11525,7 +11541,8 @@ async function renderLaudo() {
         .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
       if (!fSetor.length) return;
 
-      const _tituloGrupo = grupo.nome || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>';
+      // _esc: o nome pode vir da planilha de GHE do cliente. O export já escapava; o preview não.
+      const _tituloGrupo = grupo.nome ? _esc(grupo.nome) : '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>';
       const _descGrupo = _descricaoGrupo(grupo, _esc);
       const _subtituloGrupo = _descGrupo
         ? `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">${_descGrupo}</div>`
@@ -11764,6 +11781,7 @@ async function _registrarLaudo() {
     const empresaEl = document.getElementById('ld-empresa');
     const empresaId = empresaEl?.value || _empresaAtiva.id;
     if (!empresaId) return;
+    const _gran = _granularidadeLaudo();
     await sbAdmin.from('laudos').insert({
       empresa_id:    empresaId,
       gerado_em:     new Date().toISOString(),
@@ -11773,8 +11791,8 @@ async function _registrarLaudo() {
       snapshot_json: {
         secoes: [...laudoSecoesAtivas],
         empresa: _empresaAtiva?.nome,
-        granularidade: _granularidadeLaudo(),
-        grupos: _granularidadeLaudo() === 'ghe' ? gruposGhe.map(g => g.nome) : gruposSetor.map(g => g.nome),
+        granularidade: _gran,
+        grupos: _gran === 'ghe' ? gruposGhe.map(g => g.nome) : gruposSetor.map(g => g.nome),
       },
       tenant_id:     currentTenantId
     });

@@ -738,9 +738,32 @@ unidade de pertencimento é o par. Três passadas: **par exato → coringa de se
 
 **`_linhasDoGrupo(grupo, linhas)`** é o único lugar que decide membership: grupo com `_chaves`
 casa por par; grupo legado continua casando por nome de setor, byte a byte como antes.
-Substituiu os 6 `linhas.filter(r => grupo.setores.includes(r.setor))` do laudo. Os 3 equivalentes
-da tela **Resultados** (`renderViewGrafica`/`renderViewRisco`/`renderViewQuestao`) **não** foram
-tocados — `_segMode='ghe'` é Fase 2b e continua pendente.
+Substituiu os 6 `linhas.filter(r => grupo.setores.includes(r.setor))` do laudo e os 3 da tela
+Resultados.
+
+### Tela Resultados — `_segMode = 'ghe'` (feito junto, reaproveitando a Fase 2)
+
+Não foi preciso código novo de agrupamento: `#f-segmentacao` ganhou a opção **"Por GHE (setor ×
+função)"** e as três views passaram a chamar `_gruposPorGranularidade`/`_linhasDoGrupo`, os mesmos
+do laudo — as duas telas não podem divergir sobre o que "Por GHE" significa.
+
+`_segmentosResultado(filtrado, grupos)` substituiu as **três cópias quase idênticas** da lógica de
+segmentação que existiam em `renderViewGrafica`, `renderViewRisco` e `renderViewQuestao`.
+Acrescentar um modo exigia lembrar de editar as três; agora é um ponto só. O modo `agrupado`
+continua consumindo o `grupos` pré-calculado por `rodarAnalise` (`agruparPorGrupos` sobre
+`gruposSetor`) — comportamento idêntico ao anterior, verificado lado a lado.
+
+`_atualizarSegSelect` esconde a opção quando a empresa não tem GHE (`optGhe.hidden`) e devolve
+`_segMode` para `SEG_PADRAO` se o modo vigente ficar sem base — mesma regra de
+`#laudo-granularidade`. `SEG_PADRAO` continua `'consolidado'`: a opção nova não muda o default da
+tela. `SEG_LABEL.ghe` cobre de uma vez o filtro, a tag `#an-seg-label` e o subtítulo do PDF
+exportado.
+
+**Armadilha real encontrada ao fazer isso:** `renderViewGrafica` e `renderViewRisco` guardavam a
+segmentação em locais (`_sgMode`/`_sgModeR`) que continuavam sendo lidos **mais abaixo na mesma
+função**, fora do trecho substituído. Remover só o bloco de cima deixou duas referências órfãs que
+quebravam as duas views em todos os modos — pegas só porque o teste executou as funções de
+verdade, não apenas a sintaxe.
 
 **`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
 bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
