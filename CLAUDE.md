@@ -719,11 +719,48 @@ apagado na reimportação de estrutura seguinte.
 - `_onAgrupEmpresaChange` atribuía `_empresaAtiva` direto em vez de chamar `setEmpresaAtiva` —
   não persistia em `sessionStorage`, não sincronizava os outros selects nem o chip da topbar.
 
-**Fase 2 (não implementada):** granularidade `'ghe'` no laudo — exige `agruparPorPares`,
-`_linhasDoGrupo` e um `_gruposPorGranularidade` único para preview e export. Riscos a tratar lá:
-resposta fora de todo GHE sumindo do corpo do laudo enquanto é contada na capa (sub-reporta
-risco — precisa de grupo residual por setor e da asserção `Σ n(grupo) === linhas.length`), e
-`_setoresCatalogados` rotulando nome de GHE como "Setores avaliados" na capa.
+### Fase 2 — granularidade "Por GHE" no laudo
+
+`#laudo-granularidade` ganhou `ghe` como primeira opção, e ela vira o default quando a empresa
+tem GHE importado (`ghe` > `agrupado` > `segregado`; `consolidado` é escolha explícita e nunca é
+sobrescrita). A opção fica `hidden` quando não há GHE, e `_granularidadeLaudo()` degrada sozinha
+se o modo escolhido ficar sem base (ex.: GHE apagado depois de selecionado).
+
+**`agruparPorPares(linhas, ghes)`** — recebe as LINHAS de resposta, não nomes de setor, porque a
+unidade de pertencimento é o par. Três passadas: **par exato → coringa de setor → residual**.
+- Cada resposta entra em exatamente um grupo. É o que garante `Σ n(grupo) === linhas.length`;
+  sem isso o mesmo respondente contaria duas vezes no laudo.
+- Par declarado em dois GHE: o primeiro por `ordem` fica com ele; o conflito volta em
+  `conflitos` e vai para o `console.warn`, nunca some.
+- Resposta fora de todo GHE vai para grupo **residual por setor** (não por par). Sem isso ela
+  sumiria do corpo do laudo continuando contada na capa — o laudo **sub-reportaria risco**.
+  `_gruposPorGranularidade` verifica a invariante e grita no console se ela quebrar.
+
+**`_linhasDoGrupo(grupo, linhas)`** é o único lugar que decide membership: grupo com `_chaves`
+casa por par; grupo legado continua casando por nome de setor, byte a byte como antes.
+Substituiu os 6 `linhas.filter(r => grupo.setores.includes(r.setor))` do laudo. Os 3 equivalentes
+da tela **Resultados** (`renderViewGrafica`/`renderViewRisco`/`renderViewQuestao`) **não** foram
+tocados — `_segMode='ghe'` é Fase 2b e continua pendente.
+
+**`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
+bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
+**ignoravam a granularidade escolhida**, enquanto `_buildLaudoHTML` a respeitava — preview e PDF
+mostravam agrupamentos diferentes nas mesmas seções. O parâmetro `ordenar` existe só para
+preservar a ordenação alfabética que a seção "Resultados" do preview já fazia no modo segregado.
+
+**Capa e subtítulos.** `_rotuloGranularidade` troca "Setores avaliados" por **"GHE avaliados"**
+(e "Escopo" no consolidado) — chamar nome de GHE de setor numa capa é lido por auditor como
+setor. `_setoresCatalogados` ganhou ramo `'ghe'` próprio: lista nomes de GHE e só inclui grupo
+residual se o setor estiver no catálogo. `_descricaoGrupo` declara o **par** ("Setor × função:
+Produção — Operador; RH — (qualquer função)") em vez de "Setores incluídos" — dizer que um GHE
+cobre um setor quando cobre 2 de 9 funções dele é afirmação falsa num documento de NR-01.
+
+`_registrarLaudo` passou a gravar `granularidade` e os nomes dos grupos no `snapshot_json`: sem
+isso não há como provar depois sob qual agrupamento um laudo entregue foi gerado.
+
+Verificado com preview e `_buildLaudoHTML` lado a lado nas 4 granularidades (mesmos grupos em
+todas), invariante fechando (6 respostas → 6 distribuídas, 1 no residual) e rótulo de capa
+mudando conforme o modo.
 
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 

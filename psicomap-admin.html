@@ -2649,7 +2649,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="filter-card">
         <div class="filter-label">Granularidade do relatório</div>
         <select id="laudo-granularidade" class="filter-select" onchange="renderLaudo()">
-          <option value="agrupado">Por Agrupamento GHE</option>
+          <option value="ghe">Por GHE (setor × função)</option>
+          <option value="agrupado">Por Agrupamento de Setores</option>
           <option value="segregado">Por Setor</option>
           <option value="consolidado">Geral</option>
         </select>
@@ -7419,6 +7420,126 @@ function agruparPorGrupos(setores, grupos) {
   return [...result,...sem];
 }
 
+// ── Agrupamento por PAR (setor × função) — granularidade 'ghe' ────────────────
+// Chave de um par. Mesma convenção usada no import de estrutura e na tela de Adesão.
+function _chavePar(setor, funcao) {
+  return _gheNormStrong(setor) + '|||' + _gheNormStrong(funcao);
+}
+
+// Diferente de agruparPorGrupos: recebe as LINHAS de resposta, não uma lista de nomes de setor,
+// porque a unidade de pertencimento aqui é o par (setor, função) da resposta.
+//
+// Três passadas, nesta ordem: par exato → coringa de setor (par com função vazia) → residual.
+// - Cada resposta entra em EXATAMENTE um grupo. É o que garante Σ n(grupo) === linhas.length;
+//   sem isso o mesmo respondente seria contado duas vezes no laudo.
+// - Par declarado em dois GHE: o primeiro por `ordem` fica com ele (gruposGhe já vem ordenado
+//   do banco). O conflito é devolvido em `conflitos`, nunca escondido.
+// - Resposta que não cai em nenhum GHE vai para um grupo RESIDUAL por setor — não por par.
+//   Por par, o laudo explodiria em dezenas de seções de um respondente; e sumir com ela seria
+//   pior ainda: continuaria contada na capa e o laudo sub-reportaria risco.
+function agruparPorPares(linhas, ghes) {
+  const exatos = new Map();   // chave do par  → índice do GHE
+  const coringas = new Map(); // setor normalizado → índice do GHE (par com função vazia)
+  const conflitos = [];
+  (ghes || []).forEach((g, i) => (g.pares || []).forEach(p => {
+    if (!p || !p.s) return;
+    const ks = _gheNormStrong(p.s);
+    if (p.f) {
+      const k = ks + '|||' + _gheNormStrong(p.f);
+      if (exatos.has(k)) {
+        if (exatos.get(k) !== i) conflitos.push({ setor: p.s, funcao: p.f, manteve: ghes[exatos.get(k)].nome, descartou: g.nome });
+      } else exatos.set(k, i);
+    } else if (coringas.has(ks)) {
+      if (coringas.get(ks) !== i) conflitos.push({ setor: p.s, funcao: null, manteve: ghes[coringas.get(ks)].nome, descartou: g.nome });
+    } else coringas.set(ks, i);
+  }));
+
+  const buckets = (ghes || []).map(g => ({ nome: g.nome, setores: [], _chaves: new Set(), _pares: g.pares || [], n: 0 }));
+  const residual = new Map(); // setor normalizado → bucket
+  const vistos = (ghes || []).map(() => new Set());
+
+  linhas.forEach(r => {
+    const ks = _gheNormStrong(r.setor);
+    const k  = _chavePar(r.setor, r.funcao);
+    const i  = exatos.has(k) ? exatos.get(k) : (coringas.has(ks) ? coringas.get(ks) : -1);
+    let b;
+    if (i >= 0) {
+      b = buckets[i];
+      if (!vistos[i].has(r.setor)) { vistos[i].add(r.setor); b.setores.push(r.setor); }
+    } else {
+      if (!residual.has(ks)) residual.set(ks, { nome: r.setor, setores: [r.setor], _chaves: new Set(), _residual: true, n: 0 });
+      b = residual.get(ks);
+    }
+    b._chaves.add(k);
+    b.n++;
+  });
+
+  const comDados = buckets.filter(g => g.n > 0);
+  const fora = [...residual.values()].reduce((a, g) => a + g.n, 0);
+  return { grupos: [...comDados, ...residual.values()], conflitos, fora, total: linhas.length };
+}
+
+// Membership de uma linha num grupo. Grupos vindos de agruparPorPares carregam `_chaves`
+// (pares reivindicados); os dos modos antigos continuam casando por nome de setor, byte a byte
+// como antes. Único ponto onde essa decisão é tomada — os call sites não sabem a diferença.
+function _linhasDoGrupo(grupo, linhas) {
+  if (grupo && grupo._chaves) return linhas.filter(r => grupo._chaves.has(_chavePar(r.setor, r.funcao)));
+  return linhas.filter(r => grupo.setores.includes(r.setor));
+}
+
+// Fonte ÚNICA dos grupos do laudo, para preview e export. Antes cada seção remontava a lista
+// por conta própria e duas delas (análise de risco e ações, no preview) ignoravam a
+// granularidade escolhida — o preview mostrava agrupamento e o PDF mostrava outro.
+// `ordenar` existe só para preservar byte a byte o comportamento de quem já ordenava.
+function _gruposPorGranularidade(linhas, gran, { ordenar = false } = {}) {
+  const setoresAtivos = [...new Set(linhas.map(r => r.setor))];
+  if (gran === 'consolidado') return [{ nome: 'Todos os setores', setores: setoresAtivos }];
+  if (gran === 'segregado') {
+    const lista = ordenar ? [...setoresAtivos].sort() : setoresAtivos;
+    return lista.map(s => ({ nome: s, setores: [s] }));
+  }
+  if (gran === 'ghe') {
+    const { grupos, fora, total, conflitos } = agruparPorPares(linhas, gruposGhe);
+    const soma = grupos.reduce((a, g) => a + g.n, 0);
+    // Invariante: toda resposta conta uma vez. Se quebrar, o laudo estaria com número errado —
+    // melhor gritar no console do que entregar PDF plausível e incorreto.
+    if (soma !== total) console.warn('[laudo/ghe] INVARIANTE QUEBRADA: soma dos grupos =', soma, 'mas linhas =', total);
+    if (fora)             console.warn('[laudo/ghe]', fora, 'de', total, 'resposta(s) fora de qualquer GHE — agrupadas por setor no residual.');
+    if (conflitos.length) console.warn('[laudo/ghe]', conflitos.length, 'par(es) declarado(s) em mais de um GHE:', conflitos);
+    return grupos;
+  }
+  return agruparPorGrupos(setoresAtivos, gruposSetor);
+}
+
+// Granularidade efetiva: cai para um modo com dados quando o escolhido ficou sem base
+// (ex.: 'ghe' selecionado e depois todos os GHE removidos).
+function _granularidadeLaudo() {
+  const v = document.getElementById('laudo-granularidade')?.value;
+  if (v === 'ghe' && !gruposGhe.length)        return gruposSetor.length ? 'agrupado' : 'segregado';
+  if (v === 'agrupado' && !gruposSetor.length) return 'segregado';
+  return v || (gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado');
+}
+
+// Rótulo da unidade de análise — vira título de coluna/capa no documento entregue.
+function _rotuloGranularidade(gran) {
+  return gran === 'ghe' ? 'GHE avaliados' : gran === 'consolidado' ? 'Escopo' : 'Setores avaliados';
+}
+
+// Subtítulo que declara o que o grupo cobre. Para GHE é obrigatório listar o PAR: dizer que um
+// GHE cobre "Produção" quando ele cobre 2 de 9 funções daquele setor é afirmação falsa num
+// documento de NR-01.
+function _descricaoGrupo(grupo, escapar) {
+  const esc = escapar || (x => x);
+  if (grupo._residual) return '';
+  if (grupo._pares) {
+    if (!grupo._pares.length) return '';
+    return 'Setor × função: ' + grupo._pares
+      .map(p => esc(p.s) + (p.f ? ' — ' + esc(p.f) : ' — (qualquer função)'))
+      .join('; ');
+  }
+  return grupo.setores.length > 1 ? 'Setores incluídos: ' + grupo.setores.map(esc).join(', ') : '';
+}
+
 // Setores exibidos na capa do laudo: só nomes do catálogo GHE (empresa_setores) ou nomes de
 // agrupamento — nunca respostas cruas "Outro: X" (essas continuam aparecendo normalmente no
 // corpo do relatório via gruposLaudo, só não na lista-resumo da capa).
@@ -7429,6 +7550,18 @@ function _setoresCatalogados(setoresAtivos, gruposLaudo, granularidade, empId) {
   if (granularidade === 'segregado') {
     const filtrado = setoresAtivos.filter(s => catalogNorm.has(_gheNormStrong(s)));
     return filtrado.length ? filtrado : setoresAtivos;
+  }
+  if (granularidade === 'ghe') {
+    // Ramo próprio: aqui os nomes são nomes de GHE, que NÃO são setores. Cair no ramo
+    // 'agrupado' abaixo faria a capa listá-los sob "Setores avaliados" — um auditor lê isso
+    // como setor. Grupos residuais (setor cru, sem GHE) só entram se estiverem no catálogo.
+    const gheNomes = new Set(gruposGhe.map(g => g.nome));
+    const nomes = gruposLaudo
+      .map(g => g.nome)
+      .filter((nome, i) => gruposLaudo[i]._residual
+        ? catalogNorm.has(_gheNormStrong(nome))
+        : gheNomes.has(nome));
+    return nomes.length ? nomes : gruposLaudo.map(g => g.nome);
   }
   const filtrado = gruposLaudo.map(g => g.nome).filter(nome => gruposNomes.has(nome) || catalogNorm.has(_gheNormStrong(nome)));
   return filtrado.length ? filtrado : gruposLaudo.map(g => g.nome);
@@ -11220,11 +11353,16 @@ async function onLaudoFiltro() {
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   _populateGheCombo('combo-ld-fun-ghe', 'fc-ld-fun-ghe', 'funcao');
-  // Ajustar default de granularidade: agrupado se há grupos, segregado se não há
+  // Default de granularidade: GHE por par > agrupamento de setores > por setor.
+  // Só reescreve os modos auto-gerenciados — 'consolidado' é escolha explícita do usuário e
+  // nunca é sobrescrito.
   const granEl = document.getElementById('laudo-granularidade');
-  if (granEl && (granEl.value === 'agrupado' || granEl.value === 'segregado')) {
-    granEl.value = gruposSetor.length ? 'agrupado' : 'segregado';
+  if (granEl && ['ghe','agrupado','segregado'].includes(granEl.value)) {
+    granEl.value = gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
   }
+  // Esconde a opção quando a empresa não tem GHE importado, para não oferecer um modo vazio.
+  const optGhe = granEl?.querySelector('option[value="ghe"]');
+  if (optGhe) optGhe.hidden = !gruposGhe.length;
   renderLaudo();
 }
 
@@ -11256,7 +11394,11 @@ async function renderLaudo() {
   if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
 
   const fatores  = calcFatores(linhas);
-  const grupos   = agruparPorGrupos([...new Set(linhas.map(r=>r.setor))], gruposSetor);
+  // Fonte única: antes esta linha era sempre agruparPorGrupos, e as seções de análise de risco
+  // e de ações a usavam crua — ignorando a granularidade escolhida, enquanto o PDF exportado a
+  // respeitava. Preview e PDF mostravam agrupamentos diferentes nas mesmas seções.
+  const _granLd  = _granularidadeLaudo();
+  const grupos   = _gruposPorGranularidade(linhas, _granLd);
   const NIVEIS_ORDER = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NivelCores   = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
   const NivelTxt     = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
@@ -11271,13 +11413,10 @@ async function renderLaudo() {
       || 'Responsável Técnico';
     const estNomeLd = _estPerfil?.nome_empresa || 'PsicoMap';
     const setoresAtivosLd = [...new Set(linhas.map(r=>r.setor))];
-    const laudoGranLd = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
-    const gruposLaudoLd = laudoGranLd === 'consolidado'
-      ? [{nome: 'Todos os setores', setores: setoresAtivosLd}]
-      : laudoGranLd === 'segregado'
-        ? setoresAtivosLd.map(s => ({nome: s, setores: [s]}))
-        : grupos;
+    const laudoGranLd = _granLd;
+    const gruposLaudoLd = grupos; // mesma fonte do corpo do laudo — capa e corpo não divergem
     const coverSetoresLd = _setoresCatalogados(setoresAtivosLd, gruposLaudoLd, laudoGranLd, emp);
+    const coverLabelLd = _rotuloGranularidade(laudoGranLd);
     const logoLd = _estPerfil?.logo_base64
       ? `<img src="${_estPerfil.logo_base64}" style="width:100%;height:100%;object-fit:contain">`
       : `<svg width="22" height="22" viewBox="0 0 24 24" fill="#1a7a3c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>`;
@@ -11300,7 +11439,7 @@ async function renderLaudo() {
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Ciclo de avaliação</div><strong>${cicloNomeLd}</strong></div>
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Total de respondentes</div><strong>${linhas.length} colaboradores</strong></div>
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Data de emissão</div><strong>${hoje}</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Setores avaliados</div><strong>${coverSetoresLd.join(', ')}</strong></div>
+          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">${coverLabelLd}</div><strong>${coverSetoresLd.join(', ')}</strong></div>
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Responsável técnico</div><strong>${responsavelLd}</strong></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -11374,16 +11513,12 @@ async function renderLaudo() {
 
   // ── RESULTADOS (5 colunas — granularidade respeitada) ──
   if (laudoSecoesAtivas.has('resultados')) {
-    const _setoresDisp = [...new Set(linhas.map(r => r.setor))];
-    const _granPreview = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
-    const _gruposPreview = _granPreview === 'consolidado'
-      ? [{nome: 'Todos os setores', setores: _setoresDisp}]
-      : _granPreview === 'segregado'
-        ? _setoresDisp.sort().map(s => ({nome: s, setores: [s]}))
-        : agruparPorGrupos(_setoresDisp, gruposSetor);
+    // `ordenar` preserva a ordenação alfabética que esta seção (e só ela) já fazia no modo
+    // segregado — o resto do laudo usa a ordem natural.
+    const _gruposPreview = _gruposPorGranularidade(linhas, _granLd, { ordenar: true });
 
     _gruposPreview.forEach(grupo => {
-      const lSetor  = linhas.filter(r => grupo.setores.includes(r.setor));
+      const lSetor  = _linhasDoGrupo(grupo, linhas);
       if (!lSetor.length) return;
       const fSetor  = calcFatores(lSetor)
         .filter(f => f.nivel !== 'IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
@@ -11391,8 +11526,9 @@ async function renderLaudo() {
       if (!fSetor.length) return;
 
       const _tituloGrupo = grupo.nome || '<em style="font-weight:400;font-style:italic;opacity:.7">Setor não informado</em>';
-      const _subtituloGrupo = grupo.setores.length > 1
-        ? `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">Setores incluídos: ${grupo.setores.join(', ')}</div>`
+      const _descGrupo = _descricaoGrupo(grupo, _esc);
+      const _subtituloGrupo = _descGrupo
+        ? `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">${_descGrupo}</div>`
         : '';
 
       html += `<div class="laudo-section">
@@ -11480,7 +11616,7 @@ async function renderLaudo() {
       '</div>';
 
     grupos.forEach(grupo => {
-      const lGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
       const fatores = calcFatores(lGrupo).filter(f => f && (!niveisLd.length || niveisLd.includes(f.nivel)));
       if (!fatores.length) return;
@@ -11573,7 +11709,7 @@ async function renderLaudo() {
   // ── AÇÕES POR SETOR ──
   if (laudoSecoesAtivas.has('acoes')) {
     grupos.forEach(grupo => {
-      const lGrupo = linhas.filter(r=>grupo.setores.includes(r.setor));
+      const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
       const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)));
       if (!fGrupo.length) {
@@ -11632,7 +11768,14 @@ async function _registrarLaudo() {
       empresa_id:    empresaId,
       gerado_em:     new Date().toISOString(),
       gerado_por:    currentUser?.email || currentUser?.id || null,
-      snapshot_json: { secoes: [...laudoSecoesAtivas], empresa: _empresaAtiva?.nome },
+      // Granularidade e grupos vão para o snapshot: sem isso não há como provar, depois, sob
+      // qual agrupamento um laudo entregue ao cliente foi gerado.
+      snapshot_json: {
+        secoes: [...laudoSecoesAtivas],
+        empresa: _empresaAtiva?.nome,
+        granularidade: _granularidadeLaudo(),
+        grupos: _granularidadeLaudo() === 'ghe' ? gruposGhe.map(g => g.nome) : gruposSetor.map(g => g.nome),
+      },
       tenant_id:     currentTenantId
     });
     console.log('[PsicoMap] Laudo registrado no banco.');
@@ -11661,13 +11804,10 @@ function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, regist
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
   const setoresAtivos = [...new Set(linhas.map(r=>r.setor))];
-  const _laudoGran = document.getElementById('laudo-granularidade')?.value || (gruposSetor.length ? 'agrupado' : 'segregado');
-  const gruposLaudo = _laudoGran === 'consolidado'
-    ? [{nome: 'Todos os setores', setores: setoresAtivos}]
-    : _laudoGran === 'segregado'
-      ? setoresAtivos.map(s => ({nome: s, setores: [s]}))
-      : agruparPorGrupos(setoresAtivos, gruposSetor);
+  const _laudoGran = _granularidadeLaudo();
+  const gruposLaudo = _gruposPorGranularidade(linhas, _laudoGran);
   const coverSetores = _setoresCatalogados(setoresAtivos, gruposLaudo, _laudoGran, empId);
+  const coverLabel = _rotuloGranularidade(_laudoGran);
 
   // ── CSS do modelo de referência ─────────────────────────────
   const css = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -11783,13 +11923,14 @@ tr:last-child td{border-bottom:none}
   // ── PÁGINA 4: Resultados por setor ───────────────────────────
   let resultadosHTML = '';
   gruposLaudo.forEach(grupo => {
-    const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
+    const lS = _linhasDoGrupo(grupo, linhas);
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
     const tituloSetor = grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>';
-    const subtituloGrupo = grupo.setores.length > 1
-      ? `<div style="font-size:10px;color:#9ca3af;padding:4px 12px 8px;border:1px solid #e5e7eb;border-top:none;background:#f9fafb;border-radius:0 0 4px 4px;margin-bottom:8px">Setores incluídos: ${grupo.setores.map(e).join(', ')}</div>`
+    const _descG = _descricaoGrupo(grupo, e);
+    const subtituloGrupo = _descG
+      ? `<div style="font-size:10px;color:#9ca3af;padding:4px 12px 8px;border:1px solid #e5e7eb;border-top:none;background:#f9fafb;border-radius:0 0 4px 4px;margin-bottom:8px">${_descG}</div>`
       : '';
     resultadosHTML += `<div class="sec-title setor">${tituloSetor}</div>
     ${subtituloGrupo}
@@ -11844,7 +11985,7 @@ tr:last-child td{border-bottom:none}
       return html;
     };
     gruposLaudo.forEach(grupo => {
-      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      const linhasGrupo = _linhasDoGrupo(grupo, linhas);
       if (!linhasGrupo.length) return;
       const dist = calcDistribuicaoQuestoes(_normalizeLinhasGraficos(linhasGrupo));
       if (gruposLaudo.length > 1) {
@@ -11861,7 +12002,7 @@ tr:last-child td{border-bottom:none}
   let acoesHTML = '';
   if (laudoSecoesAtivas.has('acoes')) {
     gruposLaudo.forEach(grupo => {
-      const lS = linhas.filter(r=>grupo.setores.includes(r.setor));
+      const lS = _linhasDoGrupo(grupo, linhas);
       const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (!fS.length) return;
@@ -11956,7 +12097,7 @@ tr:last-child td{border-bottom:none}
 
     let corposAR = '';
     gruposLaudo.forEach(grupo => {
-      const linhasGrupo = linhas.filter(r => grupo.setores.includes(r.setor));
+      const linhasGrupo = _linhasDoGrupo(grupo, linhas);
       if (!linhasGrupo.length) return;
       const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
@@ -12022,7 +12163,7 @@ tr:last-child td{border-bottom:none}
       <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Total de respondentes</div><div class="cover-meta-value">${linhas.length} colaboradores</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Data de emissão</div><div class="cover-meta-value">${hoje}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Setores avaliados</div><div class="cover-meta-value">${e(coverSetores.join(', '))}</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">${e(coverLabel)}</div><div class="cover-meta-value">${e(coverSetores.join(', '))}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Responsável técnico</div><div class="cover-meta-value">${e(responsavel)}</div></div>
     </div>
     <div class="cover-norm-pills" style="margin-top:18px">
