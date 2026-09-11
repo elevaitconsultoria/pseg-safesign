@@ -2047,7 +2047,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Filtro Ciclo -->
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);rodarAnalise()">
+        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);_sincronizarComboFuncoes();rodarAnalise()">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2190,6 +2190,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <button class="btn btn-ghost" onclick="exportarResultados('png')" id="btn-export-png" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar Imagem
+      </button>
+      <!-- Restrito a admin/super_admin - visibilidade controlada por _podeBaixarTodos() -->
+      <button class="btn btn-g" onclick="baixarTodosFormatos(this)" id="btn-export-all" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar todos os formatos
       </button>
     </div>
 
@@ -5767,8 +5772,14 @@ const COMBO_RENDER = {
 // Todo combo agora aplica sozinho. Antes so os 6 de agrupamento faziam isso;
 // os demais exigiam clique em "Aplicar", e o proprio codigo ja registrava que
 // esse modo "dava impressao de delay".
+// Combos que reconfiguram outro combo antes de re-renderizar a tela.
+const COMBO_CASCATA = {
+  'combo-setor': () => _sincronizarComboFuncoes(),
+};
+
 const _comboDebounce = {};
 function _renderParaCombo(id, imediato) {
+  COMBO_CASCATA[id]?.();          // sincrono: a lista dependente atualiza no mesmo clique
   const fn = COMBO_RENDER[id];
   if (typeof fn !== 'function') return;
   clearTimeout(_comboDebounce[id]);
@@ -5823,7 +5834,7 @@ function updateComboPreview(id) {
     const n = sel.length;
     if (id.includes('nivel'))      count.textContent = `${n} nível${n!==1?'is':''} selecionado${n!==1?'s':''}`;
     else if (id.includes('setor')) count.textContent = `${n} setor${n!==1?'es':''} selecionado${n!==1?'s':''}`;
-    else                           count.textContent = `${n} função${n!==1?'ões':''} selecionada${n!==1?'s':''}`;
+    else                           count.textContent = `${n} ${n!==1?'funções':'função'} selecionada${n!==1?'s':''}`;
   }
 
   if (!sel.length) {
@@ -5855,6 +5866,45 @@ function updateComboPreview(id) {
   preview.innerHTML = html;
 }
 
+// --- Cascata Setor -> Funcao (Resultados) -------------------------
+// Pares (setor, funcao, ciclo_id) que EXISTEM em respostas - a fonte da lista de
+// funcoes do combo. Como respostas.setor/funcao guardam o par escolhido pelo
+// funcionario, cargos universais (empresa_funcoes.setor_id = NULL) aparecem
+// naturalmente nos setores em que de fato responderam - sem cruzar catalogo.
+let _paresSetorFuncao = [];
+// Fallback de catalogo quando a empresa ainda nao tem nenhuma resposta.
+let _funcoesFallback = [];
+
+function _funcoesDisponiveis() {
+  if (!_paresSetorFuncao.length) return _funcoesFallback;
+  const cicloId = document.getElementById('f-ciclo')?.value || '';
+  const sel     = comboState['combo-setor'];
+  const todos   = comboItems['combo-setor']();
+  // Set vazio ou completo = "sem filtro de setor" (mesma convencao defensiva de rodarAnalise)
+  const semFiltroSetor = sel.size === 0 || sel.size === todos.length;
+  const out = new Set();
+  _paresSetorFuncao.forEach(p => {
+    if (cicloId && p.ciclo_id !== cicloId) return;
+    if (!semFiltroSetor && !sel.has(p.setor)) return;
+    out.add(p.funcao);
+  });
+  return [...out].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+// Repopula combo-funcao preservando a selecao do usuario quando ela ainda faz sentido.
+function _sincronizarComboFuncoes() {
+  if (!comboState['combo-funcao']) return;
+  const disp     = _funcoesDisponiveis();
+  const antes    = comboState['combo-funcao'];
+  const eraTodas = antes.size === 0 || antes.size === comboItems['combo-funcao']().length;
+  comboItems['combo-funcao'] = () => disp;
+  const mantidas = eraTodas ? disp : disp.filter(f => antes.has(f));
+  // Nenhuma das escolhidas sobreviveu ao novo setor -> volta a "todas" em vez de
+  // deixar o usuario num filtro vazio sem entender por que.
+  comboState['combo-funcao'] = new Set(mantidas.length ? mantidas : disp);
+  buildCombo('combo-funcao');
+}
+
 async function onEmpresaChange() {
   // Sincronizar empresa ativa
   const empEl = document.getElementById('f-empresa');
@@ -5869,6 +5919,8 @@ async function onEmpresaChange() {
   _popularFiltroCiclo(emp);
 
   if (!emp || isDemoMode) {
+    _paresSetorFuncao = [];
+    _funcoesFallback  = [];
     buildCombo('combo-setor');
     buildCombo('combo-funcao');
     return;
@@ -5877,7 +5929,7 @@ async function onEmpresaChange() {
   try {
     const { data } = await sbAdmin
       .from('respostas')
-      .select('setor, funcao')
+      .select('setor, funcao, ciclo_id')
       .eq('empresa_id', emp);
 
     const empresaObj = _empresas.find(e => e.id === emp);
@@ -5894,15 +5946,25 @@ async function onEmpresaChange() {
       ? [...new Set(normFuncoes)].sort()
       : (empresaObj?.funcoes || []);
     comboItems['combo-setor']  = () => setores;
-    comboItems['combo-funcao'] = () => funcoes;
     comboState['combo-setor']  = new Set(setores);
+    // Base da cascata: mesma normalizacao da engine de analise (Geral / —)
+    _paresSetorFuncao = (data || []).map(r => ({
+      setor:    r.setor  || 'Geral',
+      funcao:   r.funcao || '—',
+      ciclo_id: r.ciclo_id || null,
+    }));
+    _funcoesFallback = funcoes;
+    comboItems['combo-funcao'] = () => funcoes;
     comboState['combo-funcao'] = new Set(funcoes);
-  } catch(e) { console.warn('onEmpresaChange:', e); }
+  } catch(e) {
+    console.warn('onEmpresaChange:', e);
+    _paresSetorFuncao = [];
+  }
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ghe', 'fc-ghe');
   _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
   buildCombo('combo-setor');
-  buildCombo('combo-funcao');
+  _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
 }
 
 // Mantida como nome proprio da tela Resultados; a logica agora e a compartilhada.
@@ -6020,6 +6082,9 @@ async function rodarAnalise() {
   if (btnPdf) btnPdf.style.display = 'inline-flex';
   const btnPng = document.getElementById('btn-export-png');
   if (btnPng) btnPng.style.display = 'inline-flex';
+  // RBAC: pacote completo so para admin (e super_admin em Modo Suporte)
+  const btnAll = document.getElementById('btn-export-all');
+  if (btnAll) btnAll.style.display = _podeBaixarTodos() ? 'inline-flex' : 'none';
 }
 
 function exportarCSV() {
@@ -6030,23 +6095,23 @@ function exportarCSV() {
   if (!linhas.length) { toast('Sem dados para exportar.', 'w'); return; }
 
   const questoesCols = questoes.filter(q => ativas.has(q.id));
-  const cabecalho = ['id','empresa','setor','funcao','escolaridade','respondido_em',
+  const cabecalho = ['session_id','empresa','setor','funcao','escolaridade','respondido_em',
     ...questoesCols.map(q => q.c + '_' + (q.f||'cd'+q.cd))
   ];
 
+  // loadRespostasParaEmpresa pivota resposta_itens para r.q ({idQuestao: valor})
+  // e renomeia respondido_em -> data_registro. Ler r.resposta_itens/r.id aqui
+  // gerava colunas de questao sempre vazias.
   const rows = linhas.map(r => {
     const base = [
-      r.id || '',
+      r.session_id || '',
       _empresaAtiva.nome || '',
       r.setor  || '',
       r.funcao || '',
       r.escolaridade || '',
-      r.respondido_em ? new Date(r.respondido_em).toLocaleString('pt-BR') : ''
+      r.data_registro ? new Date(r.data_registro).toLocaleString('pt-BR') : ''
     ];
-    const itens = questoesCols.map(q => {
-      const item = (r.resposta_itens || []).find(i => i.questao_id === q.id);
-      return item ? item.valor : '';
-    });
+    const itens = questoesCols.map(q => (r.q?.[q.id] ?? ''));
     return [...base, ...itens];
   });
 
@@ -6188,6 +6253,45 @@ async function exportarResultados(fmt) {
   const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${today}.png` });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   toast('✓ PNG exportado.', 'g');
+}
+
+// Melhoria 1 - pacote de exportacao (admin / super_admin em Modo Suporte).
+function _podeBaixarTodos() {
+  const r = currentUser?.role;
+  return r === 'admin' || r === 'super_admin';
+}
+
+// Orquestra as exportacoes JA EXISTENTES. Sequencial (nao Promise.all) de proposito:
+// exportarResultados('png') clona e muta #view-content, e exportarResultadosPrint()
+// expande as secoes colapsadas - rodar em paralelo produziria arquivos corrompidos.
+async function baixarTodosFormatos(btn) {
+  if (!_podeBaixarTodos()) { toast('Ação restrita ao perfil de administrador.', 'r'); return; }
+  const vc = document.getElementById('view-content');
+  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
+  if (btn?.dataset.busy === '1') return;
+
+  const htmlOrig = btn ? btn.innerHTML : '';
+  const passo = (n, txt) => { if (btn) btn.textContent = `Gerando ${n}/3 — ${txt}…`; };
+  if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
+
+  const falhas = [];
+  try {
+    passo(1, 'CSV');
+    try { exportarCSV(); } catch (e) { console.warn('baixarTodos CSV:', e); falhas.push('CSV'); }
+    await new Promise(r => setTimeout(r, 400));   // navegadores engasgam com downloads simultaneos
+
+    passo(2, 'Imagem');
+    try { await exportarResultados('png'); } catch (e) { console.warn('baixarTodos PNG:', e); falhas.push('Imagem'); }
+    await new Promise(r => setTimeout(r, 400));
+
+    passo(3, 'PDF');   // por ultimo: abre janela de impressao e interrompe o fluxo
+    try { exportarResultadosPrint(); } catch (e) { console.warn('baixarTodos PDF:', e); falhas.push('PDF'); }
+
+    toast(falhas.length ? `Concluído com falhas: ${falhas.join(', ')}.` : '✓ Todos os formatos baixados.',
+          falhas.length ? 'w' : 'g');
+  } finally {
+    if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
+  }
 }
 
 function exportarResultadosPrint() {
@@ -11954,6 +12058,11 @@ function aplicarRestricoesPorRole() {
   const raw = currentUser?.role;
   const role = (raw === 'super_admin' || raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
     ? raw : 'consultor';
+
+  // Pacote "Baixar todos os formatos" (Resultados) - admin e super_admin apenas.
+  // Reavaliado aqui porque sairModoSuporte() muda o contexto sem recarregar a pagina.
+  const btnExportAll = document.getElementById('btn-export-all');
+  if (btnExportAll && !(role === 'admin' || role === 'super_admin')) btnExportAll.style.display = 'none';
 
   if (role === 'super_admin') {
     if (_supportMode) {
