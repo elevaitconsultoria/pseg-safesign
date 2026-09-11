@@ -2152,6 +2152,17 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
+      <!-- Segmentação — como os resultados são agrupados (window._segMode).
+           Era um toggle no header do resultado; virou filtro por decisão de UX. -->
+      <div class="filter-card">
+        <div class="filter-label">Segmentação</div>
+        <select id="f-segmentacao" class="filter-select" onchange="_setSegMode(this.value)">
+          <option value="segregado">Por Setor</option>
+          <option value="agrupado">Por Agrupamento</option>
+          <option value="consolidado">Geral</option>
+        </select>
+      </div>
+
       <!-- Filtro Nível de Risco — combo -->
       <div class="filter-card">
         <div class="filter-label">Nível de risco</div>
@@ -5923,6 +5934,7 @@ async function onEmpresaChange() {
     _funcoesFallback  = [];
     buildCombo('combo-setor');
     buildCombo('combo-funcao');
+    _atualizarSegSelect();
     return;
   }
   // Carregar setores/funções reais para os combos de filtro
@@ -5963,6 +5975,7 @@ async function onEmpresaChange() {
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ghe', 'fc-ghe');
   _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
+  _atualizarSegSelect();        // habilita/desabilita "Por Agrupamento" pela empresa
   buildCombo('combo-setor');
   _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
 }
@@ -6010,7 +6023,8 @@ async function rodarAnalise() {
   window._displayMode      = window._displayMode      || 'grafica';
   window._viewMode         = window._viewMode         || 'risco';
   window._detalhesVisiveis = window._detalhesVisiveis ?? false;   // default: oculto
-  window._segMode          = window._segMode          || 'segregado'; // segregado | consolidado
+  window._segMode          = window._segMode          || 'segregado'; // segregado | agrupado | consolidado
+  _atualizarSegSelect();   // mantem o filtro da sidebar coerente com os grupos da empresa
   const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
   const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
   const _dm = window._displayMode, _vm = window._viewMode, _dv = window._detalhesVisiveis, _sg = window._segMode;
@@ -6023,17 +6037,8 @@ async function rodarAnalise() {
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <!-- Toggle Por setor / Por Agrupamento / Geral -->
-        <div class="seg-toggle-group">
-          <button id="sgbtn-seg"  onclick="_setSegMode('segregado')"
-            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por Setor</button>
-          <button id="sgbtn-grup" onclick="_setSegMode('agrupado')"
-            class="${_sg==='agrupado'    ? 'stg-active' : ''}"
-            ${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'disabled title="Configure agrupamentos GHE primeiro"' : ''}
-            style="${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'opacity:.4;cursor:not-allowed' : ''}">Por Agrupamento</button>
-          <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
-            class="${_sg==='consolidado' ? 'stg-active' : ''}">Geral</button>
-        </div>
+        <!-- A segmentação (Por Setor / Por Agrupamento / Geral) agora é o filtro
+             #f-segmentacao na sidebar; aqui fica só o indicador na faixa de tags. -->
         <!-- Toggle Por Risco / Por Questão — PRIMÁRIO, sempre visível -->
         <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <button id="vbtn-risco"   onclick="_setViewMode('risco')"
@@ -6060,6 +6065,7 @@ async function rodarAnalise() {
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      <span class="tag tb" id="an-seg-label">${SEG_LABEL[_sg] || SEG_LABEL.segregado}</span>
       ${setoresAtivos.map(s=>`<span class="tag tg">${s}</span>`).join('')}
       ${niveis.map(n=>`<span class="risk-badge ${NIVEIS_CORES[n].badge}" style="font-size:9px">${n}</span>`).join('')}
     </div>
@@ -6393,11 +6399,12 @@ function exportarResultadosPrint(secoes) {
   const empSel   = document.getElementById('gf-empresa');
   const empNome  = empSel?.options[empSel?.selectedIndex]?.text || '';
   const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  const viewMode = multi
+  const segLabel = SEG_LABEL[window._segMode] || SEG_LABEL.segregado;
+  const viewMode = (multi
     ? 'Análise completa (' + capturas.length + ' visões)'
     : (window._displayMode === 'tabela'
         ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
-        : 'Visão Gráfica');
+        : 'Visão Gráfica')) + ' · ' + segLabel;
   const adData  = window._analiseData;
   const nResp   = adData?.filtrado?.length ?? 0;
   const setores = adData?.setoresAtivos ?? [];
@@ -6579,14 +6586,39 @@ function _setViewMode(mode) {
   }
 }
 
+// Rotulos da segmentacao — usados no filtro da sidebar, na tag do resultado e
+// no subtitulo do PDF. Fonte unica para nao divergirem.
+const SEG_LABEL = {
+  segregado:   'Por setor',
+  agrupado:    'Por agrupamento',
+  consolidado: 'Geral',
+};
+
+// "Por Agrupamento" so existe com grupos GHE cadastrados. Como o filtro vive na
+// sidebar, ele precisa refletir isso ANTES de qualquer analise rodar — por isso a
+// habilitacao acontece quando os grupos da empresa sao carregados
+// (onEmpresaChange), nao mais no template do resultado.
+function _atualizarSegSelect() {
+  const sel = document.getElementById('f-segmentacao');
+  const temGrupos = gruposSetor.length > 0 || gruposFuncao.length > 0;
+  // Empresa sem grupos nao pode herdar o modo 'agrupado' da empresa anterior
+  if (!temGrupos && window._segMode === 'agrupado') window._segMode = 'segregado';
+  window._segMode = window._segMode || 'segregado';
+  if (!sel) return;
+  const optGrup = sel.querySelector('option[value="agrupado"]');
+  if (optGrup) {
+    optGrup.disabled    = !temGrupos;
+    optGrup.textContent = temGrupos ? 'Por Agrupamento' : 'Por Agrupamento (sem grupos)';
+  }
+  sel.value = window._segMode;
+}
+
 function _setSegMode(mode) {
   window._segMode = mode;
-  const bs = document.getElementById('sgbtn-seg');
-  const bg = document.getElementById('sgbtn-grup');
-  const bc = document.getElementById('sgbtn-cons');
-  if (bs) bs.classList.toggle('stg-active', mode === 'segregado');
-  if (bg) bg.classList.toggle('stg-active', mode === 'agrupado');
-  if (bc) bc.classList.toggle('stg-active', mode === 'consolidado');
+  const sel = document.getElementById('f-segmentacao');
+  if (sel && sel.value !== mode) sel.value = mode;
+  const tag = document.getElementById('an-seg-label');
+  if (tag) tag.textContent = SEG_LABEL[mode] || mode;
   if (!window._analiseData) return;
   const vm = window._viewMode;
   if (vm === 'questao') renderViewQuestao(window._analiseData);
