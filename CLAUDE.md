@@ -621,3 +621,56 @@ agrupada.
 
 **Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
 selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
+
+## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
+
+Cinco commits em `develop` (`944c66b`, `c6cff58`, `9368a0c`, `0260775`, `1b0ce78`), **ainda
+não mergeados para `main`**. Detalhamento completo em
+`.claude/notes/2026-09-11-resultados-cascata-pacote-analises-segmentacao.md`.
+
+**Filtro de Função em cascata.** `_paresSetorFuncao` guarda os trios `(setor, funcao,
+ciclo_id)` que existem em `respostas` — alimentado pela query que `onEmpresaChange()` já
+fazia (só ganhou `ciclo_id`), sem query nova. O combo de Função lista **apenas funções com
+resposta real** para os setores e o ciclo selecionados. Cargos universais
+(`empresa_funcoes.setor_id = NULL`) são tratados **pelo par real da resposta**, nunca
+cruzando catálogo — `_gheItensDisponiveis()` monta a lista a partir de `hierarquia[].funcoes`,
+onde os universais não aparecem. Normalização idêntica à de `loadRespostasParaEmpresa`
+(`'Geral'` / `'—'`) — sem isso o filtro retorna 0 mesmo havendo dados.
+
+**`COMBO_CASCATA`** (novo, ao lado de `COMBO_RENDER`): mapa `id → função`, chamado no topo de
+`_renderParaCombo` de forma **síncrona**. Cobre `toggleComboItem`/`selectAllCombo`/`clearCombo`/
+`applyCombo` de uma vez. Ao criar um combo que reconfigura outro, registrar aqui — não
+espalhar a chamada nas quatro funções. Hoje só `combo-setor` (Resultados); Gráficos e Laudo
+não têm cascata.
+
+**Botão "Baixar todas as análises"** (`btn-export-all`, `baixarTodasAnalises()`) — restrito a
+`admin`/`super_admin` via `_podeBaixarTodos()`, nas três camadas de sempre (`rodarAnalise` +
+`aplicarRestricoesPorRole` + guard na função). Percorre `ANALISES_PACOTE` (Risco/Gráfico,
+Risco/Tabela, Questão) e entrega **3 PNGs + 1 PDF único**, uma análise por página. Sequencial
+de propósito: as três compartilham `#view-content`. **Um** PDF porque
+`exportarResultadosPrint()` abre um popup por chamada. `exportarResultados(fmt, opts)` ganhou
+`opts.sufixo`/`opts.silencioso` e `exportarResultadosPrint(secoes)` um parâmetro opcional —
+ambos retrocompatíveis. `_capturarViewContentExpandido()` é compartilhado pelos dois caminhos.
+
+**Segmentação virou filtro da sidebar.** O toggle `sgbtn-*` do header **foi removido**;
+`<select id="f-segmentacao">` é o único controle de `window._segMode`. `SEG_PADRAO`
+(`'consolidado'` = Geral) e `SEG_LABEL` são fontes únicas — `SEG_LABEL` alimenta o filtro, a
+tag `#an-seg-label` do resultado e o subtítulo do PDF. A escolha do usuário persiste na
+sessão; `SEG_PADRAO` é só ponto de partida e fallback. `_atualizarSegSelect()` habilita/
+desabilita "Por Agrupamento" conforme `gruposSetor`/`gruposFuncao` — chamada em
+`onEmpresaChange()` (dois ramos) e em `rodarAnalise()`, porque o filtro existe antes de
+qualquer análise rodar. `.seg-toggle-group`/`.stg-active` seguem no CSS: usados por outros 4
+toggles (Dashboard, Clientes, GHE, Adesão). `#laudo-granularidade` tem regra própria e não
+foi tocado.
+
+**Três bugs pré-existentes corrigidos:**
+- `exportarCSV()` lia `r.resposta_itens`/`r.id`, que `loadRespostasParaEmpresa()` nunca
+  retorna (pivota para `r.q`, renomeia `respondido_em` → `data_registro`) — colunas de questão
+  saíam sempre vazias. Coluna `id` virou `session_id` (anônimo).
+- O `<script>` do documento de impressão procurava `'#pseg-content > div'` para aplicar
+  `.psicomap-setor` (`page-break-inside: avoid`), mas a div é `psicomap-content` desde o
+  rebrand — **a classe nunca foi aplicada em nenhum PDF**. Corrigido para
+  `'#psicomap-content > div, #psicomap-content > .psicomap-secao > div'`. **Muda a paginação
+  de PDFs já homologados** (blocos de setor deixam de ser cortados, em troca de espaço em
+  branco no fim da página) — validar visualmente antes de levar para PROD.
+- Typo de plural em `updateComboPreview()` (`"2 funçãoões selecionadas"`).

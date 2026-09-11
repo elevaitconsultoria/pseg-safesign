@@ -2047,7 +2047,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Filtro Ciclo -->
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);rodarAnalise()">
+        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);_sincronizarComboFuncoes();rodarAnalise()">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2152,6 +2152,17 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
+      <!-- Segmentação — como os resultados são agrupados (window._segMode).
+           Era um toggle no header do resultado; virou filtro por decisão de UX. -->
+      <div class="filter-card">
+        <div class="filter-label">Segmentação</div>
+        <select id="f-segmentacao" class="filter-select" onchange="_setSegMode(this.value)">
+          <option value="segregado">Por Setor</option>
+          <option value="agrupado">Por Agrupamento</option>
+          <option value="consolidado" selected>Geral</option>
+        </select>
+      </div>
+
       <!-- Filtro Nível de Risco — combo -->
       <div class="filter-card">
         <div class="filter-label">Nível de risco</div>
@@ -2190,6 +2201,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <button class="btn btn-ghost" onclick="exportarResultados('png')" id="btn-export-png" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar Imagem
+      </button>
+      <!-- Restrito a admin/super_admin - visibilidade controlada por _podeBaixarTodos() -->
+      <button class="btn btn-g" onclick="baixarTodasAnalises(this)" id="btn-export-all" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar todas as análises
       </button>
     </div>
 
@@ -5767,8 +5783,14 @@ const COMBO_RENDER = {
 // Todo combo agora aplica sozinho. Antes so os 6 de agrupamento faziam isso;
 // os demais exigiam clique em "Aplicar", e o proprio codigo ja registrava que
 // esse modo "dava impressao de delay".
+// Combos que reconfiguram outro combo antes de re-renderizar a tela.
+const COMBO_CASCATA = {
+  'combo-setor': () => _sincronizarComboFuncoes(),
+};
+
 const _comboDebounce = {};
 function _renderParaCombo(id, imediato) {
+  COMBO_CASCATA[id]?.();          // sincrono: a lista dependente atualiza no mesmo clique
   const fn = COMBO_RENDER[id];
   if (typeof fn !== 'function') return;
   clearTimeout(_comboDebounce[id]);
@@ -5823,7 +5845,7 @@ function updateComboPreview(id) {
     const n = sel.length;
     if (id.includes('nivel'))      count.textContent = `${n} nível${n!==1?'is':''} selecionado${n!==1?'s':''}`;
     else if (id.includes('setor')) count.textContent = `${n} setor${n!==1?'es':''} selecionado${n!==1?'s':''}`;
-    else                           count.textContent = `${n} função${n!==1?'ões':''} selecionada${n!==1?'s':''}`;
+    else                           count.textContent = `${n} ${n!==1?'funções':'função'} selecionada${n!==1?'s':''}`;
   }
 
   if (!sel.length) {
@@ -5855,6 +5877,45 @@ function updateComboPreview(id) {
   preview.innerHTML = html;
 }
 
+// --- Cascata Setor -> Funcao (Resultados) -------------------------
+// Pares (setor, funcao, ciclo_id) que EXISTEM em respostas - a fonte da lista de
+// funcoes do combo. Como respostas.setor/funcao guardam o par escolhido pelo
+// funcionario, cargos universais (empresa_funcoes.setor_id = NULL) aparecem
+// naturalmente nos setores em que de fato responderam - sem cruzar catalogo.
+let _paresSetorFuncao = [];
+// Fallback de catalogo quando a empresa ainda nao tem nenhuma resposta.
+let _funcoesFallback = [];
+
+function _funcoesDisponiveis() {
+  if (!_paresSetorFuncao.length) return _funcoesFallback;
+  const cicloId = document.getElementById('f-ciclo')?.value || '';
+  const sel     = comboState['combo-setor'];
+  const todos   = comboItems['combo-setor']();
+  // Set vazio ou completo = "sem filtro de setor" (mesma convencao defensiva de rodarAnalise)
+  const semFiltroSetor = sel.size === 0 || sel.size === todos.length;
+  const out = new Set();
+  _paresSetorFuncao.forEach(p => {
+    if (cicloId && p.ciclo_id !== cicloId) return;
+    if (!semFiltroSetor && !sel.has(p.setor)) return;
+    out.add(p.funcao);
+  });
+  return [...out].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+// Repopula combo-funcao preservando a selecao do usuario quando ela ainda faz sentido.
+function _sincronizarComboFuncoes() {
+  if (!comboState['combo-funcao']) return;
+  const disp     = _funcoesDisponiveis();
+  const antes    = comboState['combo-funcao'];
+  const eraTodas = antes.size === 0 || antes.size === comboItems['combo-funcao']().length;
+  comboItems['combo-funcao'] = () => disp;
+  const mantidas = eraTodas ? disp : disp.filter(f => antes.has(f));
+  // Nenhuma das escolhidas sobreviveu ao novo setor -> volta a "todas" em vez de
+  // deixar o usuario num filtro vazio sem entender por que.
+  comboState['combo-funcao'] = new Set(mantidas.length ? mantidas : disp);
+  buildCombo('combo-funcao');
+}
+
 async function onEmpresaChange() {
   // Sincronizar empresa ativa
   const empEl = document.getElementById('f-empresa');
@@ -5869,15 +5930,18 @@ async function onEmpresaChange() {
   _popularFiltroCiclo(emp);
 
   if (!emp || isDemoMode) {
+    _paresSetorFuncao = [];
+    _funcoesFallback  = [];
     buildCombo('combo-setor');
     buildCombo('combo-funcao');
+    _atualizarSegSelect();
     return;
   }
   // Carregar setores/funções reais para os combos de filtro
   try {
     const { data } = await sbAdmin
       .from('respostas')
-      .select('setor, funcao')
+      .select('setor, funcao, ciclo_id')
       .eq('empresa_id', emp);
 
     const empresaObj = _empresas.find(e => e.id === emp);
@@ -5894,15 +5958,26 @@ async function onEmpresaChange() {
       ? [...new Set(normFuncoes)].sort()
       : (empresaObj?.funcoes || []);
     comboItems['combo-setor']  = () => setores;
-    comboItems['combo-funcao'] = () => funcoes;
     comboState['combo-setor']  = new Set(setores);
+    // Base da cascata: mesma normalizacao da engine de analise (Geral / —)
+    _paresSetorFuncao = (data || []).map(r => ({
+      setor:    r.setor  || 'Geral',
+      funcao:   r.funcao || '—',
+      ciclo_id: r.ciclo_id || null,
+    }));
+    _funcoesFallback = funcoes;
+    comboItems['combo-funcao'] = () => funcoes;
     comboState['combo-funcao'] = new Set(funcoes);
-  } catch(e) { console.warn('onEmpresaChange:', e); }
+  } catch(e) {
+    console.warn('onEmpresaChange:', e);
+    _paresSetorFuncao = [];
+  }
   await carregarGruposSetor(emp);
   _populateGheCombo('combo-ghe', 'fc-ghe');
   _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
+  _atualizarSegSelect();        // habilita/desabilita "Por Agrupamento" pela empresa
   buildCombo('combo-setor');
-  buildCombo('combo-funcao');
+  _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
 }
 
 // Mantida como nome proprio da tela Resultados; a logica agora e a compartilhada.
@@ -5948,7 +6023,8 @@ async function rodarAnalise() {
   window._displayMode      = window._displayMode      || 'grafica';
   window._viewMode         = window._viewMode         || 'risco';
   window._detalhesVisiveis = window._detalhesVisiveis ?? false;   // default: oculto
-  window._segMode          = window._segMode          || 'segregado'; // segregado | consolidado
+  window._segMode          = window._segMode          || SEG_PADRAO;  // segregado | agrupado | consolidado
+  _atualizarSegSelect();   // mantem o filtro da sidebar coerente com os grupos da empresa
   const _TA = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;font-weight:600;background:var(--tx);color:white';
   const _TH = 'padding:5px 12px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:11px;background:white;color:var(--tm)';
   const _dm = window._displayMode, _vm = window._viewMode, _dv = window._detalhesVisiveis, _sg = window._segMode;
@@ -5961,17 +6037,8 @@ async function rodarAnalise() {
         <div style="font-size:12px;color:var(--tm)">${filtrado.length} respondentes · ${setoresAtivos.length} setor(es) · filtro: ${niveisLabel}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <!-- Toggle Por setor / Por Agrupamento / Geral -->
-        <div class="seg-toggle-group">
-          <button id="sgbtn-seg"  onclick="_setSegMode('segregado')"
-            class="${_sg==='segregado'   ? 'stg-active' : ''}">Por Setor</button>
-          <button id="sgbtn-grup" onclick="_setSegMode('agrupado')"
-            class="${_sg==='agrupado'    ? 'stg-active' : ''}"
-            ${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'disabled title="Configure agrupamentos GHE primeiro"' : ''}
-            style="${(gruposSetor.length===0 && gruposFuncao.length===0) ? 'opacity:.4;cursor:not-allowed' : ''}">Por Agrupamento</button>
-          <button id="sgbtn-cons" onclick="_setSegMode('consolidado')"
-            class="${_sg==='consolidado' ? 'stg-active' : ''}">Geral</button>
-        </div>
+        <!-- A segmentação (Por Setor / Por Agrupamento / Geral) agora é o filtro
+             #f-segmentacao na sidebar; aqui fica só o indicador na faixa de tags. -->
         <!-- Toggle Por Risco / Por Questão — PRIMÁRIO, sempre visível -->
         <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <button id="vbtn-risco"   onclick="_setViewMode('risco')"
@@ -5998,6 +6065,7 @@ async function rodarAnalise() {
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      <span class="tag tb" id="an-seg-label">${SEG_LABEL[_sg] || SEG_LABEL[SEG_PADRAO]}</span>
       ${setoresAtivos.map(s=>`<span class="tag tg">${s}</span>`).join('')}
       ${niveis.map(n=>`<span class="risk-badge ${NIVEIS_CORES[n].badge}" style="font-size:9px">${n}</span>`).join('')}
     </div>
@@ -6020,6 +6088,9 @@ async function rodarAnalise() {
   if (btnPdf) btnPdf.style.display = 'inline-flex';
   const btnPng = document.getElementById('btn-export-png');
   if (btnPng) btnPng.style.display = 'inline-flex';
+  // RBAC: pacote completo so para admin (e super_admin em Modo Suporte)
+  const btnAll = document.getElementById('btn-export-all');
+  if (btnAll) btnAll.style.display = _podeBaixarTodos() ? 'inline-flex' : 'none';
 }
 
 function exportarCSV() {
@@ -6030,23 +6101,23 @@ function exportarCSV() {
   if (!linhas.length) { toast('Sem dados para exportar.', 'w'); return; }
 
   const questoesCols = questoes.filter(q => ativas.has(q.id));
-  const cabecalho = ['id','empresa','setor','funcao','escolaridade','respondido_em',
+  const cabecalho = ['session_id','empresa','setor','funcao','escolaridade','respondido_em',
     ...questoesCols.map(q => q.c + '_' + (q.f||'cd'+q.cd))
   ];
 
+  // loadRespostasParaEmpresa pivota resposta_itens para r.q ({idQuestao: valor})
+  // e renomeia respondido_em -> data_registro. Ler r.resposta_itens/r.id aqui
+  // gerava colunas de questao sempre vazias.
   const rows = linhas.map(r => {
     const base = [
-      r.id || '',
+      r.session_id || '',
       _empresaAtiva.nome || '',
       r.setor  || '',
       r.funcao || '',
       r.escolaridade || '',
-      r.respondido_em ? new Date(r.respondido_em).toLocaleString('pt-BR') : ''
+      r.data_registro ? new Date(r.data_registro).toLocaleString('pt-BR') : ''
     ];
-    const itens = questoesCols.map(q => {
-      const item = (r.resposta_itens || []).find(i => i.questao_id === q.id);
-      return item ? item.valor : '';
-    });
+    const itens = questoesCols.map(q => (r.q?.[q.id] ?? ''));
     return [...base, ...itens];
   });
 
@@ -6149,13 +6220,15 @@ function _calcPageBreaks(canvasH, pageH, scale, breakHints) {
   return pages;
 }
 
-async function exportarResultados(fmt) {
+// opts.sufixo   -> distingue o arquivo quando varias analises sao exportadas na mesma rodada
+// opts.silencioso -> suprime os toasts (o orquestrador do pacote emite os seus)
+async function exportarResultados(fmt, opts = {}) {
   if (fmt === 'pdf') { exportarResultadosPrint(); return; }
 
   // ── PNG: mantém html2canvas com scale alto ──
   const vc = document.getElementById('view-content');
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
-  toast('Gerando PNG — aguarde...', 'g');
+  if (!opts.silencioso) toast('Gerando PNG — aguarde...', 'g');
 
   const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
@@ -6185,29 +6258,122 @@ async function exportarResultados(fmt) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${today}.png` });
+  const sufixo = opts.sufixo ? opts.sufixo + '-' : '';
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${sufixo}${today}.png` });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('✓ PNG exportado.', 'g');
+  if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
 }
 
-function exportarResultadosPrint() {
+// Pacote de analises (admin / super_admin em Modo Suporte).
+function _podeBaixarTodos() {
+  const r = currentUser?.role;
+  return r === 'admin' || r === 'super_admin';
+}
+
+// As tres analises da tela de Resultados. A combinacao (viewMode, displayMode)
+// e a mesma que os toggles do header produzem; "Por questao" nao tem variante
+// de tabela (o toggle Grafico/Tabela fica oculto nesse modo).
+const ANALISES_PACOTE = [
+  { vm: 'risco',   dm: 'grafica', slug: 'risco-grafico', titulo: 'Análise por risco — visão gráfica' },
+  { vm: 'risco',   dm: 'tabela',  slug: 'risco-tabela',  titulo: 'Análise por risco — tabela' },
+  { vm: 'questao', dm: 'grafica', slug: 'por-questao',   titulo: 'Análise por questão' },
+];
+
+// Mesmo dispatch usado por _setViewMode/_setSegMode, sem mexer nos botoes do
+// header (o estado visual e restaurado de uma vez so no fim do pacote).
+function _renderAnaliseParaExport(vm, dm) {
+  window._viewMode    = vm;
+  window._displayMode = dm;
+  if (vm === 'questao')     renderViewQuestao(window._analiseData);
+  else if (dm === 'tabela') renderViewRisco(window._analiseData);
+  else                      renderViewGrafica(window._analiseData);
+}
+
+// Captura #view-content com as secoes colapsadas abertas, restaurando depois
+// apenas as que este helper abriu (as que o usuario ja tinha aberto continuam abertas).
+function _capturarViewContentExpandido() {
   const vc = document.getElementById('view-content');
-  if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
-
-  // 1. Expandir todas as seções colapsadas para o print
+  if (!vc || !vc.children.length) return null;
+  const abertas = [];
   vc.querySelectorAll('.qa-arr').forEach(arrow => {
     const body = arrow.parentElement?.nextElementSibling;
-    if (body) { body.style.display = 'block'; arrow.textContent = '▼'; }
+    if (body && body.style.display === 'none') {
+      body.style.display = 'block'; arrow.textContent = '▼';
+      abertas.push({ arrow, body });
+    }
   });
+  const html = vc.innerHTML;
+  abertas.forEach(({ arrow, body }) => { body.style.display = 'none'; arrow.textContent = '▶'; });
+  return html;
+}
 
-  // 2. Capturar HTML já expandido
-  const contentHTML = vc.innerHTML;
+// Baixa o visual das tres analises: uma imagem PNG de cada + UM PDF com as tres
+// secoes. Sequencial (nao Promise.all) porque todas compartilham o mesmo
+// #view-content: cada analise precisa ser renderizada, capturada e so entao
+// substituida pela proxima. O PDF vai por ultimo e numa janela unica — tres
+// chamadas a exportarResultadosPrint abririam tres popups.
+async function baixarTodasAnalises(btn) {
+  if (!_podeBaixarTodos()) { toast('Ação restrita ao perfil de administrador.', 'r'); return; }
+  if (!window._analiseData) { toast('Rode a análise primeiro.', 'w'); return; }
+  if (btn?.dataset.busy === '1') return;
 
-  // 3. Restaurar estado colapsado
-  vc.querySelectorAll('.qa-arr').forEach(arrow => {
-    const body = arrow.parentElement?.nextElementSibling;
-    if (body && body.style.display === 'block') { body.style.display = 'none'; arrow.textContent = '▶'; }
-  });
+  const htmlOrig  = btn ? btn.innerHTML : '';
+  const vmOrig    = window._viewMode;
+  const dmOrig    = window._displayMode;
+  const total     = ANALISES_PACOTE.length + 1;   // N imagens + 1 PDF
+  const passo = (n, txt) => { if (btn) btn.textContent = `Gerando ${n}/${total} — ${txt}…`; };
+  if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
+
+  const secoes = [];
+  const falhas = [];
+  try {
+    for (let i = 0; i < ANALISES_PACOTE.length; i++) {
+      const a = ANALISES_PACOTE[i];
+      passo(i + 1, a.titulo);
+      try {
+        _renderAnaliseParaExport(a.vm, a.dm);
+        await new Promise(r => setTimeout(r, 120));   // deixa o layout assentar antes da captura
+        const html = _capturarViewContentExpandido();
+        if (html) secoes.push({ titulo: a.titulo, html });
+        await exportarResultados('png', { sufixo: a.slug, silencioso: true });
+      } catch (e) {
+        console.warn('baixarTodasAnalises ' + a.slug + ':', e);
+        falhas.push(a.titulo);
+      }
+      await new Promise(r => setTimeout(r, 400));     // navegadores engasgam com downloads simultaneos
+    }
+
+    passo(total, 'PDF');   // por ultimo: abre janela de impressao e interrompe o fluxo
+    try {
+      if (secoes.length) exportarResultadosPrint(secoes);
+      else falhas.push('PDF');
+    } catch (e) { console.warn('baixarTodasAnalises PDF:', e); falhas.push('PDF'); }
+
+    toast(falhas.length ? `Concluído com falhas: ${falhas.join(', ')}.` : '✓ Todas as análises baixadas.',
+          falhas.length ? 'w' : 'g');
+  } finally {
+    // Restaura a view que o usuario estava vendo. _setViewMode ressincroniza os
+    // botoes do header e re-renderiza respeitando window._displayMode.
+    window._displayMode = dmOrig;
+    try { _setViewMode(vmOrig); } catch (e) { console.warn('restaurar view:', e); }
+    if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
+  }
+}
+
+// secoes (opcional): [{titulo, html}] — quando informado, monta UM documento com
+// varias analises, uma por pagina. Sem o parametro, imprime a view atual (uso dos
+// botoes "Exportar PDF" e do dropdown), com o comportamento de sempre.
+function exportarResultadosPrint(secoes) {
+  const multi = Array.isArray(secoes) && secoes.length > 0;
+  let capturas;
+  if (multi) {
+    capturas = secoes;
+  } else {
+    // 1-3. Capturar HTML com as seções colapsadas expandidas
+    const contentHTML = _capturarViewContentExpandido();
+    if (contentHTML === null) { toast('Rode a análise primeiro.', 'w'); return; }
+    capturas = [{ titulo: null, html: contentHTML }];
+  }
 
   // 4. Resolver CSS vars (mapa hardcoded = sem acesso ao DOM da janela filha)
   const CV = {
@@ -6220,15 +6386,25 @@ function exportarResultadosPrint() {
     '--purple':'#7c3aed','--purplebg':'#f5f3ff',
     '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
   };
-  const html = contentHTML.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  const resolverVars = s => s.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  const html = multi
+    ? capturas.map(s =>
+        '<section class="psicomap-secao">' +
+          '<h2 class="psicomap-secao-titulo">' + s.titulo + '</h2>' +
+          resolverVars(s.html) +
+        '</section>').join('')
+    : resolverVars(capturas[0].html);
 
   // 5. Metadados do relatório
   const empSel   = document.getElementById('gf-empresa');
   const empNome  = empSel?.options[empSel?.selectedIndex]?.text || '';
   const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  const viewMode = window._displayMode === 'tabela'
-    ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
-    : 'Visão Gráfica';
+  const segLabel = SEG_LABEL[window._segMode] || SEG_LABEL[SEG_PADRAO];
+  const viewMode = (multi
+    ? 'Análise completa (' + capturas.length + ' visões)'
+    : (window._displayMode === 'tabela'
+        ? (window._viewMode === 'questao' ? 'Visão por Questão' : 'Visão por Risco')
+        : 'Visão Gráfica')) + ' · ' + segLabel;
   const adData  = window._analiseData;
   const nResp   = adData?.filtrado?.length ?? 0;
   const setores = adData?.setoresAtivos ?? [];
@@ -6259,6 +6435,14 @@ function exportarResultadosPrint() {
   .psicomap-cover-sub   { font-size: 9pt; color: #6b7280; margin-top: 3px; }
   .psicomap-cover-meta  { text-align: right; font-size: 8pt; color: #9ca3af; line-height: 1.7; }
   .psicomap-cover-meta strong { color: #374151; }
+
+  /* Secoes do pacote "Baixar todas as analises" — uma analise por pagina */
+  .psicomap-secao + .psicomap-secao { page-break-before: always; break-before: page; }
+  .psicomap-secao-titulo {
+    font-size: 12pt; font-weight: 800; color: #16532d;
+    margin: 0 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;
+    page-break-after: avoid; break-after: avoid;
+  }
 
   /* Tags de filtro */
   .psicomap-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 18px; page-break-after: avoid; break-after: avoid; }
@@ -6308,8 +6492,11 @@ ${setores.length > 1 ? '<div class="psicomap-tags">' + setores.map(s => '<span c
 <script>
 // Adiciona classes de controle de quebra de página aos blocos gerados dinamicamente
 document.addEventListener('DOMContentLoaded', function() {
-  // Bloco de setor (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px)
-  document.querySelectorAll('#pseg-content > div').forEach(function(el) {
+  // Bloco de setor/grupo (renderViewGrafica: margin-bottom:44px; renderViewRisco: margin-bottom:40px).
+  // O id era '#pseg-content' desde antes do rebrand e nunca casava com a div real
+  // ('psicomap-content'), entao .psicomap-setor jamais era aplicada. No pacote
+  // multi-analises os blocos ficam um nivel abaixo, dentro de cada <section>.
+  document.querySelectorAll('#psicomap-content > div, #psicomap-content > .psicomap-secao > div').forEach(function(el) {
     el.classList.add('psicomap-setor');
   });
 
@@ -6402,14 +6589,44 @@ function _setViewMode(mode) {
   }
 }
 
+// Rotulos da segmentacao — usados no filtro da sidebar, na tag do resultado e
+// no subtitulo do PDF. Fonte unica para nao divergirem.
+// Segmentacao inicial da tela de Resultados. A escolha do usuario persiste na
+// sessao; isto e so o ponto de partida (e o fallback quando o modo vigente deixa
+// de ser valido). Nao confundir com #laudo-granularidade, que tem regra propria.
+const SEG_PADRAO = 'consolidado';   // Geral
+
+const SEG_LABEL = {
+  segregado:   'Por setor',
+  agrupado:    'Por agrupamento',
+  consolidado: 'Geral',
+};
+
+// "Por Agrupamento" so existe com grupos GHE cadastrados. Como o filtro vive na
+// sidebar, ele precisa refletir isso ANTES de qualquer analise rodar — por isso a
+// habilitacao acontece quando os grupos da empresa sao carregados
+// (onEmpresaChange), nao mais no template do resultado.
+function _atualizarSegSelect() {
+  const sel = document.getElementById('f-segmentacao');
+  const temGrupos = gruposSetor.length > 0 || gruposFuncao.length > 0;
+  // Empresa sem grupos nao pode herdar o modo 'agrupado' da empresa anterior
+  if (!temGrupos && window._segMode === 'agrupado') window._segMode = SEG_PADRAO;
+  window._segMode = window._segMode || SEG_PADRAO;
+  if (!sel) return;
+  const optGrup = sel.querySelector('option[value="agrupado"]');
+  if (optGrup) {
+    optGrup.disabled    = !temGrupos;
+    optGrup.textContent = temGrupos ? 'Por Agrupamento' : 'Por Agrupamento (sem grupos)';
+  }
+  sel.value = window._segMode;
+}
+
 function _setSegMode(mode) {
   window._segMode = mode;
-  const bs = document.getElementById('sgbtn-seg');
-  const bg = document.getElementById('sgbtn-grup');
-  const bc = document.getElementById('sgbtn-cons');
-  if (bs) bs.classList.toggle('stg-active', mode === 'segregado');
-  if (bg) bg.classList.toggle('stg-active', mode === 'agrupado');
-  if (bc) bc.classList.toggle('stg-active', mode === 'consolidado');
+  const sel = document.getElementById('f-segmentacao');
+  if (sel && sel.value !== mode) sel.value = mode;
+  const tag = document.getElementById('an-seg-label');
+  if (tag) tag.textContent = SEG_LABEL[mode] || mode;
   if (!window._analiseData) return;
   const vm = window._viewMode;
   if (vm === 'questao') renderViewQuestao(window._analiseData);
@@ -11954,6 +12171,11 @@ function aplicarRestricoesPorRole() {
   const raw = currentUser?.role;
   const role = (raw === 'super_admin' || raw === 'admin' || raw === 'consultor' || raw === 'cliente_viewer')
     ? raw : 'consultor';
+
+  // Pacote "Baixar todos os formatos" (Resultados) - admin e super_admin apenas.
+  // Reavaliado aqui porque sairModoSuporte() muda o contexto sem recarregar a pagina.
+  const btnExportAll = document.getElementById('btn-export-all');
+  if (btnExportAll && !(role === 'admin' || role === 'super_admin')) btnExportAll.style.display = 'none';
 
   if (role === 'super_admin') {
     if (_supportMode) {
