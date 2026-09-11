@@ -4970,7 +4970,35 @@ function _catalogoConciliacao(empresaId) {
 
 // Ordem de resolução: exato → de-para aprendido → sugestão por similaridade → órfão.
 // Só os dois primeiros são automáticos; sugestão sempre exige confirmação humana.
-function _resolverNome(tipo, nomeExterno, catalogo) {
+// `contexto`: conjunto de nomes de setor (canônicos) com que este nome aparece na planilha.
+// Só faz sentido para tipo='funcao'. Serve para desempatar por ESTRUTURA, não só por texto.
+//
+// Caso real que motivou: o PGR trazia "ANALISTA DE VENDAS Pl" (P + L minúsculo) e o catálogo
+// tem "ANALISTA DE VENDAS PI" (P + i maiúsculo) — visualmente idênticos, textualmente
+// diferentes. Sem contexto, a maior similaridade textual apontava "ANALISTA DE VENDAS", que
+// existe mas em OUTRO setor; a sugestão foi aceita e a resposta real ficou fora de todo GHE.
+// A linha do PGR dizia "Comercial Obras", e só "ANALISTA DE VENDAS PI" existe nesse setor —
+// a informação para acertar estava ali o tempo todo.
+// O candidato existe, no cadastro, dentro de algum dos setores em que a planilha o colocou?
+function _noContexto(candidato, contexto) {
+  if (!contexto || !contexto.size) return false;
+  const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
+  const cn = _gheNormStrong(candidato);
+  return (emp?.hierarquia || []).some(h =>
+    contexto.has(_gheNormStrong(h.nome)) && (h.funcoes || []).some(f => _gheNormStrong(f) === cn));
+}
+
+// Ordena candidatos: primeiro os que existem no setor declarado, depois por semelhança textual.
+// Regra de partição, não bônus numérico: um bônus só funciona se o número escolhido por acaso
+// for maior que a diferença de similaridade do caso concreto — decisão que termina num laudo
+// não deve depender disso. Aqui a estrutura decide, e o texto ordena dentro de cada grupo.
+function _ordenarCandidatos(lista, nomeExterno, contexto) {
+  return lista
+    .map(c => ({ nome: c, s: _simNomes(nomeExterno, c), ctx: _noContexto(c, contexto) }))
+    .sort((a, b) => (b.ctx - a.ctx) || (b.s - a.s) || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+function _resolverNome(tipo, nomeExterno, catalogo, contexto) {
   const norm = _gheNormStrong(nomeExterno);
   const cat  = catalogo[tipo];
   if (cat.norm.has(norm)) {
@@ -4982,13 +5010,17 @@ function _resolverNome(tipo, nomeExterno, catalogo) {
     const aindaExiste = cat.norm.has(_gheNormStrong(apelido));
     if (aindaExiste) return { status: 'apelido', canonico: cat.norm.get(_gheNormStrong(apelido)), score: 1 };
   }
-  let melhor = null, melhorScore = 0;
-  cat.lista.forEach(c => {
-    const s = _simNomes(nomeExterno, c);
-    if (s > melhorScore) { melhorScore = s; melhor = c; }
-  });
-  if (melhor && melhorScore >= GHE_SIM_MINIMA) {
-    return { status: 'sugestao', canonico: melhor, score: melhorScore };
+
+  const ord = _ordenarCandidatos(cat.lista, nomeExterno, contexto);
+  // Entre os que existem no setor declarado, o melhor — desde que se pareça o bastante.
+  // O limiar é sempre aplicado à semelhança TEXTUAL: o contexto desempata entre candidatos
+  // plausíveis, nunca promove um que não se parece com nada.
+  const noCtx = ord.find(o => o.ctx && o.s >= GHE_SIM_MINIMA);
+  if (noCtx) return { status: 'sugestao', canonico: noCtx.nome, score: noCtx.s };
+
+  const melhor = ord.reduce((a, o) => (!a || o.s > a.s ? o : a), null);
+  if (melhor && melhor.s >= GHE_SIM_MINIMA) {
+    return { status: 'sugestao', canonico: melhor.nome, score: melhor.s };
   }
   return { status: 'orfao', canonico: '', score: 0 };
 }
@@ -8345,7 +8377,7 @@ function _gheiSetMulti(ligado) {
 // RH" uma vez, não uma vez por linha em que ele aparece.
 function _gheiMontarConciliacao() {
   const st = _gheiState;
-  const montar = (tipo, valores) => {
+  const montar = (tipo, valores, contextoPor) => {
     const dedup = new Map();
     valores.filter(Boolean).forEach(v => {
       const k = _gheNormStrong(v);
@@ -8354,22 +8386,35 @@ function _gheiMontarConciliacao() {
     return [...dedup.values()]
       .sort((a, b) => a.localeCompare(b, 'pt-BR'))
       .map(ext => {
-        const r = _resolverNome(tipo, ext, st.catalogo);
+        const ctx = contextoPor?.get(_gheNormStrong(ext));
+        const r = _resolverNome(tipo, ext, st.catalogo, ctx);
         return {
           ext,
           status:   r.status,
           canonico: r.canonico,
           score:    r.score,
-          // Opções ordenadas por similaridade: o provável fica no topo do combo.
-          opcoes: st.catalogo[tipo].lista
-            .map(c => ({ nome: c, s: _simNomes(ext, c) }))
-            .sort((a, b) => b.s - a.s || a.nome.localeCompare(b.nome, 'pt-BR'))
-            .map(o => o.nome),
+          // Mesma ordenação da resolução: quem existe no setor declarado vem primeiro,
+          // e dentro de cada grupo ordena por semelhança. O combo reflete a decisão.
+          opcoes: _ordenarCandidatos(st.catalogo[tipo].lista, ext, ctx).map(o => o.nome),
         };
       });
   };
-  st.conc.setor  = montar('setor',  st.linhas.map(l => l.setor));
-  st.conc.funcao = montar('funcao', st.linhas.map(l => l.funcao));
+
+  // Setores primeiro: o canônico deles é o que dá contexto às funções.
+  st.conc.setor = montar('setor', st.linhas.map(l => l.setor));
+  const setorCanon = new Map(st.conc.setor.map(i => [_gheNormStrong(i.ext), i.canonico || i.ext]));
+
+  // Para cada função, em que setores (já canônicos) ela aparece na planilha.
+  const ctxFuncao = new Map();
+  st.linhas.forEach(l => {
+    if (!l.funcao) return;
+    const k = _gheNormStrong(l.funcao);
+    if (!ctxFuncao.has(k)) ctxFuncao.set(k, new Set());
+    const s = setorCanon.get(_gheNormStrong(l.setor)) || l.setor;
+    if (s) ctxFuncao.get(k).add(_gheNormStrong(s));
+  });
+
+  st.conc.funcao = montar('funcao', st.linhas.map(l => l.funcao), ctxFuncao);
 }
 
 function _gheiSetAba(aba) {
@@ -8469,10 +8514,19 @@ function _gheiRenderConciliacao() {
 
   const pend = itens.filter(i => i.status === 'sugestao' || i.status === 'orfao').length;
   const resumo = document.getElementById('ghei-conc-resumo');
+  // "aprendido" conta como resolvido e some da contagem de pendências — mas é uma decisão
+  // humana de uma importação passada, que reaplica sozinha e tem prioridade sobre a sugestão.
+  // Um de-para confirmado errado uma vez ficaria invisível para sempre. Caso real: a planilha
+  // trazia "ANALISTA DE VENDAS Pl" (L minúsculo), foi casado com o cargo de outro setor, e a
+  // única resposta daquele par passou a cair fora de todo GHE. Então o número aparece.
+  const aprendidos = itens.filter(i => i.status === 'apelido').length;
   if (resumo) {
-    resumo.innerHTML = pend
+    const base = pend
       ? `<strong style="color:var(--red)">${pend}</strong> de ${itens.length} pendente(s) de confirmação`
       : `${itens.length} item(ns) — tudo resolvido`;
+    resumo.innerHTML = base + (aprendidos
+      ? ` · <strong style="color:#3730a3">${aprendidos}</strong> de importações anteriores <span style="color:var(--tl)">(revise se algum estiver errado)</span>`
+      : '');
   }
 
   if (!itens.length) {
