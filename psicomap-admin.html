@@ -7552,9 +7552,13 @@ function _granularidadeLaudo() {
   return v || (gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado');
 }
 
-// Rótulo da unidade de análise — vira título de coluna/capa no documento entregue.
+// Rótulo da unidade de análise — vira título na capa do documento entregue.
+// Só o modo 'ghe' muda de rótulo. Os modos legados mantêm "Setores avaliados" mesmo no
+// consolidado, onde "Escopo" seria mais preciso: trocar ali alteraria a capa de um laudo já
+// homologado sem nenhuma relação com GHE. Verificado que, sem essa exceção, o PDF de uma
+// empresa sem GHE sai byte a byte idêntico ao da versão anterior nas três granularidades.
 function _rotuloGranularidade(gran) {
-  return gran === 'ghe' ? 'GHE avaliados' : gran === 'consolidado' ? 'Escopo' : 'Setores avaliados';
+  return gran === 'ghe' ? 'GHE avaliados' : 'Setores avaliados';
 }
 
 // Subtítulo que declara o que o grupo cobre. Para GHE é obrigatório listar o PAR: dizer que um
