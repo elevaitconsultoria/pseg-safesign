@@ -8124,7 +8124,15 @@ function renderTabelaAgrupamentos() {
 let _gheiState = null;
 
 const GHE_CAND_SETOR  = ['setor','departamento','depto','area','área','sector','unidade','lotacao','lotação','centro de custo','estabelecimento','local de trabalho','filial'];
-const GHE_CAND_FUNCAO = ['funcao','função','cargo','função/cargo','cargo/função','role','position','job','ocupacao','ocupação'];
+// Plurais precisam de entrada PRÓPRIA só quando mudam o radical. `setor`→`setores` e
+// `cargo`→`cargos` casam sozinhos, porque o match é por substring e o plural contém o singular.
+// Já `função`→`funções` normaliza para `funcoes`, que NÃO contém `funcao` — sem a entrada
+// explícita, uma planilha com o cabeçalho "Funções" tem a coluna ignorada, toda função sai
+// vazia e cada par vira coringa "(qualquer função)", sem erro nenhum na tela. Bug real,
+// encontrado no primeiro teste com planilha de cliente.
+// Plurais no FIM da lista de propósito: assim um arquivo com "Cargo" e "Funções" continua
+// elegendo "Cargo", como antes.
+const GHE_CAND_FUNCAO = ['funcao','função','cargo','função/cargo','cargo/função','role','position','job','ocupacao','ocupação','funcoes','funções','ocupacoes','ocupações'];
 
 function _gheiErro(msg) {
   const el = document.getElementById('ghei-erro');
@@ -16442,7 +16450,9 @@ function _processarGHEImport(rows) {
   const reservado = new Set(colAgrup ? [colAgrup] : []);
   const colSetor  = _detectarColuna(headers, ['setor','ghe','departamento','depto','area','área','grupo','sector','unidade','lotacao','lotação','centro de custo','estabelecimento','local de trabalho','filial'], reservado);
   if (colSetor) reservado.add(colSetor);
-  const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação'], reservado);
+  // Plurais no fim — mesmo motivo de GHE_CAND_FUNCAO: "Funções" normaliza para `funcoes` e não
+  // contém `funcao`, então sem entrada própria o cabeçalho no plural é ignorado.
+  const colCargo  = _detectarColuna(headers, ['cargo','funcao','função','função/cargo','cargo/função','role','position','job','ocupacao','ocupação','funcoes','funções','ocupacoes','ocupações'], reservado);
   if (colCargo) reservado.add(colCargo);
   const colQtd    = _detectarColuna(headers, ['quantidade','qtd','headcount','funcionarios','funcionários','qtde','num_func','n_func'], reservado);
 
