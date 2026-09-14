@@ -836,6 +836,72 @@ de análises geradas — a tabela `laudos` recebe um registro a cada PDF (com `g
 grupos desde 2026-09-11) mas **nunca é lida por nenhuma tela**; e não há como salvar um recorte
 de filtros como preset para reaplicar depois.
 
+### Flexibilidade do importador e exportação de pares
+
+Nota completa da feature (contexto, bugs, decisões e próximos passos):
+`.claude/notes/2026-09-11-importacao-ghe-por-par.md`.
+
+**O importador declara o que detectou.** Conciliação e prévia mostram a ligação campo → coluna
+do arquivo, e quando a de função não casa o bloco fica vermelho, explica a consequência e lista
+as colunas não usadas. Existe porque o bug do plural (abaixo) não foi caro por existir, e sim
+por **falhar calado**: foram duas rodadas de importação com planilha de cliente só para
+descobrir qual coluna não tinha casado.
+
+**Seletor manual de coluna.** A detecção automática é só o palpite inicial — o usuário troca
+qualquer uma na etapa 2 e o arquivo é reprocessado sem reabrir (`_gheiReprocessar`, que guarda
+`st.rows` cru). Detecção falha deixou de ser beco sem saída: antes retornava erro e parava.
+Nome de coluna é território de planilha de cliente; nenhuma lista de sinônimos cobre todos.
+
+**Multi-valor por célula** (`GHE_SEP_MULTI`: `, ; / |` e " e "). Liga sozinho quando >30% das
+células têm separador, mas o checkbox é do usuário. **O cruzamento N×M é validado contra
+`hierarquia`** (`empresa_funcoes.setor_id`): ficam só as combinações que existem no cadastro.
+Produto cartesiano puro inventaria pares que o PGR nunca declarou — e par inventado **disputa
+precedência** com par real de outro GHE, mudando de verdade quem cai onde. Verificado:
+"RH, Contas a receber" × 3 cargos → 3 pares certos, não 6. Sem reconhecimento nenhum no
+cadastro, mantém o cruzamento completo (melhor palpite, e a prévia mostra antes de gravar).
+
+**`exportarParesGhe()`** — CSV dos pares Setor × Função que têm resposta, com contagem, origem
+e o GHE atual de cada um. Inclui os `Outro:` digitados **de propósito**: são os que não estão
+no cadastro, somem de qualquer lista montada a partir dele, e são eles que caem no residual do
+laudo. Sai no mesmo formato que o importador lê (`;` + BOM, que o Excel pt-BR abre direto e
+`_parseGHECSV` detecta sozinho), então resolve três coisas: relatório, **modelo de planilha**
+(o sistema não tinha nenhum) e round-trip. Round-trip verificado, inclusive as colunas extras
+sendo ignoradas.
+
+**Sugestão de cargo usa o setor declarado na linha.** Cada função carrega o conjunto de setores
+(já conciliados) em que a planilha a coloca, e a escolha é por **PARTIÇÃO**: primeiro os
+candidatos que existem naquele setor, depois por semelhança dentro de cada grupo
+(`_noContexto`/`_ordenarCandidatos`). O limiar continua aplicado à semelhança **textual** —
+contexto desempata plausíveis, nunca promove candidato que não se parece com nada.
+
+> **Caso real que motivou, e a lição de engenharia:** o PGR trazia `ANALISTA DE VENDAS Pl`
+> (P + **L minúsculo**) e o catálogo tem `ANALISTA DE VENDAS PI` (P + **i maiúsculo**) —
+> visualmente idênticos. A similaridade textual apontava `ANALISTA DE VENDAS` (1.00, subconjunto
+> exato de tokens) contra `ANALISTA DE VENDAS PI` (0.67); a sugestão errada virou de-para
+> aprendido e a resposta real ficou fora de todo GHE. A informação para acertar estava na linha:
+> ela diz "Comercial Obras", e só `PI` existe nesse setor.
+> **Implementei primeiro como bônus de 0.35 e o caso passou por 1.02 contra 1.00.** Ganhar por
+> coincidência entre a constante escolhida e a diferença de similaridade do caso concreto não
+> serve para uma decisão que termina num laudo — daí a regra de partição.
+
+**Bug do plural — `função` → `funções`.** A detecção casa por substring depois de normalizar.
+`setor`→`setores` e `cargo`→`cargos` funcionam porque o plural só acrescenta "s" e contém o
+singular. `função`→`funções` **muda o radical**: normalizado vira `funcoes`, que não contém
+`funcao`. Resultado: coluna inteira ignorada, toda função vazia, **todo par virava coringa
+"(qualquer função)"** e o GHE cobria o setor inteiro em vez dos cargos do PGR — sem erro na
+tela. Plurais com mudança de radical precisam de entrada própria, e vão no **fim** da lista
+para que um arquivo com "Cargo" e "Funções" continue elegendo "Cargo".
+
+**Contagem de de-para aprendido na conciliação.** "Aprendido" conta como resolvido e sumia da
+contagem de pendências, mas é decisão humana de uma importação passada que **reaplica sozinha e
+tem prioridade sobre a sugestão** — um casamento confirmado errado uma vez ficaria invisível
+para sempre. Agora aparece "N de importações anteriores (revise se algum estiver errado)".
+
+**Dados de teste em DEV:** empresa Inovadoor Portas Industriais
+(`86436ac2-852d-4aee-99b6-a5a87d4292b1`) copiada de PROD, 61 respostas / 1647 itens, seguindo o
+procedimento da seção "Copiar dados de uma empresa PROD → DEV". Para remover:
+`DELETE FROM empresas WHERE id='86436ac2-...'` em DEV (CASCADE leva o resto).
+
 **`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
 bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
 **ignoravam a granularidade escolhida**, enquanto `_buildLaudoHTML` a respeitava — preview e PDF
