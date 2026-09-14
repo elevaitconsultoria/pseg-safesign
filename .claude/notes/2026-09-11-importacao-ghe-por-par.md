@@ -120,10 +120,13 @@ Para remover: `DELETE FROM empresas WHERE id='86436ac2-852d-4aee-99b6-a5a87d4292
 5. Rodar `/validar-importacao-ghe` antes de considerar fechado.
 
 ### Lacunas conhecidas, em aberto (prioridade sugerida nesta ordem)
-1. **Editar/criar GHE à mão.** `editarGrupo` só trata `'setor'`/`'funcao'` — passar `'ghe'`
-   cai em `gruposFuncao` e volta sem fazer nada. O painel só tem excluir. Hoje o único
-   conserto de um par errado é reimportar a planilha inteira, e **pendência (órfão) não tem
-   caminho de resolução nenhum**. Empresa sem matriz de PGR não consegue usar a feature.
+1. ~~**Editar/criar GHE à mão.**~~ **FEITO em 2026-09-14** — `#modal-ghe-edit`,
+   `abrirNovoGhe()`/`editarGhe(id)`, botões "+ Novo GHE" e "Editar" no painel. Par órfão agora
+   tem caminho de resolução (o valor fora do catálogo é preservado no combo e marcado), e
+   empresa sem matriz de PGR monta o GHE par a par. Ver a seção "Editor de GHE par a par" no
+   CLAUDE.md. **Ressalva: o caminho de gravação (`_salvarGheUnicoNoBanco`) não foi exercitado
+   contra o banco real** — sem sessão logada, a verificação foi de unidade (27/27) e de DOM no
+   navegador. O primeiro salvamento em DEV ainda é um teste de verdade.
 2. **Painel do de-para.** `empresa_apelidos` só existe na camada de dados. Um casamento
    confirmado errado fica invisível e reaplica sozinho para sempre. Mitigação parcial já
    feita: a conciliação mostra "N de importações anteriores (revise se algum estiver errado)".

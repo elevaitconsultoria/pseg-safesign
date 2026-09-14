@@ -2900,6 +2900,32 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   </div>
 </div>
 
+<!-- MODAL EDITAR/CRIAR GHE (par a par) -->
+<!-- Existe porque, sem ele, o único conserto de um par errado era reimportar a matriz inteira,
+     órfão (nome que não existe no catálogo) não tinha caminho de resolução nenhum, e empresa
+     sem matriz de PGR não conseguia usar a feature. #modal-grupo não serve: ele edita UM eixo
+     (lista de itens), e um GHE é um conjunto de PARES. -->
+<div class="modal-bg" id="modal-ghe-edit">
+  <div class="modal" style="max-width:720px;width:94vw">
+    <div class="modal-title" id="ghee-title">Novo GHE</div>
+    <div class="modal-sub">Cada linha é um par Setor × Função do PGR. Deixe a função em "(qualquer função)" para o GHE cobrir o setor inteiro.</div>
+    <div class="field" style="margin:14px 0 12px">
+      <label>Nome do GHE <span style="color:var(--red)">*</span></label>
+      <input type="text" id="ghee-nome" placeholder="Ex.: GHE 01 — Administrativo"/>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">Pares Setor × Função</div>
+      <button class="btn btn-ghost btn-sm" onclick="_gheeAddPar()">+ Adicionar par</button>
+    </div>
+    <div id="ghee-pares" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div>
+    <div id="ghee-avisos" style="margin-top:8px;font-size:11px;color:var(--tl)"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharGheEdit()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" id="ghee-salvar" onclick="salvarGheEdit()">Salvar GHE</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL IMPORTAR AGRUPAMENTOS GHE (assistente de 3 etapas) -->
 <div class="modal-bg" id="modal-import-ghe">
   <div class="modal" style="max-width:760px;width:94vw">
@@ -3741,6 +3767,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar pares
         </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGhe()" title="Montar um GHE par a par, sem planilha. Use quando a empresa nao tem matriz de PGR ou quando falta so um GHE.">+ Novo GHE</button>
         <button class="btn btn-g" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px" onclick="abrirImportGhe()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Importar GHE
@@ -8049,6 +8076,9 @@ function abrirNovoGrupo(tipo) {
 }
 
 function editarGrupo(tipo, id) {
+  // GHE tem editor proprio (pares, nao lista de itens). Sem este desvio, um tipo='ghe' cairia
+  // no ramo de gruposFuncao, nao acharia o id e voltaria sem fazer nada nem avisar.
+  if (tipo === 'ghe') return editarGhe(id);
   const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
   const g = grupos.find(x => x.id === id);
   if (!g) return;
@@ -8906,7 +8936,7 @@ function renderListaGhe() {
     return;
   }
   if (!gruposGhe.length) {
-    el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Nenhum GHE importado ainda. Use <strong>Importar GHE</strong> para carregar a matriz do PGR.</p>';
+    el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Nenhum GHE ainda. Use <strong>Importar GHE</strong> para carregar a matriz do PGR, ou <strong>+ Novo GHE</strong> para montar par a par.</p>';
     return;
   }
   // Pendência = par cujo setor/função não existe no catálogo da empresa. Mesmo espírito do
@@ -8934,10 +8964,229 @@ function renderListaGhe() {
           <div style="display:flex;flex-wrap:wrap;gap:4px">${tags}</div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" onclick="editarGhe('${g.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Editar</button>
           <button class="btn btn-red btn-sm" onclick="removerGrupo('ghe','${g.id}')" aria-label="Remover GHE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
       </div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════
+// EDITOR DE GHE (par a par) — criar, editar e resolver pendências
+// ══════════════════════════════════════════
+// Antes disto o GHE só nascia da importação e só podia ser excluído: corrigir UM par errado
+// custava reimportar a matriz inteira, um par órfão (nome que não existe no catálogo) não tinha
+// caminho de resolução nenhum, e empresa sem matriz de PGR simplesmente não conseguia usar a
+// feature. #modal-grupo não serve para isto — ele edita um eixo (lista de itens em `itens[]`),
+// e um GHE é um conjunto de PARES.
+let _gheeState = null; // { id|null, nome, pares:[{s,f}] }
+
+// Funções oferecidas para um setor: as que o catálogo declara nele + as universais
+// (empresa_funcoes.setor_id NULL, válidas em qualquer setor). Setor que não está no catálogo
+// (órfão, ou "Outro: ..." digitado no formulário) não tem hierarquia — aí oferecemos a lista
+// inteira, que é o melhor palpite, em vez de um combo vazio.
+function _gheeFuncoesDoSetor(setor) {
+  const emp = _empresas.find(e => e.id === _empresaAtiva?.id);
+  const cat = _catalogoConciliacao(_empresaAtiva?.id);
+  const h = (emp?.hierarquia || []).find(x => _gheNormStrong(x.nome) === _gheNormStrong(setor));
+  if (!h) return cat.funcao.lista;
+  const lista = [...new Set([...(h.funcoes || []), ...(emp?.universais || [])])].filter(Boolean);
+  return lista.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+// Monta as <option> preservando o valor atual mesmo quando ele não existe na lista — é
+// exatamente o caso do par órfão que viemos consertar. Sumir com o valor faria a abertura do
+// modal reescrever o dado em silêncio.
+function _gheeOpcoes(lista, atual, vazio) {
+  const norm = new Set(lista.map(_gheNormStrong));
+  const extra = atual && !norm.has(_gheNormStrong(atual)) ? [atual] : [];
+  return (vazio ? `<option value="">${_esc(vazio)}</option>` : '')
+    + extra.map(v => `<option value="${_esc(v)}" selected>⚠ ${_esc(v)} (fora do catálogo)</option>`).join('')
+    + lista.map(v => `<option value="${_esc(v)}"${_gheNormStrong(v) === _gheNormStrong(atual || '') ? ' selected' : ''}>${_esc(v)}</option>`).join('');
+}
+
+// Pares iguais (depois de normalizar) dentro do próprio GHE, e pares já declarados em OUTRO
+// GHE. O segundo caso não é erro — o PGR pode mesmo repetir — mas muda quem cai onde, porque
+// `agruparPorPares` dá o par ao primeiro GHE por `ordem`. Avisar, nunca bloquear.
+function _gheeAvisos() {
+  const st = _gheeState;
+  const cat = _catalogoConciliacao(_empresaAtiva?.id);
+  const chave = p => _gheNormStrong(p.s) + '|' + _gheNormStrong(p.f || '');
+  const avisos = [];
+
+  const vistos = new Set();
+  const dups = new Set();
+  st.pares.forEach(p => { const k = chave(p); if (vistos.has(k)) dups.add(k); vistos.add(k); });
+  if (dups.size) avisos.push(`${dups.size} par(es) repetido(s) — serão gravados uma vez só.`);
+
+  const semSetor = st.pares.filter(p => !p.s).length;
+  if (semSetor) avisos.push(`<span style="color:#991b1b">${semSetor} par(es) sem setor — preencha antes de salvar.</span>`);
+
+  const fora = st.pares.filter(p => p.s && (!cat.setor.norm.has(_gheNormStrong(p.s)) || (p.f && !cat.funcao.norm.has(_gheNormStrong(p.f))))).length;
+  if (fora) avisos.push(`${fora} par(es) fora do catálogo da empresa — ficam gravados como pendência.`);
+
+  const outros = new Map();
+  gruposGhe.filter(g => g.id !== st.id).forEach(g =>
+    (g.pares || []).forEach(p => { if (!outros.has(chave(p))) outros.set(chave(p), g.nome); }));
+  const conflitos = st.pares.filter(p => p.s && outros.has(chave(p)));
+  if (conflitos.length) {
+    const quais = [...new Set(conflitos.map(p => outros.get(chave(p))))].join(', ');
+    avisos.push(`${conflitos.length} par(es) já declarado(s) em: ${_esc(quais)}. O GHE de menor ordem fica com a resposta.`);
+  }
+  return avisos;
+}
+
+function _gheeRenderAvisos() {
+  const av = document.getElementById('ghee-avisos');
+  if (!av || !_gheeState) return;
+  const lista = _gheeAvisos();
+  av.innerHTML = lista.length ? lista.map(a => '· ' + a).join('<br>') : '';
+}
+
+function _gheeRender() {
+  const box = document.getElementById('ghee-pares');
+  if (!box || !_gheeState) return;
+  const cat = _catalogoConciliacao(_empresaAtiva?.id);
+  const st = _gheeState;
+
+  box.innerHTML = st.pares.length ? st.pares.map((p, i) => `
+    <div style="display:flex;gap:6px;align-items:center;padding:4px 0">
+      <select class="filter-select" style="flex:1;min-width:0;font-size:12px" onchange="_gheeSetSetor(${i}, this.value)">
+        ${_gheeOpcoes(cat.setor.lista, p.s, '— setor —')}
+      </select>
+      <span style="color:var(--tl);font-size:11px">×</span>
+      <select class="filter-select" style="flex:1;min-width:0;font-size:12px" onchange="_gheeSetFuncao(${i}, this.value)">
+        ${_gheeOpcoes(_gheeFuncoesDoSetor(p.s), p.f, '(qualquer função)')}
+      </select>
+      <button class="btn btn-red btn-sm" style="flex-shrink:0" onclick="_gheeDelPar(${i})" aria-label="Remover par">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>`).join('')
+    : '<p style="font-size:12px;color:var(--tl);text-align:center;padding:16px 0">Nenhum par ainda. Use <strong>+ Adicionar par</strong>.</p>';
+
+  _gheeRenderAvisos();
+}
+
+function _gheeSetSetor(i, v) {
+  if (!_gheeState?.pares[i]) return;
+  _gheeState.pares[i].s = v;
+  // Trocar de setor pode invalidar a função escolhida (ela pode não existir no setor novo).
+  // Mantemos o valor: ele reaparece no combo como "fora do catálogo", visível, em vez de ser
+  // apagado por baixo do usuário. O re-render é necessário porque as opções mudaram.
+  _gheeRender();
+}
+function _gheeSetFuncao(i, v) {
+  if (!_gheeState?.pares[i]) return;
+  _gheeState.pares[i].f = v;
+  // Sem re-render: repintar a lista aqui destruiria o <select> que acabou de receber o clique.
+  _gheeRenderAvisos();
+}
+function _gheeAddPar() {
+  if (!_gheeState) return;
+  _gheeState.pares.push({ s: '', f: '' });
+  _gheeRender();
+}
+function _gheeDelPar(i) {
+  if (!_gheeState) return;
+  _gheeState.pares.splice(i, 1);
+  _gheeRender();
+}
+
+function _gheeAbrir(titulo, st) {
+  if (!_empresaAtiva?.id) { toast('Selecione um cliente antes.', 'w'); return; }
+  if (!currentTenantId) {
+    // Mesmo guard de _salvarGheNoBanco: super_admin fora do modo suporte não consegue gravar.
+    toast('Entre no contexto de uma consultoria (modo suporte) para editar GHE.', 'w', 5000);
+    return;
+  }
+  _gheeState = st;
+  document.getElementById('ghee-title').textContent = titulo;
+  document.getElementById('ghee-nome').value = st.nome;
+  const btn = document.getElementById('ghee-salvar');
+  if (btn) btn.disabled = false; // um salvamento anterior não pode deixar o botão morto
+  document.getElementById('modal-ghe-edit').classList.add('open');
+  _gheeRender();
+}
+
+function abrirNovoGhe() {
+  _gheeAbrir('Novo GHE', { id: null, nome: '', pares: [{ s: '', f: '' }] });
+}
+
+function editarGhe(id) {
+  const g = gruposGhe.find(x => x.id === id);
+  if (!g) return;
+  // Cópia profunda: cancelar não pode ter mexido no que está em memória.
+  _gheeAbrir('Editar GHE', { id, nome: g.nome || '', pares: (g.pares || []).map(p => ({ s: p.s || '', f: p.f || '' })) });
+}
+
+function fecharGheEdit() {
+  _gheeState = null;
+  document.getElementById('modal-ghe-edit').classList.remove('open');
+}
+
+// Insert/update de UMA linha. Não usa _salvarGheNoBanco de propósito: aquele apaga todos os
+// tipo='ghe' da empresa e regrava — correto para a importação, destrutivo para uma edição.
+async function _salvarGheUnicoNoBanco(id, nome, pares) {
+  const empId = _empresaAtiva?.id, tenId = currentTenantId;
+  if (!empId || !tenId) { toast('Selecione uma empresa antes.', 'w'); return false; }
+  const payload = {
+    nome,
+    pares,
+    // Derivado, mesmo contrato da importação: caminho legado que leia itens[] degrada para
+    // grupo de setor em vez de grupo vazio.
+    itens: [...new Set(pares.map(p => p.s).filter(Boolean))],
+    atualizado_em: new Date().toISOString(),
+  };
+  try {
+    let error;
+    if (id) {
+      ({ error } = await sbAdmin.from('grupos_setor').update(payload).eq('id', id));
+    } else {
+      ({ error } = await sbAdmin.from('grupos_setor').insert({
+        ...payload, empresa_id: empId, tenant_id: tenId, tipo: 'ghe',
+        // Entra no fim da fila de precedência: um GHE novo não deve roubar pares dos que já
+        // existiam e já saíram em laudo.
+        ordem: gruposGhe.length,
+      }));
+    }
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    // Índice único parcial (empresa_id, lower(nome)) WHERE tipo='ghe'.
+    const dup = e.code === '23505' || /duplicate key|uq_grupos_setor_ghe_nome/i.test(e.message || '');
+    toast(dup ? `Já existe um GHE chamado "${nome}" nesta empresa.` : 'Erro ao salvar GHE: ' + e.message, 'e', 6000);
+    return false;
+  }
+}
+
+async function salvarGheEdit() {
+  if (!_gheeState) return;
+  const nome = document.getElementById('ghee-nome').value.trim();
+  if (!nome) { toast('Dê um nome ao GHE.', 'w'); return; }
+  if (_gheeState.pares.some(p => !p.s)) { toast('Há par sem setor. Preencha ou remova a linha.', 'w'); return; }
+
+  // Dedupe pelo mesmo critério da leitura (_gheNormStrong), preservando a grafia da primeira
+  // ocorrência e a ordem em que o usuário montou.
+  const vistos = new Set();
+  const pares = [];
+  _gheeState.pares.forEach(p => {
+    const k = _gheNormStrong(p.s) + '|' + _gheNormStrong(p.f || '');
+    if (vistos.has(k)) return;
+    vistos.add(k);
+    pares.push({ s: p.s, f: p.f || '' });
+  });
+  if (!pares.length) { toast('Adicione pelo menos 1 par.', 'w'); return; }
+
+  const btn = document.getElementById('ghee-salvar');
+  if (btn) btn.disabled = true;
+  const ok = await _salvarGheUnicoNoBanco(_gheeState.id, nome, pares);
+  if (btn) btn.disabled = false;
+  if (!ok) return;
+
+  fecharGheEdit();
+  await carregarGruposSetor(_empresaAtiva?.id);
+  renderTabelaAgrupamentos();
+  toast(`GHE "${nome}" salvo!`, 'g');
 }
 
 // ══════════════════════════════════════════
@@ -14635,6 +14884,7 @@ document.addEventListener('keydown', function(e) {
     'modal-riscos':        typeof fecharModalRiscos      !== 'undefined' ? fecharModalRiscos      : null,
     'modal-nova':          typeof fecharNovaQ            !== 'undefined' ? fecharNovaQ            : null,
     'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
+    'modal-ghe-edit':      typeof fecharGheEdit          !== 'undefined' ? fecharGheEdit          : null,
     'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
     'modal-ghe-batch':    typeof fecharModalGheBatch    !== 'undefined' ? fecharModalGheBatch    : null,
     'modal-cliente-perfil': typeof fecharModalClientePerfil !== 'undefined' ? fecharModalClientePerfil : null,

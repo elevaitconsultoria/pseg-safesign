@@ -922,6 +922,33 @@ Verificado com preview e `_buildLaudoHTML` lado a lado nas 4 granularidades (mes
 todas), invariante fechando (6 respostas → 6 distribuídas, 1 no residual) e rótulo de capa
 mudando conforme o modo.
 
+### Editor de GHE par a par (2026-09-14)
+
+`#modal-ghe-edit` + `abrirNovoGhe()`/`editarGhe(id)`. Fecha a lacuna 1 da nota: antes o GHE só
+nascia da importação e só podia ser **excluído** — corrigir um par errado custava reimportar a
+matriz inteira, par órfão não tinha resolução nenhuma, e empresa sem matriz de PGR não
+conseguia usar a feature.
+
+- **`#modal-grupo` não serve** — ele edita UM eixo (`itens[]`); um GHE é um conjunto de pares.
+  `editarGrupo('ghe', id)` agora **desvia** para `editarGhe`: sem o desvio ele caía no ramo de
+  `gruposFuncao`, não achava o id e voltava sem fazer nada nem avisar.
+- **`_salvarGheUnicoNoBanco` faz insert/update de UMA linha** — não reusa `_salvarGheNoBanco`,
+  que apaga todos os `tipo='ghe'` da empresa e regrava. Correto para a importação, destrutivo
+  para uma edição. `itens` continua derivado dos setores dos pares (mesmo contrato).
+- **Valor fora do catálogo é PRESERVADO no combo** (`_gheeOpcoes`), marcado "⚠ (fora do
+  catálogo)". Sumir com ele faria a simples abertura do modal reescrever o dado em silêncio —
+  e é justamente o par órfão que se vem consertar.
+- **Trocar o setor não apaga a função escolhida.** Ela reaparece sinalizada como fora do
+  catálogo, visível, em vez de ser zerada por baixo do usuário.
+- **`_gheeSetFuncao` não repinta a lista** (só os avisos): repintar dentro do `onchange`
+  destruiria o próprio `<select>` que recebeu o clique. `_gheeSetSetor` repinta porque as
+  opções de função mudaram — mesma armadilha já documentada em `_adAtualizarTabela`.
+- **Conflito com outro GHE é avisado, nunca bloqueado** — o PGR pode mesmo repetir um par, e
+  `agruparPorPares` dá o par ao GHE de menor `ordem`. GHE novo entra com `ordem =
+  gruposGhe.length`, no fim da fila: não rouba pares de quem já saiu em laudo.
+- Nome duplicado cai no índice único parcial (23505) e vira mensagem legível.
+- Guard de `currentTenantId` igual ao da importação (super_admin fora do modo suporte).
+
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
 Cinco commits em `develop` (`944c66b`, `c6cff58`, `9368a0c`, `0260775`, `1b0ce78`), **ainda
