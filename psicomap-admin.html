@@ -2956,6 +2956,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <label>Nome do GHE <span style="color:var(--red)">*</span></label>
       <input type="text" id="ghee-nome" placeholder="Ex.: GHE 01 — Administrativo"/>
     </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Cobre também os GHE do PGR <span style="font-weight:400;color:var(--tl)">(opcional)</span></label>
+      <input type="text" id="ghee-absorvidos" placeholder="Ex.: 03, 04, 05" oninput="_gheeSetAbsorvidos(this.value)"/>
+      <div style="font-size:10px;color:var(--tl);margin-top:3px">GHE do PGR que declaram os mesmos pares e por isso não existem separadamente aqui — normalmente os que diferem só por norma (NR-10/11/35). Isto é declarado no laudo; não afeta nenhum agrupamento.</div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm)">Pares Setor × Função</div>
       <button class="btn btn-ghost btn-sm" onclick="_gheeAddPar()">+ Adicionar par</button>
@@ -4888,32 +4893,48 @@ async function carregarGruposSetor(empresaId) {
     gruposFuncao = (data || []).filter(g => g.tipo === 'funcao');
     gruposGhe    = (data || []).filter(g => g.tipo === 'ghe');
   };
-  try {
-    const { data, error } = await sbAdmin
-      .from('grupos_setor')
-      .select('id, tipo, nome, itens, pares, ordem')
-      .eq('empresa_id', empresaId)
-      .order('ordem');
-    if (error) throw error;
-    _distribuir(data);
-  } catch(e) {
+  // Escada de conjuntos de colunas, da mais completa para a mais antiga. Cada degrau
+  // corresponde a uma migration que pode não estar aplicada neste banco; descer um degrau
+  // desliga só o recurso daquela coluna, nunca os agrupamentos legados.
+  const TENTATIVAS = [
+    { cols: 'id, tipo, nome, itens, pares, absorvidos, ordem', falta: null },
+    { cols: 'id, tipo, nome, itens, pares, ordem',             falta: 'absorvidos' },
+    { cols: 'id, tipo, nome, itens, ordem',                    falta: 'pares' },
+  ];
+  let ok = false, ultimoErro = null;
+  for (const t of TENTATIVAS) {
     try {
       const { data, error } = await sbAdmin
         .from('grupos_setor')
-        .select('id, tipo, nome, itens, ordem')
+        .select(t.cols)
         .eq('empresa_id', empresaId)
         .order('ordem');
       if (error) throw error;
-      console.warn('[grupos_setor] coluna `pares` indisponível — GHE desligado nesta sessão. Aplicar migration_grupos_setor_ghe.sql.', e.message);
       _distribuir(data);
-      gruposGhe = [];
-    } catch(e2) {
-      console.warn('[grupos_setor] erro ao carregar, continuando sem agrupamento:', e2.message);
-      gruposSetor  = [];
-      gruposFuncao = [];
-      gruposGhe    = [];
-    }
+      if (t.falta === 'pares') {
+        console.warn('[grupos_setor] coluna `pares` indisponível — GHE desligado nesta sessão. Aplicar migration_grupos_setor_ghe.sql.', ultimoErro?.message);
+        gruposGhe = [];
+      } else if (t.falta === 'absorvidos') {
+        console.warn('[grupos_setor] coluna `absorvidos` indisponível — cobertura de GHE do PGR não será registrada. Aplicar migration_grupos_setor_absorvidos.sql.', ultimoErro?.message);
+      }
+      ok = true;
+      break;
+    } catch(e) { ultimoErro = e; }
   }
+  if (!ok) {
+    console.warn('[grupos_setor] erro ao carregar, continuando sem agrupamento:', ultimoErro?.message);
+    gruposSetor  = [];
+    gruposFuncao = [];
+    gruposGhe    = [];
+  }
+}
+
+// Repete a gravação sem as colunas que este banco ainda não tem. Sem isto, publicar o HTML
+// antes da migration quebraria a importação inteira com "column does not exist" — e o usuário
+// perderia o trabalho de conciliação já feito na etapa 2.
+function _colunaAusente(e) {
+  return e?.code === '42703' || e?.code === 'PGRST204'
+      || /column .* does not exist|could not find the .* column|schema cache/i.test(e?.message || '');
 }
 
 async function _salvarGrupoNoBanco(tipo, nome, itens) {
@@ -5151,11 +5172,19 @@ async function _salvarGheNoBanco(empresaId, ghes) {
       // legado que leia itens[] degrade para um grupo de setor em vez de um grupo vazio.
       itens:      [...new Set(g.pares.map(p => p.s).filter(Boolean))],
       pares:      g.pares,
+      absorvidos: g.absorvidos || [],
       // `ordem` sequencial pela planilha: a regra de desempate quando um par cai em dois GHE
       // é "o primeiro por ordem vence". Tudo em 0 tornaria o laudo não reproduzível.
       ordem:      i,
     }));
-    const { error: eIns } = await sbAdmin.from('grupos_setor').insert(rows);
+    let { error: eIns } = await sbAdmin.from('grupos_setor').insert(rows);
+    if (eIns && _colunaAusente(eIns)) {
+      // Migration de `absorvidos` ainda não aplicada: gravar sem ela é MUITO melhor que
+      // abortar a importação e perder a conciliação já feita.
+      console.warn('[grupos_setor] gravando sem `absorvidos`:', eIns.message);
+      ({ error: eIns } = await sbAdmin.from('grupos_setor')
+        .insert(rows.map(({ absorvidos, ...r }) => r)));
+    }
     if (eIns) throw eIns;
     return true;
   } catch(e) {
@@ -7788,7 +7817,8 @@ function agruparPorPares(linhas, ghes) {
     } else coringas.set(ks, i);
   }));
 
-  const buckets = (ghes || []).map(g => ({ nome: g.nome, setores: [], _chaves: new Set(), _pares: g.pares || [], n: 0 }));
+  const buckets = (ghes || []).map(g => ({ nome: g.nome, setores: [], _chaves: new Set(),
+                                           _pares: g.pares || [], _absorvidos: g.absorvidos || [], n: 0 }));
   const residual = new Map(); // setor normalizado → bucket
   const vistos = (ghes || []).map(() => new Set());
 
@@ -7871,7 +7901,13 @@ function _descricaoGrupo(grupo, escapar) {
   if (grupo._residual) return '';
   if (grupo._pares) {
     if (!grupo._pares.length) return '';
-    return 'Setor × função: ' + grupo._pares
+    // A cobertura vem ANTES dos pares: é a informação que muda a leitura do bloco inteiro.
+    // Um auditor que lê "GHE 02" precisa saber que ali também estão as pessoas que o PGR
+    // chama de 03, 04 e 05 — os mesmos pares, separados no PGR só por norma.
+    const cob = (grupo._absorvidos || []).length
+      ? 'Cobre também os GHE ' + grupo._absorvidos.map(esc).join(', ') + ' do PGR. '
+      : '';
+    return cob + 'Setor × função: ' + grupo._pares
       .map(p => esc(p.s) + (p.f ? ' — ' + esc(p.f) : ' — (qualquer função)'))
       .join('; ');
   }
@@ -8733,8 +8769,27 @@ function _gheiMontarPrevia() {
     g.pares.push({ s, f: f || null });
   });
 
+  // Um GHE que ficou SEM NENHUM par foi integralmente reivindicado por outro(s) — é o caso
+  // dos GHE que o PGR separa só por norma (NR-10/11/35), eixo que não existe no modelo de par.
+  // Ele desaparece da lista, e sem registrar isso a cobertura real do grupo sobrevivente fica
+  // indocumentada: quem lê "GHE 02" no laudo não sabe que ali também estão 03, 04 e 05.
+  // Só absorção TOTAL conta: um GHE que manteve pares próprios continua existindo, e dizer que
+  // outro "cobre" ele seria falso.
+  const vazios = new Set(ordem.map(k => porGhe.get(k)).filter(g => !g.pares.length).map(g => g.nome));
+  const absorvidosPor = new Map();
+  conflitos.forEach(c => {
+    if (!vazios.has(c.descartou)) return;
+    if (!absorvidosPor.has(c.manteve)) absorvidosPor.set(c.manteve, new Set());
+    absorvidosPor.get(c.manteve).add(c.descartou);
+  });
+
   const ghes = ordem.map(k => porGhe.get(k)).filter(g => g.pares.length)
-                    .map(g => ({ nome: g.nome, pares: g.pares }));
+                    .map(g => ({
+                      nome: g.nome,
+                      pares: g.pares,
+                      absorvidos: [...(absorvidosPor.get(g.nome) || [])]
+                        .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true })),
+                    }));
 
   // Diff contra o que já está gravado
   const atuais = new Map(gruposGhe.map(g => [_gheNormStrong(g.nome), g]));
@@ -8876,6 +8931,16 @@ function _gheiRenderPrevia() {
         `<strong>${_esc(c.setor)}${c.funcao ? ' — ' + _esc(c.funcao) : ''}</strong>: ficou em "${_esc(c.manteve)}", descartado de "${_esc(c.descartou)}"`
       ).join('<br>') + (p.conflitos.length > 8 ? `<br><em>… e mais ${p.conflitos.length - 8}</em>` : '') +
       '<br><span style="color:var(--tl)">Cada par conta em um GHE só — do contrário o mesmo respondente entraria duas vezes no laudo.</span>',
+      '#854d0e');
+  }
+
+  const absorvidos = p.ghes.filter(g => (g.absorvidos || []).length);
+  if (absorvidos.length) {
+    html += bloco(`${absorvidos.reduce((a, g) => a + g.absorvidos.length, 0)} GHE da planilha ficaram sem pares próprios`,
+      absorvidos.map(g =>
+        `<strong>${_esc(g.nome)}</strong> passa a cobrir também: ${g.absorvidos.map(x => _esc(x)).join(', ')}`
+      ).join('<br>') +
+      '<br><span style="color:var(--tl)">Eles declaram os mesmos pares setor × função, diferindo só por norma (NR-10/11/35) — eixo que não existe no agrupamento. Mantê-los separados contaria a mesma pessoa duas vezes no laudo. A cobertura fica registrada e é declarada no documento.</span>',
       '#854d0e');
   }
 
@@ -9131,6 +9196,7 @@ function renderListaGhe() {
             ${nPend ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fee2e2;color:#991b1b;margin-left:4px">${nPend} pendência(s)</span>` : ''}
             ${nDig ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#854d0e;margin-left:4px" title="Valores digitados pelo respondente em &quot;Outro&quot;. Funcionam normalmente no agrupamento.">${nDig} digitado(s)</span>` : ''}
           </div>
+          ${(g.absorvidos || []).length ? `<div style="font-size:10px;color:var(--tm);margin:0 0 5px" title="Declarado no laudo. Estes GHE do PGR declaram os mesmos pares, diferindo só por norma (NR-10/11/35).">Cobre também os GHE <strong>${g.absorvidos.map(x => _esc(x)).join(', ')}</strong> do PGR</div>` : ''}
           <div style="display:flex;flex-wrap:wrap;gap:4px">${tags}</div>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
@@ -9251,6 +9317,13 @@ function _gheeSetFuncao(i, v) {
   // Sem re-render: repintar a lista aqui destruiria o <select> que acabou de receber o clique.
   _gheeRenderAvisos();
 }
+// Lista separada por vírgula ou ponto e vírgula. Guardada como array para casar com a
+// coluna text[]; o campo é texto livre porque estes nomes vêm do PGR, não do catálogo.
+function _gheeSetAbsorvidos(v) {
+  if (!_gheeState) return;
+  _gheeState.absorvidos = String(v || '').split(/[;,]/).map(x => x.trim()).filter(Boolean);
+}
+
 function _gheeAddPar() {
   if (!_gheeState) return;
   _gheeState.pares.push({ s: '', f: '' });
@@ -9272,6 +9345,8 @@ function _gheeAbrir(titulo, st) {
   _gheeState = st;
   document.getElementById('ghee-title').textContent = titulo;
   document.getElementById('ghee-nome').value = st.nome;
+  const absEl = document.getElementById('ghee-absorvidos');
+  if (absEl) absEl.value = (st.absorvidos || []).join(', ');
   const btn = document.getElementById('ghee-salvar');
   if (btn) btn.disabled = false; // um salvamento anterior não pode deixar o botão morto
   document.getElementById('modal-ghe-edit').classList.add('open');
@@ -9279,14 +9354,17 @@ function _gheeAbrir(titulo, st) {
 }
 
 function abrirNovoGhe() {
-  _gheeAbrir('Novo GHE', { id: null, nome: '', pares: [{ s: '', f: '' }] });
+  _gheeAbrir('Novo GHE', { id: null, nome: '', pares: [{ s: '', f: '' }], absorvidos: [] });
 }
 
 function editarGhe(id) {
   const g = gruposGhe.find(x => x.id === id);
   if (!g) return;
   // Cópia profunda: cancelar não pode ter mexido no que está em memória.
-  _gheeAbrir('Editar GHE', { id, nome: g.nome || '', pares: (g.pares || []).map(p => ({ s: p.s || '', f: p.f || '' })) });
+  // `absorvidos` entra na cópia para NÃO ser perdido ao salvar: quem edita um par não está
+  // pedindo para apagar a cobertura declarada no laudo.
+  _gheeAbrir('Editar GHE', { id, nome: g.nome || '', absorvidos: [...(g.absorvidos || [])],
+                             pares: (g.pares || []).map(p => ({ s: p.s || '', f: p.f || '' })) });
 }
 
 function fecharGheEdit() {
@@ -9296,28 +9374,35 @@ function fecharGheEdit() {
 
 // Insert/update de UMA linha. Não usa _salvarGheNoBanco de propósito: aquele apaga todos os
 // tipo='ghe' da empresa e regrava — correto para a importação, destrutivo para uma edição.
-async function _salvarGheUnicoNoBanco(id, nome, pares) {
+async function _salvarGheUnicoNoBanco(id, nome, pares, absorvidos) {
   const empId = _empresaAtiva?.id, tenId = currentTenantId;
   if (!empId || !tenId) { toast('Selecione uma empresa antes.', 'w'); return false; }
   const payload = {
     nome,
     pares,
+    absorvidos: absorvidos || [],
     // Derivado, mesmo contrato da importação: caminho legado que leia itens[] degrada para
     // grupo de setor em vez de grupo vazio.
     itens: [...new Set(pares.map(p => p.s).filter(Boolean))],
     atualizado_em: new Date().toISOString(),
   };
+  // Sem a migration de `absorvidos`, grava o resto: perder a cobertura é muito melhor que
+  // recusar a edição de um par.
+  const gravar = async (p) => {
+    if (id) return (await sbAdmin.from('grupos_setor').update(p).eq('id', id)).error;
+    return (await sbAdmin.from('grupos_setor').insert({
+      ...p, empresa_id: empId, tenant_id: tenId, tipo: 'ghe',
+      // Entra no fim da fila de precedência: um GHE novo não deve roubar pares dos que já
+      // existiam e já saíram em laudo.
+      ordem: gruposGhe.length,
+    })).error;
+  };
   try {
-    let error;
-    if (id) {
-      ({ error } = await sbAdmin.from('grupos_setor').update(payload).eq('id', id));
-    } else {
-      ({ error } = await sbAdmin.from('grupos_setor').insert({
-        ...payload, empresa_id: empId, tenant_id: tenId, tipo: 'ghe',
-        // Entra no fim da fila de precedência: um GHE novo não deve roubar pares dos que já
-        // existiam e já saíram em laudo.
-        ordem: gruposGhe.length,
-      }));
+    let error = await gravar(payload);
+    if (error && _colunaAusente(error)) {
+      console.warn('[grupos_setor] gravando sem `absorvidos`:', error.message);
+      const { absorvidos: _drop, ...sem } = payload;
+      error = await gravar(sem);
     }
     if (error) throw error;
     return true;
@@ -9349,7 +9434,7 @@ async function salvarGheEdit() {
 
   const btn = document.getElementById('ghee-salvar');
   if (btn) btn.disabled = true;
-  const ok = await _salvarGheUnicoNoBanco(_gheeState.id, nome, pares);
+  const ok = await _salvarGheUnicoNoBanco(_gheeState.id, nome, pares, _gheeState.absorvidos || []);
   if (btn) btn.disabled = false;
   if (!ok) return;
 

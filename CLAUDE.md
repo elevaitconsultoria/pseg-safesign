@@ -979,6 +979,47 @@ estados, porque "fora do catálogo" agrupava duas coisas opostas:
   pendência sugeria defeito onde há o contrário.
 - O prefixo `Outro:` é gerado pelo formulário público, então é sinal confiável.
 
+### Cobertura de GHE absorvidos (2026-09-15)
+
+**Achado com dado real (Inovadoor).** A matriz do PGR tinha **17 GHE**; a importação gravou
+**9**. Os 8 ausentes não se perderam por bug: declaram **exatamente os mesmos pares**
+(setor, função) de um GHE que ficou. O PGR os separa por **norma** — NR-10, NR-11, NR-35 —, e
+norma não é um eixo do modelo de par.
+
+```
+03, 04, 05 (Logística NR11/NR35) → mesmos pares do 02
+08 (Lonas NR35)                  → mesmos pares do 07
+10, 17 (Rápidas NR35/NR11)       → mesmos pares do 09
+14 (Painel NR11)                 → mesmos pares do 13
+16 (Painel/Externo NR10+NR35)    → pares do 11 E do 12
+```
+
+**Colapsar está certo para risco psicossocial** — a exposição de um auxiliar de expedição é a
+mesma trabalhando ou não em altura, e manter os quatro separados contaria a mesma pessoa
+várias vezes, quebrando a invariante `Σ n(grupo) === total da capa`. Mas o laudo precisa
+**declarar** a cobertura: quem lê "GHE 02" tem de saber que ali estão também os que o PGR
+chama de 03, 04 e 05.
+
+`grupos_setor.absorvidos text[]` (`migration_grupos_setor_absorvidos.sql`), preenchido pela
+importação a partir dos conflitos de par, exibido no painel e **declarado no laudo** por
+`_descricaoGrupo` (antes dos pares, porque muda a leitura do bloco inteiro).
+
+- **Coluna, nunca sufixo no `nome`.** O nome é a chave de reconciliação da reimportação
+  (índice único parcial em `lower(nome)` + o diff criar/atualizar/remover). Renomear "02" para
+  "02 — Logística (cobre 03,04,05)" faria a importação seguinte ver um "02" a criar e um
+  "02 — Logística…" a remover, **a cada importação**. Metadado não mora na chave.
+- **Só absorção TOTAL conta.** Um GHE que manteve pares próprios continua existindo; dizer que
+  outro "cobre" ele seria falso. Um GHE pode ser absorvido por **dois** sobreviventes (o 16
+  aparece no 11 e no 12).
+- `editarGhe` **preserva** `absorvidos` na cópia: quem edita um par não está pedindo para
+  apagar a cobertura declarada no laudo. O campo é editável à mão (vírgula ou `;`).
+- **Degrada nos dois sentidos**, porque a migration pode não estar aplicada: a leitura usa uma
+  **escada de conjuntos de colunas** (`pares+absorvidos` → `pares` → nenhum dos dois), e a
+  gravação repete o insert/update sem o campo quando `_colunaAusente(e)` reconhece 42703 /
+  PGRST204. Abortar a importação por causa disso faria o usuário perder a conciliação já feita.
+
+**⚠ `migration_grupos_setor_absorvidos.sql` NÃO foi aplicada em nenhum banco.**
+
 ### Histórico de laudos e presets de filtro (2026-09-15)
 
 Fecham as lacunas 3 e 4 da nota de 2026-09-11. As duas respondem ao mesmo pedido — "não
