@@ -949,6 +949,36 @@ conseguia usar a feature.
 - Nome duplicado cai no índice único parcial (23505) e vira mensagem legível.
 - Guard de `currentTenantId` igual ao da importação (super_admin fora do modo suporte).
 
+### A exportação de pares NÃO é fonte do GHE (2026-09-15)
+
+**Caso real, com dado de cliente:** o consultor usou "Exportar pares" e reimportou o próprio
+arquivo. O GHE da Inovadoor foi de **8 GHE / 62 pares para 6 GHE / 39 pares** sem um único
+aviso na tela.
+
+`exportarParesGhe()` monta o CSV a partir das **respostas** (`getLinhasParaAnalise`), não do
+catálogo nem da matriz do PGR: só entram pares que já têm alguém respondendo. A importação
+**substitui** todos os `tipo='ghe'` da empresa. O round-trip, portanto, troca a matriz do PGR
+por um retrato de quem respondeu até agora — e o estrago só aparece meses depois, quando uma
+resposta nova de um par removido cai no grupo residual do laudo, sem erro nenhum.
+
+Dois avisos foram adicionados por causa disso:
+
+- **`_gheiEncolhimento(ghes)`** — compara **par a par** contra o que está gravado e lista o que
+  será apagado, num bloco vermelho no **topo** da prévia, antes dos números. Comparar contagem
+  não serviria: trocar 5 pares por outros 5 também é perda.
+- **`_gheiPareceExportacao(st)`** — reconhece o próprio formato pelos cabeçalhos `Respostas` +
+  `Origem` e explica que aquele arquivo não é a matriz do PGR.
+
+**Além disso, `Outro:` deixou de ser tratado como pendência.** `_gheClassePar` tem três
+estados, porque "fora do catálogo" agrupava duas coisas opostas:
+- `pendente` (⚠ vermelho): nome que não existe em lugar nenhum — erro de grafia no PGR, cargo
+  extinto. **Nenhuma resposta cai nele**; é linha morta no laudo.
+- `digitado` (✎ âmbar): valor que o respondente digitou em "Outro (especificar)". Também não
+  está no cadastro, mas o agrupamento casa contra o **texto da resposta**, não contra o
+  catálogo — então este par é justamente o que **captura** essas respostas. Marcá-lo como
+  pendência sugeria defeito onde há o contrário.
+- O prefixo `Outro:` é gerado pelo formulário público, então é sinal confiável.
+
 ### Histórico de laudos e presets de filtro (2026-09-15)
 
 Fecham as lacunas 3 e 4 da nota de 2026-09-11. As duas respondem ao mesmo pedido — "não

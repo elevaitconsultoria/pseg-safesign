@@ -8749,7 +8749,36 @@ function _gheiMontarPrevia() {
   });
   const remover = gruposGhe.filter(g => !novosK.has(_gheNormStrong(g.nome))).map(g => g.nome);
 
-  st.previa = { ghes, criar, atualizar, remover, conflitos, orfaos: [...orfaos], cobertura: null };
+  st.previa = { ghes, criar, atualizar, remover, conflitos, orfaos: [...orfaos],
+                cobertura: null, encolhe: _gheiEncolhimento(ghes), exportado: _gheiPareceExportacao(st) };
+}
+
+// A importação SUBSTITUI todos os tipo='ghe' da empresa. Um arquivo que cubra menos pares que
+// o GHE atual não gera erro nenhum: ele simplesmente apaga o resto, e o efeito só aparece
+// meses depois, quando uma resposta nova de um par removido cai no grupo residual do laudo.
+// Compara PAR a PAR, não por contagem: trocar 5 pares por outros 5 também é perda.
+function _gheiEncolhimento(ghes) {
+  if (!gruposGhe.length) return null;
+  const k = p => _gheNormStrong(p.s) + '|||' + _gheNormStrong(p.f || '');
+  const depois = new Set();
+  ghes.forEach(g => g.pares.forEach(p => depois.add(k(p))));
+  const perdidos = [];
+  gruposGhe.forEach(g => (g.pares || []).forEach(p => {
+    if (!depois.has(k(p))) perdidos.push(`${p.s}${p.f ? ' — ' + p.f : ' — (qualquer função)'}`);
+  }));
+  const antes = gruposGhe.reduce((a, g) => a + (g.pares || []).length, 0);
+  if (!perdidos.length) return null;
+  return { antes, depois: depois.size, perdidos, ghesPerdidos: gruposGhe.length - ghes.length };
+}
+
+// Reconhece o CSV do próprio "Exportar pares" voltando para a importação. Ele é montado a
+// partir das RESPOSTAS, então só contém pares que já têm alguém respondendo — reimportá-lo
+// substitui a matriz do PGR por um retrato de quem respondeu até agora. Caso real em
+// 2026-09-15: 8 GHE / 62 pares viraram 6 GHE / 39 pares, sem um único aviso na tela.
+function _gheiPareceExportacao(st) {
+  const norm = h => _gheNormStrong(h);
+  const hs = (st.headers || []).map(norm);
+  return hs.includes('respostas') && hs.includes('origem');
 }
 
 // Diagnóstico de cobertura: cruza os pares do GHE com as respostas já coletadas.
@@ -8794,7 +8823,30 @@ function _gheiRenderPrevia() {
       <div style="font-size:11px;color:var(--tm);line-height:1.7">${corpo}</div>
     </div>`;
 
-  let html = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bg);border-radius:var(--r)">
+  let html = '';
+
+  // Antes de tudo: o que este arquivo vai APAGAR. Fica no topo porque é a informação que
+  // decide se o Aplicar deve ser clicado.
+  if (p.exportado) {
+    html += bloco('Este arquivo parece a exportação de pares deste sistema',
+      'O arquivo tem as colunas <strong>Respostas</strong> e <strong>Origem</strong>, produzidas por "Exportar pares". ' +
+      'Esse arquivo é montado a partir das <strong>respostas já coletadas</strong>, e não da matriz do PGR: ' +
+      'pares que ainda não têm ninguém respondendo não estão nele.<br>' +
+      '<span style="color:var(--tl)">Para configurar o GHE, importe a planilha do PGR. A exportação serve para conferência e como modelo de formato.</span>',
+      '#9a3412');
+  }
+  if (p.encolhe) {
+    const e = p.encolhe;
+    html += bloco(`Atenção: esta importação REMOVE ${e.perdidos.length} par(es) que estão gravados hoje`,
+      `O GHE atual tem <strong>${e.antes}</strong> par(es); este arquivo traz <strong>${e.depois}</strong>. ` +
+      'A importação substitui todos os GHE da empresa — o que não estiver no arquivo é apagado.<br>' +
+      e.perdidos.slice(0, 10).map(x => _esc(x)).join('<br>') +
+      (e.perdidos.length > 10 ? `<br><em>… e mais ${e.perdidos.length - 10}</em>` : '') +
+      '<br><span style="color:var(--tl)">Um par removido não some do laudo: as respostas dele passam a cair no grupo residual, por setor, sem nenhum erro na tela.</span>',
+      'var(--red)');
+  }
+
+  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--bg);border-radius:var(--r)">
       ${chip(p.ghes.length, 'GHE na planilha', 'var(--tx)')}
       ${chip(p.criar.length, 'a criar', 'var(--g)')}
       ${chip(p.atualizar.length, 'a atualizar', '#854d0e')}
@@ -9024,6 +9076,26 @@ async function exportarParesGhe() {
 }
 
 // ── Painel de GHE na tela de Agrupamentos ────────────────────────────────────
+
+// Três estados, não dois. "Fora do catálogo" agrupava duas coisas opostas:
+//  - 'pendente': nome que não existe em lugar nenhum (erro de grafia no PGR, cargo extinto).
+//    Nenhuma resposta cai nele — é uma linha morta no laudo.
+//  - 'digitado': valor que o respondente digitou em "Outro (especificar)". Também não está no
+//    cadastro, mas o agrupamento casa contra o TEXTO DA RESPOSTA, não contra o catálogo —
+//    então este par é justamente o que captura essas respostas. Marcá-lo como pendência
+//    sugeria que estava quebrado quando é o contrário.
+// O prefixo "Outro:" é gerado pelo próprio formulário público, então é sinal confiável.
+function _gheEhDigitado(v) {
+  return /^\s*outro\s*:/i.test(String(v || ''));
+}
+function _gheClassePar(p, cat) {
+  const okS = cat.setor.norm.has(_gheNormStrong(p.s));
+  const okF = !p.f || cat.funcao.norm.has(_gheNormStrong(p.f));
+  if (okS && okF) return 'ok';
+  if ((okS || _gheEhDigitado(p.s)) && (okF || _gheEhDigitado(p.f))) return 'digitado';
+  return 'pendente';
+}
+
 function renderListaGhe() {
   const el = document.getElementById('agrup-lista-ghe');
   if (!el) return;
@@ -9035,20 +9107,21 @@ function renderListaGhe() {
     el.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Nenhum GHE ainda. Use <strong>Importar GHE</strong> para carregar a matriz do PGR, ou <strong>+ Novo GHE</strong> para montar par a par.</p>';
     return;
   }
-  // Pendência = par cujo setor/função não existe no catálogo da empresa. Mesmo espírito do
-  // alerta de órfãos do quadro de funcionários.
   const cat = _catalogoConciliacao(_empresaAtiva.id);
   el.innerHTML = gruposGhe.map(g => {
     const pares = g.pares || [];
-    const tags = pares.map(p => {
-      const okS = cat.setor.norm.has(_gheNormStrong(p.s));
-      const okF = !p.f || cat.funcao.norm.has(_gheNormStrong(p.f));
-      const pend = !okS || !okF;
-      const est = pend ? 'background:#fef2f2;color:#991b1b;border:1px solid #fca5a5' : '';
-      const ttl = pend ? ' title="Não encontrado no catálogo da empresa"' : '';
-      return `<span class="group-tag" style="${est}"${ttl}>${pend ? '⚠ ' : ''}${_esc(p.s)}${p.f ? ' — ' + _esc(p.f) : ' — (qualquer função)'}</span>`;
+    const cls = pares.map(p => _gheClassePar(p, cat));
+    const tags = pares.map((p, i) => {
+      const c = cls[i];
+      const est = c === 'pendente' ? 'background:#fef2f2;color:#991b1b;border:1px solid #fca5a5'
+                : c === 'digitado' ? 'background:#fffbeb;color:#854d0e;border:1px solid #fcd34d' : '';
+      const ttl = c === 'pendente' ? ' title="Não encontrado no catálogo da empresa — nenhuma resposta vai cair aqui se o nome estiver errado"'
+                : c === 'digitado' ? ' title="Valor digitado pelo respondente (Outro). Não está no cadastro, mas é exatamente o que captura essas respostas."' : '';
+      const marca = c === 'pendente' ? '⚠ ' : c === 'digitado' ? '✎ ' : '';
+      return `<span class="group-tag" style="${est}"${ttl}>${marca}${_esc(p.s)}${p.f ? ' — ' + _esc(p.f) : ' — (qualquer função)'}</span>`;
     }).join('');
-    const nPend = pares.filter(p => !cat.setor.norm.has(_gheNormStrong(p.s)) || (p.f && !cat.funcao.norm.has(_gheNormStrong(p.f)))).length;
+    const nPend = cls.filter(c => c === 'pendente').length;
+    const nDig  = cls.filter(c => c === 'digitado').length;
     return `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;min-width:0">
@@ -9056,6 +9129,7 @@ function renderListaGhe() {
             ${_esc(g.nome)}
             <span style="font-weight:400;font-size:11px;color:var(--tl)">· ${pares.length} par(es)</span>
             ${nPend ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fee2e2;color:#991b1b;margin-left:4px">${nPend} pendência(s)</span>` : ''}
+            ${nDig ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#854d0e;margin-left:4px" title="Valores digitados pelo respondente em &quot;Outro&quot;. Funcionam normalmente no agrupamento.">${nDig} digitado(s)</span>` : ''}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:4px">${tags}</div>
         </div>
