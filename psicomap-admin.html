@@ -2926,6 +2926,24 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   </div>
 </div>
 
+<!-- MODAL DE-PARA DE NOMENCLATURA (empresa_apelidos) -->
+<!-- Existe porque o de-para só vivia na camada de dados: um casamento confirmado errado numa
+     importação ficava INVISÍVEL e reaplicava sozinho para sempre, com prioridade sobre a
+     sugestão. Foi exatamente assim que "ANALISTA DE VENDAS Pl" ficou casado com o cargo de
+     outro setor e a resposta correspondente ficou fora de todo GHE. -->
+<div class="modal-bg" id="modal-depara">
+  <div class="modal" style="max-width:720px;width:94vw">
+    <div class="modal-title">De-para de nomenclatura</div>
+    <div class="modal-sub" id="dp-sub">Nomes da matriz de GHE do PGR e o cargo/setor do catálogo a que cada um foi casado. Reaplica sozinho na próxima importação — e tem prioridade sobre a sugestão automática.</div>
+    <div id="dp-corpo" style="margin-top:14px;max-height:360px;overflow-y:auto"></div>
+    <div id="dp-avisos" style="margin-top:8px;font-size:11px;color:var(--tl)"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharDePara()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" id="dp-salvar" onclick="salvarDePara()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL IMPORTAR AGRUPAMENTOS GHE (assistente de 3 etapas) -->
 <div class="modal-bg" id="modal-import-ghe">
   <div class="modal" style="max-width:760px;width:94vw">
@@ -3767,6 +3785,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar pares
         </button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" id="btn-depara" onclick="abrirDePara()" title="Nomes da matriz do PGR casados com o catalogo. Reaplica sozinho na proxima importacao.">De-para</button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGhe()" title="Montar um GHE par a par, sem planilha. Use quando a empresa nao tem matriz de PGR ou quando falta so um GHE.">+ Novo GHE</button>
         <button class="btn btn-g" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px" onclick="abrirImportGhe()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -4890,17 +4909,23 @@ async function _editarGrupoNoBanco(id, nome, itens) {
 // "Supervisor RH" num e "Coordenador de RH" no outro. Esta camada lembra o casamento que o
 // consultor confirmou, por empresa, para que a próxima importação já venha resolvida.
 let _apelidos = { setor: new Map(), funcao: new Map() }; // norm do nome externo → grafia canônica
+// Linhas completas (com id), para o painel poder corrigir e excluir. O Map acima continua
+// sendo o que a importação consulta — ele é derivado destas linhas, nunca o contrário.
+let _apelidosRows = [];
 
 async function carregarApelidos(empresaId) {
   _apelidos = { setor: new Map(), funcao: new Map() };
+  _apelidosRows = [];
   if (!empresaId || isDemoMode) return;
   try {
     const { data, error } = await sbAdmin
       .from('empresa_apelidos')
-      .select('tipo, apelido, apelido_norm, canonico')
-      .eq('empresa_id', empresaId);
+      .select('id, tipo, apelido, apelido_norm, canonico')
+      .eq('empresa_id', empresaId)
+      .order('tipo').order('apelido');
     if (error) throw error;
-    (data || []).forEach(a => {
+    _apelidosRows = data || [];
+    _apelidosRows.forEach(a => {
       if (_apelidos[a.tipo]) _apelidos[a.tipo].set(a.apelido_norm, a.canonico);
     });
   } catch(e) {
@@ -4931,6 +4956,12 @@ async function _upsertApelidos(empresaId, lista) {
     toast('GHE salvo, mas o de-para não pôde ser memorizado: ' + error.message, 'w', 5000);
     return false;
   }
+  // O upsert nao devolve os ids; recarregar e mais barato que reconciliar a mao, e mantem o
+  // contador do painel coerente com o banco.
+  await carregarApelidos(empresaId);
+  // DEPOIS do reload, nunca antes: carregarApelidos zera os dois no inicio e engole o proprio
+  // erro. Se a leitura falhar (rede), aplicar aqui garante que o de-para recem-gravado
+  // continua valendo nesta sessao em vez de sumir logo apos ter sido salvo.
   rows.forEach(r => { if (_apelidos[r.tipo]) _apelidos[r.tipo].set(r.apelido_norm, r.canonico); });
   return true;
 }
@@ -8132,6 +8163,7 @@ async function _setupTelaAgrupamentos() {
   if (_empresaAtiva?.id) {
     sel.value = _empresaAtiva.id;
     await carregarGruposSetor(_empresaAtiva.id);
+    await carregarApelidos(_empresaAtiva.id);
     renderTabelaAgrupamentos();
   }
 }
@@ -8146,6 +8178,7 @@ async function _onAgrupEmpresaChange() {
   const emp = _empresas.find(e => e.id === id);
   setEmpresaAtiva(id, emp?.nome_fantasia || emp?.nome || '');
   await carregarGruposSetor(id);
+  await carregarApelidos(id);
   renderTabelaAgrupamentos();
 }
 
@@ -8193,6 +8226,24 @@ function renderTabelaAgrupamentos() {
   renderLista(gruposSetor, 'setor', lS);
   renderLista(gruposFuncao, 'funcao', lF);
   renderListaGhe();
+  _sincronizarBotaoDePara();
+}
+
+// Contador no botao: sem numero visivel o de-para continua sendo uma gaveta que ninguem abre,
+// e o casamento errado segue invisivel. Marca em vermelho quando ha apelido apontando para
+// nome que saiu do catalogo — esses sao ignorados em silencio por _resolverNome.
+function _sincronizarBotaoDePara() {
+  const btn = document.getElementById('btn-depara');
+  if (!btn) return;
+  const n = _apelidosRows.length;
+  if (!n) { btn.textContent = 'De-para'; btn.style.color = ''; return; }
+  const cat = _catalogoConciliacao(_empresaAtiva?.id);
+  const obs = _apelidosRows.filter(r => _dpObsoleto(r, cat)).length;
+  btn.textContent = `De-para (${n})`;
+  btn.style.color = obs ? '#991b1b' : '';
+  btn.title = obs
+    ? `${obs} de-para aponta para nome que saiu do catalogo e esta sendo ignorado. Clique para revisar.`
+    : `${n} correspondencia(s) memorizada(s). Reaplicam sozinhas na proxima importacao.`;
 }
 
 // ══════════════════════════════════════════
@@ -9187,6 +9238,147 @@ async function salvarGheEdit() {
   await carregarGruposSetor(_empresaAtiva?.id);
   renderTabelaAgrupamentos();
   toast(`GHE "${nome}" salvo!`, 'g');
+}
+
+// ══════════════════════════════════════════
+// PAINEL DO DE-PARA (empresa_apelidos)
+// ══════════════════════════════════════════
+// O de-para só existia na camada de dados: um casamento confirmado errado numa importação
+// ficava invisível e reaplicava sozinho para sempre, porque apelido aprendido tem PRIORIDADE
+// sobre a sugestão em _resolverNome. Caso real: "ANALISTA DE VENDAS Pl" casado com o cargo de
+// outro setor — a resposta correspondente ficou fora de todo GHE e ninguém tinha como ver.
+let _dpState = null; // { rows: [...cópia editável...], remover: Set(id) }
+
+// Apelido cujo canônico não existe mais no catálogo. _resolverNome IGNORA esse apelido em
+// silêncio (o `aindaExiste` do ramo 'apelido'), então ele deixou de funcionar sem avisar —
+// tipicamente depois de uma reimportação de estrutura que renomeou o cargo.
+function _dpObsoleto(r, cat) {
+  return !cat[r.tipo]?.norm.has(_gheNormStrong(r.canonico));
+}
+
+function _dpRender() {
+  const box = document.getElementById('dp-corpo');
+  if (!box || !_dpState) return;
+  const cat = _catalogoConciliacao(_empresaAtiva?.id);
+  const st = _dpState;
+
+  if (!st.rows.length) {
+    box.innerHTML = '<p style="font-size:12px;color:var(--tl);text-align:center;padding:24px 0">Nenhum de-para memorizado para este cliente.<br>Ele é criado sozinho quando você confirma uma correspondência na importação de GHE.</p>';
+    document.getElementById('dp-avisos').innerHTML = '';
+    return;
+  }
+
+  const bloco = (tipo, titulo) => {
+    const rows = st.rows.filter(r => r.tipo === tipo);
+    if (!rows.length) return '';
+    return `
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin:10px 0 6px">${titulo} (${rows.length})</div>
+      ${rows.map(r => {
+        const i = st.rows.indexOf(r);
+        const rm = st.remover.has(r.id);
+        const obs = _dpObsoleto(r, cat);
+        return `
+        <div style="display:flex;gap:6px;align-items:center;padding:4px 0;${rm ? 'opacity:.45' : ''}">
+          <div style="flex:1;min-width:0;font-size:12px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${rm ? 'text-decoration:line-through' : ''}" title="${_esc(r.apelido)}">${_esc(r.apelido)}</div>
+          <span style="color:var(--tl);font-size:11px;flex-shrink:0">→</span>
+          <select class="filter-select" style="flex:1;min-width:0;font-size:12px" ${rm ? 'disabled' : ''} onchange="_dpSetCanonico(${i}, this.value)">
+            ${_gheeOpcoes(cat[r.tipo].lista, r.canonico, null)}
+          </select>
+          <button class="btn ${rm ? 'btn-ghost' : 'btn-red'} btn-sm" style="flex-shrink:0" onclick="_dpToggleRemover(${i})" title="${rm ? 'Desfazer remoção' : 'Remover este de-para'}">
+            ${rm ? 'Desfazer' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><path d="M18 6 6 18M6 6l12 12"/></svg>'}
+          </button>
+        </div>
+        ${obs && !rm ? `<div style="font-size:10px;color:#991b1b;margin:-2px 0 4px 2px">⚠ "${_esc(r.canonico)}" não existe mais no catálogo — este de-para está sendo ignorado em silêncio. Corrija ou remova.</div>` : ''}`;
+      }).join('')}`;
+  };
+
+  box.innerHTML = bloco('setor', 'Setores') + bloco('funcao', 'Funções');
+
+  const avisos = [];
+  const nObs = st.rows.filter(r => !st.remover.has(r.id) && _dpObsoleto(r, cat)).length;
+  if (nObs) avisos.push(`<span style="color:#991b1b">${nObs} de-para apontando para nome que saiu do catálogo.</span>`);
+  const nAlt = st.rows.filter(r => r.canonico !== r._orig).length;
+  const nRm  = st.remover.size;
+  if (nAlt) avisos.push(`${nAlt} alteração(ões) pendente(s).`);
+  if (nRm)  avisos.push(`${nRm} remoção(ões) pendente(s).`);
+  if (nAlt || nRm) avisos.push('Nada é gravado até você clicar em <strong>Salvar alterações</strong>.');
+  document.getElementById('dp-avisos').innerHTML = avisos.map(a => '· ' + a).join('<br>');
+}
+
+function _dpSetCanonico(i, v) {
+  if (!_dpState?.rows[i]) return;
+  _dpState.rows[i].canonico = v;
+  _dpRender();
+}
+function _dpToggleRemover(i) {
+  const r = _dpState?.rows[i];
+  if (!r) return;
+  if (_dpState.remover.has(r.id)) _dpState.remover.delete(r.id);
+  else _dpState.remover.add(r.id);
+  _dpRender();
+}
+
+async function abrirDePara() {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId) { toast('Selecione um cliente antes.', 'w'); return; }
+  // Recarrega do banco em vez de usar o que está em memória: outra sessão pode ter importado
+  // no intervalo, e editar por cima de uma cópia velha apagaria o aprendizado dela.
+  await carregarApelidos(empresaId);
+  _dpState = {
+    rows: _apelidosRows.map(r => ({ ...r, _orig: r.canonico })),
+    remover: new Set(),
+  };
+  const btn = document.getElementById('dp-salvar');
+  if (btn) btn.disabled = false;
+  document.getElementById('modal-depara').classList.add('open');
+  _dpRender();
+}
+
+function fecharDePara() {
+  _dpState = null;
+  document.getElementById('modal-depara').classList.remove('open');
+}
+
+async function salvarDePara() {
+  if (!_dpState) return;
+  if (!currentTenantId) { toast('Entre no contexto de uma consultoria (modo suporte) para editar o de-para.', 'w', 5000); return; }
+  const st = _dpState;
+  const remover = [...st.remover];
+  const alterar = st.rows.filter(r => !st.remover.has(r.id) && r.canonico !== r._orig);
+  if (!remover.length && !alterar.length) { toast('Nada a salvar.', 'w'); return; }
+
+  const btn = document.getElementById('dp-salvar');
+  if (btn) btn.disabled = true;
+  try {
+    if (remover.length) {
+      const { error } = await sbAdmin.from('empresa_apelidos').delete().in('id', remover);
+      if (error) throw error;
+    }
+    for (const r of alterar) {
+      const { error } = await sbAdmin.from('empresa_apelidos')
+        .update({ canonico: r.canonico, atualizado_em: new Date().toISOString() })
+        .eq('id', r.id);
+      if (error) throw error;
+    }
+  } catch(e) {
+    if (btn) btn.disabled = false;
+    // Sem toast otimista: parte pode ter sido gravada. Recarregar mostra o estado real.
+    toast('Erro ao salvar o de-para: ' + e.message, 'e', 6000);
+    await carregarApelidos(_empresaAtiva?.id);
+    st.rows = _apelidosRows.map(r => ({ ...r, _orig: r.canonico }));
+    st.remover = new Set();
+    _dpRender();
+    return;
+  }
+  if (btn) btn.disabled = false;
+
+  await carregarApelidos(_empresaAtiva?.id);
+  fecharDePara();
+  renderTabelaAgrupamentos();
+  const partes = [];
+  if (alterar.length) partes.push(`${alterar.length} corrigido(s)`);
+  if (remover.length) partes.push(`${remover.length} removido(s)`);
+  toast('De-para atualizado: ' + partes.join(' e ') + '.', 'g');
 }
 
 // ══════════════════════════════════════════
@@ -14885,6 +15077,7 @@ document.addEventListener('keydown', function(e) {
     'modal-nova':          typeof fecharNovaQ            !== 'undefined' ? fecharNovaQ            : null,
     'modal-grupo':         typeof fecharGrupo            !== 'undefined' ? fecharGrupo            : null,
     'modal-ghe-edit':      typeof fecharGheEdit          !== 'undefined' ? fecharGheEdit          : null,
+    'modal-depara':        typeof fecharDePara           !== 'undefined' ? fecharDePara           : null,
     'modal-link':          typeof fecharModalLink        !== 'undefined' ? fecharModalLink        : null,
     'modal-ghe-batch':    typeof fecharModalGheBatch    !== 'undefined' ? fecharModalGheBatch    : null,
     'modal-cliente-perfil': typeof fecharModalClientePerfil !== 'undefined' ? fecharModalClientePerfil : null,
