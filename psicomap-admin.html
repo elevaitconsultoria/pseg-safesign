@@ -2750,6 +2750,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
       </div>
 
+      <!-- Historico: a tabela `laudos` era escrita a cada PDF e nunca lida por tela nenhuma. -->
+      <div class="filter-card">
+        <div class="filter-label">Laudos gerados</div>
+        <div id="ld-historico" style="max-height:200px;overflow-y:auto"></div>
+      </div>
+
       <button class="btn btn-g" style="width:100%;justify-content:center;padding:11px" onclick="abrirLaudoJanela()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Pré-visualizar
@@ -9382,6 +9388,151 @@ async function salvarDePara() {
 }
 
 // ══════════════════════════════════════════
+// HISTÓRICO DE LAUDOS GERADOS
+// ══════════════════════════════════════════
+// A tabela `laudos` recebia um registro a cada PDF desde sempre e NUNCA era lida por tela
+// nenhuma. O pedido original era não refazer o trabalho: hoje o consultor filtra setores,
+// filtra funções, escolhe granularidade, gera — e para regerar meses depois refaz tudo de
+// cabeça, sem nem saber sob qual recorte o documento entregue foi produzido.
+//
+// Por isso o registro passa a guardar a CONFIGURAÇÃO inteira (`config`), não só as seções, e
+// esta tela sabe reaplicá-la.
+const LAUDO_COMBOS = ['combo-ld-setor', 'combo-ld-nivel', 'combo-ld-escolaridade',
+                      'combo-ld-ghe', 'combo-ld-fun-ghe', 'combo-ld-ghe-par'];
+
+let _laudos = [];
+let _laudoUltimoN = null; // nº de respostas do último documento aberto (não do preview)
+
+function _snapshotConfigLaudo() {
+  const filtros = {};
+  LAUDO_COMBOS.forEach(id => { filtros[id] = [...(comboState[id] || [])]; });
+  return {
+    // A granularidade EFETIVA (_granularidadeLaudo degrada sozinha quando o modo escolhido
+    // ficou sem base), que é a que de fato gerou o documento — não o value cru do select.
+    granularidade: _granularidadeLaudo(),
+    secoes: [...laudoSecoesAtivas],
+    ciclo_id: document.getElementById('ld-ciclo')?.value || null,
+    filtros,
+  };
+}
+
+async function carregarLaudos(empresaId) {
+  _laudos = [];
+  if (!empresaId || isDemoMode || !sbAdmin) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('laudos')
+      .select('id, ciclo_id, gerado_por, gerado_em, snapshot_json')
+      .eq('empresa_id', empresaId)
+      .order('gerado_em', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    _laudos = data || [];
+  } catch(e) {
+    // Degradação aceitável: o laudo continua sendo gerado normalmente sem o histórico.
+    console.warn('[laudos] erro ao carregar histórico:', e.message);
+  }
+}
+
+const _LD_GRAN_LABEL = {
+  ghe: 'Por GHE', agrupado: 'Por Agrupamento', segregado: 'Por Setor', consolidado: 'Geral',
+};
+
+function renderHistoricoLaudos() {
+  const el = document.getElementById('ld-historico');
+  if (!el) return;
+  if (!_laudos.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:6px 0">Nenhum laudo gerado para este cliente ainda.</div>';
+    return;
+  }
+  el.innerHTML = _laudos.map(l => {
+    const sn = l.snapshot_json || {};
+    const cfg = sn.config || null;
+    const gran = cfg?.granularidade || sn.granularidade || null;
+    const d = l.gerado_em ? new Date(l.gerado_em) : null;
+    const quando = d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                     + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+    const ciclo = l.ciclo_id ? (_ciclos.find(c => c.id === l.ciclo_id)?.nome || 'ciclo removido') : 'todos os ciclos';
+    const quem = (l.gerado_por || '').split('@')[0];
+    const n = sn.n_respostas;
+    const det = [
+      gran ? _LD_GRAN_LABEL[gran] || gran : null,
+      ciclo,
+      Number.isFinite(n) ? `${n} resposta${n !== 1 ? 's' : ''}` : null,
+    ].filter(Boolean).join(' · ');
+    // Registro antigo não tem `config` — não há o que reaplicar, e prometer o botão seria pior
+    // que não oferecer.
+    const botao = cfg
+      ? `<button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="reaplicarConfigLaudo('${l.id}')" title="Restaura granularidade, seções, ciclo e filtros deste laudo">Reaplicar</button>`
+      : `<span style="font-size:10px;color:var(--tl);flex-shrink:0" title="Laudo gerado antes de o histórico guardar a configuração">sem config</span>`;
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--tx)">${_esc(quando)}${quem ? ` <span style="font-weight:400;color:var(--tl)">· ${_esc(quem)}</span>` : ''}</div>
+          <div style="font-size:10px;color:var(--tl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${_esc(det)}">${_esc(det)}</div>
+        </div>
+        ${botao}
+      </div>`;
+  }).join('');
+}
+
+// Restaura a configuração e re-renderiza. Não gera o PDF sozinho: o consultor confere a
+// prévia antes: a base de respostas pode ter mudado desde então, e o documento sairia
+// diferente do que foi entregue mesmo com a configuração idêntica.
+async function reaplicarConfigLaudo(id) {
+  const l = _laudos.find(x => x.id === id);
+  const cfg = l?.snapshot_json?.config;
+  if (!cfg) { toast('Este laudo não guardou a configuração.', 'w'); return; }
+
+  const perdidos = [];
+
+  // Ciclo primeiro: preencherSelectCiclos já rodou para esta empresa.
+  const cicloEl = document.getElementById('ld-ciclo');
+  if (cicloEl) {
+    const alvo = cfg.ciclo_id || '';
+    if (!alvo || [...cicloEl.options].some(o => o.value === alvo)) {
+      cicloEl.value = alvo;
+    } else {
+      // Cai para "todos os ciclos" em vez de manter o que estava selecionado. Todo o resto da
+      // tela acabou de ser sobrescrito; deixar um ciclo que não vem nem da configuração salva
+      // nem de uma escolha para esta ação produziria um recorte que ninguém pediu.
+      cicloEl.value = '';
+      perdidos.push('o ciclo (não existe mais — caiu para todos os ciclos)');
+    }
+  }
+
+  // Seções.
+  if (Array.isArray(cfg.secoes)) {
+    laudoSecoesAtivas = new Set(cfg.secoes.filter(s => LAUDO_SECOES.some(x => x.id === s)));
+    buildLaudoSecoesChecks();
+  }
+
+  // Filtros: só o que ainda existe na lista atual do combo. Um setor que saiu do catálogo
+  // não pode ser "selecionado" — ficaria num estado que a UI não mostra e o filtro não casa.
+  LAUDO_COMBOS.forEach(cid => {
+    const salvos = cfg.filtros?.[cid];
+    if (!Array.isArray(salvos)) return;
+    const disp = comboItems[cid]?.() || [];
+    const validos = salvos.filter(v => disp.includes(v));
+    if (validos.length !== salvos.length) perdidos.push(`${salvos.length - validos.length} item(ns) de filtro`);
+    comboState[cid] = new Set(validos);
+    buildCombo(cid);
+  });
+
+  // Granularidade por último: ela depende de gruposGhe/gruposSetor já carregados.
+  const granEl = document.getElementById('laudo-granularidade');
+  if (granEl && cfg.granularidade) {
+    const opt = granEl.querySelector(`option[value="${cfg.granularidade}"]`);
+    if (opt && !opt.hidden) granEl.value = cfg.granularidade;
+    else perdidos.push(`a granularidade "${_LD_GRAN_LABEL[cfg.granularidade] || cfg.granularidade}" (sem base nesta empresa hoje)`);
+  }
+
+  await renderLaudo();
+  if (perdidos.length) toast('Configuração reaplicada, exceto: ' + perdidos.join('; ') + '.', 'w', 6500);
+  else toast('Configuração do laudo reaplicada. Confira a prévia antes de gerar.', 'g');
+}
+
+// ══════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════
 let _tt;
@@ -12270,6 +12421,8 @@ async function onLaudoFiltro() {
   // Esconde a opção quando a empresa não tem GHE importado, para não oferecer um modo vazio.
   const optGhe = granEl?.querySelector('option[value="ghe"]');
   if (optGhe) optGhe.hidden = !gruposGhe.length;
+  await carregarLaudos(emp);
+  renderHistoricoLaudos();
   renderLaudo();
 }
 
@@ -12678,8 +12831,12 @@ async function _registrarLaudo() {
     const empresaId = empresaEl?.value || _empresaAtiva.id;
     if (!empresaId) return;
     const _gran = _granularidadeLaudo();
+    const _cfg  = _snapshotConfigLaudo();
     await sbAdmin.from('laudos').insert({
       empresa_id:    empresaId,
+      // A coluna existe desde o schema v3 e NUNCA era preenchida: todo laudo ficava sem ciclo,
+      // e o historico nao tinha como dizer a que rodada de avaliacao cada um se referia.
+      ciclo_id:      _cfg.ciclo_id || null,
       gerado_em:     new Date().toISOString(),
       gerado_por:    currentUser?.email || currentUser?.id || null,
       // Granularidade e grupos vão para o snapshot: sem isso não há como provar, depois, sob
@@ -12689,10 +12846,18 @@ async function _registrarLaudo() {
         empresa: _empresaAtiva?.nome,
         granularidade: _gran,
         grupos: _gran === 'ghe' ? gruposGhe.map(g => g.nome) : gruposSetor.map(g => g.nome),
+        // `config` é o que permite REAPLICAR o recorte depois. As chaves acima ficam como
+        // estavam: já existem registros gravados com elas, e o histórico lê as duas formas.
+        config:      _cfg,
+        n_respostas: _laudoUltimoN,
       },
       tenant_id:     currentTenantId
     });
     console.log('[PsicoMap] Laudo registrado no banco.');
+    // A janela do laudo chama isto via window.opener: a tela de Relatório continua aberta
+    // atrás dela, e sem o refresh o registro só apareceria na próxima troca de empresa.
+    await carregarLaudos(empresaId);
+    renderHistoricoLaudos();
   } catch(e) { console.warn('[PsicoMap] _registrarLaudo:', e.message); }
 }
 
@@ -13254,6 +13419,10 @@ async function gerarLaudoPDF() {
     );
 
     if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+
+    // Guardado aqui, e nao no preview: _registrarLaudo dispara do botao Imprimir DESTA janela,
+    // entao este e o numero do documento que o cliente recebe.
+    _laudoUltimoN = linhas.length;
 
     const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
     const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
