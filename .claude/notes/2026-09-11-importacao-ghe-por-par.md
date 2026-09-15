@@ -127,14 +127,21 @@ Para remover: `DELETE FROM empresas WHERE id='86436ac2-852d-4aee-99b6-a5a87d4292
    CLAUDE.md. **Ressalva: o caminho de gravação (`_salvarGheUnicoNoBanco`) não foi exercitado
    contra o banco real** — sem sessão logada, a verificação foi de unidade (27/27) e de DOM no
    navegador. O primeiro salvamento em DEV ainda é um teste de verdade.
-2. **Painel do de-para.** `empresa_apelidos` só existe na camada de dados. Um casamento
-   confirmado errado fica invisível e reaplica sozinho para sempre. Mitigação parcial já
-   feita: a conciliação mostra "N de importações anteriores (revise se algum estiver errado)".
-3. **Histórico de análises geradas.** A tabela `laudos` recebe um registro a cada PDF (com
-   `granularidade` e nomes dos grupos desde esta sessão) mas **nenhuma tela a lê**. Era um
-   pedido explícito do usuário e continua sem solução.
-4. **Presets de filtro.** Salvar um recorte com nome e reaplicar. É o que mais se aproxima do
-   pedido original ("não refazer o trabalho"), e o maior dos quatro — precisa de tabela nova.
+2. ~~**Painel do de-para.**~~ **FEITO em 2026-09-14** — botão "De-para (N)" no painel de GHE
+   (vermelho quando há apelido apontando para nome que saiu do catálogo) + `#modal-depara`
+   com correção e remoção. `_dpObsoleto` expõe a falha silenciosa: `_resolverNome` ignora o
+   apelido cujo canônico saiu do catálogo, e isso não aparecia em lugar nenhum.
+3. ~~**Histórico de análises geradas.**~~ **FEITO em 2026-09-15** — card "Laudos gerados" na
+   barra lateral do Relatório, com "Reaplicar" a configuração completa. `snapshot_json` ganhou
+   `config` e `n_respostas`, e `ciclo_id` passou a ser gravado (a coluna existia desde o
+   schema v3 e nunca era preenchida). Registro antigo mostra "sem config" e não oferece o
+   botão. Reaplicar **não** gera o PDF: a base pode ter mudado.
+4. ~~**Presets de filtro.**~~ **FEITO em 2026-09-15** — `filtro_presets` (tabela nova, escopo
+   por empresa e por tela), card de preset em Resultados, Gráficos e Relatório.
+   `_aplicarConfigFiltros` é fonte única, compartilhada com o "Reaplicar" do histórico.
+   **⚠ `migration_filtro_presets.sql` NÃO foi aplicada em nenhum banco** — o frontend falha
+   aberto, então isso não quebra nada, mas o recurso só funciona depois de aplicar em DEV e
+   PROD. Este é o único passo pendente das quatro lacunas.
 
 ### Antes de promover para `main`/PROD
 - As migrations **já estão em PROD** e são inertes (o HTML de lá não referencia `pares`).

@@ -2178,6 +2178,18 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
+      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
+      <div class="filter-card">
+        <div class="filter-label">Preset de filtro</div>
+        <select id="preset-sel-resultados" class="filter-select" onchange="aplicarPreset('resultados')">
+          <option value="">— nenhum —</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-resultados" onclick="salvarPreset('resultados')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-resultados" onclick="excluirPreset('resultados')" disabled title="Excluir o preset selecionado">Excluir</button>
+        </div>
+      </div>
+
       <!-- Segmentação — como os resultados são agrupados (window._segMode).
            Era um toggle no header do resultado; virou filtro por decisão de UX. -->
       <div class="filter-card">
@@ -2385,6 +2397,18 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <select id="gf-empresa" onchange="onGrafFiltroChange()" class="filter-select">
           <option value="" disabled>— Selecione o cliente —</option>
         </select>
+      </div>
+
+      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
+      <div class="filter-card">
+        <div class="filter-label">Preset de filtro</div>
+        <select id="preset-sel-graficos" class="filter-select" onchange="aplicarPreset('graficos')">
+          <option value="">— nenhum —</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-graficos" onclick="salvarPreset('graficos')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-graficos" onclick="excluirPreset('graficos')" disabled title="Excluir o preset selecionado">Excluir</button>
+        </div>
       </div>
 
       <div class="filter-card">
@@ -2755,6 +2779,19 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div class="filter-label">Laudos gerados</div>
         <div id="ld-historico" style="max-height:200px;overflow-y:auto"></div>
       </div>
+
+      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
+      <div class="filter-card">
+        <div class="filter-label">Preset de filtro</div>
+        <select id="preset-sel-laudo" class="filter-select" onchange="aplicarPreset('laudo')">
+          <option value="">— nenhum —</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-laudo" onclick="salvarPreset('laudo')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-laudo" onclick="excluirPreset('laudo')" disabled title="Excluir o preset selecionado">Excluir</button>
+        </div>
+      </div>
+
 
       <button class="btn btn-g" style="width:100%;justify-content:center;padding:11px" onclick="abrirLaudoJanela()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -6470,6 +6507,8 @@ async function onEmpresaChange() {
   _atualizarSegSelect();        // habilita/desabilita "Por Agrupamento" pela empresa
   buildCombo('combo-setor');
   _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
+  await carregarPresets(emp);
+  renderPresets('resultados');
 }
 
 // Mantida como nome proprio da tela Resultados; a logica agora e a compartilhada.
@@ -9484,32 +9523,95 @@ async function reaplicarConfigLaudo(id) {
   const cfg = l?.snapshot_json?.config;
   if (!cfg) { toast('Este laudo não guardou a configuração.', 'w'); return; }
 
+  // Mesma restauração que os presets usam — ver _aplicarConfigFiltros.
+  const perdidos = _aplicarConfigFiltros(cfg, 'laudo');
+
+  await renderLaudo();
+  if (perdidos.length) toast('Configuração reaplicada, exceto: ' + perdidos.join('; ') + '.', 'w', 6500);
+  else toast('Configuração do laudo reaplicada. Confira a prévia antes de gerar.', 'g');
+}
+
+// ══════════════════════════════════════════
+// PRESETS DE FILTRO (filtro_presets)
+// ══════════════════════════════════════════
+// O consultor monta um recorte para produzir uma entrega específica e não tinha como guardá-lo.
+// O histórico de laudos cobre "reaplicar o que eu gerei"; isto cobre "guardar o recorte que eu
+// uso sempre" — e vale também para Resultados e Gráficos, que não geram laudo.
+//
+// Descritor por tela em vez de três implementações: acrescentar um combo novo já exigiu
+// lembrar de editar vários pontos antes (foi assim que combos ficaram fora de COMBOS_AUTO_APPLY
+// e a seleção não refletia na tela). Aqui a tela inteira é uma entrada de tabela.
+const PRESET_TELAS = {
+  resultados: {
+    rotulo: 'Resultados',
+    combos: ['combo-setor', 'combo-funcao', 'combo-nivel', 'combo-ghe', 'combo-fun-ghe', 'combo-ghe-par'],
+    ciclo: 'f-ciclo',
+    render: () => rodarAnalise(),
+    capturar: () => ({ segmentacao: window._segMode }),
+    aplicar: (x, perdidos) => {
+      if (!x?.segmentacao) return;
+      const sel = document.getElementById('f-segmentacao');
+      const opt = sel?.querySelector(`option[value="${x.segmentacao}"]`);
+      // Mesma regra do resto: modo sem base hoje (GHE some, agrupamento desabilita) não é
+      // aplicado calado.
+      if (opt && !opt.hidden && !opt.disabled) _setSegMode(x.segmentacao);
+      else perdidos.push(`a segmentação "${SEG_LABEL[x.segmentacao] || x.segmentacao}" (sem base nesta empresa hoje)`);
+    },
+  },
+  graficos: {
+    rotulo: 'Gráficos',
+    combos: ['combo-gf-setor', 'combo-gf-funcao', 'combo-gf-ghe', 'combo-gf-fun-ghe', 'combo-gf-ghe-par'],
+    ciclo: 'gf-ciclo',
+    render: () => renderGraficos(),
+  },
+  laudo: {
+    rotulo: 'Relatório',
+    combos: LAUDO_COMBOS,
+    ciclo: 'ld-ciclo',
+    render: () => renderLaudo(),
+    capturar: () => ({ granularidade: _granularidadeLaudo(), secoes: [...laudoSecoesAtivas] }),
+    aplicar: (x, perdidos) => _aplicarGranSecoes(x, perdidos),
+  },
+};
+
+let _presets = { resultados: [], graficos: [], laudo: [] };
+
+function _presetConfigAtual(tela) {
+  const d = PRESET_TELAS[tela];
+  const filtros = {};
+  d.combos.forEach(id => { filtros[id] = [...(comboState[id] || [])]; });
+  return {
+    filtros,
+    ciclo_id: document.getElementById(d.ciclo)?.value || null,
+    ...(d.capturar ? d.capturar() : {}),
+  };
+}
+
+// Restauração compartilhada por presets E pelo "Reaplicar" do histórico de laudos. Duas
+// implementações divergiriam: o histórico já precisava exatamente desta lógica, e a diferença
+// apareceria como "o preset traz um conjunto e o reaplicar traz outro" — sem erro visível.
+// Devolve a lista do que NÃO pôde ser restaurado, para a tela dizer em voz alta.
+function _aplicarConfigFiltros(cfg, tela) {
+  const d = PRESET_TELAS[tela];
   const perdidos = [];
 
-  // Ciclo primeiro: preencherSelectCiclos já rodou para esta empresa.
-  const cicloEl = document.getElementById('ld-ciclo');
+  const cicloEl = document.getElementById(d.ciclo);
   if (cicloEl) {
     const alvo = cfg.ciclo_id || '';
     if (!alvo || [...cicloEl.options].some(o => o.value === alvo)) {
       cicloEl.value = alvo;
     } else {
-      // Cai para "todos os ciclos" em vez de manter o que estava selecionado. Todo o resto da
-      // tela acabou de ser sobrescrito; deixar um ciclo que não vem nem da configuração salva
-      // nem de uma escolha para esta ação produziria um recorte que ninguém pediu.
+      // Cai para "todos os ciclos" em vez de manter o que estava selecionado: todo o resto da
+      // tela acabou de ser sobrescrito, e um ciclo que não vem nem da configuração salva nem
+      // de uma escolha para esta ação produziria um recorte que ninguém pediu.
       cicloEl.value = '';
       perdidos.push('o ciclo (não existe mais — caiu para todos os ciclos)');
     }
   }
 
-  // Seções.
-  if (Array.isArray(cfg.secoes)) {
-    laudoSecoesAtivas = new Set(cfg.secoes.filter(s => LAUDO_SECOES.some(x => x.id === s)));
-    buildLaudoSecoesChecks();
-  }
-
-  // Filtros: só o que ainda existe na lista atual do combo. Um setor que saiu do catálogo
-  // não pode ser "selecionado" — ficaria num estado que a UI não mostra e o filtro não casa.
-  LAUDO_COMBOS.forEach(cid => {
+  // Só o que ainda existe na lista atual do combo. Um setor que saiu do catálogo não pode ser
+  // "selecionado": ficaria num estado que a UI não mostra e o filtro não casa.
+  d.combos.forEach(cid => {
     const salvos = cfg.filtros?.[cid];
     if (!Array.isArray(salvos)) return;
     const disp = comboItems[cid]?.() || [];
@@ -9519,17 +9621,142 @@ async function reaplicarConfigLaudo(id) {
     buildCombo(cid);
   });
 
-  // Granularidade por último: ela depende de gruposGhe/gruposSetor já carregados.
+  if (d.aplicar) d.aplicar(cfg, perdidos);
+  return perdidos;
+}
+
+// Granularidade e seções do laudo — usado pelo descritor e pelo histórico.
+function _aplicarGranSecoes(cfg, perdidos) {
+  if (Array.isArray(cfg.secoes)) {
+    laudoSecoesAtivas = new Set(cfg.secoes.filter(s => LAUDO_SECOES.some(x => x.id === s)));
+    buildLaudoSecoesChecks();
+  }
+  // Por último: depende de gruposGhe/gruposSetor já carregados.
   const granEl = document.getElementById('laudo-granularidade');
   if (granEl && cfg.granularidade) {
     const opt = granEl.querySelector(`option[value="${cfg.granularidade}"]`);
     if (opt && !opt.hidden) granEl.value = cfg.granularidade;
     else perdidos.push(`a granularidade "${_LD_GRAN_LABEL[cfg.granularidade] || cfg.granularidade}" (sem base nesta empresa hoje)`);
   }
+}
 
-  await renderLaudo();
-  if (perdidos.length) toast('Configuração reaplicada, exceto: ' + perdidos.join('; ') + '.', 'w', 6500);
-  else toast('Configuração do laudo reaplicada. Confira a prévia antes de gerar.', 'g');
+async function carregarPresets(empresaId) {
+  _presets = { resultados: [], graficos: [], laudo: [] };
+  if (!empresaId || isDemoMode || !sbAdmin) return;
+  try {
+    const { data, error } = await sbAdmin
+      .from('filtro_presets')
+      .select('id, tela, nome, config, criado_por, atualizado_em')
+      .eq('empresa_id', empresaId)
+      .order('nome');
+    if (error) throw error;
+    (data || []).forEach(p => { if (_presets[p.tela]) _presets[p.tela].push(p); });
+  } catch(e) {
+    // Falha aberto: a tabela pode não existir ainda (migration não aplicada). A tela continua
+    // funcionando sem presets, em vez de quebrar por causa de um recurso acessório.
+    console.warn('[filtro_presets] erro ao carregar, seguindo sem presets:', e.message);
+  }
+}
+
+function renderPresets(tela) {
+  const sel = document.getElementById(`preset-sel-${tela}`);
+  const btnDel = document.getElementById(`preset-del-${tela}`);
+  if (!sel) return;
+  const lista = _presets[tela] || [];
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">— nenhum —</option>'
+    + lista.map(p => `<option value="${_esc(p.id)}">${_esc(p.nome)}</option>`).join('');
+  if (lista.some(p => p.id === atual)) sel.value = atual;
+  if (btnDel) btnDel.disabled = !sel.value;
+}
+
+async function aplicarPreset(tela) {
+  const sel = document.getElementById(`preset-sel-${tela}`);
+  const btnDel = document.getElementById(`preset-del-${tela}`);
+  if (btnDel) btnDel.disabled = !sel?.value;
+  if (!sel?.value) return;
+  const p = (_presets[tela] || []).find(x => x.id === sel.value);
+  if (!p) return;
+  const perdidos = _aplicarConfigFiltros(p.config || {}, tela);
+  await PRESET_TELAS[tela].render();
+  if (perdidos.length) toast(`Preset "${p.nome}" aplicado, exceto: ` + perdidos.join('; ') + '.', 'w', 6500);
+  else toast(`Preset "${p.nome}" aplicado.`, 'g');
+}
+
+async function salvarPreset(tela) {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId) { toast('Selecione um cliente antes.', 'w'); return; }
+  if (!currentTenantId) { toast('Entre no contexto de uma consultoria (modo suporte) para salvar presets.', 'w', 5000); return; }
+  const nome = (prompt('Nome do preset:') || '').trim();
+  if (!nome) return;
+
+  const lista = _presets[tela] || [];
+  // Mesmo critério do índice único (lower): avisar aqui é melhor que deixar o banco devolver
+  // 23505 depois de o usuário já ter digitado.
+  const existente = lista.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+  if (existente && !confirm(`Já existe um preset "${existente.nome}" nesta tela. Substituir pelo recorte atual?`)) return;
+
+  const config = _presetConfigAtual(tela);
+  try {
+    let error;
+    if (existente) {
+      ({ error } = await sbAdmin.from('filtro_presets')
+        .update({ nome, config, atualizado_em: new Date().toISOString() })
+        .eq('id', existente.id));
+    } else {
+      ({ error } = await sbAdmin.from('filtro_presets').insert({
+        empresa_id: empresaId, tenant_id: currentTenantId, tela, nome, config,
+        criado_por: currentUser?.email || currentUser?.id || null,
+      }));
+    }
+    if (error) throw error;
+  } catch(e) {
+    const semTabela = /relation .*filtro_presets.* does not exist|schema cache/i.test(e.message || '');
+    toast(semTabela
+      ? 'Presets ainda não estão disponíveis neste ambiente (migration pendente).'
+      : 'Erro ao salvar o preset: ' + e.message, 'e', 6000);
+    return;
+  }
+  await carregarPresets(empresaId);
+  renderPresets(tela);
+  const salvo = (_presets[tela] || []).find(p => p.nome.toLowerCase() === nome.toLowerCase());
+  const sel = document.getElementById(`preset-sel-${tela}`);
+  if (sel && salvo) sel.value = salvo.id;
+  const btnDel = document.getElementById(`preset-del-${tela}`);
+  if (btnDel) btnDel.disabled = !sel?.value;
+  toast(`Preset "${nome}" salvo.`, 'g');
+}
+
+async function excluirPreset(tela) {
+  const sel = document.getElementById(`preset-sel-${tela}`);
+  const p = (_presets[tela] || []).find(x => x.id === sel?.value);
+  if (!p) return;
+  if (!confirm(`Excluir o preset "${p.nome}"?`)) return;
+  try {
+    const { error } = await sbAdmin.from('filtro_presets').delete().eq('id', p.id);
+    if (error) throw error;
+  } catch(e) {
+    toast('Erro ao excluir o preset: ' + e.message, 'e', 6000);
+    return;
+  }
+  await carregarPresets(_empresaAtiva?.id);
+  if (sel) sel.value = '';
+  renderPresets(tela);
+  toast(`Preset "${p.nome}" excluído.`, 'g');
+}
+
+// Presets são configuração da consultoria, não do cliente: viewer aplica, não cria nem apaga
+// (mesma fronteira da policy de escrita). Guard simétrico — capaz de MOSTRAR também, porque
+// o role chega depois do primeiro render e um guard que só esconde trava a UI no estado
+// restritivo (bug real do btn-export-all).
+function _sincronizarBotoesPreset() {
+  const pode = ['admin', 'consultor', 'super_admin'].includes(_roleAtual());
+  Object.keys(PRESET_TELAS).forEach(tela => {
+    ['preset-save-', 'preset-del-'].forEach(pre => {
+      const el = document.getElementById(pre + tela);
+      if (el) el.style.display = pode ? '' : 'none';
+    });
+  });
 }
 
 // ══════════════════════════════════════════
@@ -11355,6 +11582,8 @@ async function onGrafFiltroChange() {
   }
   buildCombo('combo-gf-setor');
   buildCombo('combo-gf-funcao');
+  await carregarPresets(empId);
+  renderPresets('graficos');
 }
 
 // ── CÁLCULO DA DISTRIBUIÇÃO POR QUESTÃO ──
@@ -12423,6 +12652,8 @@ async function onLaudoFiltro() {
   if (optGhe) optGhe.hidden = !gruposGhe.length;
   await carregarLaudos(emp);
   renderHistoricoLaudos();
+  await carregarPresets(emp);
+  renderPresets('laudo');
   renderLaudo();
 }
 
@@ -14235,6 +14466,9 @@ function aplicarRestricoesPorRole() {
   // botao de volta quando loadPerfil() termina depois de uma analise ja rodada —
   // por isso _sincronizarBotaoPacote() mostra e esconde, em vez de so esconder.
   _sincronizarBotaoPacote();
+  // Mesma razao: o viewer aplica preset mas nao cria nem apaga, e o role chega depois do
+  // primeiro render — o guard precisa ser capaz de MOSTRAR, nao so de esconder.
+  _sincronizarBotoesPreset();
 
   if (role === 'super_admin') {
     if (_supportMode) {

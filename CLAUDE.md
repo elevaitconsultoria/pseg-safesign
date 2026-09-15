@@ -949,6 +949,49 @@ conseguia usar a feature.
 - Nome duplicado cai no índice único parcial (23505) e vira mensagem legível.
 - Guard de `currentTenantId` igual ao da importação (super_admin fora do modo suporte).
 
+### Histórico de laudos e presets de filtro (2026-09-15)
+
+Fecham as lacunas 3 e 4 da nota de 2026-09-11. As duas respondem ao mesmo pedido — "não
+refazer o trabalho" — por ângulos diferentes: o histórico reaplica **o que foi gerado**, o
+preset guarda **um recorte que se usa sempre**, inclusive em Resultados e Gráficos, que não
+geram laudo.
+
+**Histórico (`laudos`).** A tabela recebia um registro a cada PDF desde o schema v3 e **nunca
+era lida por tela nenhuma**.
+- `snapshot_json` ganhou `config` (granularidade efetiva, seções, ciclo e os 6 combos) e
+  `n_respostas`. As chaves antigas continuam sendo gravadas — já existem registros com elas,
+  e `renderHistoricoLaudos` lê as duas formas. Registro antigo mostra "sem config" e **não**
+  oferece o botão de reaplicar.
+- **`ciclo_id` passou a ser gravado.** A coluna existe desde o schema v3 e nunca era
+  preenchida: todo laudo ficava sem ciclo.
+- `n_respostas` vem de `gerarLaudoPDF`, não do preview — `_registrarLaudo` dispara do botão
+  Imprimir **daquela janela**, então é o número do documento que o cliente recebe.
+- **Reaplicar não gera o PDF sozinho.** A base de respostas pode ter mudado; o documento
+  sairia diferente do entregue mesmo com configuração idêntica.
+
+**Presets (`filtro_presets`, `migration_filtro_presets.sql`).** Tabela nova, escopo por
+empresa **e por tela** (`resultados|graficos|laudo`), `config jsonb`.
+- **`config` é jsonb e não colunas**: o conjunto de filtros de cada tela muda com frequência
+  (três combos novos entraram em 2026-08/09) e uma coluna por filtro exigiria migration a cada
+  combo.
+- **`PRESET_TELAS` é um descritor por tela**, não três implementações. Acrescentar um combo
+  novo já exigiu lembrar de editar vários pontos antes — foi assim que combos ficaram fora de
+  `COMBOS_AUTO_APPLY` e a seleção não refletia na tela.
+- **`_aplicarConfigFiltros` é fonte única** de restauração, usada pelos presets **e** pelo
+  "Reaplicar" do histórico. Duas implementações divergiriam e a diferença apareceria como "o
+  preset traz um conjunto e o reaplicar traz outro", sem erro visível.
+- **Restaurar só seleciona o que ainda existe, e NOMEIA o que não pôde.** Setor que saiu do
+  catálogo, ciclo removido, granularidade/segmentação sem base hoje: cada um vira texto no
+  toast. Ciclo inexistente cai para "todos os ciclos" — manter a seleção anterior produziria
+  um recorte que ninguém pediu, já que todo o resto da tela acabou de ser sobrescrito.
+- `carregarPresets` **falha aberto**: tabela ausente vira lista vazia com `console.warn`, a
+  tela segue funcionando. Por isso a migration pode ir antes ou depois do HTML.
+- Viewer aplica preset, não cria nem apaga (`_sincronizarBotoesPreset`, guard **simétrico** —
+  capaz de mostrar, não só de esconder; o role chega depois do primeiro render).
+
+**⚠ `migration_filtro_presets.sql` NÃO foi aplicada em nenhum banco.** Até aplicar, o card de
+preset aparece e o "Salvar" responde "Presets ainda não estão disponíveis neste ambiente".
+
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
 Cinco commits em `develop` (`944c66b`, `c6cff58`, `9368a0c`, `0260775`, `1b0ce78`), **ainda
