@@ -604,6 +604,13 @@ declarada em `_buildLaudoHTML`).
 - Combos de função (novos): `combo-fun-ghe`, `combo-gf-fun-ghe`, `combo-ld-fun-ghe` — mesmas 3 telas.
 - **Nenhum desses 6 combos tem botão "Aplicar"** (só "Todos"/"Limpar") — são auto-apply via `COMBOS_AUTO_APPLY` (Set de ids) + `_renderParaCombo(id)`, chamado direto por `toggleComboItem`/`selectAllCombo`/`clearCombo` quando o id está no Set. Ao adicionar um combo novo desse tipo (sem "Aplicar"), lembrar de incluí-lo em `COMBOS_AUTO_APPLY` — esquecer isso foi exatamente o bug real encontrado em 2026-08-28 (seleção não refletia na tela até outro filtro com "Aplicar" ser clicado).
 - `gerarLaudoPDF()` (exportação real do PDF) e `renderLaudo()` (preview) devem ler os mesmos filtros — já existiu um gap onde só o preview aplicava o filtro de Agrupamento GHE, corrigido em 2026-08-28.
+- **Preview × PDF do laudo é uma classe recorrente de bug** — `renderLaudo()` (preview) e
+  `_buildLaudoHTML()` (PDF) montam o mesmo documento por caminhos separados. Já divergiram em
+  filtro (2026-08-28), no card de risco e na segmentação (2026-09-18). Mitigações em vigor:
+  `_laudoCardRiscoHTML(f)` é a **fonte única** do card de risco (usado pelos dois — ao mexer no
+  card, mexer só ali), e a granularidade (`#laudo-granularidade`) é calculada **uma vez** no topo
+  de cada função, em `grupos` / `gruposLaudo`, nunca por seção. Ao acrescentar seção ao laudo,
+  implementar nos dois lados e conferir com os dois caminhos rodando sobre os mesmos dados.
 
 **`agruparPorGrupos(setores, grupos)`**: matching via `_gheNormStrong` desde 2026-08-28 (antes
 era string exata) — variantes "Outro: X" que só diferem em caixa/acento/espaço caem no mesmo
