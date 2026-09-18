@@ -1838,7 +1838,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
       <div class="field">
         <label>Perfil <span style="color:var(--red)">*</span></label>
-        <select id="nu-role">
+        <select id="nu-role" onchange="nuOnRoleChange()">
           <option value="consultor">Consultor</option>
           <option value="cliente_viewer">Viewer (leitura)</option>
           <option value="admin">Admin EST</option>
@@ -1846,7 +1846,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
       <div class="field" id="nu-tenant-field" style="display:none">
         <label>EST <span style="color:var(--red)">*</span></label>
-        <select id="nu-tenant-id"></select>
+        <select id="nu-tenant-id" onchange="nuCarregarEmpresas()"></select>
+      </div>
+      <!-- Só para Viewer: sem empresa_id a policy RESTRICTIVE de empresas
+           devolve zero linhas e o usuário loga num painel vazio. -->
+      <div class="field" id="nu-empresa-field" style="display:none">
+        <label>Empresa <span style="color:var(--red)">*</span></label>
+        <select id="nu-empresa-id"></select>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">O Viewer enxerga apenas os dados desta empresa.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -15113,6 +15120,10 @@ async function carregarUsuarios() {
       const canEdit     = callerIsAdmin && !isSelf && u.role !== 'super_admin';
       const empresaNome = u.empresas?.nome || null;
       const isPendente  = !u.last_sign_in_at;
+      // Viewer sem empresa_id não enxerga nada: a policy RESTRICTIVE de `empresas`
+      // compara id = get_my_empresa_id(), que com NULL nunca é true. O painel abre
+      // vazio e sem erro — por isso a pendência precisa aparecer aqui.
+      const semVinculo  = u.role === 'cliente_viewer' && !u.empresa_id;
       const roleSelect  = canEdit ? `
         <select onchange="alterarRoleUsuario('${u.id}',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:white;cursor:pointer">
           <option value="consultor"      ${u.role==='consultor'     ?'selected':''}>Consultor</option>
@@ -15146,6 +15157,7 @@ async function carregarUsuarios() {
             <span class="tag ${ROLE_TAG[u.role] || 'tgr'}">${ROLE_LABEL[u.role] || u.role}</span>
             ${!u.ativo ? '<span class="tag tgr" style="margin-left:4px">Inativo</span>' : ''}
             ${isPendente ? '<span class="tag ty" style="margin-left:4px">Convite pendente</span>' : ''}
+            ${semVinculo ? '<span class="tag tr" style="margin-left:4px" title="Viewer sem empresa vinculada — o painel dele abre vazio. Use Reconfigurar para vincular.">Sem empresa vinculada</span>' : ''}
             ${empresaNome ? `<span style="margin-left:6px;color:var(--tl)">· ${empresaNome}</span>` : ''}
           </div>
         </div>
@@ -15227,12 +15239,18 @@ async function alterarRoleUsuario(id, novoRole) {
   if (!rolesValidos.includes(novoRole)) { toast('Perfil inválido.', 'r'); return; }
 
   // Bloquear qualquer tentativa de tocar em super_admin
-  const { data: alvo } = await sbAdmin.from('perfis').select('role').eq('id', id).single();
+  const { data: alvo } = await sbAdmin.from('perfis').select('role, empresa_id').eq('id', id).single();
   if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
 
   const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
   if (error) { toast('Erro ao alterar perfil: ' + error.message, 'w'); carregarUsuarios(); return; }
-  toast('Perfil atualizado.', 'g');
+  // Promover para Viewer sem empresa vinculada deixa o usuário com o painel vazio —
+  // esta rota não pede empresa como o modal de convite pede.
+  if (novoRole === 'cliente_viewer' && !alvo?.empresa_id) {
+    toast('Perfil atualizado, mas o Viewer ainda não tem empresa vinculada — o painel dele abrirá vazio. Use "Reconfigurar" para vincular.', 'w', 8000);
+  } else {
+    toast('Perfil atualizado.', 'g');
+  }
   carregarUsuarios();
 }
 
@@ -15366,6 +15384,8 @@ async function abrirModalNovoUsuario() {
   document.getElementById('nu-email').value = '';
   document.getElementById('nu-nome').value  = '';
   document.getElementById('nu-role').value  = 'consultor';
+  document.getElementById('nu-empresa-field').style.display = 'none';
+  document.getElementById('nu-empresa-id').innerHTML = '';
   // Todos os perfis disponíveis para admin/super_admin; Admin EST visível para ambos
   const adminOpt = document.querySelector('#nu-role option[value="admin"]');
   if (adminOpt) adminOpt.style.display = '';
@@ -15393,6 +15413,35 @@ function fecharModalNovoUsuario() {
   document.getElementById('modal-novo-usuario').classList.remove('open');
 }
 
+// O campo Empresa só existe para cliente_viewer — é o único role cuja
+// visibilidade inteira depende de perfis.empresa_id.
+function nuOnRoleChange() {
+  const ehViewer = document.getElementById('nu-role').value === 'cliente_viewer';
+  document.getElementById('nu-empresa-field').style.display = ehViewer ? '' : 'none';
+  if (ehViewer) nuCarregarEmpresas();
+}
+
+async function nuCarregarEmpresas() {
+  const sel = document.getElementById('nu-empresa-id');
+  if (document.getElementById('nu-role').value !== 'cliente_viewer') return;
+  // super_admin escolhe a EST no modal; admin convida sempre para o próprio tenant.
+  const tid = currentUser?.role === 'super_admin'
+    ? document.getElementById('nu-tenant-id').value
+    : (currentTenantId || null);
+  sel.innerHTML = '<option value="">Carregando…</option>';
+  if (!tid || !sbAdmin) { sel.innerHTML = '<option value="">Selecione a EST primeiro</option>'; return; }
+  const { data: emps, error } = await sbAdmin.from('empresas')
+    .select('id, nome').eq('tenant_id', tid).eq('ativo', true).order('nome');
+  if (error) { sel.innerHTML = '<option value="">Erro ao carregar empresas</option>'; return; }
+  if (!emps?.length) { sel.innerHTML = '<option value="">Nenhuma empresa cadastrada nesta EST</option>'; return; }
+  sel.innerHTML = '<option value="">— Selecione a empresa —</option>';
+  emps.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id; opt.textContent = e.nome;
+    sel.appendChild(opt);
+  });
+}
+
 async function salvarNovoUsuario() {
   const email = document.getElementById('nu-email').value.trim();
   const nome  = document.getElementById('nu-nome').value.trim();
@@ -15408,6 +15457,13 @@ async function salvarNovoUsuario() {
     if (!tenantId) { toast('Selecione a EST de destino.', 'w'); return; }
   }
 
+  // Viewer sem empresa loga num painel vazio — barrar aqui, não só na Edge Function.
+  let empresaId = null;
+  if (role === 'cliente_viewer') {
+    empresaId = document.getElementById('nu-empresa-id').value;
+    if (!empresaId) { toast('Selecione a empresa que o Viewer poderá acessar.', 'w'); return; }
+  }
+
   const btn = document.getElementById('btn-salvar-novo-usuario');
   btn.disabled = true;
   const btnTxtOrig = btn.innerHTML;
@@ -15421,7 +15477,7 @@ async function salvarNovoUsuario() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + (await sbAdmin.auth.getSession()).data.session?.access_token,
       },
-      body: JSON.stringify({ email, nome, role, tenant_id: tenantId }),
+      body: JSON.stringify({ email, nome, role, tenant_id: tenantId, empresa_id: empresaId }),
     });
 
     if (!res.ok) {
