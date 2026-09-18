@@ -1063,6 +1063,50 @@ empresa **e por tela** (`resultados|graficos|laudo`), `config jsonb`.
 **⚠ `migration_filtro_presets.sql` NÃO foi aplicada em nenhum banco.** Até aplicar, o card de
 preset aparece e o "Salvar" responde "Presets ainda não estão disponíveis neste ambiente".
 
+### Vocabulário de granularidade e nomes de filtro (2026-09-18)
+
+Passe de usabilidade sobre o que as features de GHE acumularam. Três achados, todos reais:
+
+**1. O mesmo conceito com três divergências.** "Segmentação" (Resultados) e "Granularidade do
+relatório" (Relatório) são a mesma coisa, e divergiam em **nome do campo**, **ordem das
+opções** (`agrupado` e `segregado` trocados) e **texto da mesma opção** ("Por Agrupamento" ×
+"Por Agrupamento de Setores"). Quem alterna entre as duas telas relia o combo toda vez.
+- **`GRAN_OPCOES` é a fonte única**: `{v, opcao, tag}`. `opcao` é o texto do combo (pode
+  ensinar o conceito); `tag` é a forma curta da tag do resultado e do subtítulo do PDF.
+- **Os dois selects são gerados** por `_montarSelectsGranularidade()` no boot. Escrever as
+  opções à mão nos dois lugares foi exatamente o que deixou ordem e texto divergirem.
+- Os valores de `tag` ficaram **idênticos aos de antes, de propósito**: eles saem em documento
+  já entregue a cliente, e trocar texto de PDF homologado não é melhoria de usabilidade.
+- `_LD_GRAN_LABEL` foi **removido** — era um segundo catálogo dos mesmos rótulos com outra
+  caixa, criado junto com o histórico de laudos. Mesmo anti-padrão dos dois catálogos de ação
+  que já haviam divergido (ver `CATALOGO_ACOES`). `SEG_LABEL` agora deriva de `GRAN_OPCOES`.
+- **Armadilha encontrada no teste:** `_atualizarSegSelect` **reescrevia** `optGrup.textContent`
+  com o literal `'Por Agrupamento'`. A unificação feita no boot voltava a divergir na primeira
+  troca de empresa — só na tela de Resultados. O rótulo passa a vir de `GRAN_OPCOES`.
+
+**2. "Agrupamento GHE" era um nome errado.** Esse filtro usa `grupos_setor` `tipo='setor'` — um
+agrupamento de **setores**, sem relação com a matriz do PGR. Desde que o GHE de verdade ganhou
+filtro próprio ("GHE (setor × função)"), a sidebar tinha **dois campos chamados GHE** com
+significados diferentes, nas três telas. O HTML carregava um comentário de desambiguação em
+cada um — sintoma, não solução. Renomeado para **"Agrupamento de Setores"**, simétrico ao
+"Agrupamento de Função" que já existia ao lado.
+**Não renomear as ocorrências da importação**: lá "Agrupamento GHE" é o nome da **coluna da
+planilha** do PGR.
+
+**3. O card de preset estava em três posições diferentes** — no meio (Resultados), no topo
+(Gráficos) e no rodapé, depois de "Laudos gerados" (Relatório). Padronizado logo abaixo de
+**Cliente** nas três: o preset carrega um recorte inteiro, então pertence ao topo, antes de a
+pessoa mexer nos filtros um a um. Preset e "Laudos gerados" ganharam uma linha dizendo o que
+cada um faz — os dois reaplicam configuração e ficavam lado a lado sem distinção.
+
+**Observações levantadas e NÃO alteradas** (mudam comportamento ou hábito, decisão do usuário):
+- A tela de **Relatório não tem filtro de Funções**, enquanto Resultados e Gráficos têm.
+  Assimetria pré-existente.
+- O item de menu **"Agrupamentos GHE"** hoje abriga três conceitos (GHE por par, Grupos de
+  Setores, Grupos de Funções). O nome ficou estreito, mas renomear mexe em memória muscular.
+- Em Resultados e Gráficos os filtros **cruzam** eixo cru e agrupamento (Setores → Agrupamento
+  de Setores → GHE → Agrupamento de Função → Funções). Agrupá-los exigiria reordenar blocos.
+
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
 Cinco commits em `develop` (`944c66b`, `c6cff58`, `9368a0c`, `0260775`, `1b0ce78`), **ainda

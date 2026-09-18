@@ -2044,6 +2044,19 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
+      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
+      <div class="filter-card">
+        <div class="filter-label">Preset de filtro</div>
+        <select id="preset-sel-resultados" class="filter-select" onchange="aplicarPreset('resultados')">
+          <option value="">— nenhum —</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-resultados" onclick="salvarPreset('resultados')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-resultados" onclick="excluirPreset('resultados')" disabled title="Excluir o preset selecionado">Excluir</button>
+        </div>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Um recorte de filtros que você salva e reaplica quando quiser.</div>
+      </div>
+
       <!-- Filtro Ciclo -->
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
@@ -2077,9 +2090,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
-      <!-- Filtro Agrupamento GHE — Resultados -->
+      <!-- Filtro Agrupamento de Setores — Resultados -->
       <div class="filter-card" id="fc-ghe" style="display:none">
-        <div class="filter-label">Agrupamento GHE</div>
+        <div class="filter-label">Agrupamento de Setores</div>
         <div class="combo" id="combo-ghe">
           <div class="combo-trigger" onclick="toggleCombo('combo-ghe')">
             <div class="combo-preview" id="combo-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
@@ -2103,7 +2116,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
 
       <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
-           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+           Distinto de "Agrupamento de Setores" acima, que filtra pelo eixo de setor. -->
       <div class="filter-card" id="fc-ghe-par" style="display:none">
         <div class="filter-label">GHE (setor × função)</div>
         <div class="combo" id="combo-ghe-par">
@@ -2175,18 +2188,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
-      <div class="filter-card">
-        <div class="filter-label">Preset de filtro</div>
-        <select id="preset-sel-resultados" class="filter-select" onchange="aplicarPreset('resultados')">
-          <option value="">— nenhum —</option>
-        </select>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-resultados" onclick="salvarPreset('resultados')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
-          <button class="btn btn-ghost btn-sm" id="preset-del-resultados" onclick="excluirPreset('resultados')" disabled title="Excluir o preset selecionado">Excluir</button>
         </div>
       </div>
 
@@ -2409,6 +2410,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-graficos" onclick="salvarPreset('graficos')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
           <button class="btn btn-ghost btn-sm" id="preset-del-graficos" onclick="excluirPreset('graficos')" disabled title="Excluir o preset selecionado">Excluir</button>
         </div>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Um recorte de filtros que você salva e reaplica quando quiser.</div>
       </div>
 
       <div class="filter-card">
@@ -2442,9 +2444,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
-      <!-- Filtro Agrupamento GHE — Gráficos -->
+      <!-- Filtro Agrupamento de Setores — Gráficos -->
       <div class="filter-card" id="fc-gf-ghe" style="display:none">
-        <div class="filter-label">Agrupamento GHE</div>
+        <div class="filter-label">Agrupamento de Setores</div>
         <div class="combo" id="combo-gf-ghe">
           <div class="combo-trigger" onclick="toggleCombo('combo-gf-ghe')">
             <div class="combo-preview" id="combo-gf-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
@@ -2469,7 +2471,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <!-- Filtro Agrupamento de Função — Gráficos -->
       <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
-           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+           Distinto de "Agrupamento de Setores" acima, que filtra pelo eixo de setor. -->
       <div class="filter-card" id="fc-gf-ghe-par" style="display:none">
         <div class="filter-label">GHE (setor × função)</div>
         <div class="combo" id="combo-gf-ghe-par">
@@ -2598,6 +2600,19 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
+      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
+      <div class="filter-card">
+        <div class="filter-label">Preset de filtro</div>
+        <select id="preset-sel-laudo" class="filter-select" onchange="aplicarPreset('laudo')">
+          <option value="">— nenhum —</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-laudo" onclick="salvarPreset('laudo')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-laudo" onclick="excluirPreset('laudo')" disabled title="Excluir o preset selecionado">Excluir</button>
+        </div>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Um recorte de filtros que você salva e reaplica quando quiser.</div>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
         <select id="ld-ciclo" onchange="setCicloAtivo(this.value);renderLaudo()" class="filter-select">
@@ -2673,9 +2688,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
-      <!-- Filtro Agrupamento GHE — Laudo -->
+      <!-- Filtro Agrupamento de Setores — Laudo -->
       <div class="filter-card" id="fc-ld-ghe" style="display:none">
-        <div class="filter-label">Agrupamento GHE</div>
+        <div class="filter-label">Agrupamento de Setores</div>
         <div class="combo" id="combo-ld-ghe">
           <div class="combo-trigger" onclick="toggleCombo('combo-ld-ghe')">
             <div class="combo-preview" id="combo-ld-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
@@ -2700,7 +2715,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <!-- Filtro Agrupamento de Função — Laudo -->
       <!-- Filtro por GHE (par setor x funcao) — isola um ou mais GHE da matriz do PGR.
-           Distinto de "Agrupamento GHE" acima, que filtra pelo eixo de setor. -->
+           Distinto de "Agrupamento de Setores" acima, que filtra pelo eixo de setor. -->
       <div class="filter-card" id="fc-ld-ghe-par" style="display:none">
         <div class="filter-label">GHE (setor × função)</div>
         <div class="combo" id="combo-ld-ghe-par">
@@ -2750,7 +2765,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
 
       <div class="filter-card">
-        <div class="filter-label">Granularidade do relatório</div>
+        <div class="filter-label">Segmentação do relatório</div>
         <select id="laudo-granularidade" class="filter-select" onchange="renderLaudo()">
           <option value="ghe">Por GHE (setor × função)</option>
           <option value="agrupado">Por Agrupamento de Setores</option>
@@ -2777,19 +2792,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Historico: a tabela `laudos` era escrita a cada PDF e nunca lida por tela nenhuma. -->
       <div class="filter-card">
         <div class="filter-label">Laudos gerados</div>
+        <div style="font-size:10px;color:var(--tl);margin:-2px 0 6px">Cada PDF já emitido para este cliente. "Reaplicar" devolve a configuração daquele laudo.</div>
         <div id="ld-historico" style="max-height:200px;overflow-y:auto"></div>
-      </div>
-
-      <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
-      <div class="filter-card">
-        <div class="filter-label">Preset de filtro</div>
-        <select id="preset-sel-laudo" class="filter-select" onchange="aplicarPreset('laudo')">
-          <option value="">— nenhum —</option>
-        </select>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-laudo" onclick="salvarPreset('laudo')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
-          <button class="btn btn-ghost btn-sm" id="preset-del-laudo" onclick="excluirPreset('laudo')" disabled title="Excluir o preset selecionado">Excluir</button>
-        </div>
       </div>
 
 
@@ -7222,12 +7226,33 @@ function _setViewMode(mode) {
 // de ser valido). Nao confundir com #laudo-granularidade, que tem regra propria.
 const SEG_PADRAO = 'consolidado';   // Geral
 
-const SEG_LABEL = {
-  ghe:         'Por GHE',
-  segregado:   'Por setor',
-  agrupado:    'Por agrupamento',
-  consolidado: 'Geral',
-};
+// Fonte ÚNICA do vocabulário de granularidade. `opcao` é o texto do combo (pode ensinar o
+// conceito); `tag` é a forma curta da tag do resultado e do subtítulo do PDF.
+// A ordem do array é a ordem das duas telas — do recorte mais fino ao mais grosso.
+// Os valores de `tag` são exatamente os de antes, DE PROPÓSITO: eles saem em documento já
+// entregue a cliente, e trocar texto de PDF homologado não é melhoria de usabilidade.
+const GRAN_OPCOES = [
+  { v: 'ghe',         opcao: 'Por GHE (setor × função)',   tag: 'Por GHE' },
+  { v: 'segregado',   opcao: 'Por Setor',                  tag: 'Por setor' },
+  { v: 'agrupado',    opcao: 'Por Agrupamento de Setores', tag: 'Por agrupamento' },
+  { v: 'consolidado', opcao: 'Geral',                      tag: 'Geral' },
+];
+
+const SEG_LABEL = Object.fromEntries(GRAN_OPCOES.map(o => [o.v, o.tag]));
+
+// Preenche os dois selects a partir do array. Escrever as opções à mão nos dois lugares foi
+// exatamente o que deixou ordem e texto divergirem sem ninguém notar.
+// Preserva o valor selecionado: roda no boot, antes de qualquer escolha, mas também é seguro
+// chamar depois.
+function _montarSelectsGranularidade() {
+  ['f-segmentacao', 'laudo-granularidade'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const antes = sel.value;
+    sel.innerHTML = GRAN_OPCOES.map(o => `<option value="${o.v}">${o.opcao}</option>`).join('');
+    if (antes && GRAN_OPCOES.some(o => o.v === antes)) sel.value = antes;
+  });
+}
 
 // "Por Agrupamento" so existe com grupos GHE cadastrados. Como o filtro vive na
 // sidebar, ele precisa refletir isso ANTES de qualquer analise rodar — por isso a
@@ -7247,7 +7272,11 @@ function _atualizarSegSelect() {
   const optGrup = sel.querySelector('option[value="agrupado"]');
   if (optGrup) {
     optGrup.disabled    = !temGrupos;
-    optGrup.textContent = temGrupos ? 'Por Agrupamento' : 'Por Agrupamento (sem grupos)';
+    // O rótulo vem de GRAN_OPCOES, não de um literal: escrever 'Por Agrupamento' aqui
+    // reescrevia, em tempo de execução, o texto que o select recebeu no boot — a divergência
+    // entre Resultados e Relatório voltava sozinha depois da primeira troca de empresa.
+    const rotuloAgrup = GRAN_OPCOES.find(o => o.v === 'agrupado')?.opcao || 'Por Agrupamento';
+    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos)`;
   }
   // GHE some da lista quando a empresa nao tem matriz importada — nao ha o que oferecer,
   // e um "(sem GHE)" desabilitado so ocuparia espaco no filtro.
@@ -9632,10 +9661,6 @@ async function carregarLaudos(empresaId) {
   }
 }
 
-const _LD_GRAN_LABEL = {
-  ghe: 'Por GHE', agrupado: 'Por Agrupamento', segregado: 'Por Setor', consolidado: 'Geral',
-};
-
 function renderHistoricoLaudos() {
   const el = document.getElementById('ld-historico');
   if (!el) return;
@@ -9654,7 +9679,7 @@ function renderHistoricoLaudos() {
     const quem = (l.gerado_por || '').split('@')[0];
     const n = sn.n_respostas;
     const det = [
-      gran ? _LD_GRAN_LABEL[gran] || gran : null,
+      gran ? SEG_LABEL[gran] || gran : null,
       ciclo,
       Number.isFinite(n) ? `${n} resposta${n !== 1 ? 's' : ''}` : null,
     ].filter(Boolean).join(' · ');
@@ -9795,7 +9820,7 @@ function _aplicarGranSecoes(cfg, perdidos) {
   if (granEl && cfg.granularidade) {
     const opt = granEl.querySelector(`option[value="${cfg.granularidade}"]`);
     if (opt && !opt.hidden) granEl.value = cfg.granularidade;
-    else perdidos.push(`a granularidade "${_LD_GRAN_LABEL[cfg.granularidade] || cfg.granularidade}" (sem base nesta empresa hoje)`);
+    else perdidos.push(`a granularidade "${SEG_LABEL[cfg.granularidade] || cfg.granularidade}" (sem base nesta empresa hoje)`);
   }
 }
 
@@ -18905,6 +18930,7 @@ try { buildCombo('combo-ld-escolaridade'); } catch(e) { console.warn('combo-ld-e
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
 try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
+try { _montarSelectsGranularidade(); }  catch(e) { console.warn('selects-granularidade:', e); }
 // ── INIT — inicializa app com login real via Supabase ──────────────────
 // Questões sempre inicializadas (necessário para Distribuição e Laudo)
 try {
