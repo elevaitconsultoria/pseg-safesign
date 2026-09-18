@@ -7056,32 +7056,36 @@ const LEGENDA_ESCALA_HTML =
 // html2canvas renderiza o clone fora do documento, onde as vars podem não resolver.
 // Chave · rótulo · definição. A chave permite montar subconjuntos: o laudo não
 // exibe o código `cd` em lugar nenhum, então lá esse item seria ruído.
+// A ORDEM importa — segue a leitura do card: P × S formam o Nível, depois as
+// marcações da barra (Meta, n) e por último as convenções (inversa, peso, cd).
 const _LEG_ITENS = [
-  ['cd',    'cd',       'Código do risco no catálogo de riscos psicossociais.'],
-  ['p',     'P1–P4',    'Probabilidade — nível predominante (moda) das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
-  ['s',     'S1–S4',    'Severidade — gravidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
-  ['nivel', 'Nível',    'Resultado do cruzamento P × S na matriz de risco (BS 8800): IRRELEVANTE · BAIXO · MÉDIO · ALTO · CRÍTICO.'],
-  ['n',     'n',        'Número de respondentes considerados no recorte.'],
-  ['meta',  'Meta',     'Resposta ideal esperada para a questão — "Nunca" nas diretas e "Sempre" nas inversas. O marcador ▼ na barra indica essa posição.'],
-  ['inv',   '↺ inv',    'Questão inversa: a escala é espelhada antes do cálculo (valor = 5 − valor respondido).'],
-  ['peso',  'Peso 1/N', 'Dentro de um risco, todas as questões pesam igual — N é a quantidade de questões do risco, não o número de respondentes.'],
+  ['p',     'P1–P4',    'Probabilidade — moda das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
+  ['s',     'S1–S4',    'Severidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
+  ['nivel', 'Nível',    'Cruzamento P × S na matriz BS 8800: Irrelevante · Baixo · Médio · Alto · Crítico.'],
+  ['meta',  'Meta',     'Resposta ideal da questão — "Nunca" nas diretas, "Sempre" nas inversas. O ▼ marca essa posição na barra.'],
+  ['n',     'n',        'Respondentes considerados no recorte.'],
+  ['inv',   '↺ inv',    'Questão inversa: escala espelhada antes do cálculo (5 − valor respondido).'],
+  ['peso',  'Peso 1/N', 'Questões do mesmo risco pesam igual; N = questões do risco, não respondentes.'],
+  ['cd',    'cd',       'Código do risco no catálogo.'],
 ];
 
 // chaves: subconjunto de _LEG_ITENS a exibir (omitido = todos).
+// Bloco deliberadamente discreto: é material de apoio, não pode competir com os
+// dados. Sem fundo e sem borda de destaque — só dois filetes; termo alinhado à
+// direita numa coluna fixa, para as definições começarem todas no mesmo eixo.
 function _legendaIndicadoresHTML(chaves) {
   const itens = chaves ? _LEG_ITENS.filter(([k]) => chaves.includes(k)) : _LEG_ITENS;
-  return '<div data-legenda-indicadores="1" style="margin-bottom:16px;padding:12px 14px;'+
-    'background:#f8f9fa;border:1px solid #e5e7eb;border-left:3px solid #16532d;'+
-    'border-radius:0 6px 6px 0;page-break-inside:avoid;break-inside:avoid">'+
-    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;'+
-    'color:#16532d;margin-bottom:8px">Como ler este resultado</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 18px">'+
-    itens.map(([, chip, txt]) =>
-      '<div style="display:flex;align-items:flex-start;gap:7px;font-size:10px;color:#4b5563;line-height:1.5">'+
-      '<span style="flex-shrink:0;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;'+
-      'color:#374151;background:white;border:1px solid #e5e7eb;border-radius:3px;padding:1px 5px;'+
-      'white-space:nowrap">'+chip+'</span>'+
-      '<span>'+txt+'</span></div>'
+  return '<div data-legenda-indicadores="1" style="margin-bottom:14px;padding:8px 0;'+
+    'border-top:1px solid #eef0f2;border-bottom:1px solid #eef0f2;'+
+    'page-break-inside:avoid;break-inside:avoid">'+
+    '<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;'+
+    'color:#9ca3af;margin-bottom:6px">Como ler este resultado</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:3px 20px">'+
+    itens.map(([, termo, txt]) =>
+      '<div style="display:grid;grid-template-columns:46px 1fr;gap:8px;'+
+      'font-size:9px;line-height:1.5">'+
+      '<span style="text-align:right;color:#4b5563;font-weight:600;white-space:nowrap">'+termo+'</span>'+
+      '<span style="color:#6b7280">'+txt+'</span></div>'
     ).join('')+
     '</div></div>';
 }
