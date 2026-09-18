@@ -2849,7 +2849,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <option value="3">3 — Sobrecarga de trabalho mental</option>
           </optgroup>
           <optgroup label="Relações Interpessoais">
-            <option value="4">4 — Constrangimento no ambiente</option>
+            <option value="4">4 — Estresse por constrangimento</option>
             <option value="5">5 — Estresse por desigualdade</option>
             <option value="6">6 — Conflitos hierárquicos</option>
             <option value="9">9 — Conflitos interpessoais</option>
@@ -4600,7 +4600,7 @@ const RISCOS_DETALHES = {
     medidas:'Manter avaliações regulares para identificar excesso de demandas; ajustar tarefas e responsabilidades para nível de controle adequado; capacitar líderes para identificar e abordar sinais de sobrecarga mental nas equipes.',
   },
   4: {
-    nome:'Constrangimento no ambiente de trabalho',
+    nome:'Estresse por constrangimento no ambiente de trabalho',
     cat:'RELAÇÕES INTERPESSOAIS', s:2,
     cons:'Ansiedade, aumento dos conflitos interpessoais',
     fontes:'Ausência de canais seguros para denúncias de comportamentos inadequados; situações expostas publicamente que deveriam ser privadas.',
@@ -7013,11 +7013,21 @@ function exportarResultadosPrint(secoes) {
     '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
   };
   const resolverVars = s => s.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  // O pacote "Baixar todas as analises" captura #view-content uma vez por analise,
+  // e cada captura ja vem com o bloco "Como ler este resultado" no topo. Num PDF
+  // unico isso repetiria a mesma legenda em todas as paginas — mantem-se so na
+  // primeira. Os PNGs sao arquivos avulsos, entao la cada um conserva a sua.
+  const _semLegenda = h => {
+    const d = document.createElement('div');
+    d.innerHTML = h;
+    d.querySelectorAll('[data-legenda-indicadores]').forEach(el => el.remove());
+    return d.innerHTML;
+  };
   const html = multi
-    ? capturas.map(s =>
+    ? capturas.map((s, i) =>
         '<section class="psicomap-secao">' +
           '<h2 class="psicomap-secao-titulo">' + s.titulo + '</h2>' +
-          resolverVars(s.html) +
+          resolverVars(i === 0 ? s.html : _semLegenda(s.html)) +
         '</section>').join('')
     : resolverVars(capturas[0].html);
 
@@ -7372,7 +7382,9 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       // Questões individuais (colapsível)
       const questoesHtml = f.distQuestoes.map((dq, qi) => {
         const barraQ  = renderBarraDistribuicao(dq.pcts, dq.moda, dq.ve ?? 1, dq.n, false, dq.inv, true);
-        const textoQ  = dq.texto.length > 60 ? dq.texto.slice(0, 60) + '…' : dq.texto;
+        // Texto integral da questão — truncar em 60 caracteres cortava o enunciado
+        // no meio ("...tenho prazos impo…") e não há restrição de largura aqui.
+        const textoQ  = dq.texto;
         const sep     = qi < f.distQuestoes.length - 1
           ? 'padding-bottom:18px;border-bottom:1px dashed var(--bs);margin-bottom:18px' : '';
         return '<div style="' + sep + '">' +
@@ -7381,7 +7393,8 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           'border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--tm);' +
           'white-space:nowrap;flex-shrink:0">' + dq.codigo + '</span>' +
           (dq.inv ? '<span style="font-size:9px;color:#d97706;font-weight:600;flex-shrink:0">↺ inv</span>' : '') +
-          '<span style="font-size:11px;color:var(--tx);line-height:1.45">' + textoQ + '</span>' +
+          '<span style="font-size:11px;color:var(--tx);line-height:1.45;flex:1;min-width:0;' +
+          'overflow-wrap:anywhere">' + textoQ + '</span>' +
           '</div>' + barraQ + '</div>';
       }).join('');
 
@@ -7392,15 +7405,19 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           'onclick="(function(el){var c=el.nextElementSibling;var o=c.style.display!==\'none\';' +
           'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
           '<span class="qa-arr">' + (nOpen ? '▼' : '▶') + '</span>' +
-          '<span>' + f.distQuestoes.length + ' questão' + (f.distQuestoes.length > 1 ? 'ões' : '') +
-          ' que compõem este risco</span></div>' +
+          '<span>' + f.distQuestoes.length + (f.distQuestoes.length > 1 ? ' questões' : ' questão') +
+          ' que compõem este risco' +
+          (f.distQuestoes.length > 1
+            ? '<span style="color:#9ca3af"> · peso 1/' + f.distQuestoes.length + ' cada</span>'
+            : '') + '</span></div>' +
           '<div style="display:' + (nOpen ? 'block' : 'none') + ';background:#f8fafc;' +
           'padding:16px 18px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
           '</div>'
         : '';
 
       const cdBadge = f.cd
-        ? '<span style="font-size:9px;font-family:monospace;background:rgba(255,255,255,.8);' +
+        ? '<span title="Código do risco no catálogo de riscos psicossociais" ' +
+          'style="font-size:9px;font-family:monospace;background:rgba(255,255,255,.8);' +
           'padding:1px 5px;border-radius:3px;color:var(--tm);border:1px solid rgba(0,0,0,.07);' +
           'flex-shrink:0">cd' + f.cd + '</span>'
         : '';
@@ -7412,16 +7429,22 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         '<div style="background:' + hdrBg + ';padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         cdBadge +
         '<span style="font-size:13px;font-weight:700;color:var(--tx);flex:1;min-width:0;word-break:break-word">' + f.nome + '</span>' +
-        '<span style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">S' + f.s + ' ' + f.sLabel + '</span>' +
-        '<span style="background:' + nc.bg + ';color:' + nc.cor + ';font-size:10px;font-weight:700;' +
+        '<span title="Severidade ' + f.s + ' — ' + f.sLabel + ' (gravidade predefinida deste risco)" ' +
+        'style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">' +
+        '<span style="opacity:.65">Severidade</span> S' + f.s + ' ' + f.sLabel + '</span>' +
+        '<span title="Nível de risco resultante do cruzamento P × S na matriz BS 8800" ' +
+        'style="background:' + nc.bg + ';color:' + nc.cor + ';font-size:10px;font-weight:700;' +
         'padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;border:1px solid ' + borda + '">' + f.nivel + '</span>' +
         '</div>' +
         // — Corpo
         '<div style="padding:14px 16px;background:white">' +
         barraMedia +
-        '<div style="margin-top:10px;font-size:11px;color:#374151">' +
+        '<div style="margin-top:10px">' +
+        '<div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;' +
+        'color:#9ca3af;margin-bottom:2px">Probabilidade × Severidade → Nível de risco</div>' +
+        '<div style="font-size:11px;color:#374151">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
-        ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div>' +
+        ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div></div>' +
         (f.classifErg ? '<div style="font-size:10px;color:#6b7280;font-style:italic;margin-top:5px">' + f.classifErg + '</div>' : '') +
         '</div>' +
         // — Colapsível
@@ -7433,7 +7456,8 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   });
 
   document.getElementById('view-content').innerHTML =
-    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco para os filtros selecionados.</div>';
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum risco para os filtros selecionados.</div>';
 }
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
@@ -7491,7 +7515,8 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   });
 
   document.getElementById('view-content').innerHTML =
-    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
 }
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
@@ -7571,7 +7596,7 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
           return '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--bs)">'+
             '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:7px;flex-wrap:wrap">'+
             '<span style="font-size:10px;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:3px;color:var(--tl);white-space:nowrap;font-family:monospace">'+d.q.c+'</span>'+
-            (d.q.cd && rd ? '<span style="font-size:9px;color:var(--tm);font-weight:600;background:var(--bs);padding:1px 6px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
+            (d.q.cd && rd ? '<span style="font-size:9px;color:var(--tm);font-weight:600;background:var(--bs);padding:1px 6px;border-radius:3px">'+rd.nome+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
             '<span style="font-size:12px;color:var(--tx);line-height:1.5;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
@@ -7580,7 +7605,9 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
     });
     html += '</div>';
   });
-  document.getElementById('view-content').innerHTML = html || '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
+  document.getElementById('view-content').innerHTML =
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
 }
 
 // ══════════════════════════════════════════
@@ -7626,6 +7653,49 @@ const LEGENDA_ESCALA_HTML =
   '</div>'+
   '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span>'+
   '</div>';
+
+// ── Glossário de indicadores ("Como ler este resultado") ──────────
+// Renderizado uma vez no topo de #view-content nas três visões da tela Resultados.
+// Como #view-content é exatamente o que exportarResultados()/exportarResultadosPrint()
+// capturam, a legenda acompanha o PNG e o PDF sem nenhum tratamento adicional.
+// USA VALORES HARDCODED (não CSS vars) pelo mesmo motivo de LEGENDA_ESCALA_HTML:
+// html2canvas renderiza o clone fora do documento, onde as vars podem não resolver.
+// Chave · rótulo · definição. A chave permite montar subconjuntos: o laudo não
+// exibe o código `cd` em lugar nenhum, então lá esse item seria ruído.
+// A ORDEM importa — segue a leitura do card: P × S formam o Nível, depois as
+// marcações da barra (Meta, n) e por último as convenções (inversa, peso, cd).
+const _LEG_ITENS = [
+  ['p',     'P1–P4',    'Probabilidade — moda das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
+  ['s',     'S1–S4',    'Severidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
+  ['nivel', 'Nível',    'Cruzamento P × S na matriz BS 8800: Irrelevante · Baixo · Médio · Alto · Crítico.'],
+  ['meta',  'Meta',     'Resposta ideal da questão — "Nunca" nas diretas, "Sempre" nas inversas. O ▼ marca essa posição na barra.'],
+  ['n',     'n',        'Respondentes considerados no recorte.'],
+  ['inv',   '↺ inv',    'Questão inversa: escala espelhada antes do cálculo (5 − valor respondido).'],
+  ['peso',  'Peso 1/N', 'Questões do mesmo risco pesam igual; N = questões do risco, não respondentes.'],
+  ['cd',    'cd',       'Código do risco no catálogo.'],
+];
+
+// chaves: subconjunto de _LEG_ITENS a exibir (omitido = todos).
+// Bloco deliberadamente discreto: é material de apoio, não pode competir com os
+// dados. Sem fundo e sem borda de destaque — só dois filetes; termo alinhado à
+// direita numa coluna fixa, para as definições começarem todas no mesmo eixo.
+function _legendaIndicadoresHTML(chaves) {
+  const itens = chaves ? _LEG_ITENS.filter(([k]) => chaves.includes(k)) : _LEG_ITENS;
+  return '<div data-legenda-indicadores="1" style="margin-bottom:14px;padding:8px 0;'+
+    'border-top:1px solid #eef0f2;border-bottom:1px solid #eef0f2;'+
+    'page-break-inside:avoid;break-inside:avoid">'+
+    '<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;'+
+    'color:#9ca3af;margin-bottom:6px">Como ler este resultado</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:3px 20px">'+
+    itens.map(([, termo, txt]) =>
+      '<div style="display:grid;grid-template-columns:46px 1fr;gap:8px;'+
+      'font-size:9px;line-height:1.5">'+
+      '<span style="text-align:right;color:#4b5563;font-weight:600;white-space:nowrap">'+termo+'</span>'+
+      '<span style="color:#6b7280">'+txt+'</span></div>'
+    ).join('')+
+    '</div></div>';
+}
+const LEGENDA_INDICADORES_HTML = _legendaIndicadoresHTML();
 
 // getNivelLabels — mantido por compatibilidade com código legado; retorna constante
 function getNivelLabels() { return NIVEL_NM_ORIG; }
@@ -7724,9 +7794,13 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
 
   const txt_meta = 'Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'+nStr;
 
+  const ttResultado = 'Nível predominante (moda) das respostas — é ele que define a Probabilidade (P)';
+  const ttMeta = 'Percentual de respostas no nível ideal esperado'
+    + (n !== undefined ? ' · n = ' + n + ' respondente' + (n === 1 ? '' : 's') : '');
+
   const badgeContent =
-    '<div style="'+stDiscreta+'">'+txt_resultado+'</div>'+
-    '<div style="'+stDiscreta+'">'+txt_meta+'</div>';
+    '<div title="'+ttResultado+'" style="'+stDiscreta+'">'+txt_resultado+'</div>'+
+    '<div title="'+ttMeta+'" style="'+stDiscreta+'">'+txt_meta+'</div>';
 
   const badgeSz = 'font-size:10px;padding:4px 7px';
   return barWrapper +
@@ -12440,7 +12514,7 @@ const CATALOGO_ACOES = {
       quanto: 'Custo de facilitação e treinamento',
     },
   },
-  '4': { // Constrangimento no ambiente de trabalho
+  '4': { // Estresse por constrangimento no ambiente de trabalho
     porNivel: {
       MÉDIO: [
         'Implementar/manter canal de denúncia confidencial, com fluxo claro de recebimento, apuração e proteção contra retaliações.',
@@ -13096,46 +13170,29 @@ async function renderLaudo() {
       '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span>'+
       '</div>';
 
+    // O preview repete a seção por grupo GHE; a legenda entra só no primeiro bloco,
+    // mesma regra do PDF (uma ocorrência por documento).
+    let primeiroBlocoAR = true;
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
-      const fatores = calcFatores(lGrupo).filter(f => f && (!niveisLd.length || niveisLd.includes(f.nivel)));
-      if (!fatores.length) return;
+      // Mesmo recorte do PDF: IRRELEVANTE fora (o preview mostrava, o PDF não).
+      const fatores = calcFatores(lGrupo)
+        .filter(f => f && f.nivel !== 'IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)));
 
       html += '<div class="laudo-section">'+
-        '<div class="laudo-sec-title">Análise gráfica por risco — '+grupo.nome+'</div>'+
-        legendaAR;
+        '<div class="laudo-sec-title">Análise gráfica por fator de risco — '+grupo.nome+'</div>'+
+        (primeiroBlocoAR ? _legendaIndicadoresHTML(['p','s','nivel','meta','n','inv','peso']) : '')+
+        (fatores.length ? legendaAR : '');
+      primeiroBlocoAR = false;
 
-      fatores.sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel)).forEach(f => {
-        const nc  = NivelCores[f.nivel] || '#e5e7eb';
-        const nt  = NivelTxt[f.nivel]  || '#374151';
-        const barraMedia = renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false, false, true);
+      if (!fatores.length) {
+        html += '<p style="color:#6b7280;font-size:11px">Nenhum fator com nível acima de Irrelevante neste agrupamento.</p></div>';
+        return;
+      }
 
-        // Mini barras por questão
-        const detalhe = f.distQuestoes && f.distQuestoes.length
-          ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
-            f.distQuestoes.map(q => {
-              const bq = renderBarraDistribuicao(q.pcts, q.moda, q.ve, q.n, false, q.inv, true);
-              return '<div style="margin-bottom:8px">'+
-                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-                '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+q.codigo+'</span>'+
-                (q.inv ? '<span style="font-size:8px;color:#d97706">↺ inv</span>' : '')+
-                '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+q.texto+'</span>'+
-                '</div>'+bq+'</div>';
-            }).join('')+
-            '</div>'
-          : '';
-
-        html += '<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid '+nc+';border-radius:6px">'+
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'+
-          '<span style="font-size:12px;font-weight:700;color:#111827;flex:1">'+f.nome+'</span>'+
-          '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:'+nc+';color:'+nt+'">'+f.nivel+'</span>'+
-          '<span style="font-size:10px;color:#6b7280">P'+f.p+' · n='+f.n+'</span>'+
-          '</div>'+
-          barraMedia+
-          detalhe+
-          '</div>';
-      });
+      fatores.sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel))
+        .forEach(f => { html += _laudoCardRiscoHTML(f); });
 
       html += '</div>';
     });
@@ -13151,6 +13208,7 @@ async function renderLaudo() {
     ];
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Distribuição de respostas por questão</div>
+      ${laudoSecoesAtivas.has('analise_risco') ? '' : _legendaIndicadoresHTML(['n','meta','inv'])}
       <div style="margin-bottom:12px">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">
           <span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>
@@ -13177,7 +13235,7 @@ async function renderLaudo() {
           return '<div style="margin-bottom:12px">'+
             '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;flex-wrap:wrap">'+
             '<span style="font-size:9px;font-weight:800;background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--tl);white-space:nowrap">'+d.q.c+'</span>'+
-            (rd ? '<span style="font-size:9px;color:'+cor+';font-weight:600;background:'+bg+';padding:1px 5px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
+            (rd ? '<span style="font-size:9px;color:'+cor+';font-weight:600;background:'+bg+';padding:1px 5px;border-radius:3px">'+rd.nome+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
             '<span style="font-size:11px;color:var(--tx);line-height:1.4;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
@@ -13279,17 +13337,57 @@ async function _registrarLaudo() {
 // ── Helper HTML-escape ──────────────────────────────────────────
 function _esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// ── Barra de distribuição para impressão (sem CSS vars) ─────────
-function _barPrint(pcts, moda) {
-  // Paleta alinhada com GF_CORES (Chart.js) — nunca usar azul/laranja antigos
-  const C = {1:'#22c55e', 2:'#86efac', 3:'#f59e0b', 4:'#ef4444'};
-  const T = {1:'rgba(255,255,255,.92)', 2:'rgba(0,0,0,.68)', 3:'rgba(0,0,0,.72)', 4:'rgba(255,255,255,.92)'};
-  const segs = [1,2,3,4].map(n=>{
-    const p=(pcts||{})[n]||0; if(!p) return '';
-    const hi = n===moda ? 'box-shadow:inset 0 0 0 2px rgba(0,0,0,.22);z-index:2;' : '';
-    return `<div style="height:100%;width:${p}%;background:${C[n]};${hi}display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:${T[n]}">${p>=12?p+'%':''}</div>`;
-  }).join('');
-  return `<div style="height:14px;border-radius:3px;overflow:hidden;display:flex;background:#e5e7eb">${segs}</div>`;
+// ── Card de risco do laudo — FONTE ÚNICA ────────────────────────
+// Usado pelo preview (renderLaudo) e pelo PDF (_buildLaudoHTML). Eram duas
+// cópias que divergiram: o PDF ficou sem severidade, sem a leitura P × S e com
+// uma barra reduzida. Ao mexer no card, mexer só aqui.
+const LAUDO_NIVEL_BG = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
+const LAUDO_NIVEL_TX = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
+
+function _laudoCardRiscoHTML(f) {
+  const e  = _esc;
+  const nc = LAUDO_NIVEL_BG[f.nivel] || '#e5e7eb';
+  const nt = LAUDO_NIVEL_TX[f.nivel] || '#374151';
+  const nq = (f.distQuestoes || []).length;
+  const detalhe = nq
+    ? '<div style="margin-top:12px;border-top:1px solid #f0f2f4;padding-top:9px">'+
+      '<div style="font-size:9.5px;color:#6b7280;margin-bottom:9px">'+
+      nq + (nq > 1 ? ' questões' : ' questão') + ' que compõem este risco' +
+      (nq > 1 ? '<span style="color:#9ca3af"> · peso 1/'+nq+' cada</span>' : '') +
+      '</div>'+
+      f.distQuestoes.map((q, qi) =>
+        '<div style="'+(qi < nq-1 ? 'padding-bottom:10px;border-bottom:1px dashed #f0f2f4;margin-bottom:10px' : '')+'">'+
+        '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;flex-wrap:wrap">'+
+        '<span style="font-size:8px;font-weight:700;font-family:ui-monospace,monospace;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap;flex-shrink:0">'+e(q.codigo)+'</span>'+
+        (q.inv ? '<span style="font-size:8px;color:#d97706;font-weight:600;flex-shrink:0">↺ inv</span>' : '')+
+        '<span style="font-size:10px;color:#374151;line-height:1.35;flex:1;min-width:0">'+e(q.texto)+'</span>'+
+        '</div>'+
+        renderBarraDistribuicao(q.pcts, q.moda, q.ve ?? 1, q.n, false, q.inv, true)+'</div>'
+      ).join('')+'</div>'
+    : '';
+
+  return '<div style="margin-bottom:14px;border:1px solid #e5e7eb;border-left:3px solid '+nc+';'+
+    'border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid">'+
+    '<div style="background:'+nc+';padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<span style="font-size:12px;font-weight:700;color:#111827;flex:1;min-width:0">'+e(f.nome)+'</span>'+
+      '<span style="font-size:9.5px;color:#4b5563;white-space:nowrap">'+
+        '<span style="opacity:.7">Severidade</span> S'+f.s+' '+e(f.sLabel)+'</span>'+
+      '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:white;'+
+        'color:'+nt+';border:1px solid rgba(0,0,0,.08);white-space:nowrap">'+f.nivel+'</span>'+
+    '</div>'+
+    '<div style="padding:11px 12px;background:white">'+
+      renderBarraDistribuicao(f.avgDist, f.p, 1, f.n, false, false, false, true)+
+      '<div style="margin-top:9px">'+
+        '<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;'+
+        'color:#9ca3af;margin-bottom:2px">Probabilidade × Severidade → Nível de risco</div>'+
+        '<div style="font-size:10.5px;color:#374151"><strong>P'+f.p+'</strong> — '+e(f.pLabel)+
+        ' × <strong>S'+f.s+'</strong> '+e(f.sLabel)+' → <strong style="color:'+nt+'">'+f.nivel+
+        '</strong> · n='+f.n+'</div>'+
+      '</div>'+
+      (f.classifErg ? '<div style="font-size:9.5px;color:#6b7280;font-style:italic;margin-top:4px">'+e(f.classifErg)+'</div>' : '')+
+      detalhe+
+    '</div>'+
+  '</div>';
 }
 
 // ── Gerador do HTML completo do laudo ───────────────────────────
@@ -13368,14 +13466,17 @@ tr:last-child td{border-bottom:none}
 .tbl-matriz .axis-label{background:#2d3748;color:white;font-weight:700;font-size:10px;padding:8px 6px;text-align:center}
 .tbl-matriz .p-label{background:#1e3a5f;color:white;font-size:10px;font-weight:600;padding:8px 10px;white-space:nowrap}
 .tbl-matriz .s-label{background:#1a5e2a;color:white;font-size:10px;font-weight:600;padding:8px 6px;text-align:center}
-.nivel-cell{text-align:center;font-weight:700;font-size:10px;padding:8px 4px}
-.nc-irr{background:#f0fdf4;color:#166534}.nc-bax{background:#dcfce7;color:#166534}.nc-med{background:#fef9c3;color:#854d0e}.nc-alt{background:#fee2e2;color:#991b1b}.nc-cri{background:#ede9fe;color:#5b21b6}
+.nivel-cell{text-align:center;font-weight:700;font-size:10px;padding:8px 4px;border:1px solid rgba(0,0,0,.10)}
+/* Escala de risco alinhada ao app (slate → verde → amarelo → laranja → vermelho).
+   Seletor com .tbl-matriz .nivel-cell para vencer o zebra tr:nth-child(even) td,
+   que antes apagava a cor das linhas pares na exportação. */
+.tbl-matriz .nivel-cell.nc-irr{background:#e2e8f0;color:#334155}.tbl-matriz .nivel-cell.nc-bax{background:#bbf7d0;color:#14532d}.tbl-matriz .nivel-cell.nc-med{background:#fde68a;color:#78350f}.tbl-matriz .nivel-cell.nc-alt{background:#fdba74;color:#7c2d12}.tbl-matriz .nivel-cell.nc-cri{background:#fca5a5;color:#7f1d1d}
 .tbl-resultados th:nth-child(1){width:8%}.tbl-resultados th:nth-child(2){width:20%}.tbl-resultados th:nth-child(3){width:30%}.tbl-resultados th:nth-child(4){width:22%}.tbl-resultados th:nth-child(5){width:10%;text-align:center}
 .tbl-resultados td:nth-child(2){font-weight:600;color:#111}.tbl-resultados td:nth-child(5){text-align:center}
 .nivel-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;white-space:nowrap}
-.nb-irr{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.nb-bax{background:#dcfce7;color:#166534;border:1px solid #86efac}
-.nb-med{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}.nb-alt{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-.nb-cri{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+.nb-irr{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}.nb-bax{background:#dcfce7;color:#14532d;border:1px solid #86efac}
+.nb-med{background:#fef3c7;color:#78350f;border:1px solid #fcd34d}.nb-alt{background:#ffedd5;color:#7c2d12;border:1px solid #fdba74}
+.nb-cri{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5}
 .tbl-conduta td:first-child{font-style:italic;color:#4b5563}.tbl-conduta td:nth-child(2){text-align:center;width:90px}
 .acoes-grupo{margin-bottom:18px}
 .acoes-risco-title{font-size:12px;font-weight:700;color:#111;margin-bottom:8px;padding-left:10px;border-left:3px solid #1a5e2a}
@@ -13467,11 +13568,11 @@ tr:last-child td{border-bottom:none}
             return `<div style="margin-bottom:10px">
               <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
                 <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
-                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
+                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome)}</span>`:''}
                 ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
                 <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
               </div>
-              ${_barPrint(d.pcts, d.moda)}
+              ${renderBarraDistribuicao(d.pcts, d.moda, d.q.ve||1, d.n, false, d.q.inv)}
             </div>`;
           }).join('')}
         </div>`;
@@ -13520,26 +13621,41 @@ tr:last-child td{border-bottom:none}
     });
   }
 
-  // ── Numeração dinâmica de seções e páginas ───────────────────
-  const _hasAR  = laudoSecoesAtivas.has('analise_risco');
-  const _hasGF  = laudoSecoesAtivas.has('graficos');
-  const _hasAC  = laudoSecoesAtivas.has('acoes');
-  let _sn = 2; // seção 2 = Resultados
-  const _snAR  = _hasAR ? ++_sn : null;
-  const _snGF  = _hasGF ? ++_sn : null;
-  const _snAC  = _hasAC ? ++_sn : null;
-  const _snRef = ++_sn;
-  let _pn = 4; // página 4 = Resultados
-  const _pnAR  = _hasAR ? ++_pn : null;
-  const _pnGF  = _hasGF ? ++_pn : null;
-  const _pnAC  = _hasAC ? ++_pn : null;
+  // ── Seções ativas + numeração dinâmica ───────────────────────
+  // TODAS as seções de LAUDO_SECOES são lidas aqui. Antes só analise_risco,
+  // graficos, acoes e indice eram — capa, metodologia, conduta e resultados
+  // saíam sempre, então desmarcá-las mudava o preview e não mudava o PDF.
+  const _hasCapa = laudoSecoesAtivas.has('capa');
+  const _hasMet  = laudoSecoesAtivas.has('metodologia');
+  const _hasRes  = laudoSecoesAtivas.has('resultados');
+  const _hasCond = laudoSecoesAtivas.has('conduta');
+  const _hasAR   = laudoSecoesAtivas.has('analise_risco');
+  const _hasGF   = laudoSecoesAtivas.has('graficos');
+  const _hasAC   = laudoSecoesAtivas.has('acoes');
+
+  // Numeração corrida sobre o que de fato entra no documento — com as seções
+  // iniciais fixas em 1 e 2, desligar a Metodologia deixava um laudo começando
+  // na seção 2. Os números de página vêm do próprio footer(), que incrementa
+  // _pdfPg a cada chamada, então só páginas emitidas contam.
+  let _sn = 0;
+  const _snMet = _hasMet  ? ++_sn : null;
+  const _snRes = _hasRes  ? ++_sn : null;
+  // Conduta é subseção da Metodologia (x.5) quando as duas estão ligadas;
+  // sozinha, vira seção própria.
+  const _condSub = _hasCond && _hasMet;
+  const _snCond  = (_hasCond && !_hasMet) ? ++_sn : null;
+  const _snAR    = _hasAR ? ++_sn : null;
+  const _snGF    = _hasGF ? ++_sn : null;
+  const _snAC    = _hasAC ? ++_sn : null;
+  const _snRef   = ++_sn;
 
   // ── ÍNDICE (básico — sem número de página, só ordem e título) ──
   let indiceHTML = '';
   if (laudoSecoesAtivas.has('indice')) {
     const itensIndice = [
-      '1. Metodologia de trabalho e normas aplicáveis',
-      '2. Fatores de Risco Psicossociais — Resultados por Setor',
+      _hasMet ? `${_snMet}. Metodologia de trabalho e normas aplicáveis` : null,
+      _hasRes ? `${_snRes}. Fatores de Risco Psicossociais — Resultados por Setor` : null,
+      _snCond ? `${_snCond}. Conduta Administrativa` : null,
       _hasAR ? `${_snAR}. Análise Gráfica por Fator de Risco` : null,
       _hasGF ? `${_snGF}. Distribuição de Respostas por Questão` : null,
       _hasAC ? `${_snAC}. Ações Recomendadas por Fator de Risco` : null,
@@ -13555,8 +13671,6 @@ tr:last-child td{border-bottom:none}
   // ── ANÁLISE GRÁFICA POR RISCO (nova página) ──────────────────
   let analiseRiscoHTML = '';
   if (_hasAR) {
-    const NCP = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
-    const NTP = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
     const legAR =
       '<div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">'+
       '<span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>'+
@@ -13566,28 +13680,7 @@ tr:last-child td{border-bottom:none}
       ['Nunca','Às vezes','Frequente','Sempre'].map(l=>'<div style="width:36px;text-align:center;font-size:7px;color:#9ca3af;line-height:1">'+l+'</div>').join('')+
       '</div></div>'+
       '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span></div>';
-    const _renderCardsRisco = fatores => fatores.map(f => {
-      const nc = NCP[f.nivel]||'#e5e7eb', nt = NTP[f.nivel]||'#374151';
-      const detalhe = (f.distQuestoes||[]).length
-        ? '<div style="margin-top:10px;border-top:1px solid #f0f2f4;padding-top:8px">'+
-          (f.distQuestoes||[]).map(q=>
-            '<div style="margin-bottom:8px">'+
-            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-            '<span style="font-size:8px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#6b7280;white-space:nowrap">'+e(q.codigo)+'</span>'+
-            (q.inv?'<span style="font-size:8px;color:#d97706">↺ inv</span>':'')+
-            '<span style="font-size:10px;color:#374151;line-height:1.3;flex:1">'+e(q.texto)+'</span>'+
-            '</div>'+_barPrint(q.pcts,q.moda)+'</div>'
-          ).join('')+'</div>'
-        : '';
-      return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e5e7eb;border-left:3px solid ${nc};border-radius:6px;page-break-inside:avoid;break-inside:avoid">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <span style="font-size:12px;font-weight:700;color:#111827;flex:1">${e(f.nome)}</span>
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${nc};color:${nt}">${f.nivel}</span>
-          <span style="font-size:10px;color:#6b7280">P${f.p} · n=${f.n}</span>
-        </div>
-        ${_barPrint(f.avgDist,f.p)}${detalhe}
-      </div>`;
-    }).join('');
+    const _renderCardsRisco = fatores => fatores.map(_laudoCardRiscoHTML).join('');
 
     let corposAR = '';
     gruposLaudo.forEach(grupo => {
@@ -13611,6 +13704,7 @@ tr:last-child td{border-bottom:none}
 <div class="page">
   <div class="sec-title">${_snAR}. Análise Gráfica por Fator de Risco</div>
   <p>Distribuição percentual das respostas agregadas por fator de risco. A barra superior é a média de todas as questões do fator; abaixo, o detalhe por questão. ↺ indica questão inversa (meta = Sempre).</p>
+  ${_legendaIndicadoresHTML(['p','s','nivel','meta','n','inv','peso'])}
   ${legAR}${corposAR}
   ${footer('Análise por Risco')}
 </div>`;
@@ -13640,6 +13734,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ── PÁGINA 1: CAPA ────────────────────────────────────────── -->
+${_hasCapa ? `
 <div class="page">
   <div class="cover-header">
     ${coverLogoHTML}
@@ -13670,16 +13765,18 @@ tr:last-child td{border-bottom:none}
     <span>${e(estNome)} © ${new Date().getFullYear()}</span>
   </div>
 </div>
+` : ''}
 
 <!-- ── ÍNDICE ─────────────────────────────────────────────────── -->
 ${indiceHTML}
 
 <!-- ── METODOLOGIA — P e S ────────────────────────────────────── -->
+${_hasMet ? `
 <div class="page">
-  <div class="sec-title">1. Metodologia de trabalho e normas aplicáveis</div>
+  <div class="sec-title">${_snMet}. Metodologia de trabalho e normas aplicáveis</div>
   <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
   <p>A classificação correta dos riscos considera também os chamados "amenizadores" — <strong>pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos</strong> — durante a avaliação de cada atividade específica.</p>
-  <div class="sec-title sub">1.1 Probabilidade (P) / Frequência — Tabela 1</div>
+  <div class="sec-title sub">${_snMet}.1 Probabilidade (P) / Frequência — Tabela 1</div>
   <div class="tbl-wrap"><table class="tbl-p"><thead><tr><th>Ocorrência / Probabilidade</th><th>Critério — Psicossocial (Escala Likert)</th></tr></thead><tbody>
     <tr><td><strong>P4 — Quase Certo (Permanente)</strong></td><td><div><strong>Exposição:</strong> Habitual, diversas vezes durante a jornada, superior a 80% do tempo.</div><div>Resposta: <strong>"Sempre"</strong> — Queixas frequentes. Medidas de controle inexistentes ou inadequadas.</div></td></tr>
     <tr><td><strong>P3 — Provável (Habitual)</strong></td><td><div><strong>Exposição:</strong> Intermitente, entre 50% e 80% do tempo.</div><div>Resposta: <strong>"Frequentemente"</strong> — Queixas frequentes com pelo menos um registro. NRs parcialmente atendidas.</div></td></tr>
@@ -13688,7 +13785,7 @@ ${indiceHTML}
   </tbody></table></div>
   <div class="fonte-nota">Quadro adaptado de MULHAUSEN &amp; DAMIANO (1998), Apêndice D da BS 8800 e AIHA 2015.</div>
   <div class="highlight-box" style="margin-top:12px"><strong>Atenção — questões inversas:</strong> Para questões formuladas de forma positiva, a resposta ideal é "Sempre". O sistema aplica automaticamente a inversão do score: <em>score_ajustado = 5 − score_bruto</em>.</div>
-  <div class="sec-title sub" style="margin-top:18px">1.2 Severidade (S) / Efeito — Tabela 2</div>
+  <div class="sec-title sub" style="margin-top:18px">${_snMet}.2 Severidade (S) / Efeito — Tabela 2</div>
   <div class="tbl-wrap"><table class="tbl-s"><thead><tr><th>S — Índice de Severidade</th><th>Critério utilizado — Psicossocial</th></tr></thead><tbody>
     <tr><td><strong>1 — Leve</strong></td><td>Não geram sobrecargas humanas significativas. Desmotivação, sensação de invisibilidade, ansiedade leve, frustração, desânimo.</td></tr>
     <tr><td><strong>2 — Moderado</strong></td><td>Geram situações de desconforto e fadiga. Frustração frequente, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
@@ -13696,11 +13793,13 @@ ${indiceHTML}
     <tr><td><strong>4 — Severo</strong></td><td>Lesões ou afastamentos com alta incidência. Possibilidade de DORT. Transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
   </tbody></table></div>
   ${footer('Metodologia')}
-</div>
+</div>` : ''}
 
-<!-- ── PÁGINA 3: MATRIZ + CLASSIF + CONDUTA ──────────────────── -->
+<!-- ── PÁGINA 3: MATRIZ + CLASSIF (Metodologia) + CONDUTA ─────── -->
+${(_hasMet || _hasCond) ? `
 <div class="page">
-  <div class="sec-title">1.3 Definição do Nível de Risco — Matriz P × S</div>
+  ${_hasMet ? `
+  <div class="sec-title">${_snMet}.3 Definição do Nível de Risco — Matriz P × S</div>
   <p>Estimativa da categoria do nível de risco a partir da combinação P × S, conforme Tabela 4.</p>
   <div class="tbl-wrap"><table class="tbl-matriz"><thead>
     <tr><th class="axis-label" rowspan="2" style="width:120px;vertical-align:middle">PROBABILIDADE</th><th colspan="4" class="s-label" style="text-align:center">SEVERIDADE (S) / EFEITO</th></tr>
@@ -13712,7 +13811,7 @@ ${indiceHTML}
     <tr><td class="p-label">P1 — Alt. Improvável<br><span style="font-weight:400;font-size:10px">(Ocasional)</span></td><td class="nivel-cell nc-irr">RISCO<br>IRRELEVANTE</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td></tr>
   </tbody></table></div>
   <div class="fonte-nota">Fonte: Adaptado de MULHAUSEN &amp; DAMIANO (1998) e Apêndice D da BS 8800 (BSI, 1996).</div>
-  <div class="sec-title sub" style="margin-top:18px">1.4 Classificação Ergonômica (Couto, 2007 × BS 8800)</div>
+  <div class="sec-title sub" style="margin-top:18px">${_snMet}.4 Classificação Ergonômica (Couto, 2007 × BS 8800)</div>
   <div class="tbl-wrap"><table><thead><tr><th>Classificação Ergonômica</th><th>Nível de Risco</th><th>Caracterização</th></tr></thead><tbody>
     <tr><td style="font-style:italic">Ação técnica normal ou sem risco ergonômico</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>É natural do corpo humano aquele movimento, postura ou exigência psicofisiológica.</td></tr>
     <tr><td style="font-style:italic">Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Existe exigência ergonômica além de uma ação técnica normal, porém há baixa probabilidade de distúrbio — geralmente pela existência de algum mecanismo de regulação.</td></tr>
@@ -13720,8 +13819,10 @@ ${indiceHTML}
     <tr><td style="font-style:italic">Risco Ergonômico</td><td><span class="nivel-badge nb-alt">ALTO</span></td><td>Situações consideradas como potencialmente causadoras de lesões.</td></tr>
     <tr><td style="font-style:italic">Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>Situações consideradas como potencialmente causadoras de lesões graves e afastamentos.</td></tr>
   </tbody></table></div>
+  ` : ''}
+  ${_hasCond ? `
   <div class="no-break">
-  <div class="sec-title sub" style="margin-top:18px">1.5 Conduta Administrativa (BS 8800 / NR-01)</div>
+  <div class="sec-title${_condSub ? ' sub' : ''}" style="margin-top:18px">${_condSub ? `${_snMet}.5` : `${_snCond}.`} Conduta Administrativa (BS 8800 / NR-01)</div>
   <div class="tbl-wrap"><table class="tbl-conduta"><thead><tr><th>Classificação Ergonômica</th><th style="text-align:center">Nível</th><th>Conduta Administrativa</th></tr></thead><tbody>
     <tr><td>Ação técnica normal ou sem risco</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>Nenhuma ação é requerida e nenhum registro documental precisa ser mantido.</td></tr>
     <tr><td>Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Nenhum controle adicional é necessário. Podem-se considerar aperfeiçoamentos opcionais. Monitoração para assegurar que os controles são mantidos.</td></tr>
@@ -13731,17 +13832,19 @@ ${indiceHTML}
   </tbody></table></div>
   <div class="highlight-box mt14"><strong>Importante:</strong> Os riscos significativos identificados devem compor, junto aos demais riscos, o <strong>Inventário de Riscos Ocupacionais</strong> estabelecido no Programa de Gerenciamento de Riscos — PGR da NR-01.</div>
   </div>
-  ${footer('Metodologia')}
-</div>
+  ` : ''}
+  ${footer(_hasMet ? 'Metodologia' : 'Conduta')}
+</div>` : ''}
 
 <!-- ── PÁGINA 4: RESULTADOS ──────────────────────────────────── -->
+${_hasRes ? `
 <div class="page">
-  <div class="sec-title">2. Fatores de Risco Presentes × Nível de Risco</div>
+  <div class="sec-title">${_snRes}. Fatores de Risco Presentes × Nível de Risco</div>
   <p>Os resultados individuais por grupo de exposição foram alocados nas tabelas abaixo, especificando os fatores de risco identificados, suas consequências, a classificação ergonômica e o nível de risco correspondente.</p>
   <p>Os questionários foram respondidos de forma sigilosa pelos colaboradores, sem identificação nominal, com base na vivência dos últimos 6 meses de trabalho.</p>
   ${resultadosHTML || '<p style="color:#6b7280;font-style:italic">Nenhum risco acima de IRRELEVANTE identificado nos setores selecionados.</p>'}
   ${footer('Resultados')}
-</div>
+</div>` : ''}
 
 ${analiseRiscoHTML}
 
@@ -13750,6 +13853,7 @@ ${_hasGF && graficosHTML ? `
 <div class="page">
   <div class="sec-title">${_snGF}. Distribuição de Respostas por Questão</div>
   <p>Distribuição percentual das respostas por questão. A barra destacada representa o nível predominante (moda). Questões inversas (↺) têm score ajustado: meta = "Sempre".</p>
+  ${_hasAR ? '' : _legendaIndicadoresHTML(['n','meta','inv'])}
   ${graficosHTML}
   ${footer('Distribuição')}
 </div>` : ''}
@@ -13860,7 +13964,7 @@ async function gerarLaudoPDF() {
   }
 }
 
-// ── jsPDF legado removido: usar gerarLaudoPDF() → _buildLaudoHTML() → _barPrint() ──
+// ── jsPDF legado removido: usar gerarLaudoPDF() → _buildLaudoHTML() → renderBarraDistribuicao() ──
 
 // ══════════════════════════════════════════
 // AUTH — Supabase + fallback demo mode
