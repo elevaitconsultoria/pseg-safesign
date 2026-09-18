@@ -6783,14 +6783,18 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
           '<span class="qa-arr">' + (nOpen ? '▼' : '▶') + '</span>' +
           '<span>' + f.distQuestoes.length + (f.distQuestoes.length > 1 ? ' questões' : ' questão') +
-          ' que compõem este risco</span></div>' +
+          ' que compõem este risco' +
+          (f.distQuestoes.length > 1
+            ? '<span style="color:#9ca3af"> · peso 1/' + f.distQuestoes.length + ' cada</span>'
+            : '') + '</span></div>' +
           '<div style="display:' + (nOpen ? 'block' : 'none') + ';background:#f8fafc;' +
           'padding:16px 18px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
           '</div>'
         : '';
 
       const cdBadge = f.cd
-        ? '<span style="font-size:9px;font-family:monospace;background:rgba(255,255,255,.8);' +
+        ? '<span title="Código do risco no catálogo de riscos psicossociais" ' +
+          'style="font-size:9px;font-family:monospace;background:rgba(255,255,255,.8);' +
           'padding:1px 5px;border-radius:3px;color:var(--tm);border:1px solid rgba(0,0,0,.07);' +
           'flex-shrink:0">cd' + f.cd + '</span>'
         : '';
@@ -6802,16 +6806,22 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
         '<div style="background:' + hdrBg + ';padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         cdBadge +
         '<span style="font-size:13px;font-weight:700;color:var(--tx);flex:1;min-width:0;word-break:break-word">' + f.nome + '</span>' +
-        '<span style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">S' + f.s + ' ' + f.sLabel + '</span>' +
-        '<span style="background:' + nc.bg + ';color:' + nc.cor + ';font-size:10px;font-weight:700;' +
+        '<span title="Severidade ' + f.s + ' — ' + f.sLabel + ' (gravidade predefinida deste risco)" ' +
+        'style="font-size:10px;color:var(--tm);white-space:nowrap;flex-shrink:0">' +
+        '<span style="opacity:.65">Severidade</span> S' + f.s + ' ' + f.sLabel + '</span>' +
+        '<span title="Nível de risco resultante do cruzamento P × S na matriz BS 8800" ' +
+        'style="background:' + nc.bg + ';color:' + nc.cor + ';font-size:10px;font-weight:700;' +
         'padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;border:1px solid ' + borda + '">' + f.nivel + '</span>' +
         '</div>' +
         // — Corpo
         '<div style="padding:14px 16px;background:white">' +
         barraMedia +
-        '<div style="margin-top:10px;font-size:11px;color:#374151">' +
+        '<div style="margin-top:10px">' +
+        '<div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;' +
+        'color:#9ca3af;margin-bottom:2px">Probabilidade × Severidade → Nível de risco</div>' +
+        '<div style="font-size:11px;color:#374151">' +
         '<strong>P' + f.p + '</strong> — ' + f.pLabel + ' × <strong>S' + f.s + '</strong> ' + f.sLabel +
-        ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div>' +
+        ' → <strong style="color:' + nc.cor + '">' + f.nivel + '</strong></div></div>' +
         (f.classifErg ? '<div style="font-size:10px;color:#6b7280;font-style:italic;margin-top:5px">' + f.classifErg + '</div>' : '') +
         '</div>' +
         // — Colapsível
@@ -6823,7 +6833,8 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   });
 
   document.getElementById('view-content').innerHTML =
-    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco para os filtros selecionados.</div>';
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum risco para os filtros selecionados.</div>';
 }
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
@@ -6891,7 +6902,8 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   });
 
   document.getElementById('view-content').innerHTML =
-    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
 }
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
@@ -6977,7 +6989,9 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
     });
     html += '</div>';
   });
-  document.getElementById('view-content').innerHTML = html || '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
+  document.getElementById('view-content').innerHTML =
+    html ? LEGENDA_INDICADORES_HTML + html
+         : '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
 }
 
 // ══════════════════════════════════════════
@@ -7023,6 +7037,37 @@ const LEGENDA_ESCALA_HTML =
   '</div>'+
   '<span style="font-size:8.5px;color:#991b1b;font-weight:700;white-space:nowrap">✗ Elevado</span>'+
   '</div>';
+
+// ── Glossário de indicadores ("Como ler este resultado") ──────────
+// Renderizado uma vez no topo de #view-content nas três visões da tela Resultados.
+// Como #view-content é exatamente o que exportarResultados()/exportarResultadosPrint()
+// capturam, a legenda acompanha o PNG e o PDF sem nenhum tratamento adicional.
+// USA VALORES HARDCODED (não CSS vars) pelo mesmo motivo de LEGENDA_ESCALA_HTML:
+// html2canvas renderiza o clone fora do documento, onde as vars podem não resolver.
+const _LEG_ITENS = [
+  ['cd', 'Código do risco no catálogo de riscos psicossociais.'],
+  ['P1–P4', 'Probabilidade — nível predominante (moda) das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
+  ['S1–S4', 'Severidade — gravidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
+  ['Nível', 'Resultado do cruzamento P × S na matriz de risco (BS 8800): IRRELEVANTE · BAIXO · MÉDIO · ALTO · CRÍTICO.'],
+  ['n', 'Número de respondentes considerados no recorte.'],
+  ['Meta', 'Resposta ideal esperada para a questão — "Nunca" nas diretas e "Sempre" nas inversas. O marcador ▼ na barra indica essa posição.'],
+  ['↺ inv', 'Questão inversa: a escala é espelhada antes do cálculo (valor = 5 − valor respondido).'],
+  ['Peso 1/N', 'Dentro de um risco, todas as questões pesam igual — N é a quantidade de questões do risco, não o número de respondentes.'],
+];
+const LEGENDA_INDICADORES_HTML =
+  '<div style="margin-bottom:16px;padding:12px 14px;background:#f8f9fa;border:1px solid #e5e7eb;'+
+  'border-left:3px solid #16532d;border-radius:0 6px 6px 0">'+
+  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;'+
+  'color:#16532d;margin-bottom:8px">Como ler este resultado</div>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 18px">'+
+  _LEG_ITENS.map(([chip, txt]) =>
+    '<div style="display:flex;align-items:flex-start;gap:7px;font-size:10px;color:#4b5563;line-height:1.5">'+
+    '<span style="flex-shrink:0;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;'+
+    'color:#374151;background:white;border:1px solid #e5e7eb;border-radius:3px;padding:1px 5px;'+
+    'white-space:nowrap">'+chip+'</span>'+
+    '<span>'+txt+'</span></div>'
+  ).join('')+
+  '</div></div>';
 
 // getNivelLabels — mantido por compatibilidade com código legado; retorna constante
 function getNivelLabels() { return NIVEL_NM_ORIG; }
@@ -7121,9 +7166,13 @@ function renderBarraDistribuicao(pcts, moda, ve, n, mostrarLegenda, inv, compact
 
   const txt_meta = 'Meta '+metaLabel+': '+(pcts[metaNivel]||0)+'%'+nStr;
 
+  const ttResultado = 'Nível predominante (moda) das respostas — é ele que define a Probabilidade (P)';
+  const ttMeta = 'Percentual de respostas no nível ideal esperado'
+    + (n !== undefined ? ' · n = ' + n + ' respondente' + (n === 1 ? '' : 's') : '');
+
   const badgeContent =
-    '<div style="'+stDiscreta+'">'+txt_resultado+'</div>'+
-    '<div style="'+stDiscreta+'">'+txt_meta+'</div>';
+    '<div title="'+ttResultado+'" style="'+stDiscreta+'">'+txt_resultado+'</div>'+
+    '<div title="'+ttMeta+'" style="'+stDiscreta+'">'+txt_meta+'</div>';
 
   const badgeSz = 'font-size:10px;padding:4px 7px';
   return barWrapper +
