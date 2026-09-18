@@ -626,8 +626,10 @@ contador "não classificadas" da tela Adesão GHE (compara contra `empresa_headc
 `grupos_setor`) continua contando resposta "Outro" como não classificada mesmo depois de
 agrupada.
 
-**Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
-selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
+**~~Bug conhecido: `renderLaudo()` não filtra `linhas` por `ld-ciclo`~~ — não procede mais.**
+Verificado em 2026-09-18: o filtro está lá (`(!cicloId || r.ciclo_id === cicloId)`, no `dados.filter`
+de `renderLaudo`). Nota mantida riscada para não ser "redescoberta" a partir de uma versão antiga
+deste arquivo.
 
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
@@ -707,3 +709,61 @@ Ler `currentUser.role` cru para decidir permissão tem a mesma armadilha: usar `
   clone do html2canvas); no PNG e injetado no clone, nunca no `#view-content` real.
 - **Cuidado ao editar `exportarResultadosPrint`:** tudo que entra na template string do
   documento vira conteudo do PDF entregue ao cliente — inclusive comentarios de codigo.
+
+## Ajustes gerais — legenda de indicadores, matriz e paridade do laudo (2026-09-18)
+
+Sete commits na branch `claude/ajustes-gerais-matriz-5q7ln4`, todos em `psicomap-admin.html`.
+
+**Matriz P×S do laudo saía com metade das células sem cor.** Não era escolha de tom: a regra
+genérica `tr:nth-child(even) td{background:#f9fafb}` do CSS do laudo tem especificidade (0,1,2)
+e vencia `.nc-med`/`.nc-alt`/etc (0,1,0) — as linhas pares (P3 e P1) perdiam o fundo. As regras
+viraram `.tbl-matriz .nivel-cell.nc-*`. **`.tbl-matriz .p-label` (0,2,0) nunca foi afetada** —
+por isso o sintoma parecia aleatório. Na mesma passada a escala de `.nc-*`/`.nb-*` foi alinhada
+à do app (slate → verde → amarelo → laranja → vermelho): antes CRÍTICO era lilás e lia como
+*menos* grave que ALTO vermelho.
+
+**Legenda de indicadores ("Como ler este resultado").** `_legendaIndicadoresHTML(chaves)` +
+`_LEG_ITENS` (chave · rótulo · definição) — `LEGENDA_INDICADORES_HTML` é o conjunto completo.
+- Renderizada **dentro de `#view-content`** na tela Resultados: como é exatamente isso que
+  `exportarResultados()`/`exportarResultadosPrint()` capturam, ela acompanha o PNG e o PDF sem
+  tratamento nenhum. **Consequência:** no PDF do pacote ("Baixar todas as análises", 3 capturas
+  num documento) ela apareceria 3×. O bloco carrega `data-legenda-indicadores` e o caminho
+  `multi` de `exportarResultadosPrint` remove as repetições via DOM (não por comparação de
+  string — o HTML volta de um round-trip por `innerHTML` e a normalização de aspas/ordem de
+  atributos quebraria um `startsWith`).
+- No laudo entra na abertura da Análise Gráfica, **sem o item `cd`** (esse código não aparece em
+  lugar nenhum do laudo). A seção "Distribuição por Questão" recebe uma versão reduzida
+  (`n`/`Meta`/`↺ inv`) **só quando a Análise Gráfica não está no documento** — uma ocorrência
+  por documento, em qualquer combinação de seções.
+- Estilo deliberadamente discreto (dois filetes, sem fundo, termo em coluna fixa de 46px
+  alinhado à direita, 9px): é material de apoio e não pode competir com os dados.
+
+**Paridade preview × PDF do laudo** — ver o bullet na seção "Agrupamentos GHE". Três
+divergências corrigidas: card de risco duplicado (agora `_laudoCardRiscoHTML()`), granularidade
+respeitada só em uma das seções do preview, e o recorte de IRRELEVANTE na Análise Gráfica.
+
+**`_barPrint()` removido.** Era uma barra "para impressão (sem CSS vars)" usada só pelo laudo —
+sem marcador de meta, sem âncoras ✓/✗ e sem o rodapé de moda/meta, o que deixava o PDF mais
+pobre que a tela. A premissa estava errada: `renderBarraDistribuicao()` **não tem nenhuma
+`var(--…)`** e sempre pôde rodar no documento autônomo do laudo. Hoje é a única barra dos dois.
+
+**Outros acertos pontuais:**
+- Plural: `' questão' + (n>1 ? 'ões' : '')` gerava "3 questãoões".
+- `cd_risco` 4 renomeado para **"Estresse por constrangimento no ambiente de trabalho"** em
+  `RISCOS_DETALHES`, na `<option>` do modal de questão e no comentário do `CATALOGO_ACOES`.
+  `riscos_config` (que sobrescreve `RISCOS_DETALHES` em `carregarRiscosDB()`) estava **vazia em
+  PROD**, então o default do código é a fonte efetiva — nenhuma migration foi necessária.
+- Textos cortados: enunciado da questão truncado em 60 caracteres no detalhamento por risco, e
+  nome do risco cortado em 28/30 caracteres em três pontos (visão Por Questão, seção de gráficos
+  do laudo e do preview). O corte de nome ficou pior com o nome mais longo do cd 4.
+
+**Armadilha de edição (custou um bug real nesta sessão):** o CSS do laudo vive **dentro de um
+template literal** (`const css = \`…\`` em `_buildLaudoHTML`). Uma crase num comentário de código
+ali dentro encerra o template e quebra o `<script>` inteiro. Vale para qualquer edição nesse
+bloco — inclusive comentários. Checagem barata antes de commitar, já que não há build step:
+```bash
+node -e "const h=require('fs').readFileSync('psicomap-admin.html','utf8');
+ const m=[...h.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)];
+ for(const x of m) new Function(x[1]);   // lança se houver erro de sintaxe
+ console.log('scripts ok:', m.length);"
+```
