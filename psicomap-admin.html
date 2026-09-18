@@ -7054,30 +7054,38 @@ const LEGENDA_ESCALA_HTML =
 // capturam, a legenda acompanha o PNG e o PDF sem nenhum tratamento adicional.
 // USA VALORES HARDCODED (não CSS vars) pelo mesmo motivo de LEGENDA_ESCALA_HTML:
 // html2canvas renderiza o clone fora do documento, onde as vars podem não resolver.
+// Chave · rótulo · definição. A chave permite montar subconjuntos: o laudo não
+// exibe o código `cd` em lugar nenhum, então lá esse item seria ruído.
 const _LEG_ITENS = [
-  ['cd', 'Código do risco no catálogo de riscos psicossociais.'],
-  ['P1–P4', 'Probabilidade — nível predominante (moda) das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
-  ['S1–S4', 'Severidade — gravidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
-  ['Nível', 'Resultado do cruzamento P × S na matriz de risco (BS 8800): IRRELEVANTE · BAIXO · MÉDIO · ALTO · CRÍTICO.'],
-  ['n', 'Número de respondentes considerados no recorte.'],
-  ['Meta', 'Resposta ideal esperada para a questão — "Nunca" nas diretas e "Sempre" nas inversas. O marcador ▼ na barra indica essa posição.'],
-  ['↺ inv', 'Questão inversa: a escala é espelhada antes do cálculo (valor = 5 − valor respondido).'],
-  ['Peso 1/N', 'Dentro de um risco, todas as questões pesam igual — N é a quantidade de questões do risco, não o número de respondentes.'],
+  ['cd',    'cd',       'Código do risco no catálogo de riscos psicossociais.'],
+  ['p',     'P1–P4',    'Probabilidade — nível predominante (moda) das respostas: P1 Alt. improvável · P2 Improvável · P3 Provável · P4 Quase certo.'],
+  ['s',     'S1–S4',    'Severidade — gravidade predefinida do risco: S1 Leve · S2 Moderado · S3 Sério · S4 Severo.'],
+  ['nivel', 'Nível',    'Resultado do cruzamento P × S na matriz de risco (BS 8800): IRRELEVANTE · BAIXO · MÉDIO · ALTO · CRÍTICO.'],
+  ['n',     'n',        'Número de respondentes considerados no recorte.'],
+  ['meta',  'Meta',     'Resposta ideal esperada para a questão — "Nunca" nas diretas e "Sempre" nas inversas. O marcador ▼ na barra indica essa posição.'],
+  ['inv',   '↺ inv',    'Questão inversa: a escala é espelhada antes do cálculo (valor = 5 − valor respondido).'],
+  ['peso',  'Peso 1/N', 'Dentro de um risco, todas as questões pesam igual — N é a quantidade de questões do risco, não o número de respondentes.'],
 ];
-const LEGENDA_INDICADORES_HTML =
-  '<div data-legenda-indicadores="1" style="margin-bottom:16px;padding:12px 14px;background:#f8f9fa;border:1px solid #e5e7eb;'+
-  'border-left:3px solid #16532d;border-radius:0 6px 6px 0">'+
-  '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;'+
-  'color:#16532d;margin-bottom:8px">Como ler este resultado</div>'+
-  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 18px">'+
-  _LEG_ITENS.map(([chip, txt]) =>
-    '<div style="display:flex;align-items:flex-start;gap:7px;font-size:10px;color:#4b5563;line-height:1.5">'+
-    '<span style="flex-shrink:0;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;'+
-    'color:#374151;background:white;border:1px solid #e5e7eb;border-radius:3px;padding:1px 5px;'+
-    'white-space:nowrap">'+chip+'</span>'+
-    '<span>'+txt+'</span></div>'
-  ).join('')+
-  '</div></div>';
+
+// chaves: subconjunto de _LEG_ITENS a exibir (omitido = todos).
+function _legendaIndicadoresHTML(chaves) {
+  const itens = chaves ? _LEG_ITENS.filter(([k]) => chaves.includes(k)) : _LEG_ITENS;
+  return '<div data-legenda-indicadores="1" style="margin-bottom:16px;padding:12px 14px;'+
+    'background:#f8f9fa;border:1px solid #e5e7eb;border-left:3px solid #16532d;'+
+    'border-radius:0 6px 6px 0;page-break-inside:avoid;break-inside:avoid">'+
+    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;'+
+    'color:#16532d;margin-bottom:8px">Como ler este resultado</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 18px">'+
+    itens.map(([, chip, txt]) =>
+      '<div style="display:flex;align-items:flex-start;gap:7px;font-size:10px;color:#4b5563;line-height:1.5">'+
+      '<span style="flex-shrink:0;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;'+
+      'color:#374151;background:white;border:1px solid #e5e7eb;border-radius:3px;padding:1px 5px;'+
+      'white-space:nowrap">'+chip+'</span>'+
+      '<span>'+txt+'</span></div>'
+    ).join('')+
+    '</div></div>';
+}
+const LEGENDA_INDICADORES_HTML = _legendaIndicadoresHTML();
 
 // getNivelLabels — mantido por compatibilidade com código legado; retorna constante
 function getNivelLabels() { return NIVEL_NM_ORIG; }
@@ -11123,7 +11131,7 @@ tr:last-child td{border-bottom:none}
             return `<div style="margin-bottom:10px">
               <div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px;flex-wrap:wrap">
                 <span style="font-size:9px;font-weight:700;background:#f3f4f6;padding:1px 5px;border-radius:3px;color:#9ca3af;white-space:nowrap">${d.q.c}</span>
-                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome.slice(0,30))}</span>`:''}
+                ${rd?`<span style="font-size:9px;color:${cor};font-weight:600;background:${bg};padding:1px 5px;border-radius:3px">${e(rd.nome)}</span>`:''}
                 ${d.q.inv?'<span style="font-size:9px;color:#d97706;font-weight:600">↺ inv</span>':''}
                 <span style="font-size:10px;color:#374151;line-height:1.4;flex:1">${e(d.q.t)}</span>
               </div>
@@ -11267,6 +11275,7 @@ tr:last-child td{border-bottom:none}
 <div class="page">
   <div class="sec-title">${_snAR}. Análise Gráfica por Fator de Risco</div>
   <p>Distribuição percentual das respostas agregadas por fator de risco. A barra superior é a média de todas as questões do fator; abaixo, o detalhe por questão. ↺ indica questão inversa (meta = Sempre).</p>
+  ${_legendaIndicadoresHTML(['p','s','nivel','n','meta','inv','peso'])}
   ${legAR}${corposAR}
   ${footer('Análise por Risco')}
 </div>`;
@@ -11406,6 +11415,7 @@ ${_hasGF && graficosHTML ? `
 <div class="page">
   <div class="sec-title">${_snGF}. Distribuição de Respostas por Questão</div>
   <p>Distribuição percentual das respostas por questão. A barra destacada representa o nível predominante (moda). Questões inversas (↺) têm score ajustado: meta = "Sempre".</p>
+  ${_hasAR ? '' : _legendaIndicadoresHTML(['n','meta','inv'])}
   ${graficosHTML}
   ${footer('Distribuição')}
 </div>` : ''}
