@@ -2722,7 +2722,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <option value="3">3 — Sobrecarga de trabalho mental</option>
           </optgroup>
           <optgroup label="Relações Interpessoais">
-            <option value="4">4 — Constrangimento no ambiente</option>
+            <option value="4">4 — Estresse por constrangimento</option>
             <option value="5">5 — Estresse por desigualdade</option>
             <option value="6">6 — Conflitos hierárquicos</option>
             <option value="9">9 — Conflitos interpessoais</option>
@@ -4331,7 +4331,7 @@ const RISCOS_DETALHES = {
     medidas:'Manter avaliações regulares para identificar excesso de demandas; ajustar tarefas e responsabilidades para nível de controle adequado; capacitar líderes para identificar e abordar sinais de sobrecarga mental nas equipes.',
   },
   4: {
-    nome:'Constrangimento no ambiente de trabalho',
+    nome:'Estresse por constrangimento no ambiente de trabalho',
     cat:'RELAÇÕES INTERPESSOAIS', s:2,
     cons:'Ansiedade, aumento dos conflitos interpessoais',
     fontes:'Ausência de canais seguros para denúncias de comportamentos inadequados; situações expostas publicamente que deveriam ser privadas.',
@@ -6759,7 +6759,9 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
       // Questões individuais (colapsível)
       const questoesHtml = f.distQuestoes.map((dq, qi) => {
         const barraQ  = renderBarraDistribuicao(dq.pcts, dq.moda, dq.ve ?? 1, dq.n, false, dq.inv, true);
-        const textoQ  = dq.texto.length > 60 ? dq.texto.slice(0, 60) + '…' : dq.texto;
+        // Texto integral da questão — truncar em 60 caracteres cortava o enunciado
+        // no meio ("...tenho prazos impo…") e não há restrição de largura aqui.
+        const textoQ  = dq.texto;
         const sep     = qi < f.distQuestoes.length - 1
           ? 'padding-bottom:18px;border-bottom:1px dashed var(--bs);margin-bottom:18px' : '';
         return '<div style="' + sep + '">' +
@@ -6768,7 +6770,8 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           'border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--tm);' +
           'white-space:nowrap;flex-shrink:0">' + dq.codigo + '</span>' +
           (dq.inv ? '<span style="font-size:9px;color:#d97706;font-weight:600;flex-shrink:0">↺ inv</span>' : '') +
-          '<span style="font-size:11px;color:var(--tx);line-height:1.45">' + textoQ + '</span>' +
+          '<span style="font-size:11px;color:var(--tx);line-height:1.45;flex:1;min-width:0;' +
+          'overflow-wrap:anywhere">' + textoQ + '</span>' +
           '</div>' + barraQ + '</div>';
       }).join('');
 
@@ -6779,7 +6782,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
           'onclick="(function(el){var c=el.nextElementSibling;var o=c.style.display!==\'none\';' +
           'c.style.display=o?\'none\':\'block\';el.querySelector(\'.qa-arr\').textContent=o?\'▶\':\'▼\'})(this)">' +
           '<span class="qa-arr">' + (nOpen ? '▼' : '▶') + '</span>' +
-          '<span>' + f.distQuestoes.length + ' questão' + (f.distQuestoes.length > 1 ? 'ões' : '') +
+          '<span>' + f.distQuestoes.length + (f.distQuestoes.length > 1 ? ' questões' : ' questão') +
           ' que compõem este risco</span></div>' +
           '<div style="display:' + (nOpen ? 'block' : 'none') + ';background:#f8fafc;' +
           'padding:16px 18px;border-top:1px solid var(--bs)">' + questoesHtml + '</div>' +
@@ -6965,7 +6968,7 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
           return '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--bs)">'+
             '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:7px;flex-wrap:wrap">'+
             '<span style="font-size:10px;font-weight:700;background:var(--bg);padding:2px 7px;border-radius:3px;color:var(--tl);white-space:nowrap;font-family:monospace">'+d.q.c+'</span>'+
-            (d.q.cd && rd ? '<span style="font-size:9px;color:var(--tm);font-weight:600;background:var(--bs);padding:1px 6px;border-radius:3px;white-space:nowrap">'+rd.nome.slice(0,28)+'</span>' : '')+
+            (d.q.cd && rd ? '<span style="font-size:9px;color:var(--tm);font-weight:600;background:var(--bs);padding:1px 6px;border-radius:3px">'+rd.nome+'</span>' : '')+
             (d.q.inv ? '<span style="font-size:9px;color:var(--amber);font-weight:600">↺ inv</span>' : '')+
             '<span style="font-size:12px;color:var(--tx);line-height:1.5;flex:1">'+d.q.t+'</span>'+
             '</div>'+barra+'</div>';
@@ -10063,7 +10066,7 @@ const CATALOGO_ACOES = {
       quanto: 'Custo de facilitação e treinamento',
     },
   },
-  '4': { // Constrangimento no ambiente de trabalho
+  '4': { // Estresse por constrangimento no ambiente de trabalho
     porNivel: {
       MÉDIO: [
         'Implementar/manter canal de denúncia confidencial, com fluxo claro de recebimento, apuração e proteção contra retaliações.',
@@ -10960,14 +10963,17 @@ tr:last-child td{border-bottom:none}
 .tbl-matriz .axis-label{background:#2d3748;color:white;font-weight:700;font-size:10px;padding:8px 6px;text-align:center}
 .tbl-matriz .p-label{background:#1e3a5f;color:white;font-size:10px;font-weight:600;padding:8px 10px;white-space:nowrap}
 .tbl-matriz .s-label{background:#1a5e2a;color:white;font-size:10px;font-weight:600;padding:8px 6px;text-align:center}
-.nivel-cell{text-align:center;font-weight:700;font-size:10px;padding:8px 4px}
-.nc-irr{background:#f0fdf4;color:#166534}.nc-bax{background:#dcfce7;color:#166534}.nc-med{background:#fef9c3;color:#854d0e}.nc-alt{background:#fee2e2;color:#991b1b}.nc-cri{background:#ede9fe;color:#5b21b6}
+.nivel-cell{text-align:center;font-weight:700;font-size:10px;padding:8px 4px;border:1px solid rgba(0,0,0,.10)}
+/* Escala de risco alinhada ao app (slate → verde → amarelo → laranja → vermelho).
+   Seletor com .tbl-matriz .nivel-cell para vencer o zebra tr:nth-child(even) td,
+   que antes apagava a cor das linhas pares na exportação. */
+.tbl-matriz .nivel-cell.nc-irr{background:#e2e8f0;color:#334155}.tbl-matriz .nivel-cell.nc-bax{background:#bbf7d0;color:#14532d}.tbl-matriz .nivel-cell.nc-med{background:#fde68a;color:#78350f}.tbl-matriz .nivel-cell.nc-alt{background:#fdba74;color:#7c2d12}.tbl-matriz .nivel-cell.nc-cri{background:#fca5a5;color:#7f1d1d}
 .tbl-resultados th:nth-child(1){width:8%}.tbl-resultados th:nth-child(2){width:20%}.tbl-resultados th:nth-child(3){width:30%}.tbl-resultados th:nth-child(4){width:22%}.tbl-resultados th:nth-child(5){width:10%;text-align:center}
 .tbl-resultados td:nth-child(2){font-weight:600;color:#111}.tbl-resultados td:nth-child(5){text-align:center}
 .nivel-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;white-space:nowrap}
-.nb-irr{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.nb-bax{background:#dcfce7;color:#166534;border:1px solid #86efac}
-.nb-med{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}.nb-alt{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-.nb-cri{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+.nb-irr{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}.nb-bax{background:#dcfce7;color:#14532d;border:1px solid #86efac}
+.nb-med{background:#fef3c7;color:#78350f;border:1px solid #fcd34d}.nb-alt{background:#ffedd5;color:#7c2d12;border:1px solid #fdba74}
+.nb-cri{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5}
 .tbl-conduta td:first-child{font-style:italic;color:#4b5563}.tbl-conduta td:nth-child(2){text-align:center;width:90px}
 .acoes-grupo{margin-bottom:18px}
 .acoes-risco-title{font-size:12px;font-weight:700;color:#111;margin-bottom:8px;padding-left:10px;border-left:3px solid #1a5e2a}
