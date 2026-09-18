@@ -6444,11 +6444,21 @@ function exportarResultadosPrint(secoes) {
     '--r':'6px','--rl':'8px','--sh':'none','--shm':'none',
   };
   const resolverVars = s => s.replace(/var\((--[\w-]+)\)/g, (_, k) => CV[k] || 'inherit');
+  // O pacote "Baixar todas as analises" captura #view-content uma vez por analise,
+  // e cada captura ja vem com o bloco "Como ler este resultado" no topo. Num PDF
+  // unico isso repetiria a mesma legenda em todas as paginas — mantem-se so na
+  // primeira. Os PNGs sao arquivos avulsos, entao la cada um conserva a sua.
+  const _semLegenda = h => {
+    const d = document.createElement('div');
+    d.innerHTML = h;
+    d.querySelectorAll('[data-legenda-indicadores]').forEach(el => el.remove());
+    return d.innerHTML;
+  };
   const html = multi
-    ? capturas.map(s =>
+    ? capturas.map((s, i) =>
         '<section class="psicomap-secao">' +
           '<h2 class="psicomap-secao-titulo">' + s.titulo + '</h2>' +
-          resolverVars(s.html) +
+          resolverVars(i === 0 ? s.html : _semLegenda(s.html)) +
         '</section>').join('')
     : resolverVars(capturas[0].html);
 
@@ -7055,7 +7065,7 @@ const _LEG_ITENS = [
   ['Peso 1/N', 'Dentro de um risco, todas as questões pesam igual — N é a quantidade de questões do risco, não o número de respondentes.'],
 ];
 const LEGENDA_INDICADORES_HTML =
-  '<div style="margin-bottom:16px;padding:12px 14px;background:#f8f9fa;border:1px solid #e5e7eb;'+
+  '<div data-legenda-indicadores="1" style="margin-bottom:16px;padding:12px 14px;background:#f8f9fa;border:1px solid #e5e7eb;'+
   'border-left:3px solid #16532d;border-radius:0 6px 6px 0">'+
   '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;'+
   'color:#16532d;margin-bottom:8px">Como ler este resultado</div>'+
