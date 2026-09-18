@@ -11208,26 +11208,41 @@ tr:last-child td{border-bottom:none}
     });
   }
 
-  // ── Numeração dinâmica de seções e páginas ───────────────────
-  const _hasAR  = laudoSecoesAtivas.has('analise_risco');
-  const _hasGF  = laudoSecoesAtivas.has('graficos');
-  const _hasAC  = laudoSecoesAtivas.has('acoes');
-  let _sn = 2; // seção 2 = Resultados
-  const _snAR  = _hasAR ? ++_sn : null;
-  const _snGF  = _hasGF ? ++_sn : null;
-  const _snAC  = _hasAC ? ++_sn : null;
-  const _snRef = ++_sn;
-  let _pn = 4; // página 4 = Resultados
-  const _pnAR  = _hasAR ? ++_pn : null;
-  const _pnGF  = _hasGF ? ++_pn : null;
-  const _pnAC  = _hasAC ? ++_pn : null;
+  // ── Seções ativas + numeração dinâmica ───────────────────────
+  // TODAS as seções de LAUDO_SECOES são lidas aqui. Antes só analise_risco,
+  // graficos, acoes e indice eram — capa, metodologia, conduta e resultados
+  // saíam sempre, então desmarcá-las mudava o preview e não mudava o PDF.
+  const _hasCapa = laudoSecoesAtivas.has('capa');
+  const _hasMet  = laudoSecoesAtivas.has('metodologia');
+  const _hasRes  = laudoSecoesAtivas.has('resultados');
+  const _hasCond = laudoSecoesAtivas.has('conduta');
+  const _hasAR   = laudoSecoesAtivas.has('analise_risco');
+  const _hasGF   = laudoSecoesAtivas.has('graficos');
+  const _hasAC   = laudoSecoesAtivas.has('acoes');
+
+  // Numeração corrida sobre o que de fato entra no documento — com as seções
+  // iniciais fixas em 1 e 2, desligar a Metodologia deixava um laudo começando
+  // na seção 2. Os números de página vêm do próprio footer(), que incrementa
+  // _pdfPg a cada chamada, então só páginas emitidas contam.
+  let _sn = 0;
+  const _snMet = _hasMet  ? ++_sn : null;
+  const _snRes = _hasRes  ? ++_sn : null;
+  // Conduta é subseção da Metodologia (x.5) quando as duas estão ligadas;
+  // sozinha, vira seção própria.
+  const _condSub = _hasCond && _hasMet;
+  const _snCond  = (_hasCond && !_hasMet) ? ++_sn : null;
+  const _snAR    = _hasAR ? ++_sn : null;
+  const _snGF    = _hasGF ? ++_sn : null;
+  const _snAC    = _hasAC ? ++_sn : null;
+  const _snRef   = ++_sn;
 
   // ── ÍNDICE (básico — sem número de página, só ordem e título) ──
   let indiceHTML = '';
   if (laudoSecoesAtivas.has('indice')) {
     const itensIndice = [
-      '1. Metodologia de trabalho e normas aplicáveis',
-      '2. Fatores de Risco Psicossociais — Resultados por Setor',
+      _hasMet ? `${_snMet}. Metodologia de trabalho e normas aplicáveis` : null,
+      _hasRes ? `${_snRes}. Fatores de Risco Psicossociais — Resultados por Setor` : null,
+      _snCond ? `${_snCond}. Conduta Administrativa` : null,
       _hasAR ? `${_snAR}. Análise Gráfica por Fator de Risco` : null,
       _hasGF ? `${_snGF}. Distribuição de Respostas por Questão` : null,
       _hasAC ? `${_snAC}. Ações Recomendadas por Fator de Risco` : null,
@@ -11276,7 +11291,7 @@ tr:last-child td{border-bottom:none}
 <div class="page">
   <div class="sec-title">${_snAR}. Análise Gráfica por Fator de Risco</div>
   <p>Distribuição percentual das respostas agregadas por fator de risco. A barra superior é a média de todas as questões do fator; abaixo, o detalhe por questão. ↺ indica questão inversa (meta = Sempre).</p>
-  ${_legendaIndicadoresHTML(['p','s','nivel','n','meta','inv','peso'])}
+  ${_legendaIndicadoresHTML(['p','s','nivel','meta','n','inv','peso'])}
   ${legAR}${corposAR}
   ${footer('Análise por Risco')}
 </div>`;
@@ -11306,6 +11321,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ── PÁGINA 1: CAPA ────────────────────────────────────────── -->
+${_hasCapa ? `
 <div class="page">
   <div class="cover-header">
     ${coverLogoHTML}
@@ -11336,16 +11352,18 @@ tr:last-child td{border-bottom:none}
     <span>${e(estNome)} © ${new Date().getFullYear()}</span>
   </div>
 </div>
+` : ''}
 
 <!-- ── ÍNDICE ─────────────────────────────────────────────────── -->
 ${indiceHTML}
 
 <!-- ── METODOLOGIA — P e S ────────────────────────────────────── -->
+${_hasMet ? `
 <div class="page">
-  <div class="sec-title">1. Metodologia de trabalho e normas aplicáveis</div>
+  <div class="sec-title">${_snMet}. Metodologia de trabalho e normas aplicáveis</div>
   <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
   <p>A classificação correta dos riscos considera também os chamados "amenizadores" — <strong>pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos</strong> — durante a avaliação de cada atividade específica.</p>
-  <div class="sec-title sub">1.1 Probabilidade (P) / Frequência — Tabela 1</div>
+  <div class="sec-title sub">${_snMet}.1 Probabilidade (P) / Frequência — Tabela 1</div>
   <div class="tbl-wrap"><table class="tbl-p"><thead><tr><th>Ocorrência / Probabilidade</th><th>Critério — Psicossocial (Escala Likert)</th></tr></thead><tbody>
     <tr><td><strong>P4 — Quase Certo (Permanente)</strong></td><td><div><strong>Exposição:</strong> Habitual, diversas vezes durante a jornada, superior a 80% do tempo.</div><div>Resposta: <strong>"Sempre"</strong> — Queixas frequentes. Medidas de controle inexistentes ou inadequadas.</div></td></tr>
     <tr><td><strong>P3 — Provável (Habitual)</strong></td><td><div><strong>Exposição:</strong> Intermitente, entre 50% e 80% do tempo.</div><div>Resposta: <strong>"Frequentemente"</strong> — Queixas frequentes com pelo menos um registro. NRs parcialmente atendidas.</div></td></tr>
@@ -11354,7 +11372,7 @@ ${indiceHTML}
   </tbody></table></div>
   <div class="fonte-nota">Quadro adaptado de MULHAUSEN &amp; DAMIANO (1998), Apêndice D da BS 8800 e AIHA 2015.</div>
   <div class="highlight-box" style="margin-top:12px"><strong>Atenção — questões inversas:</strong> Para questões formuladas de forma positiva, a resposta ideal é "Sempre". O sistema aplica automaticamente a inversão do score: <em>score_ajustado = 5 − score_bruto</em>.</div>
-  <div class="sec-title sub" style="margin-top:18px">1.2 Severidade (S) / Efeito — Tabela 2</div>
+  <div class="sec-title sub" style="margin-top:18px">${_snMet}.2 Severidade (S) / Efeito — Tabela 2</div>
   <div class="tbl-wrap"><table class="tbl-s"><thead><tr><th>S — Índice de Severidade</th><th>Critério utilizado — Psicossocial</th></tr></thead><tbody>
     <tr><td><strong>1 — Leve</strong></td><td>Não geram sobrecargas humanas significativas. Desmotivação, sensação de invisibilidade, ansiedade leve, frustração, desânimo.</td></tr>
     <tr><td><strong>2 — Moderado</strong></td><td>Geram situações de desconforto e fadiga. Frustração frequente, baixa autoestima, queda na imunidade, irritabilidade moderada.</td></tr>
@@ -11362,11 +11380,13 @@ ${indiceHTML}
     <tr><td><strong>4 — Severo</strong></td><td>Lesões ou afastamentos com alta incidência. Possibilidade de DORT. Transtornos emocionais graves: crises de pânico, depressão, perda de controle emocional.</td></tr>
   </tbody></table></div>
   ${footer('Metodologia')}
-</div>
+</div>` : ''}
 
-<!-- ── PÁGINA 3: MATRIZ + CLASSIF + CONDUTA ──────────────────── -->
+<!-- ── PÁGINA 3: MATRIZ + CLASSIF (Metodologia) + CONDUTA ─────── -->
+${(_hasMet || _hasCond) ? `
 <div class="page">
-  <div class="sec-title">1.3 Definição do Nível de Risco — Matriz P × S</div>
+  ${_hasMet ? `
+  <div class="sec-title">${_snMet}.3 Definição do Nível de Risco — Matriz P × S</div>
   <p>Estimativa da categoria do nível de risco a partir da combinação P × S, conforme Tabela 4.</p>
   <div class="tbl-wrap"><table class="tbl-matriz"><thead>
     <tr><th class="axis-label" rowspan="2" style="width:120px;vertical-align:middle">PROBABILIDADE</th><th colspan="4" class="s-label" style="text-align:center">SEVERIDADE (S) / EFEITO</th></tr>
@@ -11378,7 +11398,7 @@ ${indiceHTML}
     <tr><td class="p-label">P1 — Alt. Improvável<br><span style="font-weight:400;font-size:10px">(Ocasional)</span></td><td class="nivel-cell nc-irr">RISCO<br>IRRELEVANTE</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-bax">RISCO<br>BAIXO</td><td class="nivel-cell nc-med">RISCO<br>MÉDIO</td></tr>
   </tbody></table></div>
   <div class="fonte-nota">Fonte: Adaptado de MULHAUSEN &amp; DAMIANO (1998) e Apêndice D da BS 8800 (BSI, 1996).</div>
-  <div class="sec-title sub" style="margin-top:18px">1.4 Classificação Ergonômica (Couto, 2007 × BS 8800)</div>
+  <div class="sec-title sub" style="margin-top:18px">${_snMet}.4 Classificação Ergonômica (Couto, 2007 × BS 8800)</div>
   <div class="tbl-wrap"><table><thead><tr><th>Classificação Ergonômica</th><th>Nível de Risco</th><th>Caracterização</th></tr></thead><tbody>
     <tr><td style="font-style:italic">Ação técnica normal ou sem risco ergonômico</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>É natural do corpo humano aquele movimento, postura ou exigência psicofisiológica.</td></tr>
     <tr><td style="font-style:italic">Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Existe exigência ergonômica além de uma ação técnica normal, porém há baixa probabilidade de distúrbio — geralmente pela existência de algum mecanismo de regulação.</td></tr>
@@ -11386,8 +11406,10 @@ ${indiceHTML}
     <tr><td style="font-style:italic">Risco Ergonômico</td><td><span class="nivel-badge nb-alt">ALTO</span></td><td>Situações consideradas como potencialmente causadoras de lesões.</td></tr>
     <tr><td style="font-style:italic">Alto Risco Ergonômico</td><td><span class="nivel-badge nb-cri">CRÍTICO</span></td><td>Situações consideradas como potencialmente causadoras de lesões graves e afastamentos.</td></tr>
   </tbody></table></div>
+  ` : ''}
+  ${_hasCond ? `
   <div class="no-break">
-  <div class="sec-title sub" style="margin-top:18px">1.5 Conduta Administrativa (BS 8800 / NR-01)</div>
+  <div class="sec-title${_condSub ? ' sub' : ''}" style="margin-top:18px">${_condSub ? `${_snMet}.5` : `${_snCond}.`} Conduta Administrativa (BS 8800 / NR-01)</div>
   <div class="tbl-wrap"><table class="tbl-conduta"><thead><tr><th>Classificação Ergonômica</th><th style="text-align:center">Nível</th><th>Conduta Administrativa</th></tr></thead><tbody>
     <tr><td>Ação técnica normal ou sem risco</td><td><span class="nivel-badge nb-irr">IRRELEVANTE</span></td><td>Nenhuma ação é requerida e nenhum registro documental precisa ser mantido.</td></tr>
     <tr><td>Improvável, mas possível</td><td><span class="nivel-badge nb-bax">BAIXO</span></td><td>Nenhum controle adicional é necessário. Podem-se considerar aperfeiçoamentos opcionais. Monitoração para assegurar que os controles são mantidos.</td></tr>
@@ -11397,17 +11419,19 @@ ${indiceHTML}
   </tbody></table></div>
   <div class="highlight-box mt14"><strong>Importante:</strong> Os riscos significativos identificados devem compor, junto aos demais riscos, o <strong>Inventário de Riscos Ocupacionais</strong> estabelecido no Programa de Gerenciamento de Riscos — PGR da NR-01.</div>
   </div>
-  ${footer('Metodologia')}
-</div>
+  ` : ''}
+  ${footer(_hasMet ? 'Metodologia' : 'Conduta')}
+</div>` : ''}
 
 <!-- ── PÁGINA 4: RESULTADOS ──────────────────────────────────── -->
+${_hasRes ? `
 <div class="page">
-  <div class="sec-title">2. Fatores de Risco Presentes × Nível de Risco</div>
+  <div class="sec-title">${_snRes}. Fatores de Risco Presentes × Nível de Risco</div>
   <p>Os resultados individuais por grupo de exposição foram alocados nas tabelas abaixo, especificando os fatores de risco identificados, suas consequências, a classificação ergonômica e o nível de risco correspondente.</p>
   <p>Os questionários foram respondidos de forma sigilosa pelos colaboradores, sem identificação nominal, com base na vivência dos últimos 6 meses de trabalho.</p>
   ${resultadosHTML || '<p style="color:#6b7280;font-style:italic">Nenhum risco acima de IRRELEVANTE identificado nos setores selecionados.</p>'}
   ${footer('Resultados')}
-</div>
+</div>` : ''}
 
 ${analiseRiscoHTML}
 
