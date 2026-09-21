@@ -74,6 +74,53 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   PRs criados via `gh` CLI (autenticado — conta `elevaitconsultoria`, token no keyring Windows).
   Usar skill `/commitar-e-pr` para o fluxo completo.
 - **Build**: `build.js` injeta `SUPA_URL` e `SUPA_ANON_KEY` nos HTMLs antes do deploy no CF Pages.
+- **`develop` é branch compartilhada, com mais de um desenvolvedor trabalhando em paralelo.**
+  Um commit que você não reconhece em `develop` é o normal, não uma anomalia — e há duas
+  consequências que a ferramenta **não** deixa evidentes:
+
+  1. **Todo mundo commita com a mesma identidade git** (`Eleva_admin
+     <eleva.it.consultoria@gmail.com>`). `git log --format=%an` não distingue autor nenhum:
+     não dá para saber de quem é um commit pela autoria, só pela mensagem e pelo conteúdo.
+     Nunca conclua "isto é meu" a partir do autor.
+  2. **`psicomap-admin.html` é um único arquivo de ~950KB com todo o JS inline.** Trabalho
+     paralelo cai no mesmo arquivo quase sempre. Antes de commitar: `git fetch` e conferir
+     `git log HEAD..origin/develop`. **Nunca usar `git add -A` / `git commit -a`** — sempre
+     nomear os arquivos e reler o próprio diff (`git show --stat` + o conteúdo), ou você
+     varre trabalho não commitado de outra pessoa para dentro do seu commit.
+
+  Duas coisas que afetam terceiros no mesmo instante do push, sem aviso:
+  - **`git push origin develop` publica o DEV para todos** (Cloudflare Pages). Se alguém está
+    homologando algo em DEV, o ambiente muda por baixo dessa pessoa.
+  - **Migration aplicada em DEV/PROD vale para todas as sessões imediatamente**, inclusive as
+    de quem está rodando um build antigo. Por isso o padrão de `.select()` tolerante (ver
+    "Importação de Agrupamentos GHE por par" adiante).
+
+  **Duas sessões de agente no mesmo diretório não funcionam.** Aconteceu de verdade em
+  2026-09-11: entre dois comandos, a branch do checkout mudou por baixo da sessão e um commit
+  foi parar na branch de outra pessoa; o `git push origin develop` seguinte respondeu
+  "Everything up-to-date" — correto, porque a branch local `develop` não havia mudado — e o
+  commit ficou só local. O remédio é **git worktree**: cada sessão com seu próprio diretório e
+  checkout, mesmo repositório e mesmo remote.
+  - Criar **fora da pasta do repo** (`git worktree add -b <branch> ../<pasta> origin/develop`):
+    `.claude/worktrees/` **não** está no `.gitignore` e apareceria como untracked no `git
+    status` de quem está na pasta principal.
+  - **Numa branch própria, nunca em `develop`** — um branch só pode ter checkout em um worktree
+    por vez, e prender `develop` impediria a outra pessoa de trocar para ela.
+  - Publicar com `git push origin HEAD:develop` (fast-forward conferido antes com
+    `git merge-base --is-ancestor origin/develop HEAD`), sem nunca dar checkout em `develop`.
+  - Copiar o `.env` para o worktree (é gitignored) e buildar com `node --env-file=.env build.js`.
+  - **Nunca usar `git stash` sem tag**: a pilha de stash é compartilhada entre worktrees, e um
+    `pop` pega o que a outra sessão empilhou. Prefira um commit WIP.
+  - **Sempre conferir `git branch --show-current` antes de commitar** (não só `git status`) e
+    **validar que o push subiu** (`git log origin/<branch>..HEAD`) em vez de confiar na mensagem.
+
+  **Consequência para decisão de release — a mais importante:** "minha mudança é segura" não é
+  a mesma afirmação que "`develop` está pronta para promover". `develop` pode carregar trabalho
+  de outras pessoas que você não revisou nem testou. Antes de promover `develop` → `main`,
+  rodar `git log origin/main..origin/develop --oneline` e confirmar que **cada** commit do
+  intervalo foi validado — não só os seus. Validar o próprio delta contra `origin/main` mede o
+  seu risco, não o risco do release.
+
 - **`develop` não sincroniza com `main` sozinho.** Não existe automação (CI, branch protection
   com auto-merge) que mantenha os dois alinhados — é manual. Achado real 2026-07-30: `develop`
   ficou 31 commits atrás, sem nenhum commit próprio, e nunca recebeu o rebrand — o deploy DEV
@@ -604,6 +651,15 @@ declarada em `_buildLaudoHTML`).
 - Combos de função (novos): `combo-fun-ghe`, `combo-gf-fun-ghe`, `combo-ld-fun-ghe` — mesmas 3 telas.
 - **Nenhum desses 6 combos tem botão "Aplicar"** (só "Todos"/"Limpar") — são auto-apply via `COMBOS_AUTO_APPLY` (Set de ids) + `_renderParaCombo(id)`, chamado direto por `toggleComboItem`/`selectAllCombo`/`clearCombo` quando o id está no Set. Ao adicionar um combo novo desse tipo (sem "Aplicar"), lembrar de incluí-lo em `COMBOS_AUTO_APPLY` — esquecer isso foi exatamente o bug real encontrado em 2026-08-28 (seleção não refletia na tela até outro filtro com "Aplicar" ser clicado).
 - `gerarLaudoPDF()` (exportação real do PDF) e `renderLaudo()` (preview) devem ler os mesmos filtros — já existiu um gap onde só o preview aplicava o filtro de Agrupamento GHE, corrigido em 2026-08-28.
+- **Preview × PDF do laudo é uma classe recorrente de bug** — `renderLaudo()` (preview) e
+  `_buildLaudoHTML()` (PDF) montam o mesmo documento por caminhos separados. Já divergiram em
+  filtro (2026-08-28), no card de risco, na segmentação e nas seções ativas (2026-09-18).
+  Mitigações em vigor, todas do mesmo formato — uma fonte única chamada pelos dois lados:
+  `_laudoCardRiscoHTML(f)` para o card de risco, `_granularidadeLaudo()` +
+  `_gruposPorGranularidade(linhas, gran)` para a segmentação (ver seção "Importação de GHE por
+  par"), e `laudoSecoesAtivas` lido para **todas** as 8 seções de `LAUDO_SECOES` nos dois — não
+  só nas quatro que o PDF gateava. Ao acrescentar seção ao laudo, implementar nos dois lados e
+  conferir com os dois caminhos rodando sobre os mesmos dados.
 
 **`agruparPorGrupos(setores, grupos)`**: matching via `_gheNormStrong` desde 2026-08-28 (antes
 era string exata) — variantes "Outro: X" que só diferem em caixa/acento/espaço caem no mesmo
@@ -619,8 +675,448 @@ contador "não classificadas" da tela Adesão GHE (compara contra `empresa_headc
 `grupos_setor`) continua contando resposta "Outro" como não classificada mesmo depois de
 agrupada.
 
-**Bug conhecido (não crítico)**: `renderLaudo()` não filtra `linhas` por `ld-ciclo` — o ciclo
-selecionado afeta apenas o nome na capa do PDF, não os dados exibidos. Bug pré-existente.
+**~~Bug conhecido: `renderLaudo()` não filtra `linhas` por `ld-ciclo`~~ — não procede mais.**
+Verificado em 2026-09-18: o filtro está lá (`(!cicloId || r.ciclo_id === cicloId)`, no `dados.filter`
+de `renderLaudo`). Nota mantida riscada para não ser "redescoberta" a partir de uma versão antiga
+deste arquivo.
+
+## Importação de Agrupamentos GHE por par (2026-09-11) — Fase 1
+
+**O problema que motivou.** A configuração de GHE era manual. O catálogo
+(`empresa_setores`/`empresa_funcoes`) vem da planilha de colaboradores do cliente; a matriz de
+GHE vem do **PGR da empresa** — outro documento, com nomenclatura quase sempre defasada
+("Supervisor RH" no catálogo × "Coordenador de RH" no PGR). O consultor refazia o casamento de
+cabeça a cada empresa e a cada reimportação.
+
+**Por que os dois eixos existentes não serviam.** `tipo='setor'` e `tipo='funcao'` modelam
+UM eixo cada. A matriz do PGR é um conjunto de **pares** (setor, função). Usar os dois eixos
+viraria produto cartesiano, e `agruparPorGrupos()` põe cada setor no **primeiro** grupo que
+casar — num PGR real "Produção" está no GHE dos operadores E no da supervisão, e um dos dois
+seria esvaziado em silêncio, gerando laudo errado sem nenhum erro.
+
+**`grupos_setor` ganhou `tipo='ghe'` + `pares jsonb`** (`migration_grupos_setor_ghe.sql`):
+- `pares` = `[{"s": setor, "f": funcao|null}]`, grafia **crua** do catálogo. `f` nulo/vazio =
+  **coringa do setor** (linha do PGR sem função).
+- `itens` também é preenchido nas linhas `ghe` (setores distintos dos pares) — derivado, para
+  que qualquer caminho legado que leia `itens` degrade para grupo de setor, não para grupo vazio.
+- `ordem` é sequencial pela planilha: a regra de desempate quando um par cai em dois GHE é
+  "o primeiro por `ordem` vence". Tudo em `ordem=0` tornaria o laudo não reproduzível.
+- Índice único **parcial** `(empresa_id, lower(nome)) WHERE tipo='ghe'` — global falharia contra
+  duplicatas já existentes nos tipos legados.
+- RLS e GRANT: zero mudança, as policies não olham `tipo`.
+
+**Tabela nova `empresa_apelidos`** (`migration_empresa_apelidos.sql`) — o de-para aprendido,
+**escopo por empresa** (decisão explícita: "Supervisor" em duas empresas pode ser cargo
+diferente). `apelido_norm` é **coluna, não expressão**: o banco não tem `unaccent`/`citext`, e
+`lower()` sozinho não colapsaria acento — é gravada pelo frontend com o mesmo `_gheNormStrong`
+usado na leitura. Texto, não FK, pelo mesmo motivo de `grupos_setor`: `salvarGHE()` apaga e
+recria o catálogo a cada reimportação e regenera todos os `id`.
+
+**Estado real (verificado via `pg_constraint`/`pg_policies`, não pelos arquivos): as duas
+migrations já estão aplicadas em DEV e PROD** (2026-09-11), com os dois bancos idênticos —
+CHECK `('setor','funcao','ghe')`, `pares jsonb NOT NULL DEFAULT '[]'`, índice parcial
+`uq_grupos_setor_ghe_nome`, `empresa_apelidos` com RLS + GRANT + as duas policies. Linhas
+legadas intactas e nenhuma com `pares <> '[]'`. **Falta só publicar o HTML.**
+RLS validada com `set_config('request.jwt.claims',...)` + ROLLBACK: admin e consultor escrevem,
+`cliente_viewer` lê e é bloqueado na escrita das duas tabelas, `super_admin` com `tenant_id NULL`
+lê e escreve pelo `OR is_super_admin()`, e `anon` não tem GRANT.
+
+**Divergência DEV↔PROD encontrada ao aplicar (nova, vale para QUALQUER tabela futura):** o
+schema `public` de **PROD** tem `ALTER DEFAULT PRIVILEGES` concedendo **ALL ao `anon`** em toda
+tabela nova; **DEV não tem**. Ou seja, toda tabela criada em PROD nasce com CRUD completo para o
+papel anônimo e passa a depender **exclusivamente do RLS** — o `GRANT ... TO authenticated` do
+padrão da casa não substitui um `REVOKE`. `empresa_apelidos` nasceu assim e foi fechada com
+`REVOKE ALL ... FROM anon` nos dois bancos (verificado via REST: `anon` agora recebe 42501 no
+SELECT e no INSERT).
+
+Varredura completa de `grantee='anon'` feita em PROD na mesma sessão — **não há vazamento
+ativo**, é lacuna de defesa em profundidade:
+- 12 tabelas têm grant do `anon` sem nenhuma policy para `anon` (`grupos_setor`,
+  `empresa_headcount`, `perfis`, `respostas_fila`, `resposta_itens`, `laudos`, `tenants`,
+  `subscriptions`, `pagamentos`, `planos_config`, `riscos_config`, `tenant_contadores`).
+  Todas com RLS ligada, então o `anon` recebe `[]` — mas **só o RLS segura**.
+- As 5 views (`v_respostas_admin`, `v_questoes_empresa`, `v_cobertura_questionario`,
+  `v_subscription_ativa`, `tenant_usage`) aparecem como "sem RLS" numa varredura ingênua, mas
+  **todas têm `security_invoker=on`** e portanto herdam o RLS das tabelas de base. O que o
+  `anon` lê em `v_questoes_empresa` (nome de empresa + questões) vem das policies `pub_read_*`
+  que o formulário público já precisa — é exposição intencional, não regressão.
+- Conclusão: nada a corrigir com urgência; se for endurecer, é `REVOKE ALL ... FROM anon` nas
+  12 tabelas acima, o que não deve afetar nenhum fluxo (o formulário só lê `empresas`,
+  `empresa_setores`, `empresa_funcoes`, `links_coleta`, `ciclos`, `questoes*`, `est_perfil`).
+
+**⚠️ ORDEM DE DEPLOY.** As duas migrations vão para DEV e PROD **antes** do HTML.
+`carregarGruposSetor()` usa lista explícita de colunas; pedir `pares` antes de a coluna existir
+devolve 42703 e o catch antigo zerava `gruposSetor` **e** `gruposFuncao` — toda empresa perderia
+os agrupamentos em Resultados/Gráficos/Laudo sem erro visível. Existe rede de proteção: o select
+tem **retry sem `pares`**, que preserva os tipos legados e só desliga o GHE.
+
+**Assistente de 3 etapas** (`#modal-import-ghe`, botão na tela Agrupamentos):
+1. Arquivo (CSV/XLSX, reusa `_parseGHECSV` e o SheetJS já carregado)
+2. Conciliação — resolução na ordem **exato → de-para aprendido → sugestão → órfão**. Só os dois
+   primeiros são automáticos; sugestão exige confirmação (guard no Avançar). Índice, e não nome,
+   nos handlers: nomes vêm de planilha de terceiro e quebrariam `onchange="...('${nome}')"`.
+3. Prévia — diff `criar/atualizar/remover`, conflitos de par, órfãos e **cobertura contra as
+   respostas**. Nada toca o banco antes do Aplicar.
+
+**`_simNomes`** = maior entre coeficiente de sobreposição de tokens e Dice de bigramas.
+Usa **stopwords**, não corte por tamanho: cortar tokens com menos de 3 chars descartava
+`RH`/`TI`/`SG`, e "Supervisor RH" × "Coordenador de RH" caía para 0 — exatamente o caso que
+motivou a feature. Limiar `GHE_SIM_MINIMA = 0.45`.
+
+**Órfãos** (nome da planilha sem correspondente no catálogo): são **gravados com a grafia da
+planilha e marcados como pendência** no painel da tela. Nunca criam setor/cargo — isso
+contrariaria a regra 4 ("o catálogo reflete a planilha do cliente, não o contrário") e seria
+apagado na reimportação de estrutura seguinte.
+
+**Correções de bugs vivos que vieram junto:**
+- `_detectarColuna` casa por `includes` e `'ghe'` estava na lista de candidatos de **setor**:
+  uma planilha com header "Agrupamento GHE" tinha essa coluna eleita como setor na importação
+  de estrutura, deslocando tudo em silêncio. Agora há `excluir` (Set de headers já reivindicados)
+  e `_detectarColAgrupamento`, que é conservador — exige a palavra "agrupamento", então um header
+  chamado só "GHE" continua valendo como setor (comportamento histórico preservado).
+- `_onAgrupEmpresaChange` atribuía `_empresaAtiva` direto em vez de chamar `setEmpresaAtiva` —
+  não persistia em `sessionStorage`, não sincronizava os outros selects nem o chip da topbar.
+
+### Fase 2 — granularidade "Por GHE" no laudo
+
+`#laudo-granularidade` ganhou `ghe` como primeira opção, e ela vira o default quando a empresa
+tem GHE importado (`ghe` > `agrupado` > `segregado`; `consolidado` é escolha explícita e nunca é
+sobrescrita). A opção fica `hidden` quando não há GHE, e `_granularidadeLaudo()` degrada sozinha
+se o modo escolhido ficar sem base (ex.: GHE apagado depois de selecionado).
+
+**`agruparPorPares(linhas, ghes)`** — recebe as LINHAS de resposta, não nomes de setor, porque a
+unidade de pertencimento é o par. Três passadas: **par exato → coringa de setor → residual**.
+- Cada resposta entra em exatamente um grupo. É o que garante `Σ n(grupo) === linhas.length`;
+  sem isso o mesmo respondente contaria duas vezes no laudo.
+- Par declarado em dois GHE: o primeiro por `ordem` fica com ele; o conflito volta em
+  `conflitos` e vai para o `console.warn`, nunca some.
+- Resposta fora de todo GHE vai para grupo **residual por setor** (não por par). Sem isso ela
+  sumiria do corpo do laudo continuando contada na capa — o laudo **sub-reportaria risco**.
+  `_gruposPorGranularidade` verifica a invariante e grita no console se ela quebrar.
+
+**`_linhasDoGrupo(grupo, linhas)`** é o único lugar que decide membership: grupo com `_chaves`
+casa por par; grupo legado continua casando por nome de setor, byte a byte como antes.
+Substituiu os 6 `linhas.filter(r => grupo.setores.includes(r.setor))` do laudo e os 3 da tela
+Resultados.
+
+### Tela Resultados — `_segMode = 'ghe'` (feito junto, reaproveitando a Fase 2)
+
+Não foi preciso código novo de agrupamento: `#f-segmentacao` ganhou a opção **"Por GHE (setor ×
+função)"** e as três views passaram a chamar `_gruposPorGranularidade`/`_linhasDoGrupo`, os mesmos
+do laudo — as duas telas não podem divergir sobre o que "Por GHE" significa.
+
+`_segmentosResultado(filtrado, grupos)` substituiu as **três cópias quase idênticas** da lógica de
+segmentação que existiam em `renderViewGrafica`, `renderViewRisco` e `renderViewQuestao`.
+Acrescentar um modo exigia lembrar de editar as três; agora é um ponto só. O modo `agrupado`
+continua consumindo o `grupos` pré-calculado por `rodarAnalise` (`agruparPorGrupos` sobre
+`gruposSetor`) — comportamento idêntico ao anterior, verificado lado a lado.
+
+`_atualizarSegSelect` esconde a opção quando a empresa não tem GHE (`optGhe.hidden`) e devolve
+`_segMode` para `SEG_PADRAO` se o modo vigente ficar sem base — mesma regra de
+`#laudo-granularidade`. `SEG_PADRAO` continua `'consolidado'`: a opção nova não muda o default da
+tela. `SEG_LABEL.ghe` cobre de uma vez o filtro, a tag `#an-seg-label` e o subtítulo do PDF
+exportado.
+
+**Armadilha real encontrada ao fazer isso:** `renderViewGrafica` e `renderViewRisco` guardavam a
+segmentação em locais (`_sgMode`/`_sgModeR`) que continuavam sendo lidos **mais abaixo na mesma
+função**, fora do trecho substituído. Remover só o bloco de cima deixou duas referências órfãs que
+quebravam as duas views em todos os modos — pegas só porque o teste executou as funções de
+verdade, não apenas a sintaxe.
+
+### Filtro "GHE (setor × função)" — isolar um GHE
+
+Segmentar mostra **todos** os GHE de uma vez; filtrar isola **um ou alguns**. São necessidades
+diferentes: o consultor entrega ora um documento consolidado, ora um documento por GHE.
+Combos novos `combo-ghe-par` (Resultados), `combo-gf-ghe-par` (Gráficos) e `combo-ld-ghe-par`
+(Relatório), populados por `_populateGheCombo(..., 'ghe')` e registrados em `COMBO_RENDER`
+(auto-apply). O filter-card some quando a empresa não tem GHE importado.
+
+**`_filtroPorGhe(comboId, linhas)` recebe as LINHAS e passa por `agruparPorPares`** em vez de
+simplesmente expandir os pares do GHE selecionado. Não é desperdício: um par pode estar
+declarado em dois GHE, e um GHE coringa ("qualquer função do setor X") se sobrepõe a pares
+exatos de outro. Resolver a precedência aqui de um jeito e na segmentação de outro faria o
+filtro "Operacional" trazer um conjunto diferente do bloco "Operacional" — o mesmo GHE com
+`n` diferente conforme a tela, sem erro aparente. Reusando `agruparPorPares`, filtro e
+segmentação são consistentes por construção (verificado GHE a GHE).
+
+Aplicado nas **quatro** cadeias de filtro, incluindo `gerarLaudoPDF` — o export precisa ler os
+mesmos filtros do preview, gap que já existiu antes com o filtro de Agrupamento GHE.
+
+**O que este filtro NÃO resolve** (pedidos reais do usuário, ainda em aberto): não há histórico
+de análises geradas — a tabela `laudos` recebe um registro a cada PDF (com `granularidade` e
+grupos desde 2026-09-11) mas **nunca é lida por nenhuma tela**; e não há como salvar um recorte
+de filtros como preset para reaplicar depois.
+
+### Flexibilidade do importador e exportação de pares
+
+Nota completa da feature (contexto, bugs, decisões e próximos passos):
+`.claude/notes/2026-09-11-importacao-ghe-por-par.md`.
+
+**O importador declara o que detectou.** Conciliação e prévia mostram a ligação campo → coluna
+do arquivo, e quando a de função não casa o bloco fica vermelho, explica a consequência e lista
+as colunas não usadas. Existe porque o bug do plural (abaixo) não foi caro por existir, e sim
+por **falhar calado**: foram duas rodadas de importação com planilha de cliente só para
+descobrir qual coluna não tinha casado.
+
+**Seletor manual de coluna.** A detecção automática é só o palpite inicial — o usuário troca
+qualquer uma na etapa 2 e o arquivo é reprocessado sem reabrir (`_gheiReprocessar`, que guarda
+`st.rows` cru). Detecção falha deixou de ser beco sem saída: antes retornava erro e parava.
+Nome de coluna é território de planilha de cliente; nenhuma lista de sinônimos cobre todos.
+
+**Multi-valor por célula** (`GHE_SEP_MULTI`: `, ; / |` e " e "). Liga sozinho quando >30% das
+células têm separador, mas o checkbox é do usuário. **O cruzamento N×M é validado contra
+`hierarquia`** (`empresa_funcoes.setor_id`): ficam só as combinações que existem no cadastro.
+Produto cartesiano puro inventaria pares que o PGR nunca declarou — e par inventado **disputa
+precedência** com par real de outro GHE, mudando de verdade quem cai onde. Verificado:
+"RH, Contas a receber" × 3 cargos → 3 pares certos, não 6. Sem reconhecimento nenhum no
+cadastro, mantém o cruzamento completo (melhor palpite, e a prévia mostra antes de gravar).
+
+**`exportarParesGhe()`** — CSV dos pares Setor × Função que têm resposta, com contagem, origem
+e o GHE atual de cada um. Inclui os `Outro:` digitados **de propósito**: são os que não estão
+no cadastro, somem de qualquer lista montada a partir dele, e são eles que caem no residual do
+laudo. Sai no mesmo formato que o importador lê (`;` + BOM, que o Excel pt-BR abre direto e
+`_parseGHECSV` detecta sozinho), então resolve três coisas: relatório, **modelo de planilha**
+(o sistema não tinha nenhum) e round-trip. Round-trip verificado, inclusive as colunas extras
+sendo ignoradas.
+
+**Sugestão de cargo usa o setor declarado na linha.** Cada função carrega o conjunto de setores
+(já conciliados) em que a planilha a coloca, e a escolha é por **PARTIÇÃO**: primeiro os
+candidatos que existem naquele setor, depois por semelhança dentro de cada grupo
+(`_noContexto`/`_ordenarCandidatos`). O limiar continua aplicado à semelhança **textual** —
+contexto desempata plausíveis, nunca promove candidato que não se parece com nada.
+
+> **Caso real que motivou, e a lição de engenharia:** o PGR trazia `ANALISTA DE VENDAS Pl`
+> (P + **L minúsculo**) e o catálogo tem `ANALISTA DE VENDAS PI` (P + **i maiúsculo**) —
+> visualmente idênticos. A similaridade textual apontava `ANALISTA DE VENDAS` (1.00, subconjunto
+> exato de tokens) contra `ANALISTA DE VENDAS PI` (0.67); a sugestão errada virou de-para
+> aprendido e a resposta real ficou fora de todo GHE. A informação para acertar estava na linha:
+> ela diz "Comercial Obras", e só `PI` existe nesse setor.
+> **Implementei primeiro como bônus de 0.35 e o caso passou por 1.02 contra 1.00.** Ganhar por
+> coincidência entre a constante escolhida e a diferença de similaridade do caso concreto não
+> serve para uma decisão que termina num laudo — daí a regra de partição.
+
+**Bug do plural — `função` → `funções`.** A detecção casa por substring depois de normalizar.
+`setor`→`setores` e `cargo`→`cargos` funcionam porque o plural só acrescenta "s" e contém o
+singular. `função`→`funções` **muda o radical**: normalizado vira `funcoes`, que não contém
+`funcao`. Resultado: coluna inteira ignorada, toda função vazia, **todo par virava coringa
+"(qualquer função)"** e o GHE cobria o setor inteiro em vez dos cargos do PGR — sem erro na
+tela. Plurais com mudança de radical precisam de entrada própria, e vão no **fim** da lista
+para que um arquivo com "Cargo" e "Funções" continue elegendo "Cargo".
+
+**Contagem de de-para aprendido na conciliação.** "Aprendido" conta como resolvido e sumia da
+contagem de pendências, mas é decisão humana de uma importação passada que **reaplica sozinha e
+tem prioridade sobre a sugestão** — um casamento confirmado errado uma vez ficaria invisível
+para sempre. Agora aparece "N de importações anteriores (revise se algum estiver errado)".
+
+**Dados de teste em DEV:** empresa Inovadoor Portas Industriais
+(`86436ac2-852d-4aee-99b6-a5a87d4292b1`) copiada de PROD, 61 respostas / 1647 itens, seguindo o
+procedimento da seção "Copiar dados de uma empresa PROD → DEV". Para remover:
+`DELETE FROM empresas WHERE id='86436ac2-...'` em DEV (CASCADE leva o resto).
+
+**`_gruposPorGranularidade(linhas, gran)` é fonte única de preview e export.** Isso corrigiu um
+bug vivo: no preview, as seções `analise_risco` e `acoes` usavam `agruparPorGrupos` cru e
+**ignoravam a granularidade escolhida**, enquanto `_buildLaudoHTML` a respeitava — preview e PDF
+mostravam agrupamentos diferentes nas mesmas seções. O parâmetro `ordenar` existe só para
+preservar a ordenação alfabética que a seção "Resultados" do preview já fazia no modo segregado.
+
+**Capa e subtítulos.** `_rotuloGranularidade` troca "Setores avaliados" por **"GHE avaliados"**
+(e "Escopo" no consolidado) — chamar nome de GHE de setor numa capa é lido por auditor como
+setor. `_setoresCatalogados` ganhou ramo `'ghe'` próprio: lista nomes de GHE e só inclui grupo
+residual se o setor estiver no catálogo. `_descricaoGrupo` declara o **par** ("Setor × função:
+Produção — Operador; RH — (qualquer função)") em vez de "Setores incluídos" — dizer que um GHE
+cobre um setor quando cobre 2 de 9 funções dele é afirmação falsa num documento de NR-01.
+
+`_registrarLaudo` passou a gravar `granularidade` e os nomes dos grupos no `snapshot_json`: sem
+isso não há como provar depois sob qual agrupamento um laudo entregue foi gerado.
+
+Verificado com preview e `_buildLaudoHTML` lado a lado nas 4 granularidades (mesmos grupos em
+todas), invariante fechando (6 respostas → 6 distribuídas, 1 no residual) e rótulo de capa
+mudando conforme o modo.
+
+### Editor de GHE par a par (2026-09-14)
+
+`#modal-ghe-edit` + `abrirNovoGhe()`/`editarGhe(id)`. Fecha a lacuna 1 da nota: antes o GHE só
+nascia da importação e só podia ser **excluído** — corrigir um par errado custava reimportar a
+matriz inteira, par órfão não tinha resolução nenhuma, e empresa sem matriz de PGR não
+conseguia usar a feature.
+
+- **`#modal-grupo` não serve** — ele edita UM eixo (`itens[]`); um GHE é um conjunto de pares.
+  `editarGrupo('ghe', id)` agora **desvia** para `editarGhe`: sem o desvio ele caía no ramo de
+  `gruposFuncao`, não achava o id e voltava sem fazer nada nem avisar.
+- **`_salvarGheUnicoNoBanco` faz insert/update de UMA linha** — não reusa `_salvarGheNoBanco`,
+  que apaga todos os `tipo='ghe'` da empresa e regrava. Correto para a importação, destrutivo
+  para uma edição. `itens` continua derivado dos setores dos pares (mesmo contrato).
+- **Valor fora do catálogo é PRESERVADO no combo** (`_gheeOpcoes`), marcado "⚠ (fora do
+  catálogo)". Sumir com ele faria a simples abertura do modal reescrever o dado em silêncio —
+  e é justamente o par órfão que se vem consertar.
+- **Trocar o setor não apaga a função escolhida.** Ela reaparece sinalizada como fora do
+  catálogo, visível, em vez de ser zerada por baixo do usuário.
+- **`_gheeSetFuncao` não repinta a lista** (só os avisos): repintar dentro do `onchange`
+  destruiria o próprio `<select>` que recebeu o clique. `_gheeSetSetor` repinta porque as
+  opções de função mudaram — mesma armadilha já documentada em `_adAtualizarTabela`.
+- **Conflito com outro GHE é avisado, nunca bloqueado** — o PGR pode mesmo repetir um par, e
+  `agruparPorPares` dá o par ao GHE de menor `ordem`. GHE novo entra com `ordem =
+  gruposGhe.length`, no fim da fila: não rouba pares de quem já saiu em laudo.
+- Nome duplicado cai no índice único parcial (23505) e vira mensagem legível.
+- Guard de `currentTenantId` igual ao da importação (super_admin fora do modo suporte).
+
+### A exportação de pares NÃO é fonte do GHE (2026-09-15)
+
+**Caso real, com dado de cliente:** o consultor usou "Exportar pares" e reimportou o próprio
+arquivo. O GHE da Inovadoor foi de **8 GHE / 62 pares para 6 GHE / 39 pares** sem um único
+aviso na tela.
+
+`exportarParesGhe()` monta o CSV a partir das **respostas** (`getLinhasParaAnalise`), não do
+catálogo nem da matriz do PGR: só entram pares que já têm alguém respondendo. A importação
+**substitui** todos os `tipo='ghe'` da empresa. O round-trip, portanto, troca a matriz do PGR
+por um retrato de quem respondeu até agora — e o estrago só aparece meses depois, quando uma
+resposta nova de um par removido cai no grupo residual do laudo, sem erro nenhum.
+
+Dois avisos foram adicionados por causa disso:
+
+- **`_gheiEncolhimento(ghes)`** — compara **par a par** contra o que está gravado e lista o que
+  será apagado, num bloco vermelho no **topo** da prévia, antes dos números. Comparar contagem
+  não serviria: trocar 5 pares por outros 5 também é perda.
+- **`_gheiPareceExportacao(st)`** — reconhece o próprio formato pelos cabeçalhos `Respostas` +
+  `Origem` e explica que aquele arquivo não é a matriz do PGR.
+
+**Além disso, `Outro:` deixou de ser tratado como pendência.** `_gheClassePar` tem três
+estados, porque "fora do catálogo" agrupava duas coisas opostas:
+- `pendente` (⚠ vermelho): nome que não existe em lugar nenhum — erro de grafia no PGR, cargo
+  extinto. **Nenhuma resposta cai nele**; é linha morta no laudo.
+- `digitado` (✎ âmbar): valor que o respondente digitou em "Outro (especificar)". Também não
+  está no cadastro, mas o agrupamento casa contra o **texto da resposta**, não contra o
+  catálogo — então este par é justamente o que **captura** essas respostas. Marcá-lo como
+  pendência sugeria defeito onde há o contrário.
+- O prefixo `Outro:` é gerado pelo formulário público, então é sinal confiável.
+
+### Cobertura de GHE absorvidos (2026-09-15)
+
+**Achado com dado real (Inovadoor).** A matriz do PGR tinha **17 GHE**; a importação gravou
+**9**. Os 8 ausentes não se perderam por bug: declaram **exatamente os mesmos pares**
+(setor, função) de um GHE que ficou. O PGR os separa por **norma** — NR-10, NR-11, NR-35 —, e
+norma não é um eixo do modelo de par.
+
+```
+03, 04, 05 (Logística NR11/NR35) → mesmos pares do 02
+08 (Lonas NR35)                  → mesmos pares do 07
+10, 17 (Rápidas NR35/NR11)       → mesmos pares do 09
+14 (Painel NR11)                 → mesmos pares do 13
+16 (Painel/Externo NR10+NR35)    → pares do 11 E do 12
+```
+
+**Colapsar está certo para risco psicossocial** — a exposição de um auxiliar de expedição é a
+mesma trabalhando ou não em altura, e manter os quatro separados contaria a mesma pessoa
+várias vezes, quebrando a invariante `Σ n(grupo) === total da capa`. Mas o laudo precisa
+**declarar** a cobertura: quem lê "GHE 02" tem de saber que ali estão também os que o PGR
+chama de 03, 04 e 05.
+
+`grupos_setor.absorvidos text[]` (`migration_grupos_setor_absorvidos.sql`), preenchido pela
+importação a partir dos conflitos de par, exibido no painel e **declarado no laudo** por
+`_descricaoGrupo` (antes dos pares, porque muda a leitura do bloco inteiro).
+
+- **Coluna, nunca sufixo no `nome`.** O nome é a chave de reconciliação da reimportação
+  (índice único parcial em `lower(nome)` + o diff criar/atualizar/remover). Renomear "02" para
+  "02 — Logística (cobre 03,04,05)" faria a importação seguinte ver um "02" a criar e um
+  "02 — Logística…" a remover, **a cada importação**. Metadado não mora na chave.
+- **Só absorção TOTAL conta.** Um GHE que manteve pares próprios continua existindo; dizer que
+  outro "cobre" ele seria falso. Um GHE pode ser absorvido por **dois** sobreviventes (o 16
+  aparece no 11 e no 12).
+- `editarGhe` **preserva** `absorvidos` na cópia: quem edita um par não está pedindo para
+  apagar a cobertura declarada no laudo. O campo é editável à mão (vírgula ou `;`).
+- **Degrada nos dois sentidos**, porque a migration pode não estar aplicada: a leitura usa uma
+  **escada de conjuntos de colunas** (`pares+absorvidos` → `pares` → nenhum dos dois), e a
+  gravação repete o insert/update sem o campo quando `_colunaAusente(e)` reconhece 42703 /
+  PGRST204. Abortar a importação por causa disso faria o usuário perder a conciliação já feita.
+
+**⚠ `migration_grupos_setor_absorvidos.sql` NÃO foi aplicada em nenhum banco.**
+
+### Histórico de laudos e presets de filtro (2026-09-15)
+
+Fecham as lacunas 3 e 4 da nota de 2026-09-11. As duas respondem ao mesmo pedido — "não
+refazer o trabalho" — por ângulos diferentes: o histórico reaplica **o que foi gerado**, o
+preset guarda **um recorte que se usa sempre**, inclusive em Resultados e Gráficos, que não
+geram laudo.
+
+**Histórico (`laudos`).** A tabela recebia um registro a cada PDF desde o schema v3 e **nunca
+era lida por tela nenhuma**.
+- `snapshot_json` ganhou `config` (granularidade efetiva, seções, ciclo e os 6 combos) e
+  `n_respostas`. As chaves antigas continuam sendo gravadas — já existem registros com elas,
+  e `renderHistoricoLaudos` lê as duas formas. Registro antigo mostra "sem config" e **não**
+  oferece o botão de reaplicar.
+- **`ciclo_id` passou a ser gravado.** A coluna existe desde o schema v3 e nunca era
+  preenchida: todo laudo ficava sem ciclo.
+- `n_respostas` vem de `gerarLaudoPDF`, não do preview — `_registrarLaudo` dispara do botão
+  Imprimir **daquela janela**, então é o número do documento que o cliente recebe.
+- **Reaplicar não gera o PDF sozinho.** A base de respostas pode ter mudado; o documento
+  sairia diferente do entregue mesmo com configuração idêntica.
+
+**Presets (`filtro_presets`, `migration_filtro_presets.sql`).** Tabela nova, escopo por
+empresa **e por tela** (`resultados|graficos|laudo`), `config jsonb`.
+- **`config` é jsonb e não colunas**: o conjunto de filtros de cada tela muda com frequência
+  (três combos novos entraram em 2026-08/09) e uma coluna por filtro exigiria migration a cada
+  combo.
+- **`PRESET_TELAS` é um descritor por tela**, não três implementações. Acrescentar um combo
+  novo já exigiu lembrar de editar vários pontos antes — foi assim que combos ficaram fora de
+  `COMBOS_AUTO_APPLY` e a seleção não refletia na tela.
+- **`_aplicarConfigFiltros` é fonte única** de restauração, usada pelos presets **e** pelo
+  "Reaplicar" do histórico. Duas implementações divergiriam e a diferença apareceria como "o
+  preset traz um conjunto e o reaplicar traz outro", sem erro visível.
+- **Restaurar só seleciona o que ainda existe, e NOMEIA o que não pôde.** Setor que saiu do
+  catálogo, ciclo removido, granularidade/segmentação sem base hoje: cada um vira texto no
+  toast. Ciclo inexistente cai para "todos os ciclos" — manter a seleção anterior produziria
+  um recorte que ninguém pediu, já que todo o resto da tela acabou de ser sobrescrito.
+- `carregarPresets` **falha aberto**: tabela ausente vira lista vazia com `console.warn`, a
+  tela segue funcionando. Por isso a migration pode ir antes ou depois do HTML.
+- Viewer aplica preset, não cria nem apaga (`_sincronizarBotoesPreset`, guard **simétrico** —
+  capaz de mostrar, não só de esconder; o role chega depois do primeiro render).
+
+**⚠ `migration_filtro_presets.sql` NÃO foi aplicada em nenhum banco.** Até aplicar, o card de
+preset aparece e o "Salvar" responde "Presets ainda não estão disponíveis neste ambiente".
+
+### Vocabulário de granularidade e nomes de filtro (2026-09-18)
+
+Passe de usabilidade sobre o que as features de GHE acumularam. Três achados, todos reais:
+
+**1. O mesmo conceito com três divergências.** "Segmentação" (Resultados) e "Granularidade do
+relatório" (Relatório) são a mesma coisa, e divergiam em **nome do campo**, **ordem das
+opções** (`agrupado` e `segregado` trocados) e **texto da mesma opção** ("Por Agrupamento" ×
+"Por Agrupamento de Setores"). Quem alterna entre as duas telas relia o combo toda vez.
+- **`GRAN_OPCOES` é a fonte única**: `{v, opcao, tag}`. `opcao` é o texto do combo (pode
+  ensinar o conceito); `tag` é a forma curta da tag do resultado e do subtítulo do PDF.
+- **Os dois selects são gerados** por `_montarSelectsGranularidade()` no boot. Escrever as
+  opções à mão nos dois lugares foi exatamente o que deixou ordem e texto divergirem.
+- Os valores de `tag` ficaram **idênticos aos de antes, de propósito**: eles saem em documento
+  já entregue a cliente, e trocar texto de PDF homologado não é melhoria de usabilidade.
+- `_LD_GRAN_LABEL` foi **removido** — era um segundo catálogo dos mesmos rótulos com outra
+  caixa, criado junto com o histórico de laudos. Mesmo anti-padrão dos dois catálogos de ação
+  que já haviam divergido (ver `CATALOGO_ACOES`). `SEG_LABEL` agora deriva de `GRAN_OPCOES`.
+- **Armadilha encontrada no teste:** `_atualizarSegSelect` **reescrevia** `optGrup.textContent`
+  com o literal `'Por Agrupamento'`. A unificação feita no boot voltava a divergir na primeira
+  troca de empresa — só na tela de Resultados. O rótulo passa a vir de `GRAN_OPCOES`.
+
+**2. "Agrupamento GHE" era um nome errado.** Esse filtro usa `grupos_setor` `tipo='setor'` — um
+agrupamento de **setores**, sem relação com a matriz do PGR. Desde que o GHE de verdade ganhou
+filtro próprio ("GHE (setor × função)"), a sidebar tinha **dois campos chamados GHE** com
+significados diferentes, nas três telas. O HTML carregava um comentário de desambiguação em
+cada um — sintoma, não solução. Renomeado para **"Agrupamento de Setores"**, simétrico ao
+"Agrupamento de Função" que já existia ao lado.
+**Não renomear as ocorrências da importação**: lá "Agrupamento GHE" é o nome da **coluna da
+planilha** do PGR.
+
+**3. O card de preset estava em três posições diferentes** — no meio (Resultados), no topo
+(Gráficos) e no rodapé, depois de "Laudos gerados" (Relatório). Padronizado logo abaixo de
+**Cliente** nas três: o preset carrega um recorte inteiro, então pertence ao topo, antes de a
+pessoa mexer nos filtros um a um. Preset e "Laudos gerados" ganharam uma linha dizendo o que
+cada um faz — os dois reaplicam configuração e ficavam lado a lado sem distinção.
+
+**Observações levantadas e NÃO alteradas** (mudam comportamento ou hábito, decisão do usuário):
+- A tela de **Relatório não tem filtro de Funções**, enquanto Resultados e Gráficos têm.
+  Assimetria pré-existente.
+- O item de menu **"Agrupamentos GHE"** hoje abriga três conceitos (GHE por par, Grupos de
+  Setores, Grupos de Funções). O nome ficou estreito, mas renomear mexe em memória muscular.
+- Em Resultados e Gráficos os filtros **cruzam** eixo cru e agrupamento (Setores → Agrupamento
+  de Setores → GHE → Agrupamento de Função → Funções). Agrupá-los exigiria reordenar blocos.
 
 ## Tela Resultados — cascata, pacote de análises e segmentação (2026-09-11)
 
@@ -700,3 +1196,75 @@ Ler `currentUser.role` cru para decidir permissão tem a mesma armadilha: usar `
   clone do html2canvas); no PNG e injetado no clone, nunca no `#view-content` real.
 - **Cuidado ao editar `exportarResultadosPrint`:** tudo que entra na template string do
   documento vira conteudo do PDF entregue ao cliente — inclusive comentarios de codigo.
+
+## Ajustes gerais — legenda de indicadores, matriz e paridade do laudo (2026-09-18)
+
+Oito commits na branch `claude/ajustes-gerais-matriz-5q7ln4`, todos em `psicomap-admin.html`.
+
+**Matriz P×S do laudo saía com metade das células sem cor.** Não era escolha de tom: a regra
+genérica `tr:nth-child(even) td{background:#f9fafb}` do CSS do laudo tem especificidade (0,1,2)
+e vencia `.nc-med`/`.nc-alt`/etc (0,1,0) — as linhas pares (P3 e P1) perdiam o fundo. As regras
+viraram `.tbl-matriz .nivel-cell.nc-*`. **`.tbl-matriz .p-label` (0,2,0) nunca foi afetada** —
+por isso o sintoma parecia aleatório. Na mesma passada a escala de `.nc-*`/`.nb-*` foi alinhada
+à do app (slate → verde → amarelo → laranja → vermelho): antes CRÍTICO era lilás e lia como
+*menos* grave que ALTO vermelho.
+
+**Legenda de indicadores ("Como ler este resultado").** `_legendaIndicadoresHTML(chaves)` +
+`_LEG_ITENS` (chave · rótulo · definição) — `LEGENDA_INDICADORES_HTML` é o conjunto completo.
+- Renderizada **dentro de `#view-content`** na tela Resultados: como é exatamente isso que
+  `exportarResultados()`/`exportarResultadosPrint()` capturam, ela acompanha o PNG e o PDF sem
+  tratamento nenhum. **Consequência:** no PDF do pacote ("Baixar todas as análises", 3 capturas
+  num documento) ela apareceria 3×. O bloco carrega `data-legenda-indicadores` e o caminho
+  `multi` de `exportarResultadosPrint` remove as repetições via DOM (não por comparação de
+  string — o HTML volta de um round-trip por `innerHTML` e a normalização de aspas/ordem de
+  atributos quebraria um `startsWith`).
+- No laudo entra na abertura da Análise Gráfica, **sem o item `cd`** (esse código não aparece em
+  lugar nenhum do laudo). A seção "Distribuição por Questão" recebe uma versão reduzida
+  (`n`/`Meta`/`↺ inv`) **só quando a Análise Gráfica não está no documento** — uma ocorrência
+  por documento, em qualquer combinação de seções.
+- Estilo deliberadamente discreto (dois filetes, sem fundo, termo em coluna fixa de 46px
+  alinhado à direita, 9px): é material de apoio e não pode competir com os dados.
+
+**Paridade preview × PDF do laudo** — ver o bullet na seção "Agrupamentos GHE". Divergências
+corrigidas: card de risco duplicado (agora `_laudoCardRiscoHTML()`) e o recorte de IRRELEVANTE
+na Análise Gráfica (o PDF excluía, o preview mostrava). A terceira, a granularidade ignorada
+por duas seções do preview, foi corrigida **em paralelo e melhor** na `develop`, com
+`_granularidadeLaudo()`/`_gruposPorGranularidade()` — que já cobrem o modo "Por GHE". No merge
+desta branch para a `develop` prevaleceu a versão da `develop` nos cinco conflitos, todos
+exatamente nesse ponto.
+
+**Filtro "Seções do laudo" não valia no PDF.** `_buildLaudoHTML()` lia `laudoSecoesAtivas` para
+só 4 das 8 seções — Capa, Metodologia, Conduta e Tabela de resultados saíam sempre. Desmarcar
+qualquer uma delas mudava o preview e não mudava o documento exportado. Efeitos colaterais que
+a correção obrigou a tratar: **Conduta** era fisicamente uma subseção da página da Metodologia
+(`1.5`), então virou `${_snMet}.5` quando as duas estão ligadas e seção própria quando só ela
+está; e a **numeração** era fixa (Metodologia `1.`, Resultados `2.`), o que deixaria um laudo
+sem Metodologia começando na seção 2 — virou contagem corrida sobre o que entra de fato, com as
+subseções derivando de `_snMet`. Números de página já vinham certos: `footer()` incrementa
+`_pdfPg` só nas páginas emitidas.
+
+**`_barPrint()` removido.** Era uma barra "para impressão (sem CSS vars)" usada só pelo laudo —
+sem marcador de meta, sem âncoras ✓/✗ e sem o rodapé de moda/meta, o que deixava o PDF mais
+pobre que a tela. A premissa estava errada: `renderBarraDistribuicao()` **não tem nenhuma
+`var(--…)`** e sempre pôde rodar no documento autônomo do laudo. Hoje é a única barra dos dois.
+
+**Outros acertos pontuais:**
+- Plural: `' questão' + (n>1 ? 'ões' : '')` gerava "3 questãoões".
+- `cd_risco` 4 renomeado para **"Estresse por constrangimento no ambiente de trabalho"** em
+  `RISCOS_DETALHES`, na `<option>` do modal de questão e no comentário do `CATALOGO_ACOES`.
+  `riscos_config` (que sobrescreve `RISCOS_DETALHES` em `carregarRiscosDB()`) estava **vazia em
+  PROD**, então o default do código é a fonte efetiva — nenhuma migration foi necessária.
+- Textos cortados: enunciado da questão truncado em 60 caracteres no detalhamento por risco, e
+  nome do risco cortado em 28/30 caracteres em três pontos (visão Por Questão, seção de gráficos
+  do laudo e do preview). O corte de nome ficou pior com o nome mais longo do cd 4.
+
+**Armadilha de edição (custou um bug real nesta sessão):** o CSS do laudo vive **dentro de um
+template literal** (`const css = \`…\`` em `_buildLaudoHTML`). Uma crase num comentário de código
+ali dentro encerra o template e quebra o `<script>` inteiro. Vale para qualquer edição nesse
+bloco — inclusive comentários. Checagem barata antes de commitar, já que não há build step:
+```bash
+node -e "const h=require('fs').readFileSync('psicomap-admin.html','utf8');
+ const m=[...h.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)];
+ for(const x of m) new Function(x[1]);   // lança se houver erro de sintaxe
+ console.log('scripts ok:', m.length);"
+```
