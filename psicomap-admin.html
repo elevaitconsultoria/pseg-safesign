@@ -13992,7 +13992,11 @@ let _showingApp = false;
 
 // Limpa todo estado em memória ligado ao usuário/tenant — chamada em logout e em sairModoSuporte.
 // Garante que dados de um usuário não vazam para o próximo em troca de sessão na mesma aba.
-function _limparEstadoSessao() {
+// Dados carregados no contexto de UM tenant. Usada pelo logout e por
+// sairModoSuporte() — as duas listas tinham divergido, e a do modo suporte
+// limpava MAIS coisas que a do logout (headcount), o que e exatamente o
+// contrario do esperado.
+function _limparEstadoTenant() {
   currentTenantId = null;
   _empresas       = [];
   _ciclos         = [];
@@ -14000,9 +14004,36 @@ function _limparEstadoSessao() {
   _respostasCache = {};
   _estPerfil      = null;
   _modulosOff     = new Set();
-  _showingApp     = false;
   _empresaAtiva   = { id: '', nome: '' };
-  try { sessionStorage.removeItem('pseg_empresa_ativa'); } catch(_e) {}
+  _cicloAtivo     = '';
+  _invalidarHeadcountCache();
+  _headcountPorEmpresa = null;
+  // Resultado da ultima analise: sobrevivia ao logout e ao modo suporte, e
+  // _sincronizarBotaoPacote() so checa `_podeBaixarTodos() && window._analiseData`
+  // — o botao de exportar continuava ativo sobre dados do tenant anterior.
+  window._analiseData = null;
+  try {
+    sessionStorage.removeItem('pseg_empresa_ativa');
+    sessionStorage.removeItem('pseg_ciclo_ativo');
+  } catch(_e) {}
+}
+
+function _limparEstadoSessao() {
+  _limparEstadoTenant();
+  _showingApp    = false;
+  _supportMode   = false;
+  _supportTenant = null;
+  try {
+    // pseg_riscos_v1: personalizacoes de risco, tem escopo de tenant.
+    localStorage.removeItem('pseg_riscos_v1');
+    // psicomap_laudo_resp_<empresaId>: nome e registro profissional do
+    // responsavel pelo laudo — DADO PESSOAL. Persistia indefinidamente e era
+    // relido por _lerResponsavelSalvo() na proxima conta que abrisse a mesma
+    // empresa no mesmo navegador.
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('psicomap_laudo_resp_'))
+      .forEach(k => localStorage.removeItem(k));
+  } catch(_e) {}
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -14405,15 +14436,11 @@ async function entrarComoEST(tenantId, nome) {
 async function sairModoSuporte() {
   _supportMode = false;
   _supportTenant = null;
-  currentTenantId = null;   // super_admin não tem tenant próprio
-  _empresas       = [];     // limpa dados da EST visitada
-  _ciclos         = [];
-  _links          = [];
-  _respostasCache = {};     // respostas da EST visitada não devem persistir
-  _invalidarHeadcountCache();
-  _headcountPorEmpresa = null;
-  _estPerfil      = null;
-  _modulosOff     = new Set(); // flags da EST visitada não valem fora do modo suporte
+  // Tudo que pertence ao tenant visitado sai por aqui — a lista vivia duplicada
+  // nesta funcao e em _limparEstadoSessao(), e as duas ja tinham divergido
+  // (_empresaAtiva e o sessionStorage sobreviviam a saida do modo suporte, e o
+  // chip da topbar continuava mostrando a empresa da EST visitada).
+  _limparEstadoTenant();
 
   const banner = document.getElementById('banner-suporte');
   if (banner) banner.style.display = 'none';
