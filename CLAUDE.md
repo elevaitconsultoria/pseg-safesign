@@ -128,6 +128,13 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   `psicomap-admin.html`. Antes de testar algo "em DEV" e concluir que está validado, checar
   `git log origin/develop..origin/main --oneline`; se não-vazio e sem commits exclusivos de
   `develop`, um `git push origin origin/main:develop` (fast-forward) resolve sem risco.
+- **PR `develop` → `main` deve ser mergeada com MERGE COMMIT, nunca squash.** O squash cria em
+  `main` um commit novo que a `develop` não tem — mesmo conteúdo, hash diferente —, e é assim
+  que as duas divergem sozinhas. Foi o que aconteceu nos PRs #68 e #69: `main` ficou "4 commits
+  à frente" de mudanças que a `develop` já tinha. Com merge commit (PR #77, 2026-09-21) as duas
+  ficam com **0 commits de diferença nos dois sentidos** depois do
+  `git push origin origin/main:develop`. Só faça o squash em PR de branch descartável que nunca
+  mais será base de nada.
 
 ## Divergências DEV ↔ PROD (não ignorar)
 
@@ -1199,7 +1206,12 @@ Ler `currentUser.role` cru para decidir permissão tem a mesma armadilha: usar `
 
 ## Ajustes gerais — legenda de indicadores, matriz e paridade do laudo (2026-09-18)
 
-Oito commits na branch `claude/ajustes-gerais-matriz-5q7ln4`, todos em `psicomap-admin.html`.
+Nove commits na branch `claude/ajustes-gerais-matriz-5q7ln4`, todos em `psicomap-admin.html`.
+**Em PROD desde 2026-09-21** via PR
+[#77](https://github.com/elevaitconsultoria/pseg-safesign/pull/77) (`b4f73ce`), que levou junto
+os 23 commits de GHE por par que a `develop` acumulava. Detalhamento completo — incluindo os 5
+conflitos do merge e o método dos testes — em
+`.claude/notes/2026-09-18-legenda-indicadores-matriz-paridade-laudo.md`.
 
 **Matriz P×S do laudo saía com metade das células sem cor.** Não era escolha de tom: a regra
 genérica `tr:nth-child(even) td{background:#f9fafb}` do CSS do laudo tem especificidade (0,1,2)
@@ -1257,6 +1269,21 @@ pobre que a tela. A premissa estava errada: `renderBarraDistribuicao()` **não t
 - Textos cortados: enunciado da questão truncado em 60 caracteres no detalhamento por risco, e
   nome do risco cortado em 28/30 caracteres em três pontos (visão Por Questão, seção de gráficos
   do laudo e do preview). O corte de nome ficou pior com o nome mais longo do cd 4.
+
+**Duas migrations da `develop` não estavam aplicadas em NENHUM dos dois bancos** — achado na
+auditoria pré-merge, feita em `information_schema` e não nos arquivos `.sql`:
+`grupos_setor.absorvidos` e a tabela `filtro_presets`. Aplicadas em 2026-09-21 (DEV → PROD).
+**Consequência:** as features "cobertura de GHE absorvidos" e "presets de filtro" estavam
+degradando em silêncio durante a homologação em DEV — o código tem fallback nas duas
+(`carregarGruposSetor()` tem cascata de colunas; os presets detectam `semTabela`), então nada
+quebrou na tela, mas elas **nunca foram exercitadas** e seguem pendentes de teste real.
+Reforça a regra que já estava aqui: conferir o banco, não o repo — e conferir **os dois**,
+porque "está em DEV" não significa que a migration foi aplicada em DEV.
+
+**Pendências desta sessão:** (1) testar as duas features acima agora que o banco está pronto;
+(2) a paginação do PDF mudou — cards mais altos com `page-break-inside: avoid` mantido, então
+um risco com muitas questões pode empurrar o card inteiro para a folha seguinte; olhar num
+laudo real antes de entregar para cliente.
 
 **Armadilha de edição (custou um bug real nesta sessão):** o CSS do laudo vive **dentro de um
 template literal** (`const css = \`…\`` em `_buildLaudoHTML`). Uma crase num comentário de código
