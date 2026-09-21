@@ -77,6 +77,9 @@ Deno.serve(async (req) => {
     const nome = (body.nome || '').trim();
     const role = body.role;
     let tenantId = body.tenant_id;
+    // cliente_viewer só enxerga dados via empresa_id (policy RESTRICTIVE
+    // viewer_empresa_select_empresas). Sem vínculo o painel abre vazio e sem erro.
+    let empresaId = role === 'cliente_viewer' ? (body.empresa_id || null) : null;
 
     if (!email || !nome || !role) {
       return new Response(JSON.stringify({ error: 'email, nome e role são obrigatórios' }), { status: 400, headers: corsHeaders });
@@ -107,16 +110,36 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Falhar em voz alta em vez de criar um viewer que loga e não vê nada.
+    if (role === 'cliente_viewer') {
+      if (!empresaId) {
+        return new Response(
+          JSON.stringify({ error: 'empresa_id é obrigatório para o perfil Viewer — sem vínculo o usuário loga e não vê nenhum dado.' }),
+          { status: 400, headers: corsHeaders },
+        );
+      }
+      // A empresa precisa ser do tenant resolvido acima — nunca confiar no body.
+      const { data: empresa, error: empresaError } = await adminClient
+        .from('empresas')
+        .select('id, tenant_id')
+        .eq('id', empresaId)
+        .single();
+      if (empresaError || !empresa || empresa.tenant_id !== tenantId) {
+        return new Response(JSON.stringify({ error: 'empresa_id inválido para esta EST' }), { status: 400, headers: corsHeaders });
+      }
+    }
+
     const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: { nome },
     });
     if (inviteError) throw inviteError;
 
     // O trigger handle_new_user() já criou a linha default em perfis — corrigir
-    // role/tenant_id/nome para os valores pretendidos pelo convite.
+    // role/tenant_id/empresa_id/nome para os valores pretendidos pelo convite.
+    // empresaId é null para todo role que não seja cliente_viewer.
     const { error: updateError } = await adminClient
       .from('perfis')
-      .update({ nome, role, tenant_id: tenantId })
+      .update({ nome, role, tenant_id: tenantId, empresa_id: empresaId })
       .eq('id', invited.user.id);
     if (updateError) throw updateError;
 
