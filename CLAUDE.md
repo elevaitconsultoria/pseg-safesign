@@ -515,11 +515,111 @@ visitada continuariam valendo fora do modo suporte.
   -- depois as policies...
   ```
   Achado real: `grupos_setor` (2026-08-17) — criada com RLS + policies corretas mas sem GRANT;
-  erro "permission denied" ao tentar inserir.
+  erro "permission denied" ao tentar inserir. **Aconteceu de novo com `tenant_modulos`**
+  (achado 2026-09-11): a migration não tinha o GRANT, e como `carregarModulosTenant()` falha
+  aberto de propósito, ninguém percebeu — o gate de módulos por EST **nunca funcionou em
+  ambiente nenhum** (em DEV faltava o GRANT, em PROD a tabela nem existia). Quando o consumo
+  de uma tabela nova falha aberto, a ausência do GRANT é silenciosa: **teste o SELECT como
+  `authenticated` de verdade**, não confie em "a tela não quebrou".
+  Em PROD há ainda um `ALTER DEFAULT PRIVILEGES` concedendo **ALL ao `anon`** em toda tabela
+  nova — sempre acrescentar `REVOKE ALL ON nova_tabela FROM anon;` (ver "Superfície do `anon`").
 - **Branding nos exports usa `_estPerfil.nome_empresa` — nunca string hardcoded**: `exportarResultadosPrint()`,
   export de Gráficos e toolbar do `_buildLaudoHTML` usam o nome dinâmico da EST. Se ausente, o campo
   some (sem fallback para "Eleva IT" ou outro nome de consultoria). O corpo do laudo usa
   `estPerfil?.nome_empresa || 'PsicoMap'` — fallback para o nome do produto, não da consultoria.
+
+## Auditoria de gestão de acessos (2026-09-11)
+
+Auditoria das 4 camadas (RLS/policies, `SECURITY DEFINER`/RPCs, Edge Functions, RBAC do
+frontend). Relatório completo em `.claude/notes/2026-09-11-auditoria-gestao-acessos.md`;
+estado de merge, pendências e backlog em `.claude/notes/2026-09-11-auditoria-acessos-handoff.md`.
+PRs #70–#75.
+
+**A classe de bug dominante neste projeto**: tabela ou função que nasce **depois** de uma
+migration de hardening e nunca recebe a policy correspondente. Já aconteceu com
+`respostas`/`resposta_itens`, `empresa_headcount`, e agora com `empresa_setores`/
+`empresa_funcoes` (viewer tinha CRUD completo no catálogo GHE — apagar o catálogo derruba a
+coleta pública da EST inteira), `empresas` (viewer inseria), `est_perfil` e `riscos_config`.
+**Ao criar policy RESTRICTIVE nova, aplicar à família inteira de tabelas, não só à que
+motivou o ticket.**
+
+### Regras que saíram daqui
+
+- **RESTRICTIVE `FOR ALL` quebra o SELECT.** Para restringir só escrita são **três** policies
+  (INSERT/UPDATE/DELETE). Uma `FOR ALL` aplica o `USING` também ao SELECT — em `est_perfil`
+  isso derruba o branding do laudo; em `empresa_setores`, a análise inteira do viewer.
+- **`REVOKE` com lista de exceção: pular ≠ corrigir.** Ao revogar de todas as tabelas menos as
+  públicas, *pular* as públicas no loop faz com que elas mantenham o GRANT original e o
+  `GRANT SELECT` seguinte vira redundante. Revogue de **todas** e devolva só o necessário.
+- **Guard de visibilidade por role que só esconde trava a UI no estado restritivo.** Vale para
+  `.nav-item`, para botões fora do sidebar e para o `goScreen`. Sempre escrever a função capaz
+  de **restaurar** (padrão de `_sincronizarBotaoPacote()`).
+- **Ler `currentUser.role` cru é bug.** O Supabase põe `'authenticated'` nesse campo até
+  `loadPerfil()` sobrescrever; `restritos['authenticated']` é `undefined` e a camada de
+  navegação inteira fica desligada nessa janela. Usar **`_roleAtual()`**. (Ressalva: o fallback
+  é `'consultor'`, então `_roleAtual()` **não** protege os pontos que testam
+  `=== 'cliente_viewer'` — ali quem protege é o RLS.)
+- **`goScreen()` retorna boolean.** Quem encadeia ação depois de navegar precisa checar; o par
+  `goScreen(...); setTimeout(() => abrirModal...)` disparava o modal mesmo com a navegação
+  bloqueada. Usar `irParaNovaEmpresa()`.
+- **Heurística sobre `pg_policy` gera falso positivo** (marca como vulnerável o que
+  `is_tenant_admin()` já protege). Confirmar por leitura do catálogo completo da tabela ou por
+  teste com `set_config`.
+- **`reloptions` de view usa `security_invoker=on`, não `=true`** — comparar com `=true` faz
+  parecer que as views são `SECURITY DEFINER`. As 5 views do projeto herdam RLS corretamente.
+- **Toda função `SECURITY DEFINER` com `GRANT` para `authenticated` precisa de guard de role
+  no corpo.** `super_admin_tenant_details()` não tinha (a irmã `super_admin_stats()` tinha) e
+  qualquer autenticado lia dados de todas as ESTs. `verificar_limite_tenant()` aceitava
+  qualquer `tenant_id` por parâmetro. **Ao escrever RPC nova, validar caller E parâmetros.**
+- **Webhook com `if (secret && !verificar(...))` é fail-open.** Sem a env var, a verificação é
+  pulada. O ramo Asaas do `webhook-billing` estava aberto em PROD assim. Secret ausente deve
+  **recusar**. Validar também o timestamp (replay) e comparar em tempo constante.
+
+### Superfície do `anon`
+
+O `anon` tinha CRUD em 23 tabelas; hoje tem **SELECT em exatamente 5**: `questoes`,
+`links_coleta`, `empresas`, `empresa_setores`, `empresa_funcoes` — o que
+`psicomap-forms.html` lê. `empresas` entra só por causa do embed
+`empresas(id, nome, logo_base64)` no select de `links_coleta`. **`salvar_resposta` é
+`SECURITY DEFINER` e grava como owner**, então `respostas`/`resposta_itens`/`respostas_fila`/
+`respostas_raw_backup` não precisam — e não devem ter — GRANT para `anon`.
+Ao dar ao formulário acesso a uma tabela nova, atualizar `migration_revoke_anon.sql`.
+
+**Ao testar `salvar_resposta`**: o payload casa por **`questao_id` (uuid)**, não por `codigo` —
+com `codigo` a resposta grava com **zero itens e sem erro nenhum**.
+
+### Testar acesso sem sessão HTTP
+
+O harness nunca permite gerar sessão autenticada. O método é `set_config` + `ROLLBACK`:
+
+```sql
+BEGIN;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','<uuid>','role','authenticated')::text, true);
+SET LOCAL ROLE authenticated;   -- ou: SET LOCAL ROLE anon;
+-- ...
+ROLLBACK;
+```
+
+Usuário-alvo descartável: inserir em `auth.users` dentro da transação — o trigger
+`handle_new_user()` cria o perfil junto, basta um `UPDATE` para ajustar `role`/`tenant_id`.
+**DEV tem um usuário de cada role** (`.claude/notes/usuarios-teste-dev.md`) e **2 tenants** —
+é o lugar certo para testar isolamento multi-tenant, porque PROD tem uma EST só e isso
+mascara vazamento cross-tenant.
+
+Para o frontend, validar sintaxe com `new Function()` **não basta**: subir
+`npx http-server . -p 8765`, abrir no Browser pane e chamar as funções no console — foi assim
+que se confirmou ausência de TDZ em `_limparEstadoSessao()`.
+
+### Limpeza de sessão
+
+`_limparEstadoTenant()` (dados de um tenant) é usada pelo logout **e** por
+`sairModoSuporte()` — antes a lista vivia duplicada e as duas já tinham divergido. O logout
+(`_limparEstadoSessao()`) limpa ainda `_showingApp`, `_supportMode`/`_supportTenant` e o
+`localStorage`: `pseg_riscos_v1` e **`psicomap_laudo_resp_*`**, que guarda nome e registro
+profissional do responsável pelo laudo (**dado pessoal**) e era relido pela próxima conta que
+abrisse a mesma empresa no navegador. **Ao criar estado global novo com escopo de tenant,
+acrescentar em `_limparEstadoTenant()`.**
 
 ## Acompanhamento de Adesão (2026-08-28)
 
