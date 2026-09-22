@@ -7515,8 +7515,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   });
 
   document.getElementById('view-content').innerHTML =
-    html ? LEGENDA_INDICADORES_HTML + html
-         : '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
+    html || '<div style="font-size:13px;color:var(--tl)">Nenhum risco acima de irrelevante encontrado.</div>';
 }
 
 // ─── VIEW POR QUESTÃO ─────────────────────────────────────────────
@@ -7606,8 +7605,7 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
     html += '</div>';
   });
   document.getElementById('view-content').innerHTML =
-    html ? LEGENDA_INDICADORES_HTML + html
-         : '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
+    html || '<div style="font-size:13px;color:var(--tl)">Nenhum dado disponível.</div>';
 }
 
 // ══════════════════════════════════════════
@@ -7655,7 +7653,10 @@ const LEGENDA_ESCALA_HTML =
   '</div>';
 
 // ── Glossário de indicadores ("Como ler este resultado") ──────────
-// Renderizado uma vez no topo de #view-content nas três visões da tela Resultados.
+// Renderizado apenas na visão Por Risco / Gráfico (tela Resultados) e na seção
+// "Análise gráfica por fator de risco" do laudo — são os únicos lugares onde os
+// indicadores P, S, Nível, Meta, peso e ↺ aparecem de fato. Nas visões por tabela
+// e por questão o glossário descreve coisas que não estão na tela.
 // Como #view-content é exatamente o que exportarResultados()/exportarResultadosPrint()
 // capturam, a legenda acompanha o PNG e o PDF sem nenhum tratamento adicional.
 // USA VALORES HARDCODED (não CSS vars) pelo mesmo motivo de LEGENDA_ESCALA_HTML:
@@ -13208,7 +13209,6 @@ async function renderLaudo() {
     ];
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Distribuição de respostas por questão</div>
-      ${laudoSecoesAtivas.has('analise_risco') ? '' : _legendaIndicadoresHTML(['n','meta','inv'])}
       <div style="margin-bottom:12px">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">
           <span style="font-size:8.5px;color:#166534;font-weight:700;white-space:nowrap">✓ Adequado</span>
@@ -13853,7 +13853,6 @@ ${_hasGF && graficosHTML ? `
 <div class="page">
   <div class="sec-title">${_snGF}. Distribuição de Respostas por Questão</div>
   <p>Distribuição percentual das respostas por questão. A barra destacada representa o nível predominante (moda). Questões inversas (↺) têm score ajustado: meta = "Sempre".</p>
-  ${_hasAR ? '' : _legendaIndicadoresHTML(['n','meta','inv'])}
   ${graficosHTML}
   ${footer('Distribuição')}
 </div>` : ''}
