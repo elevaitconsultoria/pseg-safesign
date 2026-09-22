@@ -13899,9 +13899,9 @@ ${_hasCapa ? `
     </div>
   </div>
   <div class="cover-body">
-    <div class="cover-tag">Avaliação Ergonômica Preliminar — AEP</div>
-    <div class="cover-title">Avaliação dos Fatores de<br>Risco Psicossociais</div>
-    <div class="cover-subtitle">Relatório de Resultados — Módulo Psicossocial</div>
+    <div class="cover-tag">${_laudoTexto('capa.tag')}</div>
+    <div class="cover-title">${_laudoTexto('capa.titulo')}</div>
+    <div class="cover-subtitle">${_laudoTexto('capa.subtitulo')}</div>
     <div class="cover-meta">
       <div class="cover-meta-item"><div class="cover-meta-label">Empresa avaliada</div><div class="cover-meta-value">${e(nomeEmp)}</div></div>
       <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
@@ -13929,8 +13929,7 @@ ${indiceHTML}
 ${_hasMet ? `
 <div class="page">
   <div class="sec-title">${_snMet}. Metodologia de trabalho e normas aplicáveis</div>
-  <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
-  <p>A classificação correta dos riscos considera também os chamados "amenizadores" — <strong>pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos</strong> — durante a avaliação de cada atividade específica.</p>
+${_laudoTexto('metodologia.intro')}
   <div class="sec-title sub">${_snMet}.1 Probabilidade (P) / Frequência — Tabela 1</div>
   <div class="tbl-wrap"><table class="tbl-p"><thead><tr><th>Ocorrência / Probabilidade</th><th>Critério — Psicossocial (Escala Likert)</th></tr></thead><tbody>
     <tr><td><strong>P4 — Quase Certo (Permanente)</strong></td><td><div><strong>Exposição:</strong> Habitual, diversas vezes durante a jornada, superior a 80% do tempo.</div><div>Resposta: <strong>"Sempre"</strong> — Queixas frequentes. Medidas de controle inexistentes ou inadequadas.</div></td></tr>
@@ -14019,7 +14018,7 @@ ${_hasAC && acoesHTML ? `
   <div class="sec-title">${_snAC}. Ações Recomendadas por Fator de Risco</div>
   <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
   ${acoesHTML}
-  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
+  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">${_laudoTexto('acoes.nota_rodape')}</p>
   ${footer('Ações Recomendadas')}
 </div>` : ''}
 
