@@ -13020,13 +13020,20 @@ function _laudoTexto(id){
   if (!b) { console.warn('[laudo] bloco desconhecido:', id); return ''; }
   if (!_laudoEdicaoValida()) return b.def();
   const ov = _laudoEdicao.blocos[id];
-  return (typeof ov === 'string' && ov.length) ? ov : b.def();
+  // String vazia é uma edição deliberada — o consultor apagou o bloco. Só a AUSÊNCIA de
+  // chave devolve o padrão; senão "excluir um trecho" seria impossível, porque apagar tudo
+  // faria o texto de fábrica reaparecer. Quem quer o padrão de volta usa Restaurar padrão.
+  return (typeof ov === 'string') ? ov : b.def();
+}
+
+// Um bloco vazio não deve deixar o <p>/<div> que o envolve ocupando espaço no documento.
+function _laudoTemTexto(id){
+  return _laudoTexto(id).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
 }
 // Seção "Considerações finais" só entra no documento com texto de verdade. Tags vazias
 // deixadas pelo contenteditable (um <p><br></p> após apagar tudo) não contam como texto.
 function _laudoTemConclusao(){
-  return laudoSecoesAtivas.has('conclusao')
-      && _laudoTexto('conclusao.texto').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
+  return laudoSecoesAtivas.has('conclusao') && _laudoTemTexto('conclusao.texto');
 }
 function _laudoTextoEhCustom(id){
   return _laudoEdicaoValida() && typeof _laudoEdicao.blocos[id] === 'string';
@@ -13663,7 +13670,7 @@ async function renderLaudo() {
 ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
 
         <h4>Instrumento de coleta</h4>
-        ${_laudoBlocoWrap('metodologia.instrumento', '<p>' + _laudoTexto('metodologia.instrumento') + '</p>')}
+        ${!_laudoTemTexto('metodologia.instrumento') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('metodologia.instrumento', '<p>' + _laudoTexto('metodologia.instrumento') + '</p>')}
 
         <h4>Blocos temáticos</h4>
         <p>${METODOLOGIA.blocos}</p>
@@ -13677,7 +13684,7 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
         <p>${METODOLOGIA.severidade}</p>
 
         <h4>Definição do Nível de Risco — Matriz P × S</h4>
-        ${_laudoBlocoWrap('metodologia.matriz_intro', '<p>' + _laudoTexto('metodologia.matriz_intro') + '</p>')}
+        ${!_laudoTemTexto('metodologia.matriz_intro') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('metodologia.matriz_intro', '<p>' + _laudoTexto('metodologia.matriz_intro') + '</p>')}
         <div class="matrix-mini">
           <div class="mx-hdr" style="grid-column:1"></div>
           ${METODOLOGIA.matriz[0].slice(1).map(h=>`<div class="mx-hdr">${h}</div>`).join('')}
@@ -13759,7 +13766,7 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
   if (laudoSecoesAtivas.has('conduta')) {
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Conduta administrativa por nível de risco</div>
-      ${_laudoBlocoWrap('conduta.intro', '<p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">' + _laudoTexto('conduta.intro') + '</p>')}
+      ${!_laudoTemTexto('conduta.intro') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('conduta.intro', '<p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">' + _laudoTexto('conduta.intro') + '</p>')}
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:#1a5e2a">
@@ -13924,7 +13931,7 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
             </div>
           </div>`;
         }).join('')}
-        ${_laudoBlocoWrap('acoes.nota_rodape', '<div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">' + _laudoTexto('acoes.nota_rodape') + '</div>')}
+        ${!_laudoTemTexto('acoes.nota_rodape') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('acoes.nota_rodape', '<div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">' + _laudoTexto('acoes.nota_rodape') + '</div>')}
       </div>`;
     });
   }
@@ -14503,7 +14510,7 @@ ${_hasAC && acoesHTML ? `
   <div class="sec-title">${_snAC}. Ações Recomendadas por Fator de Risco</div>
   <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
   ${acoesHTML}
-  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">${_laudoTexto('acoes.nota_rodape')}</p>
+  ${_laudoTemTexto('acoes.nota_rodape') ? `<p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">${_laudoTexto('acoes.nota_rodape')}</p>` : ''}
   ${footer('Ações Recomendadas')}
 </div>` : ''}
 
