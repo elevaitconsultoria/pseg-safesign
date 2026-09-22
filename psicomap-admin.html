@@ -697,6 +697,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .blk-editor ul,.blk-editor ol{margin:0 0 10px;padding-left:20px}
 .ld-txt-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;padding:3px 0}
 .ld-txt-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);margin:8px 0 2px}
+.ac-row{display:flex;align-items:flex-start;gap:6px}
+.ac-row .ac-txt{flex:1;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;
+  line-height:1.6;color:var(--tx);outline:none;background:var(--w);min-height:20px}
+.ac-row .ac-txt:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
+.ac-row .ac-btns{display:flex;flex-direction:column;gap:2px}
+.ac-row .ac-btns button{width:24px;height:20px;border:1px solid var(--border);background:var(--w);
+  border-radius:4px;cursor:pointer;font-size:10px;color:var(--tm);padding:0;line-height:1}
+.ac-row .ac-btns button:hover{border-color:var(--g);color:var(--g)}
+.ac-row .ac-btns button.ac-del:hover{border-color:var(--red);color:var(--red)}
 
 /* ── ANÁLISE GRÁFICA ── */
 .graf-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;transition:grid-template-columns .24s cubic-bezier(.4,0,.2,1)}
@@ -3047,6 +3056,25 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <button class="btn btn-ghost" onclick="restaurarBlocoLaudo()">Restaurar padrão</button>
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalBlocoLaudo()">Cancelar</button>
       <button class="btn btn-g" style="flex:2" onclick="salvarBlocoLaudo()">Salvar texto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE EDIÇÃO DAS AÇÕES RECOMENDADAS DE UM RISCO -->
+<!-- A lista inteira é gravada como override, e não um diff. Assim os três verbos pedidos
+     saem de um mecanismo só: ocultar = remover o item, editar = trocar o texto,
+     acrescentar = anexar ao fim. -->
+<div class="modal-bg" id="modal-laudo-acoes">
+  <div class="modal" style="max-width:700px;width:94vw">
+    <div class="modal-title" id="ac-title">Ações recomendadas</div>
+    <div class="modal-sub" id="ac-sub"></div>
+    <div id="ac-lista" style="margin-top:12px;max-height:44vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="_acAdicionar()">+ Adicionar ação personalizada</button>
+    <div style="font-size:10px;color:var(--tl);margin-top:8px">Só negrito, itálico, sublinhado e listas são preservados. Vale só nesta sessão.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="restaurarAcoesLaudo()">Restaurar padrão</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalAcoes()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarAcoesLaudo()">Salvar ações</button>
     </div>
   </div>
 </div>
@@ -13060,6 +13088,9 @@ function _laudoEdicaoCarregar(empId){
         _laudoEdicao.blocos[id] = _laudoSanitize(html);
       }
     });
+    Object.entries(raw.acoes?.listas || {}).forEach(([k, lista]) => {
+      if (Array.isArray(lista)) _laudoEdicao.acoes.listas[k] = lista.map(x => _laudoSanitize(String(x))).filter(Boolean);
+    });
   } catch(e) {
     // Falha aberto (padrão de carregarPresets): sem sessionStorage o laudo segue
     // funcionando com os textos padrão.
@@ -13123,17 +13154,45 @@ function _laudoAcoesDoGrupo(grupo, linhas, niveisLd, ordem){
       cons:    d.cons    ? _esc(d.cons)    : '',
       fontes:  d.fontes  ? _esc(d.fontes)  : '',
       medidas: d.medidas ? _esc(d.medidas) : '',
-      acoes:   _laudoAcoesLista(cd, f.nivel),
+      // Removeu todas as ações? O card continua existindo — suprimir o plano de ação de
+      // um risco ALTO/CRÍTICO num documento de NR-01 não é edição de texto.
+      acoes:   (function(l){ return l.length ? l : ['<em>Plano de ação a definir pelo responsável técnico.</em>']; })(_laudoAcoesLista(cd, f.nivel)),
+      custom:  _laudoAcoesEhCustom(cd, f.nivel),
     });
   });
   return out;
 }
 
 // Lista de ações de um risco num nível, já pronta para interpolar.
+//
+// A chave do override é `cd|nivel` — GLOBAL por risco, não por grupo. Três motivos:
+//   • _granularidadeLaudo() degrada sozinha quando o modo escolhido fica sem base; com
+//     chave por grupo, toda edição evaporaria em silêncio ao trocar "Por Setor" por
+//     "Por GHE", porque os nomes de grupo mudam inteiros. Perder o trabalho do consultor
+//     sem aviso é pior que o excesso de escopo.
+//   • a seção já deduplica por `cd` DENTRO do grupo — o produto sempre tratou a ação
+//     como propriedade do risco, não do setor.
+//   • CATALOGO_ACOES não tem noção de grupo nenhuma.
+// O `nivel` entra na chave porque o catálogo tem texto diferente por nível e o mesmo
+// risco aparece em níveis diferentes em grupos diferentes.
+// Se um dia precisar ser por grupo, a chave ganha um prefixo sem quebrar o formato
+// gravado — é para isso que o estado carrega `v:1`.
+function _laudoAcaoChave(cd, nivel){ return String(cd) + '|' + nivel; }
+
 function _laudoAcoesLista(cd, nivel){
+  if (_laudoEdicaoValida()){
+    const ov = _laudoEdicao.acoes.listas[_laudoAcaoChave(cd, nivel)];
+    if (Array.isArray(ov)) return ov.slice();      // já sanitizado na gravação
+  }
   const base = CATALOGO_ACOES[cd]?.porNivel?.[nivel]
             || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
   return base.map(_esc);
+}
+function _laudoAcoesEhCustom(cd, nivel){
+  return _laudoEdicaoValida() && Array.isArray(_laudoEdicao.acoes.listas[_laudoAcaoChave(cd, nivel)]);
+}
+function _laudoAcoesCustomCount(){
+  return _laudoEdicaoValida() ? Object.keys(_laudoEdicao.acoes.listas).length : 0;
 }
 
 // ── Modo edição: affordance e modal ─────────────────────────────────────────────
@@ -13160,10 +13219,15 @@ function toggleLaudoEdicaoModo(on){
 function _renderPainelTextos(){
   const chk = document.getElementById('laudo-edicao-modo');
   if (chk) chk.checked = _laudoEdicaoModo;
-  const n   = _laudoBlocosCustomCount();
+  const nb  = _laudoBlocosCustomCount();
+  const na  = _laudoAcoesCustomCount();
+  const n   = nb + na;
   const cnt = document.getElementById('laudo-textos-contador');
   if (cnt){
-    cnt.textContent   = n ? (n + (n > 1 ? ' blocos personalizados' : ' bloco personalizado')) : '';
+    const partes = [];
+    if (nb) partes.push(nb + (nb > 1 ? ' blocos de texto' : ' bloco de texto'));
+    if (na) partes.push(na + (na > 1 ? ' listas de ações' : ' lista de ações'));
+    cnt.textContent   = partes.length ? (partes.join(' · ') + ' personalizados') : '';
     cnt.style.display = n ? '' : 'none';
   }
   const btn = document.getElementById('laudo-textos-reset');
@@ -13279,18 +13343,116 @@ function _sincronizarPainelTextos(){
 // o laudo é documento de NR-01 e quem o revisa precisa saber que o cálculo, a matriz e
 // as referências continuam sendo os do sistema.
 function _laudoBannerEdicaoHTML(){
-  const n = _laudoBlocosCustomCount();
+  const n = _laudoBlocosCustomCount() + _laudoAcoesCustomCount();
   if (!n || !_laudoEdicaoModo) return '';
   return '<div style="margin:0 0 14px;padding:9px 12px;border-radius:8px;background:var(--amberbg);'
        + 'border:1px solid var(--amber-bd);font-size:11px;color:var(--amber);line-height:1.5">'
-       + '<strong>' + n + (n > 1 ? ' blocos de texto personalizados' : ' bloco de texto personalizado')
+       + '<strong>' + n + (n > 1 ? ' trechos personalizados' : ' trecho personalizado')
        + '</strong> neste laudo. Os resultados calculados, as tabelas de Probabilidade e Severidade, '
        + 'a matriz de risco e as referências normativas não foram alterados.'
        + '</div>';
 }
 
+// ── Edição das Ações Recomendadas de um risco ───────────────────────────────────
+let _acEditando = null;   // { cd, nivel, nome, itens:[] }
+
+function _abrirModalAcoes(cd, nivel){
+  if (!_laudoEdicao.empresaId){ toast('Selecione um cliente antes de editar as ações.', 'w'); return; }
+  const nome = (RISCOS_DETALHES[cd] || {}).nome || ('Risco ' + cd);
+  _acEditando = { cd: String(cd), nivel, nome, itens: _laudoAcoesLista(cd, nivel) };
+  const t = document.getElementById('ac-title');
+  if (t) t.textContent = 'Ações — ' + nome;
+  const s = document.getElementById('ac-sub');
+  if (s) s.textContent = 'Nível ' + nivel + '. Esta edição vale para este risco neste nível em '
+                       + 'TODOS os setores deste laudo.';
+  _acRender();
+  document.getElementById('modal-laudo-acoes')?.classList.add('open');
+}
+
+function fecharModalAcoes(){
+  _acEditando = null;
+  document.getElementById('modal-laudo-acoes')?.classList.remove('open');
+}
+
+function _acRender(){
+  const wrap = document.getElementById('ac-lista');
+  if (!wrap || !_acEditando) return;
+  if (!_acEditando.itens.length){
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:8px 0">'
+                   + 'Nenhuma ação. O laudo vai mostrar "Plano de ação a definir pelo responsável técnico".</div>';
+    return;
+  }
+  wrap.innerHTML = _acEditando.itens.map((txt, i) => ''
+    + '<div class="ac-row">'
+    +   '<div class="ac-txt" contenteditable="true" onpaste="_blkPaste(event)">' + txt + '</div>'
+    +   '<div class="ac-btns">'
+    +     '<button type="button" title="Subir"  onclick="_acMover(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>▲</button>'
+    +     '<button type="button" title="Descer" onclick="_acMover(' + i + ',1)"'  + (i === _acEditando.itens.length - 1 ? ' disabled' : '') + '>▼</button>'
+    +     '<button type="button" class="ac-del" title="Remover do laudo" onclick="_acRemover(' + i + ')">✕</button>'
+    +   '</div>'
+    + '</div>').join('');
+}
+
+// Captura o que foi digitado nos contenteditable antes de qualquer repaint. Sem isso,
+// mover ou remover uma linha descartaria a edição das outras — mesma armadilha já
+// documentada em _adAtualizarTabela e _gheeSetFuncao.
+function _acSincronizarDoDOM(){
+  if (!_acEditando) return;
+  const campos = document.querySelectorAll('#ac-lista .ac-txt');
+  if (campos.length !== _acEditando.itens.length) return;
+  _acEditando.itens = [...campos].map(c => c.innerHTML);
+}
+
+function _acAdicionar(){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  _acEditando.itens.push('');
+  _acRender();
+  const campos = document.querySelectorAll('#ac-lista .ac-txt');
+  campos[campos.length - 1]?.focus();
+}
+function _acRemover(i){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  _acEditando.itens.splice(i, 1);
+  _acRender();
+}
+function _acMover(i, d){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  const j = i + d;
+  if (j < 0 || j >= _acEditando.itens.length) return;
+  const t = _acEditando.itens[i];
+  _acEditando.itens[i] = _acEditando.itens[j];
+  _acEditando.itens[j] = t;
+  _acRender();
+}
+
+function salvarAcoesLaudo(){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  const itens = _acEditando.itens.map(x => _laudoSanitize(x)).filter(x => x.replace(/<[^>]*>/g, '').trim().length);
+  _laudoEdicao.acoes.listas[_laudoAcaoChave(_acEditando.cd, _acEditando.nivel)] = itens;
+  _laudoEdicaoGravar();
+  fecharModalAcoes();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Ações atualizadas — valem só nesta sessão.', 'g');
+}
+
+function restaurarAcoesLaudo(){
+  if (!_acEditando) return;
+  delete _laudoEdicao.acoes.listas[_laudoAcaoChave(_acEditando.cd, _acEditando.nivel)];
+  _laudoEdicaoGravar();
+  _acEditando.itens = _laudoAcoesLista(_acEditando.cd, _acEditando.nivel);
+  _acRender();                 // não fecha: o usuário confere o padrão e decide
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Ações padrão restauradas.', 'g');
+}
+
 function restaurarTextosLaudo(){
-  if (!_laudoBlocosCustomCount()) return;
+  if (!_laudoBlocosCustomCount() && !_laudoAcoesCustomCount()) return;
   if (!confirm('Restaurar TODOS os textos padrão deste laudo?\n\nAs edições feitas nesta sessão serão perdidas.')) return;
   _laudoEdicaoResetTudo();
   _renderPainelTextos();
@@ -13702,13 +13864,14 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
               <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${it.nome}</span>
               <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${it.nivel}</span>
+              ${_laudoEdicaoModo ? `<button class="ld-blk-btn" style="position:static;display:inline-flex" onclick="_abrirModalAcoes('${it.cd}','${it.nivel}')">✎ Ações</button>` : ''}
             </div>
             <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
               ${it.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${it.cons}</div>` : ''}
               ${it.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${it.fontes}</div>` : ''}
               ${it.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${it.medidas}</div>` : ''}
               <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado${it.custom ? ' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--tl)">· personalizado</span>' : ''}</div>
                 <ul style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
                   ${it.acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
                 </ul>
@@ -16199,6 +16362,7 @@ document.addEventListener('keydown', function(e) {
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
     'modal-laudo-bloco':   typeof fecharModalBlocoLaudo   !== 'undefined' ? fecharModalBlocoLaudo   : null,
+    'modal-laudo-acoes':   typeof fecharModalAcoes       !== 'undefined' ? fecharModalAcoes       : null,
   };
   if (closeFns[id]) closeFns[id]();
   else openModal.classList.remove('open');
