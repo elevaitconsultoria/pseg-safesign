@@ -13091,6 +13091,51 @@ function _laudoEdicaoResetTudo(){
   _laudoEdicaoGravar();
 }
 
+// ── Ações Recomendadas — FONTE ÚNICA ────────────────────────────────────────────
+// Consumida pelo preview (renderLaudo) e pelo PDF (_buildLaudoHTML). Existia uma cópia
+// da lógica em cada lado e elas JÁ DIVERGIAM em três pontos:
+//   1. dedup por risco — só o PDF fazia. O mesmo risco saía repetido no preview.
+//   2. RISCOS_DETALHES[f.cd] no PDF contra [f.cd || f.id] no preview — aqui o PDF é que
+//      estava errado: fator sem `cd` perdia em silêncio Consequências, Fontes geradoras
+//      e Medidas de controle, embora o próprio PDF já calculasse `f.cd ? … : f.id` uma
+//      linha acima para a chave do catálogo.
+//   3. escape — o PDF escapava, o preview interpolava cru.
+//
+// INVARIANTE: os campos de texto devolvidos aqui JÁ ESTÃO SEGUROS (o catálogo sai
+// escapado). Os dois lados interpolam cru — com texto editável pelo consultor, escapar
+// na ponta destruiria a formatação dele.
+function _laudoAcoesDoGrupo(grupo, linhas, niveisLd, ordem){
+  const lG = _linhasDoGrupo(grupo, linhas);
+  if (!lG.length) return [];
+  const fG = calcFatores(lG)
+    .filter(f => f.nivel !== 'IRRELEVANTE' && f.nivel !== 'BAIXO'
+              && (!niveisLd.length || niveisLd.includes(f.nivel)))
+    .sort((a,b) => ordem.indexOf(b.nivel) - ordem.indexOf(a.nivel));
+  const vistos = new Set(), out = [];
+  fG.forEach(f => {
+    const cd = f.cd ? String(f.cd) : String(f.id);
+    if (vistos.has(cd)) return;
+    vistos.add(cd);
+    const d = RISCOS_DETALHES[f.cd || f.id] || {};
+    out.push({
+      f, cd, nivel: f.nivel,
+      nome:    _esc(f.nome),
+      cons:    d.cons    ? _esc(d.cons)    : '',
+      fontes:  d.fontes  ? _esc(d.fontes)  : '',
+      medidas: d.medidas ? _esc(d.medidas) : '',
+      acoes:   _laudoAcoesLista(cd, f.nivel),
+    });
+  });
+  return out;
+}
+
+// Lista de ações de um risco num nível, já pronta para interpolar.
+function _laudoAcoesLista(cd, nivel){
+  const base = CATALOGO_ACOES[cd]?.porNivel?.[nivel]
+            || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
+  return base.map(_esc);
+}
+
 // ── Modo edição: affordance e modal ─────────────────────────────────────────────
 let _blkEditandoId = null;
 
@@ -13642,7 +13687,7 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
-      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)));
+      const fGrupo = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NIVEIS_ORDER);
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
           <div class="alert alert-g">Todos os fatores estão em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.</div></div>`;
@@ -13650,25 +13695,22 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
       }
       html += `<div class="laudo-section">
         <div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
-        ${fGrupo.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).map(f=>{
-          const acoesKey = f.cd ? String(f.cd) : String(f.id);
-          const detalhe  = RISCOS_DETALHES[f.cd || f.id] || {};
-          const acoes    = CATALOGO_ACOES[acoesKey]?.porNivel?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
-          const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
+        ${fGrupo.map(it=>{
+          const nc = NivelCores[it.nivel]; const nt = NivelTxt[it.nivel];
           return `<div style="margin-bottom:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <!-- cabeçalho do fator -->
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
-              <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${f.nome}</span>
-              <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
+              <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${it.nome}</span>
+              <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${it.nivel}</span>
             </div>
             <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
-              ${detalhe.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${detalhe.cons}</div>` : ''}
-              ${detalhe.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${detalhe.fontes}</div>` : ''}
-              ${detalhe.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${detalhe.medidas}</div>` : ''}
+              ${it.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${it.cons}</div>` : ''}
+              ${it.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${it.fontes}</div>` : ''}
+              ${it.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${it.medidas}</div>` : ''}
               <div>
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado</div>
                 <ul style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
-                  ${acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
+                  ${it.acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
                 </ul>
               </div>
             </div>
@@ -13987,25 +14029,17 @@ tr:last-child td{border-bottom:none}
   let acoesHTML = '';
   if (laudoSecoesAtivas.has('acoes')) {
     gruposLaudo.forEach(grupo => {
-      const lS = _linhasDoGrupo(grupo, linhas);
-      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)))
-        .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
-      if (!fS.length) return;
+      const itens = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NORDEM);
+      if (!itens.length) return;
       acoesHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
-      const vistos = new Set();
-      fS.forEach(f=>{
-        const key = f.cd ? String(f.cd) : String(f.id);
-        if (vistos.has(key)) return;
-        vistos.add(key);
-        const detalhe = RISCOS_DETALHES[f.cd] || {};
-        const acoes = CATALOGO_ACOES[key]?.porNivel?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
+      itens.forEach(it=>{
         acoesHTML += `<div class="acoes-grupo">
-          <div class="acoes-risco-title">${e(f.nome)} <span class="nivel-badge ${NB[f.nivel]||'nb-bax'}" style="margin-left:6px">${f.nivel}</span></div>
-          ${detalhe.cons    ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Consequências:</strong> ${e(detalhe.cons)}</div>` : ''}
-          ${detalhe.fontes  ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Fontes geradoras:</strong> ${e(detalhe.fontes)}</div>` : ''}
-          ${detalhe.medidas ? `<div style="font-size:11px;color:#374151;margin-bottom:8px"><strong style="color:#111">Medidas de controle:</strong> ${e(detalhe.medidas)}</div>` : ''}
+          <div class="acoes-risco-title">${it.nome} <span class="nivel-badge ${NB[it.nivel]||'nb-bax'}" style="margin-left:6px">${it.nivel}</span></div>
+          ${it.cons    ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Consequências:</strong> ${it.cons}</div>` : ''}
+          ${it.fontes  ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Fontes geradoras:</strong> ${it.fontes}</div>` : ''}
+          ${it.medidas ? `<div style="font-size:11px;color:#374151;margin-bottom:8px"><strong style="color:#111">Medidas de controle:</strong> ${it.medidas}</div>` : ''}
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a5e2a;margin-bottom:6px">Plano de ação recomendado</div>
-          <ul class="acoes-lista">${acoes.map(a=>`<li>${e(a)}</li>`).join('')}</ul>
+          <ul class="acoes-lista">${it.acoes.map(a=>`<li>${a}</li>`).join('')}</ul>
         </div>`;
       });
     });
