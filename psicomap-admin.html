@@ -12910,6 +12910,9 @@ const LAUDO_SECOES = [
   {id:'analise_risco', label:'Análise gráfica por risco',  on:true},
   {id:'graficos',      label:'Gráficos por questão',       on:true},
   {id:'acoes',         label:'Ações por setor',            on:true},
+  // Texto livre do consultor. Nasce vazia e, vazia, NÃO sai no documento — ligada por
+  // padrão só para aparecer na lista de seções e ser descoberta.
+  {id:'conclusao',     label:'Considerações finais',       on:true},
 ];
 let laudoSecoesAtivas = new Set(LAUDO_SECOES.filter(s=>s.on).map(s=>s.id));
 
@@ -12999,6 +13002,9 @@ const LAUDO_BLOCOS = [
   { id:'conduta.intro',           secao:'conduta',     tipo:'rico',   label:'Conduta Administrativa — introdução',
     def:()=>`        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
         A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.` },
+  // Único bloco que nasce vazio: é parecer do responsável técnico, não texto de sistema.
+  { id:'conclusao.texto',         secao:'conclusao',   tipo:'rico',   label:'Considerações finais',
+    def:()=>`` },
   { id:'acoes.nota_rodape',       secao:'acoes',       tipo:'rico',   label:'Ações Recomendadas — nota de rodapé',
     def:()=>`          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.` },
 ];
@@ -13010,6 +13016,12 @@ function _laudoTexto(id){
   if (!_laudoEdicaoValida()) return b.def();
   const ov = _laudoEdicao.blocos[id];
   return (typeof ov === 'string' && ov.length) ? ov : b.def();
+}
+// Seção "Considerações finais" só entra no documento com texto de verdade. Tags vazias
+// deixadas pelo contenteditable (um <p><br></p> após apagar tudo) não contam como texto.
+function _laudoTemConclusao(){
+  return laudoSecoesAtivas.has('conclusao')
+      && _laudoTexto('conclusao.texto').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
 }
 function _laudoTextoEhCustom(id){
   return _laudoEdicaoValida() && typeof _laudoEdicao.blocos[id] === 'string';
@@ -13845,6 +13857,18 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
   }
 
   // ── AÇÕES POR SETOR ──
+  // ── CONSIDERAÇÕES FINAIS (texto livre do consultor) ──
+  // No modo edição aparece mesmo vazia, com um convite; fora dele, some.
+  if (laudoSecoesAtivas.has('conclusao') && (_laudoTemConclusao() || _laudoEdicaoModo)) {
+    const _txtConc = _laudoTemConclusao()
+      ? _laudoTexto('conclusao.texto')
+      : '<p style="color:var(--tl);font-style:italic">Sem considerações finais. Clique em Editar para escrever o parecer — vazia, esta seção não sai no PDF.</p>';
+    html += `<div class="laudo-section">
+      <div class="laudo-sec-title">Considerações finais</div>
+      ${_laudoBlocoWrap('conclusao.texto', _txtConc)}
+    </div>`;
+  }
+
   if (laudoSecoesAtivas.has('acoes')) {
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
@@ -14234,6 +14258,9 @@ tr:last-child td{border-bottom:none}
   const _snAR    = _hasAR ? ++_sn : null;
   const _snGF    = _hasGF ? ++_sn : null;
   const _snAC    = _hasAC ? ++_sn : null;
+  // Só numera se houver texto: seção vazia não sai e não pode furar a sequência.
+  const _hasConc = _laudoTemConclusao();
+  const _snConc  = _hasConc ? ++_sn : null;
   const _snRef   = ++_sn;
 
   // ── ÍNDICE (básico — sem número de página, só ordem e título) ──
@@ -14246,6 +14273,7 @@ tr:last-child td{border-bottom:none}
       _hasAR ? `${_snAR}. Análise Gráfica por Fator de Risco` : null,
       _hasGF ? `${_snGF}. Distribuição de Respostas por Questão` : null,
       _hasAC ? `${_snAC}. Ações Recomendadas por Fator de Risco` : null,
+      _hasConc ? `${_snConc}. Considerações Finais` : null,
       `${_snRef}. Referências`,
     ].filter(Boolean);
     indiceHTML = `<div class="page">
@@ -14452,6 +14480,14 @@ ${_hasAC && acoesHTML ? `
   ${acoesHTML}
   <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">${_laudoTexto('acoes.nota_rodape')}</p>
   ${footer('Ações Recomendadas')}
+</div>` : ''}
+
+<!-- ── CONSIDERAÇÕES FINAIS ──────────────────────────────────── -->
+${_hasConc ? `
+<div class="page">
+  <div class="sec-title">${_snConc}. Considerações Finais</div>
+  ${_laudoTexto('conclusao.texto')}
+  ${footer('Considerações Finais')}
 </div>` : ''}
 
 <!-- ── REFERÊNCIAS ────────────────────────────────────────────── -->
