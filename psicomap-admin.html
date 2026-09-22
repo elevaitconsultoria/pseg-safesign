@@ -673,6 +673,79 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .modal-title{font-size:var(--fs-xl);font-weight:var(--fw-b);margin-bottom:var(--sp-1);letter-spacing:-.2px}
 .modal-sub{font-size:var(--fs-base);color:var(--tm);margin-bottom:var(--sp-5);line-height:1.5}
 .modal-footer{display:flex;gap:var(--sp-3);margin-top:var(--sp-5)}
+/* ══ Capa do laudo no preview ══
+   Mesmas classes que _laudoCapaHTML emite e que o CSS do PDF define, para que a mesma
+   marcação renderize igual nos dois. Escopado em #laudo-doc porque .cover-title e
+   .cover-logo já existem no app (export de adesão) com outro visual. */
+#laudo-doc .cover-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #1a5e2a}
+#laudo-doc .cover-logo{width:56px;height:56px;background:#1a5e2a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#laudo-doc .cover-logo svg{width:30px;height:30px;fill:white}
+#laudo-doc .cover-company{text-align:right}
+#laudo-doc .cover-company-name{font-size:14px;font-weight:700;color:#1a5e2a;letter-spacing:.2px}
+#laudo-doc .cover-company-sub{font-size:11px;color:#6b7280}
+#laudo-doc .cover-body{padding:24px 0}
+#laudo-doc .cover-tag{display:inline-block;background:#f0fdf4;color:#1a5e2a;border:1px solid #bbf7d0;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 10px;margin-bottom:16px}
+#laudo-doc .cover-title{font-size:22px;font-weight:700;color:#111;line-height:1.3;margin-bottom:8px}
+#laudo-doc .cover-subtitle{font-size:14px;color:#6b7280;margin-bottom:28px}
+#laudo-doc .cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px}
+#laudo-doc .cover-meta-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af}
+#laudo-doc .cover-meta-value{font-size:13px;font-weight:600;color:#111;margin-top:2px}
+#laudo-doc .cover-footer{margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:10px;color:#9ca3af}
+#laudo-doc .cover-norm-pills{display:flex;gap:6px;flex-wrap:wrap}
+#laudo-doc .norm-pill{background:#f0fdf4;border:1px solid #bbf7d0;color:#1a5e2a;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px}
+/* Os wrappers de edição não podem quebrar o fluxo dos blocos inline da capa. */
+#laudo-doc .cover-body > .ld-blk{margin-bottom:0}
+#laudo-doc .cover-footer .ld-blk{flex:1;min-width:0}
+/* ══ Edição de textos do laudo ══
+   Estas classes existem SÓ no preview. _buildLaudoHTML() chama _laudoTexto() direto,
+   sem wrapper, porque o CSS do PDF não as tem e elas não podem vazar para o documento. */
+.ld-blk{position:relative}
+/* O bloco INTEIRO é o alvo do clique, não só o botão: o botão é pequeno e ficava escondido
+   até o hover, então não havia nada dizendo que aquele parágrafo era editável. */
+.ld-blk-on{outline:1px dashed var(--n200);outline-offset:6px;border-radius:4px;cursor:pointer;
+  transition:outline-color .12s,background .12s}
+.ld-blk-on:hover{outline-color:var(--g);background:var(--gp)}
+.ld-blk-btn{position:absolute;top:-13px;right:0;z-index:2;display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;background:var(--g);color:#fff;border:none;border-radius:4px;
+  padding:3px 8px;cursor:pointer;line-height:1.4;opacity:.5;transition:opacity .12s;pointer-events:none}
+.ld-blk-on:hover .ld-blk-btn{opacity:1}
+.ld-blk-custom{border-left:2px solid var(--gm);padding-left:10px}
+.ld-acoes-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;
+  background:var(--g);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;
+  line-height:1.4;white-space:nowrap}
+.ld-acoes-btn:hover{background:var(--gd)}
+.ld-blk-tag{position:absolute;top:-13px;left:0;z-index:2;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;background:var(--gm);color:#fff;
+  border-radius:4px;padding:2px 7px;line-height:1.5}
+/* Variante para a capa, que tem fundo verde escuro: o tracejado cinza e o botão verde
+   sumiam contra ele. */
+.ld-blk-inv.ld-blk-on{outline-color:rgba(255,255,255,.45)}
+.ld-blk-inv.ld-blk-on:hover{outline-color:#fff;background:rgba(255,255,255,.12)}
+.ld-blk-inv .ld-blk-btn{background:#fff;color:var(--g)}
+.ld-blk-inv.ld-blk-custom{border-left-color:#fff}
+.ld-blk-inv .ld-blk-tag{background:#fff;color:var(--g)}
+.blk-tb{display:flex;align-items:center;gap:2px;flex-wrap:wrap;border:1px solid var(--border);
+  border-bottom:none;border-radius:8px 8px 0 0;padding:6px;background:var(--bs)}
+.blk-tb button{min-width:28px;height:26px;border:1px solid transparent;background:transparent;
+  border-radius:4px;cursor:pointer;font-size:12px;color:var(--tm);padding:0 6px}
+.blk-tb button:hover{background:var(--w);border-color:var(--border);color:var(--tx)}
+.blk-tb .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 5px}
+.blk-editor{border:1px solid var(--border);border-radius:0 0 8px 8px;padding:12px;min-height:170px;
+  max-height:44vh;overflow-y:auto;font-size:13px;line-height:1.6;color:var(--tx);outline:none;background:var(--w)}
+.blk-editor:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
+.blk-editor p{margin:0 0 10px}
+.blk-editor ul,.blk-editor ol{margin:0 0 10px;padding-left:20px}
+.ld-txt-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;padding:3px 0}
+.ld-txt-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);margin:8px 0 2px}
+.ac-row{display:flex;align-items:flex-start;gap:6px}
+.ac-row .ac-txt{flex:1;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;
+  line-height:1.6;color:var(--tx);outline:none;background:var(--w);min-height:20px}
+.ac-row .ac-txt:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
+.ac-row .ac-btns{display:flex;flex-direction:column;gap:2px}
+.ac-row .ac-btns button{width:24px;height:20px;border:1px solid var(--border);background:var(--w);
+  border-radius:4px;cursor:pointer;font-size:10px;color:var(--tm);padding:0;line-height:1}
+.ac-row .ac-btns button:hover{border-color:var(--g);color:var(--g)}
+.ac-row .ac-btns button.ac-del:hover{border-color:var(--red);color:var(--red)}
 
 /* ── ANÁLISE GRÁFICA ── */
 .graf-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;transition:grid-template-columns .24s cubic-bezier(.4,0,.2,1)}
@@ -734,7 +807,17 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .kpi-val,.sum-val,.dash-kpi-val{font-size:var(--fs-4xl);font-weight:var(--fw-xb);color:var(--tx);font-family:var(--font-ui);line-height:1;margin-bottom:var(--sp-1);letter-spacing:-.5px}
 .kpi-lbl,.sum-lbl,.dash-kpi-lbl{font-size:var(--fs-xs);color:var(--tm);text-transform:uppercase;letter-spacing:.5px;font-weight:var(--fw-sb)}
 /* ── LAUDO & RELATÓRIO ── */
-.laudo-preview{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+/* O preview era um card único com as seções empilhadas e separadas só por uma linha —
+   nada nele lembrava um documento, e a capa parecia uma faixa colorida no topo em vez da
+   primeira folha. Agora cada seção é uma FOLHA com sombra e respiro em volta.
+   ATENÇÃO: uma folha aqui é uma SEÇÃO, não uma página do PDF. No PDF cada seção começa em
+   página nova (<div class="page">), mas uma seção longa ocupa mais de uma folha lá. O
+   preview separa o documento em blocos legíveis; não promete a paginação exata do PDF. */
+.laudo-preview{background:transparent;border:none;border-radius:0;overflow:visible;
+  display:flex;flex-direction:column;gap:20px}
+.laudo-folha-wrap{position:relative}
+.laudo-folha-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--tl);margin:0 0 5px 2px;display:flex;align-items:center;gap:6px}
 .met-tab{padding:8px 16px;border:none;background:none;font-family:var(--font-ui);font-size:12px;font-weight:500;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .met-tab:hover{color:var(--tx)}
 .met-tab.on{color:var(--tx);font-weight:700;border-bottom-color:var(--tx)}
@@ -766,8 +849,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .met-ref{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--tm);line-height:1.6;padding:8px 12px;background:var(--bg);border-radius:6px}
 .met-ref strong{color:var(--tx)}
 .met-ref-tag{font-size:var(--fs-2xs);font-weight:var(--fw-b);background:var(--tx);color:var(--n0);padding:2px 7px;flex-shrink:0;margin-top:2px}
-.laudo-section{padding:20px 24px;border-bottom:1px solid var(--bs)}
-.laudo-section:last-child{border-bottom:none}
+.laudo-section{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);
+  padding:30px 34px;box-shadow:0 1px 2px rgba(16,24,40,.06),0 10px 28px rgba(16,24,40,.05)}
+.laudo-section:last-child{border-bottom:1px solid var(--border)}
+@media (max-width:640px){ .laudo-section{padding:20px 18px} }
 .laudo-sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .laudo-sec-title::after{content:'';flex:1;height:1px;background:var(--bs)}
 .metodologia-block{font-size:12px;color:var(--tm);line-height:1.8}
@@ -2784,6 +2869,21 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <input id="ld-registro" type="text" placeholder="CREA/CRF/CRP nº ..." class="filter-select" style="cursor:text" oninput="_salvarResponsavelLaudo()"/>
       </div>
 
+      <!-- Edição de textos: os blocos de prosa do laudo vêm prontos, mas o consultor
+           pode reescrevê-los. Vale só para esta sessão (sessionStorage por empresa). -->
+      <div class="filter-card" id="laudo-textos-card">
+        <div class="filter-label">Textos do laudo</div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer">
+          <input type="checkbox" id="laudo-edicao-modo" onchange="toggleLaudoEdicaoModo(this.checked)"/>
+          Modo edição
+        </label>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Mostra um botão de editar em cada bloco de texto do relatório.</div>
+        <div id="laudo-textos-contador" style="display:none;font-size:10px;font-weight:600;color:var(--g);margin-top:6px"></div>
+        <div id="laudo-textos-lista" style="max-height:220px;overflow-y:auto"></div>
+        <button id="laudo-textos-reset" class="btn btn-ghost btn-sm" style="display:none;width:100%;margin-top:8px"
+                onclick="restaurarTextosLaudo()">Restaurar todos os textos padrão</button>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Seções do laudo</div>
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
@@ -2974,6 +3074,60 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharGheEdit()">Cancelar</button>
       <button class="btn btn-g" style="flex:2" id="ghee-salvar" onclick="salvarGheEdit()">Salvar GHE</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE EDIÇÃO DE TEXTO DO LAUDO -->
+<!-- Edição acontece AQUI e não in-place no preview: renderLaudo() faz
+     panel.innerHTML = html a cada mudança de filtro, ciclo, seção ou granularidade, e um
+     contenteditable colado no preview perderia o que estivesse sendo digitado. -->
+<div class="modal-bg" id="modal-laudo-bloco">
+  <div class="modal" style="max-width:680px;width:94vw">
+    <div class="modal-title" id="blk-title">Editar texto</div>
+    <div class="modal-sub">Este texto entra no PDF exatamente como ficar aqui. Vale só nesta sessão — nada é gravado no banco.</div>
+    <div id="blk-ajuda" style="display:none;margin-top:8px;font-size:11px;color:var(--tm);background:var(--bs);border-radius:6px;padding:7px 10px"></div>
+    <div id="blk-aviso" style="display:none;margin:10px 0 0;padding:8px 10px;border-radius:6px;background:var(--amberbg);border:1px solid var(--amber-bd);font-size:11px;color:var(--amber)">
+      ⚠ Este bloco é lastro técnico do laudo perante a NR-01 — altere apenas para acrescentar informação própria.
+    </div>
+    <div style="margin-top:12px">
+      <div class="blk-tb">
+        <button type="button" title="Negrito"    onmousedown="event.preventDefault()" onclick="_blkCmd('bold')"><strong>B</strong></button>
+        <button type="button" title="Itálico"    onmousedown="event.preventDefault()" onclick="_blkCmd('italic')"><em>I</em></button>
+        <button type="button" title="Sublinhado" onmousedown="event.preventDefault()" onclick="_blkCmd('underline')"><u>U</u></button>
+        <div class="sep"></div>
+        <button type="button" title="Lista com marcadores" onmousedown="event.preventDefault()" onclick="_blkCmd('insertUnorderedList')">• lista</button>
+        <button type="button" title="Lista numerada"       onmousedown="event.preventDefault()" onclick="_blkCmd('insertOrderedList')">1. lista</button>
+        <div class="sep"></div>
+        <button type="button" title="Desfazer"          onmousedown="event.preventDefault()" onclick="_blkCmd('undo')">⟲</button>
+        <button type="button" title="Limpar formatação" onmousedown="event.preventDefault()" onclick="_blkCmd('removeFormat')">⌫ limpar</button>
+      </div>
+      <div id="blk-editor" class="blk-editor" contenteditable="true" onpaste="_blkPaste(event)"></div>
+      <div style="font-size:10px;color:var(--tl);margin-top:5px">Só negrito, itálico, sublinhado e listas são preservados — o resto da formatação é descartado ao salvar.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="restaurarBlocoLaudo()">Restaurar padrão</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalBlocoLaudo()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarBlocoLaudo()">Salvar texto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE EDIÇÃO DAS AÇÕES RECOMENDADAS DE UM RISCO -->
+<!-- A lista inteira é gravada como override, e não um diff. Assim os três verbos pedidos
+     saem de um mecanismo só: ocultar = remover o item, editar = trocar o texto,
+     acrescentar = anexar ao fim. -->
+<div class="modal-bg" id="modal-laudo-acoes">
+  <div class="modal" style="max-width:700px;width:94vw">
+    <div class="modal-title" id="ac-title">Ações recomendadas</div>
+    <div class="modal-sub" id="ac-sub"></div>
+    <div id="ac-lista" style="margin-top:12px;max-height:44vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="_acAdicionar()">+ Adicionar ação personalizada</button>
+    <div style="font-size:10px;color:var(--tl);margin-top:8px">Só negrito, itálico, sublinhado e listas são preservados. Vale só nesta sessão.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="restaurarAcoesLaudo()">Restaurar padrão</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalAcoes()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarAcoesLaudo()">Salvar ações</button>
     </div>
   </div>
 </div>
@@ -9753,10 +9907,15 @@ function renderHistoricoLaudos() {
     const ciclo = l.ciclo_id ? (_ciclos.find(c => c.id === l.ciclo_id)?.nome || 'ciclo removido') : 'todos os ciclos';
     const quem = (l.gerado_por || '').split('@')[0];
     const n = sn.n_respostas;
+    // Sem isto a trilha de personalização existe no banco e ninguém vê.
+    const ed = sn.edicao || null;
     const det = [
       gran ? SEG_LABEL[gran] || gran : null,
       ciclo,
       Number.isFinite(n) ? `${n} resposta${n !== 1 ? 's' : ''}` : null,
+      ed?.editado ? `texto editado (${[ed.n_blocos ? `${ed.n_blocos} bloco${ed.n_blocos !== 1 ? 's' : ''}` : null,
+                                        ed.n_acoes  ? `${ed.n_acoes} lista${ed.n_acoes  !== 1 ? 's' : ''} de ações` : null]
+                                       .filter(Boolean).join(', ')})` : null,
     ].filter(Boolean).join(' · ');
     // Registro antigo não tem `config` — não há o que reaplicar, e prometer o botão seria pior
     // que não oferecer.
@@ -12810,6 +12969,9 @@ const LAUDO_SECOES = [
   {id:'analise_risco', label:'Análise gráfica por risco',  on:true},
   {id:'graficos',      label:'Gráficos por questão',       on:true},
   {id:'acoes',         label:'Ações por setor',            on:true},
+  // Texto livre do consultor. Nasce vazia e, vazia, NÃO sai no documento — ligada por
+  // padrão só para aparecer na lista de seções e ser descoberta.
+  {id:'conclusao',     label:'Considerações finais',       on:true},
 ];
 let laudoSecoesAtivas = new Set(LAUDO_SECOES.filter(s=>s.on).map(s=>s.id));
 
@@ -12831,6 +12993,9 @@ function toggleLaudoSecao(id) {
   if (laudoSecoesAtivas.has(id)) laudoSecoesAtivas.delete(id);
   else laudoSecoesAtivas.add(id);
   buildLaudoSecoesChecks();
+  // A lista de textos editáveis só mostra blocos de seção ativa — ligar/desligar uma
+  // seção muda o que há para editar.
+  if (typeof _renderPainelTextos === 'function') _renderPainelTextos();
   renderLaudo(); // atualizar preview inline
 }
 
@@ -12855,6 +13020,638 @@ function _salvarResponsavelLaudo() {
   try { localStorage.setItem(_laudoRespKey(empId), JSON.stringify({ nome, registro })); } catch(e) {}
 }
 
+// ══ EDIÇÃO DE TEXTOS DO LAUDO ═══════════════════════════════════════════════════
+// FONTE ÚNICA de todo texto fixo editável do laudo. renderLaudo() (preview) e
+// _buildLaudoHTML() (PDF) leem daqui — nunca de literais próprios. Os dois são
+// geradores de HTML independentes e já divergiram de verdade: a introdução da
+// Metodologia tinha 5 parágrafos no preview e 2 condensados no PDF. Com um registro
+// só, editar no preview muda o documento que o cliente recebe.
+//
+// INVARIANTE: _laudoTexto() devolve HTML JÁ SEGURO — o default é constante nossa e o
+// override do usuário passa por _laudoSanitize() na gravação. Os dois lados interpolam
+// o retorno CRU; escapá-lo destruiria a formatação feita pelo consultor.
+//
+// REGRA: nenhum bloco editável interpola dado calculado (${nomeEmp}, ${_snMet},
+// ${linhas.length}). Onde o texto mistura prosa e número, o bloco cobre só a prosa e a
+// parte calculada fica no código — senão o consultor apaga uma ligação de dados sem
+// perceber, e a sanitização deixaria de ser trivial.
+const LAUDO_BLOCOS = [
+  { id:'capa.tag',                secao:'capa',        tipo:'inline', label:'Capa — tarja de topo',
+    def:()=>`Avaliação Ergonômica Preliminar — AEP` },
+  { id:'capa.titulo',             secao:'capa',        tipo:'inline', label:'Capa — título do documento',
+    def:()=>`Avaliação dos Fatores de Risco Psicossociais` },
+  { id:'capa.normas',             secao:'capa',        tipo:'inline', label:'Capa — normas de referência',
+    ajuda:'Uma norma por linha, ou separadas por ponto e vírgula. Cada uma vira uma etiqueta na capa.',
+    def:()=>`NR-01 / 2024; NR-17; BS 8800; Portaria MTE 1.419/2024; ISO 45003` },
+  { id:'capa.confidencial',       secao:'capa',        tipo:'inline', label:'Capa — nota de confidencialidade',
+    def:()=>`Documento confidencial — uso exclusivo da empresa contratante` },
+  { id:'capa.subtitulo',          secao:'capa',        tipo:'inline', label:'Capa — subtítulo',
+    def:()=>`Relatório de Resultados — Módulo Psicossocial` },
+  { id:'metodologia.intro',       secao:'metodologia', tipo:'rico',   label:'Metodologia — introdução',
+    def:()=>`        <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
+
+        <p>Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são <strong>orientativos</strong> e buscam auxiliar os avaliadores.</p>
+
+        <p>A classificação correta dos riscos também deve considerar o que podemos chamar de <strong>"amenizadores"</strong> — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.</p>
+
+        <p>Devem ser considerados também as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.</p>
+
+        <p>Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve levar em consideração na tomada de decisão, além dos fatores descritos, outros requisitos como sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.</p>` },
+  // Estes dois ainda moram em METODOLOGIA (12344) porque o mesmo texto alimenta outros
+  // pontos da tela; o bloco apenas os expõe para edição.
+  { id:'metodologia.instrumento', secao:'metodologia', tipo:'rico',   label:'Metodologia — instrumento de coleta',
+    def:()=>METODOLOGIA.instrumento },
+  { id:'metodologia.matriz_intro',secao:'metodologia', tipo:'rico',   label:'Metodologia — abertura da Matriz P×S',
+    def:()=>METODOLOGIA.calculo },
+  { id:'conduta.intro',           secao:'conduta',     tipo:'rico',   label:'Conduta Administrativa — introdução',
+    def:()=>`        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
+        A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.` },
+  // Único bloco que nasce vazio: é parecer do responsável técnico, não texto de sistema.
+  { id:'conclusao.texto',         secao:'conclusao',   tipo:'rico',   label:'Considerações finais',
+    def:()=>`` },
+  { id:'acoes.nota_rodape',       secao:'acoes',       tipo:'rico',   label:'Ações Recomendadas — nota de rodapé',
+    def:()=>`          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.` },
+];
+const _LAUDO_BLOCOS_IDX = Object.fromEntries(LAUDO_BLOCOS.map(b => [b.id, b]));
+
+function _laudoTexto(id){
+  const b = _LAUDO_BLOCOS_IDX[id];
+  if (!b) { console.warn('[laudo] bloco desconhecido:', id); return ''; }
+  if (!_laudoEdicaoValida()) return b.def();
+  const ov = _laudoEdicao.blocos[id];
+  // String vazia é uma edição deliberada — o consultor apagou o bloco. Só a AUSÊNCIA de
+  // chave devolve o padrão; senão "excluir um trecho" seria impossível, porque apagar tudo
+  // faria o texto de fábrica reaparecer. Quem quer o padrão de volta usa Restaurar padrão.
+  return (typeof ov === 'string') ? ov : b.def();
+}
+
+// Um bloco vazio não deve deixar o <p>/<div> que o envolve ocupando espaço no documento.
+function _laudoTemTexto(id){
+  return _laudoTexto(id).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
+}
+// Seção "Considerações finais" só entra no documento com texto de verdade. Tags vazias
+// deixadas pelo contenteditable (um <p><br></p> após apagar tudo) não contam como texto.
+function _laudoTemConclusao(){
+  return laudoSecoesAtivas.has('conclusao') && _laudoTemTexto('conclusao.texto');
+}
+function _laudoTextoEhCustom(id){
+  return _laudoEdicaoValida() && typeof _laudoEdicao.blocos[id] === 'string';
+}
+function _laudoBlocosCustomCount(){
+  return _laudoEdicaoValida() ? Object.keys(_laudoEdicao.blocos).length : 0;
+}
+
+// ── Estado da edição ────────────────────────────────────────────────────────────
+// sessionStorage (não localStorage) porque a edição vale só para esta sessão de
+// preview: morre ao fechar a aba, que é o contrato prometido ao usuário.
+// Chave POR EMPRESA — a mesma lição de _salvarResponsavelLaudo() logo acima, cujo
+// comentário registra um vazamento real de texto entre clientes.
+let _laudoEdicaoModo = false;                                  // toggle de UI, não persiste
+let _laudoEdicao     = { v:1, empresaId:'', blocos:{}, acoes:{ listas:{} } };
+let _laudoEdicaoSnap = null;                                   // congelado no Exportar
+
+function _laudoEdicaoKey(empId){ return `psicomap_laudo_edit_${empId}`; }
+
+// Cinto e suspensório: a chave já é por empresa, mas um render disparado ENTRE a troca
+// de empresa e o carregamento do estado leria a edição do cliente anterior.
+function _laudoEdicaoValida(){
+  const emp = document.getElementById('ld-empresa')?.value || '';
+  return !!_laudoEdicao.empresaId && _laudoEdicao.empresaId === emp;
+}
+
+const _LAUDO_TAGS_OK   = new Set(['B','STRONG','I','EM','U','BR','P','UL','OL','LI']);
+const _LAUDO_TAGS_KILL = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META',
+                                  'SVG','MATH','FORM','INPUT','BUTTON','TEMPLATE','NOSCRIPT']);
+const _LAUDO_BLOCO_MAX = 20000;
+
+// Sanitização por whitelist. Roda na GRAVAÇÃO (e ao ler o sessionStorage), nunca em
+// _laudoTexto(), que é chamado em loop pelos dois renders.
+//
+// Importa porque o resultado vai para win.document.write() numa janela de MESMA ORIGEM
+// cujo window.opener é esta SPA com a sessão Supabase viva (a janela já usa isso de
+// propósito em window.opener._registrarLaudo()). Um <script> que passasse teria acesso a
+// opener.sbAdmin e ao token.
+function _laudoSanitize(html){
+  // DOMParser('text/html') produz documento INERTE: não executa <script>, não dispara
+  // img onerror, não carrega nada. É por isso que a análise é feita nele, e não num
+  // innerHTML do documento vivo.
+  const doc  = new DOMParser().parseFromString('<div id="_r">' + String(html||'') + '</div>', 'text/html');
+  const root = doc.getElementById('_r');
+  if (!root) return '';
+  (function walk(node){
+    [...node.childNodes].forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE) return;
+      if (n.nodeType !== Node.ELEMENT_NODE) { n.remove(); return; }   // comentário, CDATA…
+      if (_LAUDO_TAGS_KILL.has(n.tagName)) { n.remove(); return; }    // subárvore inteira
+      walk(n);
+      // ZERO atributos: nem style, nem class. Os blocos herdam o CSS do documento em que
+      // caem (preview e PDF têm folhas diferentes) — se carregassem style, o mesmo texto
+      // sairia diferente nos dois, recriando a divergência que este registro elimina.
+      [...n.attributes].forEach(a => n.removeAttribute(a.name));
+      // Fora da whitelist: DESEMBRULHA em vez de remover, para que nenhum texto do
+      // consultor suma em silêncio (é o que trata o <span style> e o <div><ul> que
+      // alguns engines emitem em insertUnorderedList).
+      if (!_LAUDO_TAGS_OK.has(n.tagName)) n.replaceWith(...n.childNodes);
+    });
+  })(root);
+  return root.innerHTML.slice(0, _LAUDO_BLOCO_MAX);
+}
+
+function _laudoEdicaoCarregar(empId){
+  _laudoEdicao = { v:1, empresaId: empId || '', blocos:{}, acoes:{ listas:{} } };
+  if (!empId) return;
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(_laudoEdicaoKey(empId)) || '{}');
+    // Sanitiza também na LEITURA: sessionStorage é gravável por qualquer XSS de mesma
+    // origem, e o custo roda uma vez por troca de empresa. Ids desconhecidos são
+    // descartados — o registro evolui e um id renomeado não pode ressuscitar texto num
+    // bloco que não existe mais.
+    Object.entries(raw.blocos || {}).forEach(([id, html]) => {
+      if (_LAUDO_BLOCOS_IDX[id] && typeof html === 'string') {
+        _laudoEdicao.blocos[id] = _laudoSanitize(html);
+      }
+    });
+    Object.entries(raw.acoes?.listas || {}).forEach(([k, lista]) => {
+      if (Array.isArray(lista)) _laudoEdicao.acoes.listas[k] = lista.map(x => _laudoSanitize(String(x))).filter(Boolean);
+    });
+  } catch(e) {
+    // Falha aberto (padrão de carregarPresets): sem sessionStorage o laudo segue
+    // funcionando com os textos padrão.
+    console.warn('[laudo] edição de textos indisponível nesta sessão:', e.message);
+  }
+}
+
+function _laudoEdicaoGravar(){
+  if (!_laudoEdicao.empresaId) return;
+  try {
+    sessionStorage.setItem(_laudoEdicaoKey(_laudoEdicao.empresaId), JSON.stringify({
+      v:1, blocos:_laudoEdicao.blocos, acoes:_laudoEdicao.acoes
+    }));
+  } catch(e) { console.warn('[laudo] não foi possível guardar a edição:', e.message); }
+}
+
+// Resumo do que foi personalizado no documento que acabou de ser aberto (nao no preview:
+// le o snapshot congelado por gerarLaudoPDF).
+function _laudoEdicaoTrilha(){
+  const s  = _laudoEdicaoSnap || { blocos:{}, acoes:{ listas:{} } };
+  const nb = Object.keys(s.blocos || {}).length;
+  const na = Object.keys(s.acoes?.listas || {}).length;
+  return {
+    editado:   nb > 0 || na > 0,
+    n_blocos:  nb,
+    n_acoes:   na,
+    blocos:    s.blocos || {},
+    acoes:     s.acoes?.listas || {},
+    em:        new Date().toISOString(),
+  };
+}
+
+function _laudoEdicaoSetBloco(id, html){
+  if (!_LAUDO_BLOCOS_IDX[id] || !_laudoEdicao.empresaId) return;
+  _laudoEdicao.blocos[id] = _laudoSanitize(html);
+  _laudoEdicaoGravar();
+}
+function _laudoEdicaoResetBloco(id){
+  delete _laudoEdicao.blocos[id];
+  _laudoEdicaoGravar();
+}
+function _laudoEdicaoResetTudo(){
+  _laudoEdicao.blocos = {};
+  _laudoEdicao.acoes  = { listas:{} };
+  _laudoEdicaoGravar();
+}
+
+// ── Capa do laudo — FONTE ÚNICA ─────────────────────────────────────────────────
+// Preview e PDF montavam capas COMPLETAMENTE diferentes: o PDF tinha cabeçalho com
+// filete, caixa de metadados, etiquetas de norma e rodapé de confidencialidade; o
+// preview era um retângulo verde chapado. Quem configurava o laudo não via o que ia
+// entregar. Agora os dois chamam esta função — a mesma marcação e as mesmas classes
+// `cover-*`, que o app replica escopadas em #laudo-doc.
+//
+// Só `opts.edicao` difere entre os dois lados: envolve os textos editáveis com a
+// affordance de clique, que nunca pode vazar para o documento entregue.
+function _laudoCapaHTML(d, opts){
+  const ed = !!(opts && opts.edicao);
+  const w  = (id, html) => ed ? _laudoBlocoWrap(id, html) : html;
+  const logo = d.logo
+    ? `<div class="cover-logo" style="background:white;padding:4px;border:1.5px solid #e5e7eb"><img src="${d.logo}" style="width:100%;height:100%;object-fit:contain"></div>`
+    : `<div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>`;
+  const metas = [
+    ['Empresa avaliada',      _esc(d.nomeEmp)],
+    ['Ciclo de avaliação',    _esc(d.cicloNome)],
+    ['Total de respondentes', _esc(String(d.nRespostas)) + ' colaboradores'],
+    ['Data de emissão',       _esc(d.hoje)],
+    [_esc(d.coverLabel),      _esc((d.coverSetores || []).join(', '))],
+    ['Responsável técnico',   _esc(d.responsavel)],
+  ];
+  return `<div class="cover-header">
+    ${logo}
+    <div class="cover-company">
+      <div class="cover-company-name">${_esc(d.estNome)}</div>
+      <div class="cover-company-sub">${_esc(d.estEndereco || 'Saúde · Ergonomia · Segurança')}</div>
+    </div>
+  </div>
+  <div class="cover-body">
+    ${w('capa.tag',      `<div class="cover-tag">${_laudoTexto('capa.tag')}</div>`)}
+    ${w('capa.titulo',   `<div class="cover-title">${_laudoTexto('capa.titulo')}</div>`)}
+    ${w('capa.subtitulo',`<div class="cover-subtitle">${_laudoTexto('capa.subtitulo')}</div>`)}
+    <div class="cover-meta">
+      ${metas.map(([k,v]) => `<div class="cover-meta-item"><div class="cover-meta-label">${k}</div><div class="cover-meta-value">${v}</div></div>`).join('')}
+    </div>
+    ${w('capa.normas', `<div class="cover-norm-pills" style="margin-top:18px">${_laudoNormasPills()}</div>`)}
+  </div>
+  <div class="cover-footer">
+    ${w('capa.confidencial', `<span>${_laudoTexto('capa.confidencial')}</span>`)}
+    <span>${_esc(d.estNome)} © ${d.ano}</span>
+  </div>`;
+}
+
+// As normas são texto livre editável, mas a capa precisa delas como etiquetas. O bloco
+// guarda uma lista; aqui ela vira pills. Aceita ponto e vírgula OU quebra de linha,
+// porque o editor rico transforma linhas em <p> e o usuário não tem que saber disso.
+function _laudoNormasPills(){
+  return _laudoTexto('capa.normas')
+    .replace(/<\/(p|div|li)>/gi, ';')
+    .replace(/<br\s*\/?>/gi, ';')
+    .replace(/<[^>]*>/g, '')
+    .split(';')
+    .map(s => s.replace(/&nbsp;/g, ' ').trim())
+    .filter(Boolean)
+    .map(s => `<span class="norm-pill">${_esc(s)}</span>`)
+    .join('');
+}
+
+// ── Ações Recomendadas — FONTE ÚNICA ────────────────────────────────────────────
+// Consumida pelo preview (renderLaudo) e pelo PDF (_buildLaudoHTML). Existia uma cópia
+// da lógica em cada lado e elas JÁ DIVERGIAM em três pontos:
+//   1. dedup por risco — só o PDF fazia. O mesmo risco saía repetido no preview.
+//   2. RISCOS_DETALHES[f.cd] no PDF contra [f.cd || f.id] no preview — aqui o PDF é que
+//      estava errado: fator sem `cd` perdia em silêncio Consequências, Fontes geradoras
+//      e Medidas de controle, embora o próprio PDF já calculasse `f.cd ? … : f.id` uma
+//      linha acima para a chave do catálogo.
+//   3. escape — o PDF escapava, o preview interpolava cru.
+//
+// INVARIANTE: os campos de texto devolvidos aqui JÁ ESTÃO SEGUROS (o catálogo sai
+// escapado). Os dois lados interpolam cru — com texto editável pelo consultor, escapar
+// na ponta destruiria a formatação dele.
+function _laudoAcoesDoGrupo(grupo, linhas, niveisLd, ordem){
+  const lG = _linhasDoGrupo(grupo, linhas);
+  if (!lG.length) return [];
+  const fG = calcFatores(lG)
+    .filter(f => f.nivel !== 'IRRELEVANTE' && f.nivel !== 'BAIXO'
+              && (!niveisLd.length || niveisLd.includes(f.nivel)))
+    .sort((a,b) => ordem.indexOf(b.nivel) - ordem.indexOf(a.nivel));
+  const vistos = new Set(), out = [];
+  fG.forEach(f => {
+    const cd = f.cd ? String(f.cd) : String(f.id);
+    if (vistos.has(cd)) return;
+    vistos.add(cd);
+    const d = RISCOS_DETALHES[f.cd || f.id] || {};
+    out.push({
+      f, cd, nivel: f.nivel,
+      nome:    _esc(f.nome),
+      cons:    d.cons    ? _esc(d.cons)    : '',
+      fontes:  d.fontes  ? _esc(d.fontes)  : '',
+      medidas: d.medidas ? _esc(d.medidas) : '',
+      // Removeu todas as ações? O card continua existindo — suprimir o plano de ação de
+      // um risco ALTO/CRÍTICO num documento de NR-01 não é edição de texto.
+      acoes:   (function(l){ return l.length ? l : ['<em>Plano de ação a definir pelo responsável técnico.</em>']; })(_laudoAcoesLista(cd, f.nivel)),
+      custom:  _laudoAcoesEhCustom(cd, f.nivel),
+    });
+  });
+  return out;
+}
+
+// Lista de ações de um risco num nível, já pronta para interpolar.
+//
+// A chave do override é `cd|nivel` — GLOBAL por risco, não por grupo. Três motivos:
+//   • _granularidadeLaudo() degrada sozinha quando o modo escolhido fica sem base; com
+//     chave por grupo, toda edição evaporaria em silêncio ao trocar "Por Setor" por
+//     "Por GHE", porque os nomes de grupo mudam inteiros. Perder o trabalho do consultor
+//     sem aviso é pior que o excesso de escopo.
+//   • a seção já deduplica por `cd` DENTRO do grupo — o produto sempre tratou a ação
+//     como propriedade do risco, não do setor.
+//   • CATALOGO_ACOES não tem noção de grupo nenhuma.
+// O `nivel` entra na chave porque o catálogo tem texto diferente por nível e o mesmo
+// risco aparece em níveis diferentes em grupos diferentes.
+// Se um dia precisar ser por grupo, a chave ganha um prefixo sem quebrar o formato
+// gravado — é para isso que o estado carrega `v:1`.
+function _laudoAcaoChave(cd, nivel){ return String(cd) + '|' + nivel; }
+
+function _laudoAcoesLista(cd, nivel){
+  if (_laudoEdicaoValida()){
+    const ov = _laudoEdicao.acoes.listas[_laudoAcaoChave(cd, nivel)];
+    if (Array.isArray(ov)) return ov.slice();      // já sanitizado na gravação
+  }
+  const base = CATALOGO_ACOES[cd]?.porNivel?.[nivel]
+            || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
+  return base.map(_esc);
+}
+function _laudoAcoesEhCustom(cd, nivel){
+  return _laudoEdicaoValida() && Array.isArray(_laudoEdicao.acoes.listas[_laudoAcaoChave(cd, nivel)]);
+}
+function _laudoAcoesCustomCount(){
+  return _laudoEdicaoValida() ? Object.keys(_laudoEdicao.acoes.listas).length : 0;
+}
+
+// ── Modo edição: affordance e modal ─────────────────────────────────────────────
+let _blkEditandoId = null;
+
+// Envolve um bloco do PREVIEW com a borda e o botão de editar. Fora do modo edição
+// devolve o conteúdo intacto, então o preview normal continua byte-a-byte o de antes.
+function _laudoBlocoWrap(id, inner, opts){
+  if (!_laudoEdicaoModo) return inner;
+  const custom = _laudoTextoEhCustom(id);
+  const cls = 'ld-blk ld-blk-on'
+            + (custom ? ' ld-blk-custom' : '')
+            + (opts && opts.inv ? ' ld-blk-inv' : '');   // inv = sobre fundo escuro (capa)
+  // O clique fica no WRAPPER, não no botão: o botão é só o rótulo visual (pointer-events:none
+  // no CSS), então não há duplo disparo e a área de clique é o bloco inteiro.
+  // O id é constante nossa, nunca texto de usuário ou de planilha — por isso o onclick
+  // inline é seguro aqui (_esc não escapa aspa simples).
+  return '<div class="' + cls + '" data-blk="' + id + '" role="button" tabindex="0"'
+       + ' title="Clique para editar este texto"'
+       + ' onclick="_abrirModalBlocoLaudo(\'' + id + '\')">'
+       + (custom ? '<span class="ld-blk-tag">editado</span>' : '')
+       + '<span class="ld-blk-btn">✎ Editar</span>'
+       + inner + '</div>';
+}
+
+// O wrapper declara role="button" e tabindex="0"; sem isto o teclado não abriria o editor e
+// a promessa de acessibilidade seria falsa. Delegado, porque os blocos são recriados a cada
+// renderLaudo() e um listener por bloco vazaria a cada repaint.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const blk = e.target?.closest?.('.ld-blk[data-blk]');
+  if (!blk) return;
+  e.preventDefault();
+  _abrirModalBlocoLaudo(blk.dataset.blk);
+});
+
+function toggleLaudoEdicaoModo(on){
+  _laudoEdicaoModo = !!on;
+  _renderPainelTextos();
+  renderLaudo();
+}
+
+function _renderPainelTextos(){
+  const chk = document.getElementById('laudo-edicao-modo');
+  if (chk) chk.checked = _laudoEdicaoModo;
+  const nb  = _laudoBlocosCustomCount();
+  const na  = _laudoAcoesCustomCount();
+  const n   = nb + na;
+  const cnt = document.getElementById('laudo-textos-contador');
+  if (cnt){
+    const partes = [];
+    if (nb) partes.push(nb + (nb > 1 ? ' blocos de texto' : ' bloco de texto'));
+    if (na) partes.push(na + (na > 1 ? ' listas de ações' : ' lista de ações'));
+    cnt.textContent   = partes.length ? (partes.join(' · ') + ' personalizados') : '';
+    cnt.style.display = n ? '' : 'none';
+  }
+  const btn = document.getElementById('laudo-textos-reset');
+  if (btn) btn.style.display = n ? '' : 'none';
+
+  const wrap = document.getElementById('laudo-textos-lista');
+  if (!wrap) return;
+  if (!_laudoEdicaoModo){ wrap.innerHTML = ''; return; }
+  // Só blocos de seção que está no documento: oferecer edição de texto que não vai sair
+  // no PDF é convite a trabalho perdido.
+  const vis = LAUDO_BLOCOS.filter(b => laudoSecoesAtivas.has(b.secao));
+  if (!vis.length){ wrap.innerHTML = '<div style="font-size:10px;color:var(--tl);padding:6px 0">Nenhuma seção com texto editável está ativa.</div>'; return; }
+  let secAtual = '', html = '';
+  vis.forEach(b => {
+    if (b.secao !== secAtual){
+      secAtual = b.secao;
+      const rotulo = LAUDO_SECOES.find(s => s.id === b.secao)?.label || b.secao;
+      html += '<div class="ld-txt-sec">' + _esc(rotulo) + '</div>';
+    }
+    const custom = _laudoTextoEhCustom(b.id);
+    html += '<div class="ld-txt-item">'
+          + '<span style="color:' + (custom ? 'var(--g);font-weight:600' : 'var(--tm)') + '">'
+          + (custom ? '● ' : '') + _esc(b.label.replace(/^[^—]*— ?/, '')) + '</span>'
+          + '<button class="btn btn-ghost btn-sm" style="padding:1px 7px;font-size:10px" '
+          + 'onclick="_abrirModalBlocoLaudo(\'' + b.id + '\')">✎</button>'
+          + '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function _abrirModalBlocoLaudo(id){
+  const b = _LAUDO_BLOCOS_IDX[id];
+  if (!b) return;
+  if (!_laudoEdicao.empresaId){ toast('Selecione um cliente antes de editar os textos do laudo.', 'w'); return; }
+  _blkEditandoId = id;
+  const t = document.getElementById('blk-title');   if (t) t.textContent = b.label;
+  const a = document.getElementById('blk-aviso');   if (a) a.style.display = (b.aviso === 'normativo') ? '' : 'none';
+  // Alguns blocos não são prosa livre: as normas da capa viram etiquetas, e sem dizer isso
+  // o usuário não tem como adivinhar o separador.
+  const aj = document.getElementById('blk-ajuda');
+  if (aj) { aj.textContent = b.ajuda || ''; aj.style.display = b.ajuda ? '' : 'none'; }
+  const ed = document.getElementById('blk-editor');
+  if (ed) ed.innerHTML = _laudoTexto(id);
+  document.getElementById('modal-laudo-bloco')?.classList.add('open');
+  // styleWithCSS=false faz o editor emitir <b>/<i> em vez de <span style>, que o
+  // sanitizador desembrulharia — a formatação sumiria ao salvar. defaultParagraphSeparator
+  // mantém <p> em vez do <div> que alguns engines usam por padrão.
+  try {
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+  } catch(e) {}
+  ed?.focus();
+}
+
+function fecharModalBlocoLaudo(){
+  _blkEditandoId = null;
+  document.getElementById('modal-laudo-bloco')?.classList.remove('open');
+}
+
+function _blkCmd(cmd){
+  try { document.execCommand(cmd, false, null); } catch(e) {}
+  document.getElementById('blk-editor')?.focus();
+}
+
+// Colar vira sempre texto puro: mata a marcação do Word/Google Docs na origem, antes do
+// sanitizador. Sem isso o usuário veria no editor uma formatação que desapareceria ao salvar.
+function _blkPaste(ev){
+  ev.preventDefault();
+  const txt = (ev.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+  try { document.execCommand('insertText', false, txt); } catch(e) {}
+}
+
+function salvarBlocoLaudo(){
+  if (!_blkEditandoId) return;
+  const ed = document.getElementById('blk-editor');
+  _laudoEdicaoSetBloco(_blkEditandoId, ed ? ed.innerHTML : '');
+  fecharModalBlocoLaudo();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Texto atualizado — vale só nesta sessão.', 'g');
+}
+
+function restaurarBlocoLaudo(){
+  if (!_blkEditandoId) return;
+  const id = _blkEditandoId;
+  _laudoEdicaoResetBloco(id);
+  const ed = document.getElementById('blk-editor');
+  if (ed) ed.innerHTML = _LAUDO_BLOCOS_IDX[id].def();   // não fecha: o usuário confere e decide
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Texto padrão restaurado.', 'g');
+}
+
+// Quem pode reescrever o texto do laudo. cliente_viewer lê o relatório mas não o edita.
+function _podeEditarLaudo(){
+  const r = _roleAtual();
+  return r === 'admin' || r === 'consultor' || r === 'super_admin';
+}
+
+// Guard SIMÉTRICO: mostra e esconde. Um guard que só esconde trava a UI no estado
+// restritivo quando o role chega depois do primeiro render — foi exatamente o bug do
+// btn-export-all. Ao perder a permissão, o modo edição também é desligado, senão a
+// affordance continuaria no preview sem o painel que a controla.
+function _sincronizarPainelTextos(){
+  const card = document.getElementById('laudo-textos-card');
+  if (!card) return;
+  const pode = _podeEditarLaudo();
+  card.style.display = pode ? '' : 'none';
+  if (!pode && _laudoEdicaoModo){
+    _laudoEdicaoModo = false;
+    if (typeof renderLaudo === 'function') renderLaudo();
+  }
+  _renderPainelTextos();
+}
+
+// Banner no topo do preview quando há texto personalizado. Diz o que NÃO foi tocado:
+// o laudo é documento de NR-01 e quem o revisa precisa saber que o cálculo, a matriz e
+// as referências continuam sendo os do sistema.
+function _laudoBannerEdicaoHTML(){
+  if (!_laudoEdicaoModo) return '';
+  const n = _laudoBlocosCustomCount() + _laudoAcoesCustomCount();
+  // Sem edição ainda: o banner ensina o gesto. O modo edição é um checkbox na sidebar e não
+  // havia nada no documento dizendo o que fazer depois de ligá-lo.
+  if (!n) {
+    return '<div style="padding:9px 12px;border-radius:8px;background:var(--gl);'
+         + 'border:1px solid var(--gm);font-size:11px;color:var(--g);line-height:1.5">'
+         + '<strong>Modo edição ativo.</strong> Clique em qualquer bloco destacado para reescrever '
+         + 'o texto, ou em <strong>✎ Ações</strong> num card de risco para mudar o plano de ação. '
+         + 'As edições valem só nesta sessão.'
+         + '</div>';
+  }
+  return '<div style="padding:9px 12px;border-radius:8px;background:var(--amberbg);'
+       + 'border:1px solid var(--amber-bd);font-size:11px;color:var(--amber);line-height:1.5">'
+       + '<strong>' + n + (n > 1 ? ' trechos personalizados' : ' trecho personalizado')
+       + '</strong> neste laudo. Os resultados calculados, as tabelas de Probabilidade e Severidade, '
+       + 'a matriz de risco e as referências normativas não foram alterados.'
+       + '</div>';
+}
+
+// ── Edição das Ações Recomendadas de um risco ───────────────────────────────────
+let _acEditando = null;   // { cd, nivel, nome, itens:[] }
+
+function _abrirModalAcoes(cd, nivel){
+  if (!_laudoEdicao.empresaId){ toast('Selecione um cliente antes de editar as ações.', 'w'); return; }
+  const nome = (RISCOS_DETALHES[cd] || {}).nome || ('Risco ' + cd);
+  _acEditando = { cd: String(cd), nivel, nome, itens: _laudoAcoesLista(cd, nivel) };
+  const t = document.getElementById('ac-title');
+  if (t) t.textContent = 'Ações — ' + nome;
+  const s = document.getElementById('ac-sub');
+  if (s) s.textContent = 'Nível ' + nivel + '. Esta edição vale para este risco neste nível em '
+                       + 'TODOS os setores deste laudo.';
+  _acRender();
+  document.getElementById('modal-laudo-acoes')?.classList.add('open');
+}
+
+function fecharModalAcoes(){
+  _acEditando = null;
+  document.getElementById('modal-laudo-acoes')?.classList.remove('open');
+}
+
+function _acRender(){
+  const wrap = document.getElementById('ac-lista');
+  if (!wrap || !_acEditando) return;
+  if (!_acEditando.itens.length){
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:8px 0">'
+                   + 'Nenhuma ação. O laudo vai mostrar "Plano de ação a definir pelo responsável técnico".</div>';
+    return;
+  }
+  wrap.innerHTML = _acEditando.itens.map((txt, i) => ''
+    + '<div class="ac-row">'
+    +   '<div class="ac-txt" contenteditable="true" onpaste="_blkPaste(event)">' + txt + '</div>'
+    +   '<div class="ac-btns">'
+    +     '<button type="button" title="Subir"  onclick="_acMover(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>▲</button>'
+    +     '<button type="button" title="Descer" onclick="_acMover(' + i + ',1)"'  + (i === _acEditando.itens.length - 1 ? ' disabled' : '') + '>▼</button>'
+    +     '<button type="button" class="ac-del" title="Remover do laudo" onclick="_acRemover(' + i + ')">✕</button>'
+    +   '</div>'
+    + '</div>').join('');
+}
+
+// Captura o que foi digitado nos contenteditable antes de qualquer repaint. Sem isso,
+// mover ou remover uma linha descartaria a edição das outras — mesma armadilha já
+// documentada em _adAtualizarTabela e _gheeSetFuncao.
+function _acSincronizarDoDOM(){
+  if (!_acEditando) return;
+  const campos = document.querySelectorAll('#ac-lista .ac-txt');
+  if (campos.length !== _acEditando.itens.length) return;
+  _acEditando.itens = [...campos].map(c => c.innerHTML);
+}
+
+function _acAdicionar(){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  _acEditando.itens.push('');
+  _acRender();
+  const campos = document.querySelectorAll('#ac-lista .ac-txt');
+  campos[campos.length - 1]?.focus();
+}
+function _acRemover(i){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  _acEditando.itens.splice(i, 1);
+  _acRender();
+}
+function _acMover(i, d){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  const j = i + d;
+  if (j < 0 || j >= _acEditando.itens.length) return;
+  const t = _acEditando.itens[i];
+  _acEditando.itens[i] = _acEditando.itens[j];
+  _acEditando.itens[j] = t;
+  _acRender();
+}
+
+function salvarAcoesLaudo(){
+  if (!_acEditando) return;
+  _acSincronizarDoDOM();
+  const itens = _acEditando.itens.map(x => _laudoSanitize(x)).filter(x => x.replace(/<[^>]*>/g, '').trim().length);
+  _laudoEdicao.acoes.listas[_laudoAcaoChave(_acEditando.cd, _acEditando.nivel)] = itens;
+  _laudoEdicaoGravar();
+  fecharModalAcoes();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Ações atualizadas — valem só nesta sessão.', 'g');
+}
+
+function restaurarAcoesLaudo(){
+  if (!_acEditando) return;
+  delete _laudoEdicao.acoes.listas[_laudoAcaoChave(_acEditando.cd, _acEditando.nivel)];
+  _laudoEdicaoGravar();
+  _acEditando.itens = _laudoAcoesLista(_acEditando.cd, _acEditando.nivel);
+  _acRender();                 // não fecha: o usuário confere o padrão e decide
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Ações padrão restauradas.', 'g');
+}
+
+function restaurarTextosLaudo(){
+  if (!_laudoBlocosCustomCount() && !_laudoAcoesCustomCount()) return;
+  if (!confirm('Restaurar TODOS os textos padrão deste laudo?\n\nAs edições feitas nesta sessão serão perdidas.')) return;
+  _laudoEdicaoResetTudo();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Todos os textos voltaram ao padrão.', 'g');
+}
+
 async function onLaudoFiltro() {
   const emp     = document.getElementById('ld-empresa')?.value || '';
   if (emp) {
@@ -12870,6 +13667,10 @@ async function onLaudoFiltro() {
   if (ldRespEl) ldRespEl.value = respSalvo.nome || _estPerfil?.responsavel_padrao || '';
   const ldRegEl = document.getElementById('ld-registro');
   if (ldRegEl) ldRegEl.value = respSalvo.registro || '';
+  // Edições de texto do laudo são por empresa e por sessão — trocar de cliente troca
+  // o conjunto inteiro, nunca faz merge.
+  _laudoEdicaoCarregar(emp);
+  _renderPainelTextos();
   // Popular ciclos da empresa selecionada
   preencherSelectCiclos('ld-ciclo', emp);
   const emp_obj = _empresas.find(e => e.id === emp);
@@ -12955,54 +13756,31 @@ async function renderLaudo() {
   const NivelCores   = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
   const NivelTxt     = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
 
-  let html = `<div class="laudo-preview" id="laudo-doc">`;
+  let html = `<div class="laudo-preview" id="laudo-doc">` + _laudoBannerEdicaoHTML();
 
-  // ── CAPA (mesma estrutura de dados da capa exportada em _buildLaudoHTML) ──
+  // ── CAPA ──
+  // Monta pela FONTE ÚNICA _laudoCapaHTML: antes o preview tinha uma capa própria (um
+  // retângulo verde chapado) que não se parecia em nada com a do PDF entregue.
   if (laudoSecoesAtivas.has('capa')) {
     const cicloNomeLd = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
     const responsavelLd = (document.getElementById('ld-responsavel')?.value||'').trim()
       || _estPerfil?.responsavel_padrao
       || 'Responsável Técnico';
-    const estNomeLd = _estPerfil?.nome_empresa || 'PsicoMap';
     const setoresAtivosLd = [...new Set(linhas.map(r=>r.setor))];
-    const laudoGranLd = _granLd;
     const gruposLaudoLd = grupos; // mesma fonte do corpo do laudo — capa e corpo não divergem
-    const coverSetoresLd = _setoresCatalogados(setoresAtivosLd, gruposLaudoLd, laudoGranLd, emp);
-    const coverLabelLd = _rotuloGranularidade(laudoGranLd);
-    const logoLd = _estPerfil?.logo_base64
-      ? `<img src="${_estPerfil.logo_base64}" style="width:100%;height:100%;object-fit:contain">`
-      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="#1a7a3c"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>`;
-    html += `<div class="laudo-section" style="background:var(--g);border-bottom:none">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-        <div style="width:42px;height:42px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px">
-          ${logoLd}
-        </div>
-        <div>
-          <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:800;color:white;letter-spacing:.5px">${estNomeLd}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">${_estPerfil?.endereco || 'Saúde · Ergonomia · Segurança'}</div>
-        </div>
-      </div>
-      <div style="color:white">
-        <div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px;margin-bottom:10px">Avaliação Ergonômica Preliminar — AEP</div>
-        <div style="font-size:19px;font-weight:800;margin-bottom:4px">Avaliação dos Fatores de Risco Psicossociais</div>
-        <div style="font-size:13px;opacity:.85;margin-bottom:14px">Relatório de Resultados — Módulo Psicossocial</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:12px;opacity:.95;margin-bottom:14px">
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Empresa avaliada</div><strong>${nomeEmp}</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Ciclo de avaliação</div><strong>${cicloNomeLd}</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Total de respondentes</div><strong>${linhas.length} colaboradores</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Data de emissão</div><strong>${hoje}</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">${coverLabelLd}</div><strong>${coverSetoresLd.join(', ')}</strong></div>
-          <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Responsável técnico</div><strong>${responsavelLd}</strong></div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">NR-01 / 2024</span>
-          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">NR-17</span>
-          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">BS 8800</span>
-          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">Portaria MTE 1.419/2024</span>
-          <span style="font-size:10px;font-weight:600;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 8px">ISO 45003</span>
-        </div>
-      </div>
-    </div>`;
+    html += `<div class="laudo-section">${_laudoCapaHTML({
+      estNome:      _estPerfil?.nome_empresa || 'PsicoMap',
+      estEndereco:  _estPerfil?.endereco || '',
+      logo:         _estPerfil?.logo_base64 || '',
+      nomeEmp,
+      cicloNome:    cicloNomeLd,
+      nRespostas:   linhas.length,
+      hoje,
+      coverLabel:   _rotuloGranularidade(_granLd),
+      coverSetores: _setoresCatalogados(setoresAtivosLd, gruposLaudoLd, _granLd, emp),
+      responsavel:  responsavelLd,
+      ano:          new Date().getFullYear(),
+    }, { edicao: _laudoEdicaoModo })}</div>`;
   }
 
   // ── METODOLOGIA ──
@@ -13018,18 +13796,10 @@ async function renderLaudo() {
       <div class="laudo-sec-title">1. Introdução — Metodologia de Trabalho e Normas Aplicáveis</div>
       <div class="metodologia-block">
 
-        <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
-
-        <p>Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são <strong>orientativos</strong> e buscam auxiliar os avaliadores.</p>
-
-        <p>A classificação correta dos riscos também deve considerar o que podemos chamar de <strong>"amenizadores"</strong> — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.</p>
-
-        <p>Devem ser considerados também as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.</p>
-
-        <p>Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve levar em consideração na tomada de decisão, além dos fatores descritos, outros requisitos como sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.</p>
+${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
 
         <h4>Instrumento de coleta</h4>
-        <p>${METODOLOGIA.instrumento}</p>
+        ${!_laudoTemTexto('metodologia.instrumento') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('metodologia.instrumento', '<p>' + _laudoTexto('metodologia.instrumento') + '</p>')}
 
         <h4>Blocos temáticos</h4>
         <p>${METODOLOGIA.blocos}</p>
@@ -13043,7 +13813,7 @@ async function renderLaudo() {
         <p>${METODOLOGIA.severidade}</p>
 
         <h4>Definição do Nível de Risco — Matriz P × S</h4>
-        <p>${METODOLOGIA.calculo}</p>
+        ${!_laudoTemTexto('metodologia.matriz_intro') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('metodologia.matriz_intro', '<p>' + _laudoTexto('metodologia.matriz_intro') + '</p>')}
         <div class="matrix-mini">
           <div class="mx-hdr" style="grid-column:1"></div>
           ${METODOLOGIA.matriz[0].slice(1).map(h=>`<div class="mx-hdr">${h}</div>`).join('')}
@@ -13125,10 +13895,7 @@ async function renderLaudo() {
   if (laudoSecoesAtivas.has('conduta')) {
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Conduta administrativa por nível de risco</div>
-      <p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">
-        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
-        A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.
-      </p>
+      ${!_laudoTemTexto('conduta.intro') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('conduta.intro', '<p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">' + _laudoTexto('conduta.intro') + '</p>')}
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:#1a5e2a">
@@ -13246,11 +14013,23 @@ async function renderLaudo() {
   }
 
   // ── AÇÕES POR SETOR ──
+  // ── CONSIDERAÇÕES FINAIS (texto livre do consultor) ──
+  // No modo edição aparece mesmo vazia, com um convite; fora dele, some.
+  if (laudoSecoesAtivas.has('conclusao') && (_laudoTemConclusao() || _laudoEdicaoModo)) {
+    const _txtConc = _laudoTemConclusao()
+      ? _laudoTexto('conclusao.texto')
+      : '<p style="color:var(--tl);font-style:italic">Sem considerações finais. Clique em Editar para escrever o parecer — vazia, esta seção não sai no PDF.</p>';
+    html += `<div class="laudo-section">
+      <div class="laudo-sec-title">Considerações finais</div>
+      ${_laudoBlocoWrap('conclusao.texto', _txtConc)}
+    </div>`;
+  }
+
   if (laudoSecoesAtivas.has('acoes')) {
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
-      const fGrupo = calcFatores(lGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)));
+      const fGrupo = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NIVEIS_ORDER);
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
           <div class="alert alert-g">Todos os fatores estão em níveis IRRELEVANTE ou BAIXO. Manter monitoramento periódico.</div></div>`;
@@ -13258,33 +14037,29 @@ async function renderLaudo() {
       }
       html += `<div class="laudo-section">
         <div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
-        ${fGrupo.sort((a,b)=>NIVEIS_ORDER.indexOf(b.nivel)-NIVEIS_ORDER.indexOf(a.nivel)).map(f=>{
-          const acoesKey = f.cd ? String(f.cd) : String(f.id);
-          const detalhe  = RISCOS_DETALHES[f.cd || f.id] || {};
-          const acoes    = CATALOGO_ACOES[acoesKey]?.porNivel?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
-          const nc = NivelCores[f.nivel]; const nt = NivelTxt[f.nivel];
+        ${fGrupo.map(it=>{
+          const nc = NivelCores[it.nivel]; const nt = NivelTxt[it.nivel];
           return `<div style="margin-bottom:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <!-- cabeçalho do fator -->
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
-              <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${f.nome}</span>
-              <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
+              <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${it.nome}</span>
+              <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${it.nivel}</span>
+              ${_laudoEdicaoModo ? `<button class="ld-acoes-btn" onclick="_abrirModalAcoes('${it.cd}','${it.nivel}')">✎ Ações</button>` : ''}
             </div>
             <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
-              ${detalhe.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${detalhe.cons}</div>` : ''}
-              ${detalhe.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${detalhe.fontes}</div>` : ''}
-              ${detalhe.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${detalhe.medidas}</div>` : ''}
+              ${it.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${it.cons}</div>` : ''}
+              ${it.fontes ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Fontes geradoras:</strong> ${it.fontes}</div>` : ''}
+              ${it.medidas ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Medidas de controle:</strong> ${it.medidas}</div>` : ''}
               <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g);margin-bottom:6px">Plano de ação recomendado${it.custom ? ' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--tl)">· personalizado</span>' : ''}</div>
                 <ul style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:4px">
-                  ${acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
+                  ${it.acoes.map(a=>`<li style="font-size:12px;color:var(--tx);line-height:1.6">${a}</li>`).join('')}
                 </ul>
               </div>
             </div>
           </div>`;
         }).join('')}
-        <div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">
-          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.
-        </div>
+        ${!_laudoTemTexto('acoes.nota_rodape') && !_laudoEdicaoModo ? '' : _laudoBlocoWrap('acoes.nota_rodape', '<div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">' + _laudoTexto('acoes.nota_rodape') + '</div>')}
       </div>`;
     });
   }
@@ -13323,6 +14098,10 @@ async function _registrarLaudo() {
         // estavam: já existem registros gravados com elas, e o histórico lê as duas formas.
         config:      _cfg,
         n_respostas: _laudoUltimoN,
+        // Trilha da personalizacao. Guarda o TEXTO INTEGRAL, nao so os ids: o objetivo num
+        // documento de NR-01 e poder reproduzir o que foi entregue, e id so diz que houve
+        // edicao, nao o que mudou. Chave nova, jsonb — nenhuma migration.
+        edicao:      _laudoEdicaoTrilha(),
       },
       tenant_id:     currentTenantId
     });
@@ -13597,25 +14376,17 @@ tr:last-child td{border-bottom:none}
   let acoesHTML = '';
   if (laudoSecoesAtivas.has('acoes')) {
     gruposLaudo.forEach(grupo => {
-      const lS = _linhasDoGrupo(grupo, linhas);
-      const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && f.nivel!=='BAIXO' && (!niveisLd.length || niveisLd.includes(f.nivel)))
-        .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
-      if (!fS.length) return;
+      const itens = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NORDEM);
+      if (!itens.length) return;
       acoesHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
-      const vistos = new Set();
-      fS.forEach(f=>{
-        const key = f.cd ? String(f.cd) : String(f.id);
-        if (vistos.has(key)) return;
-        vistos.add(key);
-        const detalhe = RISCOS_DETALHES[f.cd] || {};
-        const acoes = CATALOGO_ACOES[key]?.porNivel?.[f.nivel] || ['Avaliar e implementar medidas de controle conforme orientação técnica da PsicoMap.'];
+      itens.forEach(it=>{
         acoesHTML += `<div class="acoes-grupo">
-          <div class="acoes-risco-title">${e(f.nome)} <span class="nivel-badge ${NB[f.nivel]||'nb-bax'}" style="margin-left:6px">${f.nivel}</span></div>
-          ${detalhe.cons    ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Consequências:</strong> ${e(detalhe.cons)}</div>` : ''}
-          ${detalhe.fontes  ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Fontes geradoras:</strong> ${e(detalhe.fontes)}</div>` : ''}
-          ${detalhe.medidas ? `<div style="font-size:11px;color:#374151;margin-bottom:8px"><strong style="color:#111">Medidas de controle:</strong> ${e(detalhe.medidas)}</div>` : ''}
+          <div class="acoes-risco-title">${it.nome} <span class="nivel-badge ${NB[it.nivel]||'nb-bax'}" style="margin-left:6px">${it.nivel}</span></div>
+          ${it.cons    ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Consequências:</strong> ${it.cons}</div>` : ''}
+          ${it.fontes  ? `<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong style="color:#111">Fontes geradoras:</strong> ${it.fontes}</div>` : ''}
+          ${it.medidas ? `<div style="font-size:11px;color:#374151;margin-bottom:8px"><strong style="color:#111">Medidas de controle:</strong> ${it.medidas}</div>` : ''}
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a5e2a;margin-bottom:6px">Plano de ação recomendado</div>
-          <ul class="acoes-lista">${acoes.map(a=>`<li>${e(a)}</li>`).join('')}</ul>
+          <ul class="acoes-lista">${it.acoes.map(a=>`<li>${a}</li>`).join('')}</ul>
         </div>`;
       });
     });
@@ -13647,6 +14418,9 @@ tr:last-child td{border-bottom:none}
   const _snAR    = _hasAR ? ++_sn : null;
   const _snGF    = _hasGF ? ++_sn : null;
   const _snAC    = _hasAC ? ++_sn : null;
+  // Só numera se houver texto: seção vazia não sai e não pode furar a sequência.
+  const _hasConc = _laudoTemConclusao();
+  const _snConc  = _hasConc ? ++_sn : null;
   const _snRef   = ++_sn;
 
   // ── ÍNDICE (básico — sem número de página, só ordem e título) ──
@@ -13659,6 +14433,7 @@ tr:last-child td{border-bottom:none}
       _hasAR ? `${_snAR}. Análise Gráfica por Fator de Risco` : null,
       _hasGF ? `${_snGF}. Distribuição de Respostas por Questão` : null,
       _hasAC ? `${_snAC}. Ações Recomendadas por Fator de Risco` : null,
+      _hasConc ? `${_snConc}. Considerações Finais` : null,
       `${_snRef}. Referências`,
     ].filter(Boolean);
     indiceHTML = `<div class="page">
@@ -13736,34 +14511,19 @@ tr:last-child td{border-bottom:none}
 <!-- ── PÁGINA 1: CAPA ────────────────────────────────────────── -->
 ${_hasCapa ? `
 <div class="page">
-  <div class="cover-header">
-    ${coverLogoHTML}
-    <div class="cover-company">
-      <div class="cover-company-name">${e(estNome)}</div>
-      <div class="cover-company-sub">${estPerfil?.endereco ? e(estPerfil.endereco) : 'Saúde · Ergonomia · Segurança'}</div>
-    </div>
-  </div>
-  <div class="cover-body">
-    <div class="cover-tag">Avaliação Ergonômica Preliminar — AEP</div>
-    <div class="cover-title">Avaliação dos Fatores de<br>Risco Psicossociais</div>
-    <div class="cover-subtitle">Relatório de Resultados — Módulo Psicossocial</div>
-    <div class="cover-meta">
-      <div class="cover-meta-item"><div class="cover-meta-label">Empresa avaliada</div><div class="cover-meta-value">${e(nomeEmp)}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Ciclo de avaliação</div><div class="cover-meta-value">${e(cicloNome)}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Total de respondentes</div><div class="cover-meta-value">${linhas.length} colaboradores</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Data de emissão</div><div class="cover-meta-value">${hoje}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">${e(coverLabel)}</div><div class="cover-meta-value">${e(coverSetores.join(', '))}</div></div>
-      <div class="cover-meta-item"><div class="cover-meta-label">Responsável técnico</div><div class="cover-meta-value">${e(responsavel)}</div></div>
-    </div>
-    <div class="cover-norm-pills" style="margin-top:18px">
-      <span class="norm-pill">NR-01 / 2024</span><span class="norm-pill">NR-17</span>
-      <span class="norm-pill">BS 8800</span><span class="norm-pill">Portaria MTE 1.419/2024</span><span class="norm-pill">ISO 45003</span>
-    </div>
-  </div>
-  <div class="cover-footer">
-    <span>Documento confidencial — uso exclusivo da empresa contratante</span>
-    <span>${e(estNome)} © ${new Date().getFullYear()}</span>
-  </div>
+  ${_laudoCapaHTML({
+    estNome:      estNome,
+    estEndereco:  estPerfil?.endereco || '',
+    logo:         estLogo || '',
+    nomeEmp:      nomeEmp,
+    cicloNome:    cicloNome,
+    nRespostas:   linhas.length,
+    hoje:         hoje,
+    coverLabel:   coverLabel,
+    coverSetores: coverSetores,
+    responsavel:  responsavel,
+    ano:          new Date().getFullYear(),
+  })}
 </div>
 ` : ''}
 
@@ -13774,8 +14534,7 @@ ${indiceHTML}
 ${_hasMet ? `
 <div class="page">
   <div class="sec-title">${_snMet}. Metodologia de trabalho e normas aplicáveis</div>
-  <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
-  <p>A classificação correta dos riscos considera também os chamados "amenizadores" — <strong>pausas, rodízios, cadência flexível, alternância postural e facilitadores ergonômicos</strong> — durante a avaliação de cada atividade específica.</p>
+${_laudoTexto('metodologia.intro')}
   <div class="sec-title sub">${_snMet}.1 Probabilidade (P) / Frequência — Tabela 1</div>
   <div class="tbl-wrap"><table class="tbl-p"><thead><tr><th>Ocorrência / Probabilidade</th><th>Critério — Psicossocial (Escala Likert)</th></tr></thead><tbody>
     <tr><td><strong>P4 — Quase Certo (Permanente)</strong></td><td><div><strong>Exposição:</strong> Habitual, diversas vezes durante a jornada, superior a 80% do tempo.</div><div>Resposta: <strong>"Sempre"</strong> — Queixas frequentes. Medidas de controle inexistentes ou inadequadas.</div></td></tr>
@@ -13863,8 +14622,16 @@ ${_hasAC && acoesHTML ? `
   <div class="sec-title">${_snAC}. Ações Recomendadas por Fator de Risco</div>
   <p>Os riscos psicossociais identificados podem, quando não controlados, ocasionar: aumento do estresse, ansiedade, Síndrome de Burnout, dificuldades de concentração, baixa autoestima, depressão e distúrbios do sono. As medidas preventivas abaixo devem ser implementadas.</p>
   ${acoesHTML}
-  <p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.</p>
+  ${_laudoTemTexto('acoes.nota_rodape') ? `<p style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:12px">${_laudoTexto('acoes.nota_rodape')}</p>` : ''}
   ${footer('Ações Recomendadas')}
+</div>` : ''}
+
+<!-- ── CONSIDERAÇÕES FINAIS ──────────────────────────────────── -->
+${_hasConc ? `
+<div class="page">
+  <div class="sec-title">${_snConc}. Considerações Finais</div>
+  ${_laudoTexto('conclusao.texto')}
+  ${footer('Considerações Finais')}
 </div>` : ''}
 
 <!-- ── REFERÊNCIAS ────────────────────────────────────────────── -->
@@ -13941,6 +14708,10 @@ async function gerarLaudoPDF() {
     // Guardado aqui, e nao no preview: _registrarLaudo dispara do botao Imprimir DESTA janela,
     // entao este e o numero do documento que o cliente recebe.
     _laudoUltimoN = linhas.length;
+    // Mesmo motivo: _registrarLaudo dispara do botao Imprimir DESTA janela, possivelmente
+    // minutos depois. Sem congelar, o snapshot registraria edicoes feitas no preview DEPOIS
+    // da abertura — que este documento nao contem.
+    _laudoEdicaoSnap = JSON.parse(JSON.stringify({ blocos: _laudoEdicao.blocos, acoes: _laudoEdicao.acoes }));
 
     const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
     const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
@@ -14756,6 +15527,7 @@ function aplicarRestricoesPorRole() {
   // Mesma razao: o viewer aplica preset mas nao cria nem apaga, e o role chega depois do
   // primeiro render — o guard precisa ser capaz de MOSTRAR, nao so de esconder.
   _sincronizarBotoesPreset();
+  _sincronizarPainelTextos();
 
   if (role === 'super_admin') {
     if (_supportMode) {
@@ -15773,6 +16545,8 @@ document.addEventListener('keydown', function(e) {
     'modal-cliente-perfil': typeof fecharModalClientePerfil !== 'undefined' ? fecharModalClientePerfil : null,
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
+    'modal-laudo-bloco':   typeof fecharModalBlocoLaudo   !== 'undefined' ? fecharModalBlocoLaudo   : null,
+    'modal-laudo-acoes':   typeof fecharModalAcoes       !== 'undefined' ? fecharModalAcoes       : null,
   };
   if (closeFns[id]) closeFns[id]();
   else openModal.classList.remove('open');
