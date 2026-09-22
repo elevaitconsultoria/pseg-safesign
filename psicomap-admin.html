@@ -673,6 +673,30 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .modal-title{font-size:var(--fs-xl);font-weight:var(--fw-b);margin-bottom:var(--sp-1);letter-spacing:-.2px}
 .modal-sub{font-size:var(--fs-base);color:var(--tm);margin-bottom:var(--sp-5);line-height:1.5}
 .modal-footer{display:flex;gap:var(--sp-3);margin-top:var(--sp-5)}
+/* ══ Edição de textos do laudo ══
+   Estas classes existem SÓ no preview. _buildLaudoHTML() chama _laudoTexto() direto,
+   sem wrapper, porque o CSS do PDF não as tem e elas não podem vazar para o documento. */
+.ld-blk{position:relative}
+.ld-blk-on{outline:1px dashed var(--n200);outline-offset:6px;border-radius:4px;transition:outline-color .12s}
+.ld-blk-on:hover{outline-color:var(--g);background:var(--gp)}
+.ld-blk-btn{position:absolute;top:-13px;right:0;z-index:2;display:none;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;background:var(--g);color:#fff;border:none;border-radius:4px;
+  padding:3px 8px;cursor:pointer;line-height:1.4}
+.ld-blk-on:hover .ld-blk-btn{display:inline-flex}
+.ld-blk-custom{border-left:2px solid var(--gm);padding-left:10px}
+.blk-tb{display:flex;align-items:center;gap:2px;flex-wrap:wrap;border:1px solid var(--border);
+  border-bottom:none;border-radius:8px 8px 0 0;padding:6px;background:var(--bs)}
+.blk-tb button{min-width:28px;height:26px;border:1px solid transparent;background:transparent;
+  border-radius:4px;cursor:pointer;font-size:12px;color:var(--tm);padding:0 6px}
+.blk-tb button:hover{background:var(--w);border-color:var(--border);color:var(--tx)}
+.blk-tb .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 5px}
+.blk-editor{border:1px solid var(--border);border-radius:0 0 8px 8px;padding:12px;min-height:170px;
+  max-height:44vh;overflow-y:auto;font-size:13px;line-height:1.6;color:var(--tx);outline:none;background:var(--w)}
+.blk-editor:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g-ring)}
+.blk-editor p{margin:0 0 10px}
+.blk-editor ul,.blk-editor ol{margin:0 0 10px;padding-left:20px}
+.ld-txt-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;padding:3px 0}
+.ld-txt-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);margin:8px 0 2px}
 
 /* ── ANÁLISE GRÁFICA ── */
 .graf-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;transition:grid-template-columns .24s cubic-bezier(.4,0,.2,1)}
@@ -2784,6 +2808,21 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <input id="ld-registro" type="text" placeholder="CREA/CRF/CRP nº ..." class="filter-select" style="cursor:text" oninput="_salvarResponsavelLaudo()"/>
       </div>
 
+      <!-- Edição de textos: os blocos de prosa do laudo vêm prontos, mas o consultor
+           pode reescrevê-los. Vale só para esta sessão (sessionStorage por empresa). -->
+      <div class="filter-card">
+        <div class="filter-label">Textos do laudo</div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer">
+          <input type="checkbox" id="laudo-edicao-modo" onchange="toggleLaudoEdicaoModo(this.checked)"/>
+          Modo edição
+        </label>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Mostra um botão de editar em cada bloco de texto do relatório.</div>
+        <div id="laudo-textos-contador" style="display:none;font-size:10px;font-weight:600;color:var(--g);margin-top:6px"></div>
+        <div id="laudo-textos-lista" style="max-height:220px;overflow-y:auto"></div>
+        <button id="laudo-textos-reset" class="btn btn-ghost btn-sm" style="display:none;width:100%;margin-top:8px"
+                onclick="restaurarTextosLaudo()">Restaurar todos os textos padrão</button>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Seções do laudo</div>
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
@@ -2974,6 +3013,40 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharGheEdit()">Cancelar</button>
       <button class="btn btn-g" style="flex:2" id="ghee-salvar" onclick="salvarGheEdit()">Salvar GHE</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE EDIÇÃO DE TEXTO DO LAUDO -->
+<!-- Edição acontece AQUI e não in-place no preview: renderLaudo() faz
+     panel.innerHTML = html a cada mudança de filtro, ciclo, seção ou granularidade, e um
+     contenteditable colado no preview perderia o que estivesse sendo digitado. -->
+<div class="modal-bg" id="modal-laudo-bloco">
+  <div class="modal" style="max-width:680px;width:94vw">
+    <div class="modal-title" id="blk-title">Editar texto</div>
+    <div class="modal-sub">Este texto entra no PDF exatamente como ficar aqui. Vale só nesta sessão — nada é gravado no banco.</div>
+    <div id="blk-aviso" style="display:none;margin:10px 0 0;padding:8px 10px;border-radius:6px;background:var(--amberbg);border:1px solid var(--amber-bd);font-size:11px;color:var(--amber)">
+      ⚠ Este bloco é lastro técnico do laudo perante a NR-01 — altere apenas para acrescentar informação própria.
+    </div>
+    <div style="margin-top:12px">
+      <div class="blk-tb">
+        <button type="button" title="Negrito"    onmousedown="event.preventDefault()" onclick="_blkCmd('bold')"><strong>B</strong></button>
+        <button type="button" title="Itálico"    onmousedown="event.preventDefault()" onclick="_blkCmd('italic')"><em>I</em></button>
+        <button type="button" title="Sublinhado" onmousedown="event.preventDefault()" onclick="_blkCmd('underline')"><u>U</u></button>
+        <div class="sep"></div>
+        <button type="button" title="Lista com marcadores" onmousedown="event.preventDefault()" onclick="_blkCmd('insertUnorderedList')">• lista</button>
+        <button type="button" title="Lista numerada"       onmousedown="event.preventDefault()" onclick="_blkCmd('insertOrderedList')">1. lista</button>
+        <div class="sep"></div>
+        <button type="button" title="Desfazer"          onmousedown="event.preventDefault()" onclick="_blkCmd('undo')">⟲</button>
+        <button type="button" title="Limpar formatação" onmousedown="event.preventDefault()" onclick="_blkCmd('removeFormat')">⌫ limpar</button>
+      </div>
+      <div id="blk-editor" class="blk-editor" contenteditable="true" onpaste="_blkPaste(event)"></div>
+      <div style="font-size:10px;color:var(--tl);margin-top:5px">Só negrito, itálico, sublinhado e listas são preservados — o resto da formatação é descartado ao salvar.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="restaurarBlocoLaudo()">Restaurar padrão</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="fecharModalBlocoLaudo()">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="salvarBlocoLaudo()">Salvar texto</button>
     </div>
   </div>
 </div>
@@ -12830,6 +12903,9 @@ function toggleLaudoSecao(id) {
   if (laudoSecoesAtivas.has(id)) laudoSecoesAtivas.delete(id);
   else laudoSecoesAtivas.add(id);
   buildLaudoSecoesChecks();
+  // A lista de textos editáveis só mostra blocos de seção ativa — ligar/desligar uma
+  // seção muda o que há para editar.
+  if (typeof _renderPainelTextos === 'function') _renderPainelTextos();
   renderLaudo(); // atualizar preview inline
 }
 
@@ -13015,6 +13091,132 @@ function _laudoEdicaoResetTudo(){
   _laudoEdicaoGravar();
 }
 
+// ── Modo edição: affordance e modal ─────────────────────────────────────────────
+let _blkEditandoId = null;
+
+// Envolve um bloco do PREVIEW com a borda e o botão de editar. Fora do modo edição
+// devolve o conteúdo intacto, então o preview normal continua byte-a-byte o de antes.
+function _laudoBlocoWrap(id, inner){
+  if (!_laudoEdicaoModo) return inner;
+  const cls = 'ld-blk ld-blk-on' + (_laudoTextoEhCustom(id) ? ' ld-blk-custom' : '');
+  // O id é constante nossa, nunca texto vindo de usuário ou de planilha — por isso o
+  // onclick inline é seguro aqui (_esc não escapa aspa simples).
+  return '<div class="' + cls + '" data-blk="' + id + '">'
+       + '<button class="ld-blk-btn" onclick="_abrirModalBlocoLaudo(\'' + id + '\')">✎ Editar</button>'
+       + inner + '</div>';
+}
+
+function toggleLaudoEdicaoModo(on){
+  _laudoEdicaoModo = !!on;
+  _renderPainelTextos();
+  renderLaudo();
+}
+
+function _renderPainelTextos(){
+  const chk = document.getElementById('laudo-edicao-modo');
+  if (chk) chk.checked = _laudoEdicaoModo;
+  const n   = _laudoBlocosCustomCount();
+  const cnt = document.getElementById('laudo-textos-contador');
+  if (cnt){
+    cnt.textContent   = n ? (n + (n > 1 ? ' blocos personalizados' : ' bloco personalizado')) : '';
+    cnt.style.display = n ? '' : 'none';
+  }
+  const btn = document.getElementById('laudo-textos-reset');
+  if (btn) btn.style.display = n ? '' : 'none';
+
+  const wrap = document.getElementById('laudo-textos-lista');
+  if (!wrap) return;
+  if (!_laudoEdicaoModo){ wrap.innerHTML = ''; return; }
+  // Só blocos de seção que está no documento: oferecer edição de texto que não vai sair
+  // no PDF é convite a trabalho perdido.
+  const vis = LAUDO_BLOCOS.filter(b => laudoSecoesAtivas.has(b.secao));
+  if (!vis.length){ wrap.innerHTML = '<div style="font-size:10px;color:var(--tl);padding:6px 0">Nenhuma seção com texto editável está ativa.</div>'; return; }
+  let secAtual = '', html = '';
+  vis.forEach(b => {
+    if (b.secao !== secAtual){
+      secAtual = b.secao;
+      const rotulo = LAUDO_SECOES.find(s => s.id === b.secao)?.label || b.secao;
+      html += '<div class="ld-txt-sec">' + _esc(rotulo) + '</div>';
+    }
+    const custom = _laudoTextoEhCustom(b.id);
+    html += '<div class="ld-txt-item">'
+          + '<span style="color:' + (custom ? 'var(--g);font-weight:600' : 'var(--tm)') + '">'
+          + (custom ? '● ' : '') + _esc(b.label.replace(/^[^—]*— ?/, '')) + '</span>'
+          + '<button class="btn btn-ghost btn-sm" style="padding:1px 7px;font-size:10px" '
+          + 'onclick="_abrirModalBlocoLaudo(\'' + b.id + '\')">✎</button>'
+          + '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function _abrirModalBlocoLaudo(id){
+  const b = _LAUDO_BLOCOS_IDX[id];
+  if (!b) return;
+  if (!_laudoEdicao.empresaId){ toast('Selecione um cliente antes de editar os textos do laudo.', 'w'); return; }
+  _blkEditandoId = id;
+  const t = document.getElementById('blk-title');   if (t) t.textContent = b.label;
+  const a = document.getElementById('blk-aviso');   if (a) a.style.display = (b.aviso === 'normativo') ? '' : 'none';
+  const ed = document.getElementById('blk-editor');
+  if (ed) ed.innerHTML = _laudoTexto(id);
+  document.getElementById('modal-laudo-bloco')?.classList.add('open');
+  // styleWithCSS=false faz o editor emitir <b>/<i> em vez de <span style>, que o
+  // sanitizador desembrulharia — a formatação sumiria ao salvar. defaultParagraphSeparator
+  // mantém <p> em vez do <div> que alguns engines usam por padrão.
+  try {
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+  } catch(e) {}
+  ed?.focus();
+}
+
+function fecharModalBlocoLaudo(){
+  _blkEditandoId = null;
+  document.getElementById('modal-laudo-bloco')?.classList.remove('open');
+}
+
+function _blkCmd(cmd){
+  try { document.execCommand(cmd, false, null); } catch(e) {}
+  document.getElementById('blk-editor')?.focus();
+}
+
+// Colar vira sempre texto puro: mata a marcação do Word/Google Docs na origem, antes do
+// sanitizador. Sem isso o usuário veria no editor uma formatação que desapareceria ao salvar.
+function _blkPaste(ev){
+  ev.preventDefault();
+  const txt = (ev.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+  try { document.execCommand('insertText', false, txt); } catch(e) {}
+}
+
+function salvarBlocoLaudo(){
+  if (!_blkEditandoId) return;
+  const ed = document.getElementById('blk-editor');
+  _laudoEdicaoSetBloco(_blkEditandoId, ed ? ed.innerHTML : '');
+  fecharModalBlocoLaudo();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Texto atualizado — vale só nesta sessão.', 'g');
+}
+
+function restaurarBlocoLaudo(){
+  if (!_blkEditandoId) return;
+  const id = _blkEditandoId;
+  _laudoEdicaoResetBloco(id);
+  const ed = document.getElementById('blk-editor');
+  if (ed) ed.innerHTML = _LAUDO_BLOCOS_IDX[id].def();   // não fecha: o usuário confere e decide
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Texto padrão restaurado.', 'g');
+}
+
+function restaurarTextosLaudo(){
+  if (!_laudoBlocosCustomCount()) return;
+  if (!confirm('Restaurar TODOS os textos padrão deste laudo?\n\nAs edições feitas nesta sessão serão perdidas.')) return;
+  _laudoEdicaoResetTudo();
+  _renderPainelTextos();
+  renderLaudo();
+  toast('Todos os textos voltaram ao padrão.', 'g');
+}
+
 async function onLaudoFiltro() {
   const emp     = document.getElementById('ld-empresa')?.value || '';
   if (emp) {
@@ -13033,6 +13235,7 @@ async function onLaudoFiltro() {
   // Edições de texto do laudo são por empresa e por sessão — trocar de cliente troca
   // o conjunto inteiro, nunca faz merge.
   _laudoEdicaoCarregar(emp);
+  _renderPainelTextos();
   // Popular ciclos da empresa selecionada
   preencherSelectCiclos('ld-ciclo', emp);
   const emp_obj = _empresas.find(e => e.id === emp);
@@ -13181,10 +13384,10 @@ async function renderLaudo() {
       <div class="laudo-sec-title">1. Introdução — Metodologia de Trabalho e Normas Aplicáveis</div>
       <div class="metodologia-block">
 
-${_laudoTexto('metodologia.intro')}
+${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
 
         <h4>Instrumento de coleta</h4>
-        <p>${_laudoTexto('metodologia.instrumento')}</p>
+        ${_laudoBlocoWrap('metodologia.instrumento', '<p>' + _laudoTexto('metodologia.instrumento') + '</p>')}
 
         <h4>Blocos temáticos</h4>
         <p>${METODOLOGIA.blocos}</p>
@@ -13198,7 +13401,7 @@ ${_laudoTexto('metodologia.intro')}
         <p>${METODOLOGIA.severidade}</p>
 
         <h4>Definição do Nível de Risco — Matriz P × S</h4>
-        <p>${_laudoTexto('metodologia.matriz_intro')}</p>
+        ${_laudoBlocoWrap('metodologia.matriz_intro', '<p>' + _laudoTexto('metodologia.matriz_intro') + '</p>')}
         <div class="matrix-mini">
           <div class="mx-hdr" style="grid-column:1"></div>
           ${METODOLOGIA.matriz[0].slice(1).map(h=>`<div class="mx-hdr">${h}</div>`).join('')}
@@ -13280,9 +13483,7 @@ ${_laudoTexto('metodologia.intro')}
   if (laudoSecoesAtivas.has('conduta')) {
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Conduta administrativa por nível de risco</div>
-      <p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">
-${_laudoTexto('conduta.intro')}
-      </p>
+      ${_laudoBlocoWrap('conduta.intro', '<p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">' + _laudoTexto('conduta.intro') + '</p>')}
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr style="background:#1a5e2a">
@@ -13437,9 +13638,7 @@ ${_laudoTexto('conduta.intro')}
             </div>
           </div>`;
         }).join('')}
-        <div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">
-${_laudoTexto('acoes.nota_rodape')}
-        </div>
+        ${_laudoBlocoWrap('acoes.nota_rodape', '<div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">' + _laudoTexto('acoes.nota_rodape') + '</div>')}
       </div>`;
     });
   }
@@ -15928,6 +16127,7 @@ document.addEventListener('keydown', function(e) {
     'modal-cliente-perfil': typeof fecharModalClientePerfil !== 'undefined' ? fecharModalClientePerfil : null,
     'modal-novo-risco':    typeof fecharModalNovoRisco   !== 'undefined' ? fecharModalNovoRisco   : null,
     'modal-novo-usuario':  typeof fecharModalNovoUsuario !== 'undefined' ? fecharModalNovoUsuario : null,
+    'modal-laudo-bloco':   typeof fecharModalBlocoLaudo   !== 'undefined' ? fecharModalBlocoLaudo   : null,
   };
   if (closeFns[id]) closeFns[id]();
   else openModal.classList.remove('open');
