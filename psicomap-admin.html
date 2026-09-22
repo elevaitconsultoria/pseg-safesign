@@ -677,13 +677,30 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
    Estas classes existem SÓ no preview. _buildLaudoHTML() chama _laudoTexto() direto,
    sem wrapper, porque o CSS do PDF não as tem e elas não podem vazar para o documento. */
 .ld-blk{position:relative}
-.ld-blk-on{outline:1px dashed var(--n200);outline-offset:6px;border-radius:4px;transition:outline-color .12s}
+/* O bloco INTEIRO é o alvo do clique, não só o botão: o botão é pequeno e ficava escondido
+   até o hover, então não havia nada dizendo que aquele parágrafo era editável. */
+.ld-blk-on{outline:1px dashed var(--n200);outline-offset:6px;border-radius:4px;cursor:pointer;
+  transition:outline-color .12s,background .12s}
 .ld-blk-on:hover{outline-color:var(--g);background:var(--gp)}
-.ld-blk-btn{position:absolute;top:-13px;right:0;z-index:2;display:none;align-items:center;gap:4px;
+.ld-blk-btn{position:absolute;top:-13px;right:0;z-index:2;display:inline-flex;align-items:center;gap:4px;
   font-size:10px;font-weight:600;background:var(--g);color:#fff;border:none;border-radius:4px;
-  padding:3px 8px;cursor:pointer;line-height:1.4}
-.ld-blk-on:hover .ld-blk-btn{display:inline-flex}
+  padding:3px 8px;cursor:pointer;line-height:1.4;opacity:.5;transition:opacity .12s;pointer-events:none}
+.ld-blk-on:hover .ld-blk-btn{opacity:1}
 .ld-blk-custom{border-left:2px solid var(--gm);padding-left:10px}
+.ld-acoes-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;
+  background:var(--g);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;
+  line-height:1.4;white-space:nowrap}
+.ld-acoes-btn:hover{background:var(--gd)}
+.ld-blk-tag{position:absolute;top:-13px;left:0;z-index:2;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;background:var(--gm);color:#fff;
+  border-radius:4px;padding:2px 7px;line-height:1.5}
+/* Variante para a capa, que tem fundo verde escuro: o tracejado cinza e o botão verde
+   sumiam contra ele. */
+.ld-blk-inv.ld-blk-on{outline-color:rgba(255,255,255,.45)}
+.ld-blk-inv.ld-blk-on:hover{outline-color:#fff;background:rgba(255,255,255,.12)}
+.ld-blk-inv .ld-blk-btn{background:#fff;color:var(--g)}
+.ld-blk-inv.ld-blk-custom{border-left-color:#fff}
+.ld-blk-inv .ld-blk-tag{background:#fff;color:var(--g)}
 .blk-tb{display:flex;align-items:center;gap:2px;flex-wrap:wrap;border:1px solid var(--border);
   border-bottom:none;border-radius:8px 8px 0 0;padding:6px;background:var(--bs)}
 .blk-tb button{min-width:28px;height:26px;border:1px solid transparent;background:transparent;
@@ -767,7 +784,17 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .kpi-val,.sum-val,.dash-kpi-val{font-size:var(--fs-4xl);font-weight:var(--fw-xb);color:var(--tx);font-family:var(--font-ui);line-height:1;margin-bottom:var(--sp-1);letter-spacing:-.5px}
 .kpi-lbl,.sum-lbl,.dash-kpi-lbl{font-size:var(--fs-xs);color:var(--tm);text-transform:uppercase;letter-spacing:.5px;font-weight:var(--fw-sb)}
 /* ── LAUDO & RELATÓRIO ── */
-.laudo-preview{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+/* O preview era um card único com as seções empilhadas e separadas só por uma linha —
+   nada nele lembrava um documento, e a capa parecia uma faixa colorida no topo em vez da
+   primeira folha. Agora cada seção é uma FOLHA com sombra e respiro em volta.
+   ATENÇÃO: uma folha aqui é uma SEÇÃO, não uma página do PDF. No PDF cada seção começa em
+   página nova (<div class="page">), mas uma seção longa ocupa mais de uma folha lá. O
+   preview separa o documento em blocos legíveis; não promete a paginação exata do PDF. */
+.laudo-preview{background:transparent;border:none;border-radius:0;overflow:visible;
+  display:flex;flex-direction:column;gap:20px}
+.laudo-folha-wrap{position:relative}
+.laudo-folha-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--tl);margin:0 0 5px 2px;display:flex;align-items:center;gap:6px}
 .met-tab{padding:8px 16px;border:none;background:none;font-family:var(--font-ui);font-size:12px;font-weight:500;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .met-tab:hover{color:var(--tx)}
 .met-tab.on{color:var(--tx);font-weight:700;border-bottom-color:var(--tx)}
@@ -799,8 +826,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .met-ref{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--tm);line-height:1.6;padding:8px 12px;background:var(--bg);border-radius:6px}
 .met-ref strong{color:var(--tx)}
 .met-ref-tag{font-size:var(--fs-2xs);font-weight:var(--fw-b);background:var(--tx);color:var(--n0);padding:2px 7px;flex-shrink:0;margin-top:2px}
-.laudo-section{padding:20px 24px;border-bottom:1px solid var(--bs)}
-.laudo-section:last-child{border-bottom:none}
+.laudo-section{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);
+  padding:30px 34px;box-shadow:0 1px 2px rgba(16,24,40,.06),0 10px 28px rgba(16,24,40,.05)}
+.laudo-section:last-child{border-bottom:1px solid var(--border)}
+@media (max-width:640px){ .laudo-section{padding:20px 18px} }
 .laudo-sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .laudo-sec-title::after{content:'';flex:1;height:1px;background:var(--bs)}
 .metodologia-block{font-size:12px;color:var(--tm);line-height:1.8}
@@ -13240,15 +13269,34 @@ let _blkEditandoId = null;
 
 // Envolve um bloco do PREVIEW com a borda e o botão de editar. Fora do modo edição
 // devolve o conteúdo intacto, então o preview normal continua byte-a-byte o de antes.
-function _laudoBlocoWrap(id, inner){
+function _laudoBlocoWrap(id, inner, opts){
   if (!_laudoEdicaoModo) return inner;
-  const cls = 'ld-blk ld-blk-on' + (_laudoTextoEhCustom(id) ? ' ld-blk-custom' : '');
-  // O id é constante nossa, nunca texto vindo de usuário ou de planilha — por isso o
-  // onclick inline é seguro aqui (_esc não escapa aspa simples).
-  return '<div class="' + cls + '" data-blk="' + id + '">'
-       + '<button class="ld-blk-btn" onclick="_abrirModalBlocoLaudo(\'' + id + '\')">✎ Editar</button>'
+  const custom = _laudoTextoEhCustom(id);
+  const cls = 'ld-blk ld-blk-on'
+            + (custom ? ' ld-blk-custom' : '')
+            + (opts && opts.inv ? ' ld-blk-inv' : '');   // inv = sobre fundo escuro (capa)
+  // O clique fica no WRAPPER, não no botão: o botão é só o rótulo visual (pointer-events:none
+  // no CSS), então não há duplo disparo e a área de clique é o bloco inteiro.
+  // O id é constante nossa, nunca texto de usuário ou de planilha — por isso o onclick
+  // inline é seguro aqui (_esc não escapa aspa simples).
+  return '<div class="' + cls + '" data-blk="' + id + '" role="button" tabindex="0"'
+       + ' title="Clique para editar este texto"'
+       + ' onclick="_abrirModalBlocoLaudo(\'' + id + '\')">'
+       + (custom ? '<span class="ld-blk-tag">editado</span>' : '')
+       + '<span class="ld-blk-btn">✎ Editar</span>'
        + inner + '</div>';
 }
+
+// O wrapper declara role="button" e tabindex="0"; sem isto o teclado não abriria o editor e
+// a promessa de acessibilidade seria falsa. Delegado, porque os blocos são recriados a cada
+// renderLaudo() e um listener por bloco vazaria a cada repaint.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const blk = e.target?.closest?.('.ld-blk[data-blk]');
+  if (!blk) return;
+  e.preventDefault();
+  _abrirModalBlocoLaudo(blk.dataset.blk);
+});
 
 function toggleLaudoEdicaoModo(on){
   _laudoEdicaoModo = !!on;
@@ -13383,9 +13431,19 @@ function _sincronizarPainelTextos(){
 // o laudo é documento de NR-01 e quem o revisa precisa saber que o cálculo, a matriz e
 // as referências continuam sendo os do sistema.
 function _laudoBannerEdicaoHTML(){
+  if (!_laudoEdicaoModo) return '';
   const n = _laudoBlocosCustomCount() + _laudoAcoesCustomCount();
-  if (!n || !_laudoEdicaoModo) return '';
-  return '<div style="margin:0 0 14px;padding:9px 12px;border-radius:8px;background:var(--amberbg);'
+  // Sem edição ainda: o banner ensina o gesto. O modo edição é um checkbox na sidebar e não
+  // havia nada no documento dizendo o que fazer depois de ligá-lo.
+  if (!n) {
+    return '<div style="padding:9px 12px;border-radius:8px;background:var(--gl);'
+         + 'border:1px solid var(--gm);font-size:11px;color:var(--g);line-height:1.5">'
+         + '<strong>Modo edição ativo.</strong> Clique em qualquer bloco destacado para reescrever '
+         + 'o texto, ou em <strong>✎ Ações</strong> num card de risco para mudar o plano de ação. '
+         + 'As edições valem só nesta sessão.'
+         + '</div>';
+  }
+  return '<div style="padding:9px 12px;border-radius:8px;background:var(--amberbg);'
        + 'border:1px solid var(--amber-bd);font-size:11px;color:var(--amber);line-height:1.5">'
        + '<strong>' + n + (n > 1 ? ' trechos personalizados' : ' trecho personalizado')
        + '</strong> neste laudo. Os resultados calculados, as tabelas de Probabilidade e Severidade, '
@@ -13632,9 +13690,12 @@ async function renderLaudo() {
         </div>
       </div>
       <div style="color:white">
-        <div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px;margin-bottom:10px">${_laudoTexto('capa.tag')}</div>
-        <div style="font-size:19px;font-weight:800;margin-bottom:4px">${_laudoTexto('capa.titulo')}</div>
-        <div style="font-size:13px;opacity:.85;margin-bottom:14px">${_laudoTexto('capa.subtitulo')}</div>
+        ${_laudoBlocoWrap('capa.tag', '<div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px">' + _laudoTexto('capa.tag') + '</div>', {inv:true})}
+        <div style="height:10px"></div>
+        ${_laudoBlocoWrap('capa.titulo', '<div style="font-size:19px;font-weight:800">' + _laudoTexto('capa.titulo') + '</div>', {inv:true})}
+        <div style="height:4px"></div>
+        ${_laudoBlocoWrap('capa.subtitulo', '<div style="font-size:13px;opacity:.85">' + _laudoTexto('capa.subtitulo') + '</div>', {inv:true})}
+        <div style="height:14px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:12px;opacity:.95;margin-bottom:14px">
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Empresa avaliada</div><strong>${nomeEmp}</strong></div>
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Ciclo de avaliação</div><strong>${cicloNomeLd}</strong></div>
@@ -13916,7 +13977,7 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
               <span style="font-size:12px;font-weight:700;color:var(--tx);flex:1">${it.nome}</span>
               <span style="background:${nc};color:${nt};font-size:10px;font-weight:800;padding:2px 10px;border-radius:4px;white-space:nowrap">${it.nivel}</span>
-              ${_laudoEdicaoModo ? `<button class="ld-blk-btn" style="position:static;display:inline-flex" onclick="_abrirModalAcoes('${it.cd}','${it.nivel}')">✎ Ações</button>` : ''}
+              ${_laudoEdicaoModo ? `<button class="ld-acoes-btn" onclick="_abrirModalAcoes('${it.cd}','${it.nivel}')">✎ Ações</button>` : ''}
             </div>
             <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
               ${it.cons ? `<div style="font-size:11px;color:#374151"><strong style="color:var(--tx)">Consequências:</strong> ${it.cons}</div>` : ''}
