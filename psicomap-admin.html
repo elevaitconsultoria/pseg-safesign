@@ -12854,6 +12854,167 @@ function _salvarResponsavelLaudo() {
   try { localStorage.setItem(_laudoRespKey(empId), JSON.stringify({ nome, registro })); } catch(e) {}
 }
 
+// ══ EDIÇÃO DE TEXTOS DO LAUDO ═══════════════════════════════════════════════════
+// FONTE ÚNICA de todo texto fixo editável do laudo. renderLaudo() (preview) e
+// _buildLaudoHTML() (PDF) leem daqui — nunca de literais próprios. Os dois são
+// geradores de HTML independentes e já divergiram de verdade: a introdução da
+// Metodologia tinha 5 parágrafos no preview e 2 condensados no PDF. Com um registro
+// só, editar no preview muda o documento que o cliente recebe.
+//
+// INVARIANTE: _laudoTexto() devolve HTML JÁ SEGURO — o default é constante nossa e o
+// override do usuário passa por _laudoSanitize() na gravação. Os dois lados interpolam
+// o retorno CRU; escapá-lo destruiria a formatação feita pelo consultor.
+//
+// REGRA: nenhum bloco editável interpola dado calculado (${nomeEmp}, ${_snMet},
+// ${linhas.length}). Onde o texto mistura prosa e número, o bloco cobre só a prosa e a
+// parte calculada fica no código — senão o consultor apaga uma ligação de dados sem
+// perceber, e a sanitização deixaria de ser trivial.
+const LAUDO_BLOCOS = [
+  { id:'capa.tag',                secao:'capa',        tipo:'inline', label:'Capa — tarja de topo',
+    def:()=>`Avaliação Ergonômica Preliminar — AEP` },
+  { id:'capa.titulo',             secao:'capa',        tipo:'inline', label:'Capa — título do documento',
+    def:()=>`Avaliação dos Fatores de Risco Psicossociais` },
+  { id:'capa.subtitulo',          secao:'capa',        tipo:'inline', label:'Capa — subtítulo',
+    def:()=>`Relatório de Resultados — Módulo Psicossocial` },
+  { id:'metodologia.intro',       secao:'metodologia', tipo:'rico',   label:'Metodologia — introdução',
+    def:()=>`        <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
+
+        <p>Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são <strong>orientativos</strong> e buscam auxiliar os avaliadores.</p>
+
+        <p>A classificação correta dos riscos também deve considerar o que podemos chamar de <strong>"amenizadores"</strong> — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.</p>
+
+        <p>Devem ser considerados também as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.</p>
+
+        <p>Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve levar em consideração na tomada de decisão, além dos fatores descritos, outros requisitos como sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.</p>` },
+  // Estes dois ainda moram em METODOLOGIA (12344) porque o mesmo texto alimenta outros
+  // pontos da tela; o bloco apenas os expõe para edição.
+  { id:'metodologia.instrumento', secao:'metodologia', tipo:'rico',   label:'Metodologia — instrumento de coleta',
+    def:()=>METODOLOGIA.instrumento },
+  { id:'metodologia.matriz_intro',secao:'metodologia', tipo:'rico',   label:'Metodologia — abertura da Matriz P×S',
+    def:()=>METODOLOGIA.calculo },
+  { id:'conduta.intro',           secao:'conduta',     tipo:'rico',   label:'Conduta Administrativa — introdução',
+    def:()=>`        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
+        A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.` },
+  { id:'acoes.nota_rodape',       secao:'acoes',       tipo:'rico',   label:'Ações Recomendadas — nota de rodapé',
+    def:()=>`          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.` },
+];
+const _LAUDO_BLOCOS_IDX = Object.fromEntries(LAUDO_BLOCOS.map(b => [b.id, b]));
+
+function _laudoTexto(id){
+  const b = _LAUDO_BLOCOS_IDX[id];
+  if (!b) { console.warn('[laudo] bloco desconhecido:', id); return ''; }
+  if (!_laudoEdicaoValida()) return b.def();
+  const ov = _laudoEdicao.blocos[id];
+  return (typeof ov === 'string' && ov.length) ? ov : b.def();
+}
+function _laudoTextoEhCustom(id){
+  return _laudoEdicaoValida() && typeof _laudoEdicao.blocos[id] === 'string';
+}
+function _laudoBlocosCustomCount(){
+  return _laudoEdicaoValida() ? Object.keys(_laudoEdicao.blocos).length : 0;
+}
+
+// ── Estado da edição ────────────────────────────────────────────────────────────
+// sessionStorage (não localStorage) porque a edição vale só para esta sessão de
+// preview: morre ao fechar a aba, que é o contrato prometido ao usuário.
+// Chave POR EMPRESA — a mesma lição de _salvarResponsavelLaudo() logo acima, cujo
+// comentário registra um vazamento real de texto entre clientes.
+let _laudoEdicaoModo = false;                                  // toggle de UI, não persiste
+let _laudoEdicao     = { v:1, empresaId:'', blocos:{}, acoes:{ listas:{} } };
+let _laudoEdicaoSnap = null;                                   // congelado no Exportar
+
+function _laudoEdicaoKey(empId){ return `psicomap_laudo_edit_${empId}`; }
+
+// Cinto e suspensório: a chave já é por empresa, mas um render disparado ENTRE a troca
+// de empresa e o carregamento do estado leria a edição do cliente anterior.
+function _laudoEdicaoValida(){
+  const emp = document.getElementById('ld-empresa')?.value || '';
+  return !!_laudoEdicao.empresaId && _laudoEdicao.empresaId === emp;
+}
+
+const _LAUDO_TAGS_OK   = new Set(['B','STRONG','I','EM','U','BR','P','UL','OL','LI']);
+const _LAUDO_TAGS_KILL = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META',
+                                  'SVG','MATH','FORM','INPUT','BUTTON','TEMPLATE','NOSCRIPT']);
+const _LAUDO_BLOCO_MAX = 20000;
+
+// Sanitização por whitelist. Roda na GRAVAÇÃO (e ao ler o sessionStorage), nunca em
+// _laudoTexto(), que é chamado em loop pelos dois renders.
+//
+// Importa porque o resultado vai para win.document.write() numa janela de MESMA ORIGEM
+// cujo window.opener é esta SPA com a sessão Supabase viva (a janela já usa isso de
+// propósito em window.opener._registrarLaudo()). Um <script> que passasse teria acesso a
+// opener.sbAdmin e ao token.
+function _laudoSanitize(html){
+  // DOMParser('text/html') produz documento INERTE: não executa <script>, não dispara
+  // img onerror, não carrega nada. É por isso que a análise é feita nele, e não num
+  // innerHTML do documento vivo.
+  const doc  = new DOMParser().parseFromString('<div id="_r">' + String(html||'') + '</div>', 'text/html');
+  const root = doc.getElementById('_r');
+  if (!root) return '';
+  (function walk(node){
+    [...node.childNodes].forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE) return;
+      if (n.nodeType !== Node.ELEMENT_NODE) { n.remove(); return; }   // comentário, CDATA…
+      if (_LAUDO_TAGS_KILL.has(n.tagName)) { n.remove(); return; }    // subárvore inteira
+      walk(n);
+      // ZERO atributos: nem style, nem class. Os blocos herdam o CSS do documento em que
+      // caem (preview e PDF têm folhas diferentes) — se carregassem style, o mesmo texto
+      // sairia diferente nos dois, recriando a divergência que este registro elimina.
+      [...n.attributes].forEach(a => n.removeAttribute(a.name));
+      // Fora da whitelist: DESEMBRULHA em vez de remover, para que nenhum texto do
+      // consultor suma em silêncio (é o que trata o <span style> e o <div><ul> que
+      // alguns engines emitem em insertUnorderedList).
+      if (!_LAUDO_TAGS_OK.has(n.tagName)) n.replaceWith(...n.childNodes);
+    });
+  })(root);
+  return root.innerHTML.slice(0, _LAUDO_BLOCO_MAX);
+}
+
+function _laudoEdicaoCarregar(empId){
+  _laudoEdicao = { v:1, empresaId: empId || '', blocos:{}, acoes:{ listas:{} } };
+  if (!empId) return;
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(_laudoEdicaoKey(empId)) || '{}');
+    // Sanitiza também na LEITURA: sessionStorage é gravável por qualquer XSS de mesma
+    // origem, e o custo roda uma vez por troca de empresa. Ids desconhecidos são
+    // descartados — o registro evolui e um id renomeado não pode ressuscitar texto num
+    // bloco que não existe mais.
+    Object.entries(raw.blocos || {}).forEach(([id, html]) => {
+      if (_LAUDO_BLOCOS_IDX[id] && typeof html === 'string') {
+        _laudoEdicao.blocos[id] = _laudoSanitize(html);
+      }
+    });
+  } catch(e) {
+    // Falha aberto (padrão de carregarPresets): sem sessionStorage o laudo segue
+    // funcionando com os textos padrão.
+    console.warn('[laudo] edição de textos indisponível nesta sessão:', e.message);
+  }
+}
+
+function _laudoEdicaoGravar(){
+  if (!_laudoEdicao.empresaId) return;
+  try {
+    sessionStorage.setItem(_laudoEdicaoKey(_laudoEdicao.empresaId), JSON.stringify({
+      v:1, blocos:_laudoEdicao.blocos, acoes:_laudoEdicao.acoes
+    }));
+  } catch(e) { console.warn('[laudo] não foi possível guardar a edição:', e.message); }
+}
+
+function _laudoEdicaoSetBloco(id, html){
+  if (!_LAUDO_BLOCOS_IDX[id] || !_laudoEdicao.empresaId) return;
+  _laudoEdicao.blocos[id] = _laudoSanitize(html);
+  _laudoEdicaoGravar();
+}
+function _laudoEdicaoResetBloco(id){
+  delete _laudoEdicao.blocos[id];
+  _laudoEdicaoGravar();
+}
+function _laudoEdicaoResetTudo(){
+  _laudoEdicao.blocos = {};
+  _laudoEdicao.acoes  = { listas:{} };
+  _laudoEdicaoGravar();
+}
+
 async function onLaudoFiltro() {
   const emp     = document.getElementById('ld-empresa')?.value || '';
   if (emp) {
@@ -12869,6 +13030,9 @@ async function onLaudoFiltro() {
   if (ldRespEl) ldRespEl.value = respSalvo.nome || _estPerfil?.responsavel_padrao || '';
   const ldRegEl = document.getElementById('ld-registro');
   if (ldRegEl) ldRegEl.value = respSalvo.registro || '';
+  // Edições de texto do laudo são por empresa e por sessão — trocar de cliente troca
+  // o conjunto inteiro, nunca faz merge.
+  _laudoEdicaoCarregar(emp);
   // Popular ciclos da empresa selecionada
   preencherSelectCiclos('ld-ciclo', emp);
   const emp_obj = _empresas.find(e => e.id === emp);
@@ -12982,9 +13146,9 @@ async function renderLaudo() {
         </div>
       </div>
       <div style="color:white">
-        <div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px;margin-bottom:10px">Avaliação Ergonômica Preliminar — AEP</div>
-        <div style="font-size:19px;font-weight:800;margin-bottom:4px">Avaliação dos Fatores de Risco Psicossociais</div>
-        <div style="font-size:13px;opacity:.85;margin-bottom:14px">Relatório de Resultados — Módulo Psicossocial</div>
+        <div style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.15);border-radius:4px;padding:3px 9px;margin-bottom:10px">${_laudoTexto('capa.tag')}</div>
+        <div style="font-size:19px;font-weight:800;margin-bottom:4px">${_laudoTexto('capa.titulo')}</div>
+        <div style="font-size:13px;opacity:.85;margin-bottom:14px">${_laudoTexto('capa.subtitulo')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:12px;opacity:.95;margin-bottom:14px">
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Empresa avaliada</div><strong>${nomeEmp}</strong></div>
           <div><div style="opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Ciclo de avaliação</div><strong>${cicloNomeLd}</strong></div>
@@ -13017,18 +13181,10 @@ async function renderLaudo() {
       <div class="laudo-sec-title">1. Introdução — Metodologia de Trabalho e Normas Aplicáveis</div>
       <div class="metodologia-block">
 
-        <p>Para cada risco psicossocial foi indicado o <strong>nível de risco ocupacional</strong>, determinado pela combinação da <strong>probabilidade / frequência</strong> de sua ocorrência e da <strong>severidade / efeito</strong> das possíveis lesões ou agravos à saúde.</p>
-
-        <p>Foram criadas tabelas de severidade/efeito e probabilidade/frequência com descrição de fatores qualitativos e quantitativos com a finalidade de auxiliar a tomada de decisão pelo avaliador. Cabe ressaltar que, apesar dos fatores descritos nas tabelas de matriz de risco, esses são <strong>orientativos</strong> e buscam auxiliar os avaliadores.</p>
-
-        <p>A classificação correta dos riscos também deve considerar o que podemos chamar de <strong>"amenizadores"</strong> — como pausas, rodízios, cadência flexível, alternância postural, facilitadores ergonômicos, entre outros — durante a avaliação de uma atividade específica.</p>
-
-        <p>Devem ser considerados também as medidas antropométricas do trabalhador no posto; Condições Organizacionais; Postura de trabalho; e características do posto de trabalho.</p>
-
-        <p>Em algumas avaliações, para definir o nível de risco, pode não haver elementos suficientes para se chegar a uma conclusão. Nesse caso, o avaliador deve levar em consideração na tomada de decisão, além dos fatores descritos, outros requisitos como sua <strong>experiência profissional, observação dos fatos, contexto e medidas de controle aplicadas</strong>.</p>
+${_laudoTexto('metodologia.intro')}
 
         <h4>Instrumento de coleta</h4>
-        <p>${METODOLOGIA.instrumento}</p>
+        <p>${_laudoTexto('metodologia.instrumento')}</p>
 
         <h4>Blocos temáticos</h4>
         <p>${METODOLOGIA.blocos}</p>
@@ -13042,7 +13198,7 @@ async function renderLaudo() {
         <p>${METODOLOGIA.severidade}</p>
 
         <h4>Definição do Nível de Risco — Matriz P × S</h4>
-        <p>${METODOLOGIA.calculo}</p>
+        <p>${_laudoTexto('metodologia.matriz_intro')}</p>
         <div class="matrix-mini">
           <div class="mx-hdr" style="grid-column:1"></div>
           ${METODOLOGIA.matriz[0].slice(1).map(h=>`<div class="mx-hdr">${h}</div>`).join('')}
@@ -13125,8 +13281,7 @@ async function renderLaudo() {
     html += `<div class="laudo-section">
       <div class="laudo-sec-title">Conduta administrativa por nível de risco</div>
       <p style="font-size:12px;color:var(--tm);margin-bottom:12px;line-height:1.6">
-        Conforme <strong>BS 8800 / NR-01 — Gerenciamento de Riscos Ocupacionais</strong>.
-        A conduta deve ser implementada para cada fator de risco identificado nos setores avaliados.
+${_laudoTexto('conduta.intro')}
       </p>
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
@@ -13283,7 +13438,7 @@ async function renderLaudo() {
           </div>`;
         }).join('')}
         <div style="font-size:11px;color:var(--tl);margin-top:6px;font-style:italic;padding:8px 0">
-          ℹ️ As ações acima são baseadas na Planilha de Riscos Psicossociais e Fontes Geradoras (PsicoMap) e devem ser complementadas com avaliação presencial pelo técnico responsável.
+${_laudoTexto('acoes.nota_rodape')}
         </div>
       </div>`;
     });
