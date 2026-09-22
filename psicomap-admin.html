@@ -2810,7 +2810,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <!-- Edição de textos: os blocos de prosa do laudo vêm prontos, mas o consultor
            pode reescrevê-los. Vale só para esta sessão (sessionStorage por empresa). -->
-      <div class="filter-card">
+      <div class="filter-card" id="laudo-textos-card">
         <div class="filter-label">Textos do laudo</div>
         <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer">
           <input type="checkbox" id="laudo-edicao-modo" onchange="toggleLaudoEdicaoModo(this.checked)"/>
@@ -13208,6 +13208,42 @@ function restaurarBlocoLaudo(){
   toast('Texto padrão restaurado.', 'g');
 }
 
+// Quem pode reescrever o texto do laudo. cliente_viewer lê o relatório mas não o edita.
+function _podeEditarLaudo(){
+  const r = _roleAtual();
+  return r === 'admin' || r === 'consultor' || r === 'super_admin';
+}
+
+// Guard SIMÉTRICO: mostra e esconde. Um guard que só esconde trava a UI no estado
+// restritivo quando o role chega depois do primeiro render — foi exatamente o bug do
+// btn-export-all. Ao perder a permissão, o modo edição também é desligado, senão a
+// affordance continuaria no preview sem o painel que a controla.
+function _sincronizarPainelTextos(){
+  const card = document.getElementById('laudo-textos-card');
+  if (!card) return;
+  const pode = _podeEditarLaudo();
+  card.style.display = pode ? '' : 'none';
+  if (!pode && _laudoEdicaoModo){
+    _laudoEdicaoModo = false;
+    if (typeof renderLaudo === 'function') renderLaudo();
+  }
+  _renderPainelTextos();
+}
+
+// Banner no topo do preview quando há texto personalizado. Diz o que NÃO foi tocado:
+// o laudo é documento de NR-01 e quem o revisa precisa saber que o cálculo, a matriz e
+// as referências continuam sendo os do sistema.
+function _laudoBannerEdicaoHTML(){
+  const n = _laudoBlocosCustomCount();
+  if (!n || !_laudoEdicaoModo) return '';
+  return '<div style="margin:0 0 14px;padding:9px 12px;border-radius:8px;background:var(--amberbg);'
+       + 'border:1px solid var(--amber-bd);font-size:11px;color:var(--amber);line-height:1.5">'
+       + '<strong>' + n + (n > 1 ? ' blocos de texto personalizados' : ' bloco de texto personalizado')
+       + '</strong> neste laudo. Os resultados calculados, as tabelas de Probabilidade e Severidade, '
+       + 'a matriz de risco e as referências normativas não foram alterados.'
+       + '</div>';
+}
+
 function restaurarTextosLaudo(){
   if (!_laudoBlocosCustomCount()) return;
   if (!confirm('Restaurar TODOS os textos padrão deste laudo?\n\nAs edições feitas nesta sessão serão perdidas.')) return;
@@ -13321,7 +13357,7 @@ async function renderLaudo() {
   const NivelCores   = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
   const NivelTxt     = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
 
-  let html = `<div class="laudo-preview" id="laudo-doc">`;
+  let html = `<div class="laudo-preview" id="laudo-doc">` + _laudoBannerEdicaoHTML();
 
   // ── CAPA (mesma estrutura de dados da capa exportada em _buildLaudoHTML) ──
   if (laudoSecoesAtivas.has('capa')) {
@@ -15110,6 +15146,7 @@ function aplicarRestricoesPorRole() {
   // Mesma razao: o viewer aplica preset mas nao cria nem apaga, e o role chega depois do
   // primeiro render — o guard precisa ser capaz de MOSTRAR, nao so de esconder.
   _sincronizarBotoesPreset();
+  _sincronizarPainelTextos();
 
   if (role === 'super_admin') {
     if (_supportMode) {
