@@ -9853,10 +9853,15 @@ function renderHistoricoLaudos() {
     const ciclo = l.ciclo_id ? (_ciclos.find(c => c.id === l.ciclo_id)?.nome || 'ciclo removido') : 'todos os ciclos';
     const quem = (l.gerado_por || '').split('@')[0];
     const n = sn.n_respostas;
+    // Sem isto a trilha de personalização existe no banco e ninguém vê.
+    const ed = sn.edicao || null;
     const det = [
       gran ? SEG_LABEL[gran] || gran : null,
       ciclo,
       Number.isFinite(n) ? `${n} resposta${n !== 1 ? 's' : ''}` : null,
+      ed?.editado ? `texto editado (${[ed.n_blocos ? `${ed.n_blocos} bloco${ed.n_blocos !== 1 ? 's' : ''}` : null,
+                                        ed.n_acoes  ? `${ed.n_acoes} lista${ed.n_acoes  !== 1 ? 's' : ''} de ações` : null]
+                                       .filter(Boolean).join(', ')})` : null,
     ].filter(Boolean).join(' · ');
     // Registro antigo não tem `config` — não há o que reaplicar, e prometer o botão seria pior
     // que não oferecer.
@@ -13119,6 +13124,22 @@ function _laudoEdicaoGravar(){
   } catch(e) { console.warn('[laudo] não foi possível guardar a edição:', e.message); }
 }
 
+// Resumo do que foi personalizado no documento que acabou de ser aberto (nao no preview:
+// le o snapshot congelado por gerarLaudoPDF).
+function _laudoEdicaoTrilha(){
+  const s  = _laudoEdicaoSnap || { blocos:{}, acoes:{ listas:{} } };
+  const nb = Object.keys(s.blocos || {}).length;
+  const na = Object.keys(s.acoes?.listas || {}).length;
+  return {
+    editado:   nb > 0 || na > 0,
+    n_blocos:  nb,
+    n_acoes:   na,
+    blocos:    s.blocos || {},
+    acoes:     s.acoes?.listas || {},
+    em:        new Date().toISOString(),
+  };
+}
+
 function _laudoEdicaoSetBloco(id, html){
   if (!_LAUDO_BLOCOS_IDX[id] || !_laudoEdicao.empresaId) return;
   _laudoEdicao.blocos[id] = _laudoSanitize(html);
@@ -13942,6 +13963,10 @@ async function _registrarLaudo() {
         // estavam: já existem registros gravados com elas, e o histórico lê as duas formas.
         config:      _cfg,
         n_respostas: _laudoUltimoN,
+        // Trilha da personalizacao. Guarda o TEXTO INTEGRAL, nao so os ids: o objetivo num
+        // documento de NR-01 e poder reproduzir o que foi entregue, e id so diz que houve
+        // edicao, nao o que mudou. Chave nova, jsonb — nenhuma migration.
+        edicao:      _laudoEdicaoTrilha(),
       },
       tenant_id:     currentTenantId
     });
@@ -14564,6 +14589,10 @@ async function gerarLaudoPDF() {
     // Guardado aqui, e nao no preview: _registrarLaudo dispara do botao Imprimir DESTA janela,
     // entao este e o numero do documento que o cliente recebe.
     _laudoUltimoN = linhas.length;
+    // Mesmo motivo: _registrarLaudo dispara do botao Imprimir DESTA janela, possivelmente
+    // minutos depois. Sem congelar, o snapshot registraria edicoes feitas no preview DEPOIS
+    // da abertura — que este documento nao contem.
+    _laudoEdicaoSnap = JSON.parse(JSON.stringify({ blocos: _laudoEdicao.blocos, acoes: _laudoEdicao.acoes }));
 
     const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
     const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
