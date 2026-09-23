@@ -10807,6 +10807,26 @@ async function calcRepresentatividade(empId, cicloId) {
     };
   }).sort((a, b) => (a.setor||'').localeCompare(b.setor||'') || (a.funcao||'').localeCompare(b.funcao||''));
 
+  // Visão agregada por setor (tela de Adesão, opção "Por setor"). O total é a soma das
+  // linhas do quadro daquele setor, mas as respostas vêm de porSetor — uma resposta cujo
+  // cargo não consta no quadro daquele setor continua contando NO setor, em vez de sumir
+  // entre as linhas de função. Por isso não é a simples soma de `linhas`.
+  const _setMap = new Map();
+  hcRows.forEach(h => {
+    const sK = _gheNormStrong(h.setor || '');
+    const cur = _setMap.get(sK) || { setor: h.setor, total: 0 };
+    cur.total += (h.quantidade || 0);
+    _setMap.set(sK, cur);
+  });
+  const linhasSetor = Array.from(_setMap.entries()).map(([sK, v]) => {
+    const respostas = porSetor.get(sK) || 0;
+    return {
+      setor: v.setor, funcao: null, respostas, total: v.total,
+      pct: v.total > 0 ? Math.round(respostas / v.total * 100) : 0,
+      faltam: Math.max(0, v.total - respostas),
+    };
+  }).sort((a, b) => (a.setor||'').localeCompare(b.setor||''));
+
   // Respostas fora do quadro (setor/função não cadastrados, "Outro", cargo universal etc.)
   let naoClassificadas = 0;
   respList.forEach(r => {
@@ -10834,11 +10854,15 @@ async function calcRepresentatividade(empId, cicloId) {
   const totalHeadcount = hcRows.reduce((s, h) => s + (h.quantidade || 0), 0);
   return {
     linhas,
+    linhasSetor,
     totalRespostas,
     classificadas: totalRespostas - naoClassificadas,
     naoClassificadas,
     totalHeadcount,
-    faltam: Math.max(0, totalHeadcount - (totalRespostas - naoClassificadas)),
+    // "Faltam" = quadro − TODAS as respostas recebidas, inclusive as fora do quadro
+    // ("Outro"). Alinhado à Adesão da tela, que passou a ser a geral (2026-09-23):
+    // descontar só as classificadas mostrava gente faltando que já havia respondido.
+    faltam: Math.max(0, totalHeadcount - totalRespostas),
     porDia,
     ultimaResposta,
     ultimos7,
@@ -10976,24 +11000,21 @@ function _renderTelaAdesao() {
   const d = _adDados;
   if (!body || !d) return;
 
-  const pct = d.totalHeadcount > 0 ? Math.round(d.classificadas / d.totalHeadcount * 100) : 0;
+  // Adesão da tela é a GERAL: todas as respostas recebidas ÷ quadro, inclusive as com
+  // setor/função fora do GHE ("Outro"). Antes havia dois percentuais lado a lado
+  // (classificadas × total geral) e o consultor tinha de escolher qual usar para cobrar.
+  const pct = d.totalHeadcount > 0 ? Math.round(d.totalRespostas / d.totalHeadcount * 100) : 0;
   const { cor } = _gheCorAdesao(pct);
-  // "Total geral": todas as respostas recebidas, inclusive as fora do quadro (ex.: "Outro"),
-  // ÷ quadro — mesmo termo já usado no painel verAdesaoLink e no badge da GHE. Diferente de
-  // "Adesão" acima, que só conta as classificadas.
-  const totalGeralPct = d.totalHeadcount > 0 ? Math.round(d.totalRespostas / d.totalHeadcount * 100) : 0;
-  const { cor: corGeral } = _gheCorAdesao(totalGeralPct);
   const dias = _diasDesde(d.ultimaResposta);
   const diasTxt = dias === null ? '—' : dias === 0 ? 'hoje' : dias === 1 ? 'ontem' : `${dias}d`;
   // Coleta parada: nenhuma resposta nos últimos 7 dias, mas ainda falta gente.
   const parada = d.faltam > 0 && (dias === null || dias >= 7);
 
   const kpis = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
-    ${_adKpiCard(d.totalHeadcount, 'Quadro', 'var(--tx)', 'Total de funcionários importado no GHE — denominador de todos os percentuais desta tela.')}
-    ${_adKpiCard(d.classificadas, 'Respostas no quadro', 'var(--tx)', 'Respostas cujo setor e função constam no quadro importado.')}
-    ${_adKpiCard(pct + '%', 'Adesão', cor, `${d.classificadas} respostas dentro do quadro ÷ ${d.totalHeadcount} funcionários cadastrados.`)}
-    ${_adKpiCard(totalGeralPct + '%', 'Total geral', corGeral, `${d.totalRespostas} respostas recebidas (inclusive as fora do quadro, ex.: "Outro") ÷ ${d.totalHeadcount} funcionários cadastrados.`)}
-    ${_adKpiCard(d.faltam, 'Pessoas faltando', d.faltam > 0 ? 'var(--amber)' : 'var(--g)', 'Funcionários cadastrados que ainda não têm resposta correspondente.')}
+    ${_adKpiCard(d.totalHeadcount, 'Qtd de funcionários', 'var(--tx)', 'Quantidade de funcionários do quadro importado no GHE — denominador de todos os percentuais desta tela.')}
+    ${_adKpiCard(d.totalRespostas, 'Responderam', 'var(--tx)', `Total geral de respostas recebidas${d.naoClassificadas > 0 ? `, inclusive as ${d.naoClassificadas} com setor/função fora do quadro (ex.: "Outro")` : ''}.`)}
+    ${_adKpiCard(pct + '%', 'Adesão', cor, `${d.totalRespostas} respostas recebidas ÷ ${d.totalHeadcount} funcionários cadastrados.`)}
+    ${_adKpiCard(d.faltam, 'Faltam', d.faltam > 0 ? 'var(--amber)' : 'var(--g)', 'Qtd de funcionários − total de respostas recebidas (inclusive as fora do quadro).')}
     ${_adKpiCard(diasTxt, 'Última resposta', parada ? '#dc2626' : 'var(--tx)', 'Há quanto tempo chegou a resposta mais recente.')}
   </div>`;
 
@@ -11010,8 +11031,9 @@ function _renderTelaAdesao() {
     ? `<div class="card" style="margin-bottom:16px;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="font-size:12px;color:#92400e;flex:1;min-width:220px">
           <strong>${d.naoClassificadas} resposta(s) fora do quadro.</strong>
-          Setor ou função informados não constam no GHE (normalmente "Outro"). Contam no
-          Total geral (${totalGeralPct}%), mas não na Adesão acima.
+          Setor ou função informados não constam no GHE (normalmente "Outro"). Entram na
+          Adesão e em "Responderam" acima, mas não aparecem discriminadas nas linhas da
+          tabela abaixo — por isso a soma das linhas pode ser menor que ${d.totalRespostas}.
         </div>
         <button class="btn btn-ghost" style="font-size:11px;flex-shrink:0" onclick="goScreen('agrupamentos',document.getElementById('nb-agrupamentos'))">Classificar em Agrupamentos GHE</button>
       </div>`
@@ -11029,26 +11051,51 @@ function _renderTelaAdesao() {
   _adDesenharCurva();
 }
 
+// Visão da tabela: 'funcao' = uma linha por setor × função (linha do quadro);
+// 'setor' = agregado por setor. A agregação NÃO é a soma das linhas de função: vem de
+// calcRepresentatividade (linhasSetor), onde uma resposta cujo cargo não consta no quadro
+// daquele setor continua contando NO setor — somar as linhas a perderia.
+let _adVisao = 'funcao';
+
+// Rótulos do seletor "Ordenar por" — fonte única do combo e do cabeçalho clicável,
+// para que os dois nunca digam nomes diferentes da mesma coluna.
+const AD_ORDEM = [
+  { k: 'setor',     lbl: 'Setor' },
+  { k: 'funcao',    lbl: 'Função' },
+  { k: 'total',     lbl: 'Qtd de funcionários' },
+  { k: 'respostas', lbl: 'Responderam' },
+  { k: 'faltam',    lbl: 'Faltam' },
+  { k: 'pct',       lbl: 'Adesão (%)' },
+];
+
+// Chave efetiva: 'funcao' não existe na visão por setor — cai para 'setor' em vez de
+// ordenar todas as linhas por um campo vazio.
+function _adKeyEfetiva() {
+  return (_adVisao === 'setor' && _adSortKey === 'funcao') ? 'setor' : _adSortKey;
+}
+
 // Linhas visíveis, já filtradas e ordenadas
 function _adLinhasVisiveis() {
   const filtro = _gheNormStrong(_adFiltro);
-  const key = _adSortKey, dir = _adSortDir;
-  return (_adDados?.linhas || [])
+  const key = _adKeyEfetiva(), dir = _adSortDir;
+  const base = _adVisao === 'setor' ? (_adDados?.linhasSetor || []) : (_adDados?.linhas || []);
+  return base
     .filter(l => !filtro || _gheNormStrong(l.setor||'').includes(filtro) || _gheNormStrong(l.funcao||'').includes(filtro))
     .slice()
     .sort((a, b) => key === 'setor' || key === 'funcao'
       ? String(a[key]||'').localeCompare(String(b[key]||'')) * dir
-      : ((a[key] || 0) - (b[key] || 0)) * dir);
+      : ((a[key] || 0) - (b[key] || 0)) * dir || String(a.setor||'').localeCompare(String(b.setor||'')));
 }
 
 function _adCorpoTabela() {
   const linhas = _adLinhasVisiveis();
-  if (!linhas.length) return `<tr><td colspan="6" style="text-align:center;color:var(--tl);padding:28px;font-size:12px">Nenhuma linha encontrada.</td></tr>`;
+  const nCols  = _adVisao === 'setor' ? 5 : 6;
+  if (!linhas.length) return `<tr><td colspan="${nCols}" style="text-align:center;color:var(--tl);padding:28px;font-size:12px">Nenhuma linha encontrada.</td></tr>`;
   return linhas.map(l => {
     const { cor, bg } = _gheCorAdesao(l.pct);
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:7px 12px;font-size:12px;color:var(--tx)">${_escAd(l.setor || '—')}</td>
-      <td style="padding:7px 12px;font-size:12px;color:var(--tx)">${_escAd(l.funcao || '(agregado do setor)')}</td>
+      ${_adVisao === 'setor' ? '' : `<td style="padding:7px 12px;font-size:12px;color:var(--tx)">${_escAd(l.funcao || '(agregado do setor)')}</td>`}
       <td style="padding:7px 12px;font-size:12px;text-align:right;color:var(--tm)">${l.total}</td>
       <td style="padding:7px 12px;font-size:12px;text-align:right;color:var(--tx);font-weight:600">${l.respostas}</td>
       <td style="padding:7px 12px;font-size:12px;text-align:right;font-weight:700;color:${l.faltam>0?'#b45309':'#16a34a'}">${l.faltam}</td>
@@ -11058,25 +11105,40 @@ function _adCorpoTabela() {
 }
 
 function _adTabelaHTML() {
-  const key = _adSortKey, dir = _adSortDir;
+  const key = _adKeyEfetiva(), dir = _adSortDir;
   const th = (k, label, alinha) => `<th data-k="${k}" onclick="_adSort('${k}')" style="padding:7px 12px;text-align:${alinha};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap">${label}<span class="ad-sort-ind" style="margin-left:3px">${k===key?(dir>0?'▲':'▼'):''}</span></th>`;
 
+  const porSetor = _adVisao === 'setor';
   const corpo = _adCorpoTabela();
+  const opts = AD_ORDEM
+    .filter(o => !(porSetor && o.k === 'funcao'))
+    .map(o => `<option value="${o.k}"${o.k===key?' selected':''}>${o.lbl}</option>`).join('');
 
   return `<div class="card" id="ad-tabela-card" style="padding:0;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap">
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--tx)">Onde falta gente</div>
-        <div style="font-size:11px;color:var(--tm);margin-top:2px">Ordenado por pessoas pendentes — é o que se usa para cobrar, não o percentual.</div>
+        <div style="font-size:11px;color:var(--tm);margin-top:2px">Clique no cabeçalho de qualquer coluna ou use "Ordenar por" para reordenar a lista.</div>
       </div>
-      <input type="text" id="ad-busca" class="input-busca" placeholder="Buscar setor ou função…" value="${_escAd(_adFiltro)}"
-        aria-label="Buscar setor ou função" oninput="_adBuscar(this.value)">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="seg-toggle-group" title="Detalhar cada cargo ou consolidar por setor">
+          <button id="ad-visao-setor" class="${porSetor?'stg-active':''}" onclick="_adSetVisao('setor')">Por setor</button>
+          <button id="ad-visao-funcao" class="${porSetor?'':'stg-active'}" onclick="_adSetVisao('funcao')">Setor e função</button>
+        </div>
+        <label style="font-size:11px;color:var(--tm);display:flex;align-items:center;gap:5px">
+          Ordenar por
+          <select id="ad-ordem" class="filter-select" style="min-width:150px;padding:5px 8px;font-size:11px" onchange="_adSetOrdem(this.value)">${opts}</select>
+        </label>
+        <button class="btn btn-ghost" id="ad-ordem-dir" style="font-size:12px;padding:5px 9px" title="${dir>0?'Crescente — clique para inverter':'Decrescente — clique para inverter'}" onclick="_adInverterOrdem()">${dir>0?'▲':'▼'}</button>
+        <input type="text" id="ad-busca" class="input-busca" placeholder="Buscar setor ou função…" value="${_escAd(_adFiltro)}"
+          aria-label="Buscar setor ou função" oninput="_adBuscar(this.value)">
+      </div>
     </div>
     <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;min-width:560px">
+      <table style="width:100%;border-collapse:collapse;min-width:${porSetor?'460px':'560px'}">
         <thead><tr style="background:var(--bg)">
-          ${th('setor','Setor','left')}${th('funcao','Função','left')}
-          ${th('total','Quadro','right')}${th('respostas','Respostas','right')}
+          ${th('setor','Setor','left')}${porSetor ? '' : th('funcao','Função','left')}
+          ${th('total','Qtd funcionários','right')}${th('respostas','Responderam','right')}
           ${th('faltam','Faltam','right')}${th('pct','Adesão','right')}
         </tr></thead>
         <tbody>${corpo}</tbody>
@@ -11093,12 +11155,36 @@ function _adSort(key) {
   _adAtualizarTabela();
 }
 
+// Combo "Ordenar por": mesma regra de direção inicial do clique no cabeçalho.
+function _adSetOrdem(key) {
+  if (!AD_ORDEM.some(o => o.k === key)) return;
+  if (_adSortKey !== key) _adSortDir = (key === 'setor' || key === 'funcao') ? 1 : -1;
+  _adSortKey = key;
+  _adAtualizarTabela();
+}
+
+function _adInverterOrdem() {
+  _adSortDir *= -1;
+  _adAtualizarTabela();
+}
+
+// Trocar a visão muda as COLUNAS, então aqui o card inteiro é refeito (o tbody sozinho
+// não basta). Só o card — o canvas do gráfico está em outro card e não é tocado.
+function _adSetVisao(v) {
+  if (v !== 'setor' && v !== 'funcao') return;
+  if (_adVisao === v) return;
+  _adVisao = v;
+  const card = document.getElementById('ad-tabela-card');
+  if (!card) return;
+  card.outerHTML = _adTabelaHTML();
+}
+
 function _adBuscar(v) {
   _adFiltro = v;
   _adAtualizarTabela();
 }
 
-// Repinta só o <tbody> e os indicadores de ordenação. Trocar o card inteiro
+// Repinta só o <tbody> e os controles de ordenação. Trocar o card inteiro
 // recriaria o input de busca (perda de foco e do cursor a cada tecla) e
 // destruiria o canvas do gráfico.
 function _adAtualizarTabela() {
@@ -11106,10 +11192,18 @@ function _adAtualizarTabela() {
   if (!card) return;
   const tbody = card.querySelector('tbody');
   if (tbody) tbody.innerHTML = _adCorpoTabela();
+  const key = _adKeyEfetiva();
   card.querySelectorAll('th[data-k]').forEach(th => {
     const ind = th.querySelector('.ad-sort-ind');
-    if (ind) ind.textContent = th.dataset.k === _adSortKey ? (_adSortDir > 0 ? '▲' : '▼') : '';
+    if (ind) ind.textContent = th.dataset.k === key ? (_adSortDir > 0 ? '▲' : '▼') : '';
   });
+  const sel = card.querySelector('#ad-ordem');
+  if (sel) sel.value = key;
+  const btnDir = card.querySelector('#ad-ordem-dir');
+  if (btnDir) {
+    btnDir.textContent = _adSortDir > 0 ? '▲' : '▼';
+    btnDir.title = _adSortDir > 0 ? 'Crescente — clique para inverter' : 'Decrescente — clique para inverter';
+  }
 }
 
 // ── Relatório de adesão para o cliente ────────────────────────────────────────
@@ -11133,9 +11227,9 @@ function exportarAdesaoPrint() {
   const ciclo    = _ciclos.find(c => c.id === _adCicloId);
   const cicloTxt = ciclo?.nome || 'Todos os ciclos';
   const hoje     = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-  const pct      = d.totalHeadcount > 0 ? Math.round(d.classificadas / d.totalHeadcount * 100) : 0;
-  // Mesma métrica "Total geral" da tela — todas as respostas ÷ quadro, inclusive fora do GHE.
-  const totalGeralPct = d.totalHeadcount > 0 ? Math.round(d.totalRespostas / d.totalHeadcount * 100) : 0;
+  // Mesma métrica da tela: adesão GERAL — todas as respostas recebidas ÷ quadro,
+  // inclusive as com setor/função fora do GHE ("Outro").
+  const pct      = d.totalHeadcount > 0 ? Math.round(d.totalRespostas / d.totalHeadcount * 100) : 0;
   const dias     = _diasDesde(d.ultimaResposta);
   const ultimaTxt = d.ultimaResposta
     ? d.ultimaResposta.toLocaleDateString('pt-BR') + (dias ? ` (há ${dias} dia${dias===1?'':'s'})` : ' (hoje)')
@@ -11151,13 +11245,16 @@ function exportarAdesaoPrint() {
     if (cv && _adChart) curvaImg = cv.toDataURL('image/png');
   } catch(e) { console.warn('[PsicoMap] curva no PDF:', e.message); }
 
-  // Ordenado por pendências: a primeira linha é onde o RH deve agir primeiro.
-  const linhas = d.linhas.slice().sort((a, b) => b.faltam - a.faltam || (a.setor||'').localeCompare(b.setor||''));
+  // O documento sai exatamente como a tela está: mesma visão (setor ou setor × função),
+  // mesma ordenação e mesma busca. Recalcular uma ordem própria aqui faria o PDF entregue
+  // ao RH divergir do que o consultor acabou de conferir na tela.
+  const porSetor = _adVisao === 'setor';
+  const linhas = _adLinhasVisiveis();
   const corpo = linhas.map(l => {
     const { cor, bg } = _gheCorAdesao(l.pct);
     return `<tr>
       <td>${_escAd(l.setor || '—')}</td>
-      <td>${_escAd(l.funcao || '(agregado do setor)')}</td>
+      ${porSetor ? '' : `<td>${_escAd(l.funcao || '(agregado do setor)')}</td>`}
       <td class="num">${l.total}</td>
       <td class="num">${l.respostas}</td>
       <td class="num strong">${l.faltam}</td>
@@ -11224,30 +11321,31 @@ function exportarAdesaoPrint() {
 </div>
 
 <div class="kpis">
-  <div class="kpi"><div class="kpi-v">${d.totalHeadcount}</div><div class="kpi-l">Quadro</div></div>
-  <div class="kpi"><div class="kpi-v">${d.classificadas}</div><div class="kpi-l">Responderam</div></div>
+  <div class="kpi"><div class="kpi-v">${d.totalHeadcount}</div><div class="kpi-l">Qtd de funcionários</div></div>
+  <div class="kpi"><div class="kpi-v">${d.totalRespostas}</div><div class="kpi-l">Responderam</div></div>
   <div class="kpi"><div class="kpi-v" style="color:${_gheCorAdesao(pct).cor}">${pct}%</div><div class="kpi-l">Adesão</div></div>
-  <div class="kpi"><div class="kpi-v" style="color:${_gheCorAdesao(totalGeralPct).cor}">${totalGeralPct}%</div><div class="kpi-l">Total geral</div></div>
   <div class="kpi"><div class="kpi-v" style="color:${d.faltam>0?'#b45309':'#16a34a'}">${d.faltam}</div><div class="kpi-l">Faltam</div></div>
 </div>
 
-${d.naoClassificadas > 0 ? `<div class="alerta"><strong>${d.naoClassificadas} resposta(s) com setor ou função fora do quadro cadastrado</strong> (normalmente a opção "Outro"). Elas foram recebidas e contam no "Total geral" acima, mas não podem ser atribuídas a um setor específico e por isso não entram na "Adesão".</div>` : ''}
+${d.naoClassificadas > 0 ? `<div class="alerta"><strong>${d.naoClassificadas} resposta(s) com setor ou função fora do quadro cadastrado</strong> (normalmente a opção "Outro"). Elas contam em "Responderam" e na "Adesão" acima, mas não podem ser atribuídas a um setor específico e por isso não aparecem nas linhas da tabela.</div>` : ''}
 
 ${curvaImg ? `<div class="sec">Evolução da coleta</div><img class="curva" src="${curvaImg}" alt="Curva de adesão">` : ''}
 
-<div class="sec">Adesão por setor e função</div>
+<div class="sec">Adesão por setor${porSetor ? '' : ' e função'}</div>
 <table>
   <thead><tr>
-    <th>Setor</th><th>Função</th><th class="num">Quadro</th>
+    <th>Setor</th>${porSetor ? '' : '<th>Função</th>'}<th class="num">Qtd funcionários</th>
     <th class="num">Responderam</th><th class="num">Faltam</th><th class="num">Adesão</th>
   </tr></thead>
   <tbody>${corpo}</tbody>
 </table>
 
 <div class="nota">
-  <strong>Como ler este relatório.</strong> "Quadro" é o número de colaboradores informado pela empresa
-  para cada setor e função. "Responderam" é quantas respostas foram recebidas nesse mesmo grupo, e
-  "Faltam" é a diferença entre os dois. Última resposta recebida: ${ultimaTxt}.<br><br>
+  <strong>Como ler este relatório.</strong> "Qtd funcionários" é o número de colaboradores informado
+  pela empresa para cada ${porSetor ? 'setor' : 'setor e função'}. "Responderam" é quantas respostas
+  foram recebidas nesse mesmo grupo, e "Faltam" é a diferença entre os dois. Os indicadores do topo
+  consideram <strong>todas</strong> as respostas recebidas, inclusive as que informaram "Outro" em
+  setor ou função. Última resposta recebida: ${ultimaTxt}.<br><br>
   <strong>Anonimato.</strong> A pesquisa é anônima: o questionário não coleta nome, matrícula, CPF nem
   qualquer dado que identifique o respondente. Os números acima são agregados por setor e função e não
   permitem identificar quem respondeu ou deixou de responder — servem apenas para acompanhar a
