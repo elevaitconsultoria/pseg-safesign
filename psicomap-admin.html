@@ -11104,6 +11104,31 @@ function _adCorpoTabela() {
   }).join('');
 }
 
+// A coluna "Faltam" é por linha e nunca fica negativa; o KPI "Faltam" é da empresa
+// (quadro − todas as respostas). Os dois divergem por duas causas somáveis, e a diferença
+// fecha exatamente: (respostas que a base desta visão não cobre) + (excedente das linhas
+// que receberam mais respostas que o próprio quadro).
+// Verificado com dado real do DEV (Inovadoor): Σ coluna = 34, KPI = 26, 6 fora do quadro
+// + 2 de excedente. Sem esta nota, a diferença parece erro de conta.
+function _adNotaFaltam(base) {
+  const d = _adDados;
+  if (!d || !base.length) return '';
+  const somaFaltam = base.reduce((s, l) => s + (l.faltam || 0), 0);
+  if (somaFaltam === d.faltam) return '';
+  const respBase  = base.reduce((s, l) => s + (l.respostas || 0), 0);
+  const foraDaVisao = Math.max(0, d.totalRespostas - respBase);
+  const excedente = base.reduce((s, l) => s + Math.max(0, (l.respostas || 0) - (l.total || 0)), 0);
+  const eixo = _adVisao === 'setor' ? 'setor' : 'setor ou função';
+  const partes = [];
+  if (foraDaVisao) partes.push(`${foraDaVisao} resposta(s) com ${eixo} fora do quadro`);
+  if (excedente)   partes.push(`${excedente} de excedente em linha(s) que receberam mais respostas que o quadro cadastrado`);
+  if (!partes.length) return '';
+  return `<div style="padding:8px 18px;font-size:10px;color:var(--tl);border-top:1px solid var(--border);line-height:1.6">
+    A soma da coluna <strong>Faltam</strong> (${somaFaltam}) é maior que o indicador <strong>Faltam</strong> do topo (${d.faltam}).
+    A diferença é ${partes.join(' e ')} — o indicador mede a empresa inteira; a coluna mede cada linha isolada e não fica negativa.
+  </div>`;
+}
+
 function _adTabelaHTML() {
   const key = _adKeyEfetiva(), dir = _adSortDir;
   const th = (k, label, alinha) => `<th data-k="${k}" onclick="_adSort('${k}')" style="padding:7px 12px;text-align:${alinha};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap">${label}<span class="ad-sort-ind" style="margin-left:3px">${k===key?(dir>0?'▲':'▼'):''}</span></th>`;
@@ -11145,6 +11170,7 @@ function _adTabelaHTML() {
       </table>
     </div>
     <div style="padding:8px 18px;font-size:10px;color:var(--tl);border-top:1px solid var(--border)">Verde ≥ 70% · Amarelo 30–69% · Vermelho &lt; 30%</div>
+    ${_adNotaFaltam(porSetor ? (_adDados?.linhasSetor || []) : (_adDados?.linhas || []))}
   </div>`;
 }
 
