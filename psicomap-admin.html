@@ -11110,7 +11110,10 @@ function _adCorpoTabela() {
 // que receberam mais respostas que o próprio quadro).
 // Verificado com dado real do DEV (Inovadoor): Σ coluna = 34, KPI = 26, 6 fora do quadro
 // + 2 de excedente. Sem esta nota, a diferença parece erro de conta.
-function _adNotaFaltam(base) {
+// A FRASE é fonte única: a tela e o PDF só a embrulham em estilos diferentes. Duas
+// redações do mesmo número divergiriam na primeira edição de texto — foi assim que
+// nasceram os dois catálogos de ação que este arquivo já teve de unificar.
+function _adNotaFaltamTexto(base) {
   const d = _adDados;
   if (!d || !base.length) return '';
   const somaFaltam = base.reduce((s, l) => s + (l.faltam || 0), 0);
@@ -11123,10 +11126,14 @@ function _adNotaFaltam(base) {
   if (foraDaVisao) partes.push(`${foraDaVisao} resposta(s) com ${eixo} fora do quadro`);
   if (excedente)   partes.push(`${excedente} de excedente em linha(s) que receberam mais respostas que o quadro cadastrado`);
   if (!partes.length) return '';
-  return `<div style="padding:8px 18px;font-size:10px;color:var(--tl);border-top:1px solid var(--border);line-height:1.6">
-    A soma da coluna <strong>Faltam</strong> (${somaFaltam}) é maior que o indicador <strong>Faltam</strong> do topo (${d.faltam}).
-    A diferença é ${partes.join(' e ')} — o indicador mede a empresa inteira; a coluna mede cada linha isolada e não fica negativa.
-  </div>`;
+  return `A soma da coluna <strong>Faltam</strong> (${somaFaltam}) é maior que o indicador <strong>Faltam</strong> do topo (${d.faltam}). ` +
+         `A diferença é ${partes.join(' e ')} — o indicador mede a empresa inteira; a coluna mede cada linha isolada e não fica negativa.`;
+}
+
+function _adNotaFaltam(base) {
+  const txt = _adNotaFaltamTexto(base);
+  if (!txt) return '';
+  return `<div style="padding:8px 18px;font-size:10px;color:var(--tl);border-top:1px solid var(--border);line-height:1.6">${txt}</div>`;
 }
 
 function _adTabelaHTML() {
@@ -11276,6 +11283,9 @@ function exportarAdesaoPrint() {
   // ao RH divergir do que o consultor acabou de conferir na tela.
   const porSetor = _adVisao === 'setor';
   const linhas = _adLinhasVisiveis();
+  // Mesma base da tabela deste documento (a da visão, não a filtrada pela busca:
+  // o indicador do topo é da empresa inteira, e é com ele que a coluna é comparada).
+  const notaFaltam = _adNotaFaltamTexto(porSetor ? (d.linhasSetor || []) : (d.linhas || []));
   const corpo = linhas.map(l => {
     const { cor, bg } = _gheCorAdesao(l.pct);
     return `<tr>
@@ -11373,7 +11383,8 @@ ${curvaImg ? `<div class="sec">Evolução da coleta</div><img class="curva" src=
   pela empresa para cada ${porSetor ? 'setor' : 'setor e função'}. "Responderam" é quantas respostas
   foram recebidas nesse mesmo grupo, e "Faltam" é a diferença entre os dois. Os indicadores do topo
   consideram <strong>todas</strong> as respostas recebidas, inclusive as que informaram "Outro" em
-  setor ou função. Última resposta recebida: ${ultimaTxt}.<br><br>
+  setor ou função. Última resposta recebida: ${ultimaTxt}.
+  ${notaFaltam ? `<br><br>${notaFaltam}` : ''}<br><br>
   <strong>Anonimato.</strong> A pesquisa é anônima: o questionário não coleta nome, matrícula, CPF nem
   qualquer dado que identifique o respondente. Os números acima são agregados por setor e função e não
   permitem identificar quem respondeu ou deixou de responder — servem apenas para acompanhar a
