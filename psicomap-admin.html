@@ -11316,6 +11316,8 @@ function exportarAdesaoPrint() {
   <div class="cover-meta">
     ${empNome ? `<div><strong>${_escAd(empNome)}</strong></div>` : ''}
     <div>${_escAd(cicloTxt)}</div>
+    <div>${porSetor ? 'Por setor' : 'Por setor e função'}</div>
+    ${_adFiltro.trim() ? `<div>Filtro aplicado: "${_escAd(_adFiltro.trim())}"</div>` : ''}
     <div>Emitido em ${hoje}</div>
   </div>
 </div>
