@@ -2311,6 +2311,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
+      <!-- Data de emissão nos arquivos exportados. O PDF e a imagem saem da consultoria
+           para a empresa e nem sempre são entregues no dia em que foram gerados —
+           antes a data de geração era obrigatória e não havia como tirá-la. -->
+      <div class="filter-card">
+        <div class="filter-label">Exportação</div>
+        <div id="chk-data-emissao"></div>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Vale para o PDF e para a imagem exportados desta tela.</div>
+      </div>
+
       <button class="btn btn-g" style="width:100%;justify-content:center;padding:12px" onclick="rodarAnalise()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Ver resultados
@@ -2867,6 +2876,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="filter-card">
         <div class="filter-label">Registro profissional</div>
         <input id="ld-registro" type="text" placeholder="CREA/CRF/CRP nº ..." class="filter-select" style="cursor:text" oninput="_salvarResponsavelLaudo()"/>
+      </div>
+
+      <!-- Data de emissão do laudo. Era sempre a data de geração do arquivo: reimprimir um
+           laudo entregue em outra data mudava a data do documento. -->
+      <div class="filter-card">
+        <div class="filter-label">Data de emissão</div>
+        <input id="ld-data-emissao" type="date" class="filter-select" style="cursor:text" onchange="_onLaudoDataEmissaoChange()"/>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Em branco = hoje. Vale para a capa, o rodapé de assinatura e o PDF.</div>
       </div>
 
       <!-- Edição de textos: os blocos de prosa do laudo vêm prontos, mas o consultor
@@ -6965,7 +6982,7 @@ async function exportarResultados(fmt, opts = {}) {
   clone.style.cssText = 'width:' + A4W + 'px;max-width:' + A4W + 'px';
   // Recorte aplicado — a captura pega so #view-content, entao o bloco precisa
   // entrar aqui ou a imagem sai sem dizer a que setores/funcoes se refere.
-  const resumo = _resumoFiltrosHTML();
+  const resumo = _resumoFiltrosHTML({ data: _expDataEmissao });
   if (resumo) clone.insertAdjacentHTML('afterbegin', resumo);
   wrap.appendChild(clone);
   document.body.appendChild(wrap);
@@ -7044,7 +7061,41 @@ function _renderAnaliseParaExport(vm, dm) {
 // Usa var(--...) de proposito: _resolveStyleVars (PNG) e resolverVars (PDF) resolvem.
 // O bloco carrega estilos inline (e nao classes do <style> do documento) porque
 // serve aos DOIS destinos: o doc de impressao e o clone capturado por html2canvas.
-function _resumoFiltrosHTML() {
+// Data de emissão nos exports da tela de Resultados (PDF e imagem). Preferência do
+// usuário, não da empresa: fica em localStorage e vale para o próximo export de qualquer
+// cliente. Ligada por padrão — é o comportamento que o PDF sempre teve.
+const EXP_DATA_KEY = 'psicomap_export_data_emissao';
+let _expDataEmissao = true;
+
+function _carregarPrefDataEmissao() {
+  try { const v = localStorage.getItem(EXP_DATA_KEY); _expDataEmissao = (v === null) ? true : v === '1'; }
+  catch(e) { _expDataEmissao = true; }
+  _renderChkDataEmissao();
+}
+
+function toggleDataEmissaoExport() {
+  _expDataEmissao = !_expDataEmissao;
+  try { localStorage.setItem(EXP_DATA_KEY, _expDataEmissao ? '1' : '0'); } catch(e) {}
+  _renderChkDataEmissao();
+}
+
+// Mesmo visual dos checks de "Seções do laudo" — é o checkbox da casa nesta sidebar.
+function _renderChkDataEmissao() {
+  const wrap = document.getElementById('chk-data-emissao');
+  if (!wrap) return;
+  const on = _expDataEmissao;
+  wrap.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;padding:5px 0" onclick="toggleDataEmissaoExport()">
+    <div style="width:14px;height:14px;border-radius:3px;border:2px solid ${on?'var(--g)':'var(--border)'};background:${on?'var(--g)':'white'};flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s">
+      ${on?`<svg viewBox="0 0 12 12" width="8" height="8"><polyline points="2 6 5 9 10 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`:''}
+    </div>
+    <span style="color:var(--tx)">Incluir data de emissão</span>
+  </label>`;
+}
+
+// `opts.data` só é pedido pela IMAGEM: no PDF a data vive no cabeçalho do documento, e
+// repeti-la aqui a mostraria duas vezes. A captura do PNG pega apenas #view-content, então
+// para a imagem este bloco é o único lugar onde a data cabe.
+function _resumoFiltrosHTML(opts = {}) {
   const ad = window._analiseData;
   if (!ad) return '';
   const ordena = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
@@ -7062,10 +7113,14 @@ function _resumoFiltrosHTML() {
         'color:var(--tl);white-space:nowrap;min-width:52px">' + rotulo + '</span>' +
       '<span style="font-size:10px;color:var(--tx);line-height:1.5">' + valor + '</span>' +
     '</div>';
+  const dataLinha = opts.data
+    ? linha('Emissão', new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }))
+    : '';
   return '<div class="psicomap-filtros" style="border:1px solid var(--border);border-left:3px solid var(--g);' +
     'border-radius:4px;padding:8px 12px;margin-bottom:14px;background:var(--bg)">' +
     linha('Setores', label(setores, univSet, 'Todos os setores')) +
     linha('Funções', label(funcoes, univFun, 'Todas as funções')) +
+    dataLinha +
     '</div>';
 }
 
@@ -7273,7 +7328,7 @@ function exportarResultadosPrint(secoes) {
   </div>
   <div class="psicomap-cover-meta">
     ${empNome ? '<div><strong>' + empNome + '</strong></div>' : ''}
-    <div>${hoje}</div>
+    ${_expDataEmissao ? '<div>' + hoje + '</div>' : ''}
     ${nResp ? '<div>' + nResp + ' respondente' + (nResp !== 1 ? 's' : '') + '</div>' : ''}
   </div>
 </div>
@@ -9868,6 +9923,9 @@ function _snapshotConfigLaudo() {
     granularidade: _granularidadeLaudo(),
     secoes: [...laudoSecoesAtivas],
     ciclo_id: document.getElementById('ld-ciclo')?.value || null,
+    // Data ESCOLHIDA (vazio = hoje). `gerado_em` continua sendo o instante real do registro:
+    // um é a data do documento entregue, o outro é a trilha de auditoria, e eles podem diferir.
+    data_emissao: (document.getElementById('ld-data-emissao')?.value || '') || null,
     filtros,
   };
 }
@@ -10045,6 +10103,15 @@ function _aplicarConfigFiltros(cfg, tela) {
 
 // Granularidade e seções do laudo — usado pelo descritor e pelo histórico.
 function _aplicarGranSecoes(cfg, perdidos) {
+  // "Reaplicar" do histórico devolve a data daquele laudo — é o que permite reimprimir um
+  // documento já entregue sem que ele mude de data. Presets NÃO gravam este campo
+  // (_presetConfigAtual não o captura): um recorte salvo para uso recorrente carregar uma
+  // data fixa faria todo laudo futuro sair com a data do dia em que o preset foi criado.
+  const dtEl = document.getElementById('ld-data-emissao');
+  if (dtEl && 'data_emissao' in cfg) {
+    dtEl.value = cfg.data_emissao || '';
+    _salvarResponsavelLaudo();
+  }
   if (Array.isArray(cfg.secoes)) {
     laudoSecoesAtivas = new Set(cfg.secoes.filter(s => LAUDO_SECOES.some(x => x.id === s)));
     buildLaudoSecoesChecks();
@@ -13154,7 +13221,26 @@ function _salvarResponsavelLaudo() {
   if (!empId) return;
   const nome     = (document.getElementById('ld-responsavel')?.value || '').trim();
   const registro = (document.getElementById('ld-registro')?.value || '').trim();
-  try { localStorage.setItem(_laudoRespKey(empId), JSON.stringify({ nome, registro })); } catch(e) {}
+  // A data escolhida é do documento daquele cliente, como o responsável: sobrevive à
+  // troca de tela e volta ao reabrir o laudo da mesma empresa.
+  const dataEmissao = (document.getElementById('ld-data-emissao')?.value || '').trim();
+  try { localStorage.setItem(_laudoRespKey(empId), JSON.stringify({ nome, registro, dataEmissao })); } catch(e) {}
+}
+
+// Data de emissão do laudo. Em branco = hoje. FONTE ÚNICA da capa, do rodapé de assinatura,
+// da barra do documento e do registro em `laudos` — preview e PDF leem daqui, que é a regra
+// desta tela desde que as duas rotas passaram a divergir (ver _laudoCardRiscoHTML).
+function _laudoDataEmissao() {
+  const v = (document.getElementById('ld-data-emissao')?.value || '').trim();
+  // 'T00:00:00' força horário local: new Date('2026-09-01') é UTC e volta 31/08 no Brasil.
+  const d = v ? new Date(v + 'T00:00:00') : new Date();
+  const alvo = isNaN(d) ? new Date() : d;
+  return alvo.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+}
+
+function _onLaudoDataEmissaoChange() {
+  _salvarResponsavelLaudo();
+  try { renderLaudo(); } catch(e) { console.warn('[PsicoMap] renderLaudo (data de emissão):', e.message); }
 }
 
 // ══ EDIÇÃO DE TEXTOS DO LAUDO ═══════════════════════════════════════════════════
@@ -13804,6 +13890,8 @@ async function onLaudoFiltro() {
   if (ldRespEl) ldRespEl.value = respSalvo.nome || _estPerfil?.responsavel_padrao || '';
   const ldRegEl = document.getElementById('ld-registro');
   if (ldRegEl) ldRegEl.value = respSalvo.registro || '';
+  const ldDataEl = document.getElementById('ld-data-emissao');
+  if (ldDataEl) ldDataEl.value = respSalvo.dataEmissao || '';
   // Edições de texto do laudo são por empresa e por sessão — trocar de cliente troca
   // o conjunto inteiro, nunca faz merge.
   _laudoEdicaoCarregar(emp);
@@ -13879,7 +13967,7 @@ async function renderLaudo() {
   );
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
-  const hoje    = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const hoje    = _laudoDataEmissao();
 
   if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
 
@@ -14850,7 +14938,7 @@ async function gerarLaudoPDF() {
     // da abertura — que este documento nao contem.
     _laudoEdicaoSnap = JSON.parse(JSON.stringify({ blocos: _laudoEdicao.blocos, acoes: _laudoEdicao.acoes }));
 
-    const hoje        = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+    const hoje        = _laudoDataEmissao();
     const responsavelField = (document.getElementById('ld-responsavel')?.value||'').trim();
     const responsavel = responsavelField
       || _estPerfil?.responsavel_padrao
@@ -19942,6 +20030,7 @@ try { buildCombo('combo-ld-setor'); }     catch(e) { console.warn('combo-ld-seto
 try { buildCombo('combo-ld-nivel'); }     catch(e) { console.warn('combo-ld-nivel:', e); }
 try { buildCombo('combo-ld-escolaridade'); } catch(e) { console.warn('combo-ld-escolaridade:', e); }
 try { buildLaudoSecoesChecks(); }         catch(e) { console.warn('buildLaudoSecoesChecks:', e); }
+try { _carregarPrefDataEmissao(); }       catch(e) { console.warn('pref-data-emissao:', e); }
 try { buildCombo('combo-audit-setor'); }  catch(e) { console.warn('combo-audit-setor:', e); }
 try { renderTabelaAgrupamentos(); }     catch(e) { console.warn('renderTabelaAgrupamentos:', e); }
 try { _montarSelectsGranularidade(); }  catch(e) { console.warn('selects-granularidade:', e); }
