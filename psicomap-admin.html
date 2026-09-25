@@ -7064,6 +7064,9 @@ function _renderAnaliseParaExport(vm, dm) {
 // Data de emissão nos exports da tela de Resultados (PDF e imagem). Preferência do
 // usuário, não da empresa: fica em localStorage e vale para o próximo export de qualquer
 // cliente. Ligada por padrão — é o comportamento que o PDF sempre teve.
+// Teto de nomes listados no bloco de recorte do PDF/imagem. Acima disso o bloco passa a
+// dizer "… e mais N (T no total)".
+const RESUMO_MAX_ITENS = 12;
 const EXP_DATA_KEY = 'psicomap_export_data_emissao';
 let _expDataEmissao = true;
 
@@ -7105,8 +7108,29 @@ function _resumoFiltrosHTML(opts = {}) {
   // que despejar a lista inteira, e distingue "sem filtro" de "filtro omitido".
   const univSet = (comboItems['combo-setor']  && comboItems['combo-setor']())  || [];
   const univFun = (comboItems['combo-funcao'] && comboItems['combo-funcao']()) || [];
-  const label = (sel, univ, todos) =>
-    (!sel.length ? '—' : (univ.length && sel.length >= univ.length ? todos : sel.join(' · ')));
+  // "Todos" é uma afirmação sobre o FILTRO, não sobre quais setores têm resposta. Comparar
+  // só as contagens (itens com resposta × universo do combo) errava justamente a empresa
+  // que tem setor cadastrado sem nenhuma resposta: nada estava filtrado e mesmo assim o
+  // documento despejava a lista inteira — 45% da primeira página num caso real, o que
+  // empurrava o primeiro card (break-inside: avoid) para a folha seguinte e deixava a
+  // página quase em branco.
+  const semFiltro = cid => {
+    const st = comboState[cid];
+    const univ = (comboItems[cid] && comboItems[cid]()) || [];
+    return !st || st.size === 0 || (univ.length > 0 && st.size >= univ.length);
+  };
+  // Com recorte de verdade a lista é informação; passando disso vira parede de texto.
+  // O total continua declarado, então o documento não fica menos exato — fica legível.
+  const label = (sel, univ, todos, cid) => {
+    if (semFiltro(cid)) return todos;
+    if (!sel.length) return '—';
+    if (univ.length && sel.length >= univ.length) return todos;
+    if (sel.length > RESUMO_MAX_ITENS) {
+      return sel.slice(0, RESUMO_MAX_ITENS).join(' · ') +
+             ' · … e mais ' + (sel.length - RESUMO_MAX_ITENS) + ' (' + sel.length + ' no total)';
+    }
+    return sel.join(' · ');
+  };
   const linha = (rotulo, valor) =>
     '<div style="display:flex;gap:6px;align-items:baseline;margin-top:2px">' +
       '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;' +
@@ -7118,8 +7142,8 @@ function _resumoFiltrosHTML(opts = {}) {
     : '';
   return '<div class="psicomap-filtros" style="border:1px solid var(--border);border-left:3px solid var(--g);' +
     'border-radius:4px;padding:8px 12px;margin-bottom:14px;background:var(--bg)">' +
-    linha('Setores', label(setores, univSet, 'Todos os setores')) +
-    linha('Funções', label(funcoes, univFun, 'Todas as funções')) +
+    linha('Setores', label(setores, univSet, 'Todos os setores', 'combo-setor')) +
+    linha('Funções', label(funcoes, univFun, 'Todas as funções', 'combo-funcao')) +
     dataLinha +
     '</div>';
 }
@@ -7289,8 +7313,12 @@ function exportarResultadosPrint(secoes) {
     page-break-after: avoid; break-after: avoid;
   }
 
-  /* Tags de filtro */
-  .psicomap-filtros { page-break-after: avoid; break-after: avoid; }
+  /* Tags de filtro. O break-inside:avoid existe porque o bloco já saiu partido ao meio:
+     a caixa começava numa página e terminava na seguinte, e o fragmento de cima era
+     esticado até o rodapé. Com o teto de itens (RESUMO_MAX_ITENS) ele nunca passa de
+     alguns centímetros, então manter o bloco inteiro é seguro. */
+  .psicomap-filtros { page-break-after: avoid; break-after: avoid;
+                      page-break-inside: avoid; break-inside: avoid; }
 
   /* Bloco de setor — nunca corta */
   /* Bloco de setor: NAO leva page-break-inside:avoid de proposito. Um bloco de setor
