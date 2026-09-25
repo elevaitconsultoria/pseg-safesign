@@ -3171,7 +3171,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="modal-bg" id="modal-import-ghe">
   <div class="modal" style="max-width:760px;width:94vw">
     <div class="modal-title">Importar Agrupamentos GHE</div>
-    <div class="modal-sub" id="ghei-sub">Planilha da matriz de GHE do PGR, com as colunas Agrupamento GHE, Setor e Função.</div>
+    <div class="modal-sub" id="ghei-sub">Matriz de GHE do PGR — arquivo ou texto colado, com as colunas Agrupamento GHE, Setor e Função.</div>
 
     <!-- Trilha de etapas -->
     <div style="display:flex;gap:6px;margin:14px 0 16px" id="ghei-trilha"></div>
@@ -3179,47 +3179,55 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <!-- Colunas que o importador ligou a cada campo — visível na conciliação e na prévia -->
     <div id="ghei-colunas"></div>
 
-    <!-- ETAPA 1 — arquivo -->
+    <!-- ETAPA 1 — entrada (arquivo OU texto colado) -->
     <div id="ghei-etapa-1">
-      <input type="file" id="ghei-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarGheArquivo(this)">
-      <div style="border:1.5px dashed var(--border);border-radius:var(--r);padding:26px 18px;text-align:center">
+      <input type="file" id="ghei-input" accept=".csv,.txt,.tsv,.xlsx,.xls" style="display:none" onchange="importarGheArquivo(this)">
+      <div style="border:1.5px dashed var(--border);border-radius:var(--r);padding:22px 18px;text-align:center">
         <svg viewBox="0 0 24 24" fill="none" stroke="var(--tl)" stroke-width="1.6" width="30" height="30" style="margin-bottom:10px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Selecione a planilha de GHE</div>
+        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Selecione o arquivo da matriz de GHE</div>
         <div style="font-size:11px;color:var(--tl);margin-bottom:14px;line-height:1.6">
-          CSV, XLSX ou XLS. As colunas são reconhecidas pelo nome —<br>
+          CSV, TXT, TSV, XLSX ou XLS. As colunas são reconhecidas pelo nome —<br>
           <strong style="color:var(--tm)">Agrupamento GHE</strong>, <strong style="color:var(--tm)">Setor</strong> e <strong style="color:var(--tm)">Função</strong>.
         </div>
         <button class="btn btn-g" style="font-size:12px;padding:7px 18px" onclick="document.getElementById('ghei-input').click()">Escolher arquivo</button>
       </div>
+
+      <!-- Colar direto: copiar 3 colunas do Excel e colar aqui é o caminho mais curto, e não
+           exige salvar um arquivo só para importar. O texto colado do Excel vem separado por
+           TAB; o parser detecta TAB, ";" e "," sozinho. -->
+      <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl)">ou cole o texto</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <textarea id="ghei-colar" placeholder="Cole aqui (Ctrl+V) direto do Excel, do Word ou de um bloco de notas.&#10;&#10;Agrupamento GHE;Setor;Função&#10;GHE 01;Produção;Operador de máquina&#10;GHE 01;Produção;Auxiliar de produção&#10;GHE 02;Logística;Auxiliar de expedição"
+          style="width:100%;height:110px;border:1.5px solid var(--border);border-radius:var(--r);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.6;padding:9px 11px;outline:none;color:var(--tx);background:white;resize:vertical"
+          onfocus="this.style.borderColor='var(--tx)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <div style="flex:1;font-size:10px;color:var(--tl);line-height:1.5">A primeira linha precisa ser o cabeçalho. Aceita separação por tabulação, <code>;</code> ou <code>,</code>.</div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 16px;flex-shrink:0" onclick="importarGheTexto()">Usar texto colado</button>
+        </div>
+      </div>
+
       <div style="margin-top:12px;font-size:11px;color:var(--tl);line-height:1.6;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
-        <strong style="color:var(--tx)">Antes de importar:</strong> a estrutura da empresa (setores e cargos) precisa já estar
-        cadastrada, porque é contra ela que os nomes da planilha serão conciliados.
-        Esta importação <strong>não cria nem altera</strong> setores e cargos do catálogo.
+        <strong style="color:var(--tx)">O arquivo é a fonte:</strong> os nomes vêm exatamente como estão nele.
+        Esta importação <strong>não cria nem altera</strong> setores e cargos do catálogo da empresa —
+        o que não existir no catálogo é gravado assim mesmo e fica <strong>sinalizado na revisão</strong>,
+        onde você pode classificar à mão se quiser.
         <div style="margin-top:8px">
           Não tem a matriz pronta? <a href="#" onclick="exportarParesGhe();return false" style="color:var(--g);font-weight:600">Baixe os pares que já têm resposta</a>
           — vem no formato certo, com os <em>"Outro:"</em> digitados pelos respondentes, e é só preencher a coluna do agrupamento.
         </div>
-        <div style="margin-top:6px">
-          Os nomes das colunas são reconhecidos automaticamente, mas se a detecção errar
-          <strong>você escolhe a coluna na próxima etapa</strong>.
-        </div>
       </div>
     </div>
 
-    <!-- ETAPA 2 — conciliação -->
+    <!-- ETAPA 2 — revisão (prévia do que será gravado + pendências para classificação manual) -->
     <div id="ghei-etapa-2" style="display:none">
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button class="btn btn-ghost btn-sm" id="ghei-aba-setor" onclick="_gheiSetAba('setor')">Setores</button>
-        <button class="btn btn-ghost btn-sm" id="ghei-aba-funcao" onclick="_gheiSetAba('funcao')">Funções</button>
-        <div style="flex:1"></div>
-        <div id="ghei-conc-resumo" style="font-size:11px;color:var(--tl);align-self:center"></div>
+      <div style="max-height:400px;overflow-y:auto" id="ghei-revisao">
+        <div id="ghei-pendencias"></div>
+        <div id="ghei-previa"></div>
       </div>
-      <div id="ghei-conc-lista" style="max-height:330px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--r)"></div>
-    </div>
-
-    <!-- ETAPA 3 — prévia -->
-    <div id="ghei-etapa-3" style="display:none">
-      <div id="ghei-previa" style="max-height:400px;overflow-y:auto"></div>
     </div>
 
     <div id="ghei-erro" style="display:none;margin-top:10px;padding:8px 11px;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r);font-size:11px;color:#991b1b;white-space:pre-line"></div>
@@ -4010,6 +4018,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" id="btn-depara" onclick="abrirDePara()" title="Nomes da matriz do PGR casados com o catalogo. Reaplica sozinho na proxima importacao.">De-para</button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="abrirNovoGhe()" title="Montar um GHE par a par, sem planilha. Use quando a empresa nao tem matriz de PGR ou quando falta so um GHE.">+ Novo GHE</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:var(--red)" id="btn-limpar-ghe" onclick="limparTodosGhe()" title="Apaga todos os GHE desta empresa de uma vez. As respostas não são afetadas.">Limpar GHE</button>
         <button class="btn btn-g" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px" onclick="abrirImportGhe()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Importar GHE
@@ -8648,6 +8657,8 @@ function renderTabelaAgrupamentos() {
   renderLista(gruposSetor, 'setor', lS);
   renderLista(gruposFuncao, 'funcao', lF);
   renderListaGhe();
+  const btnLimpar = document.getElementById('btn-limpar-ghe');
+  if (btnLimpar) btnLimpar.style.display = nG ? '' : 'none';
   _sincronizarBotaoDePara();
 }
 
@@ -8709,23 +8720,27 @@ async function abrirImportGhe() {
   }
   const emp = _empresas.find(e => e.id === empresaId);
   const catalogo = _catalogoConciliacao(empresaId);
+  // Catálogo vazio deixou de BLOQUEAR: o arquivo é a fonte e os nomes são gravados como vêm.
+  // Sem catálogo nada é reconhecido, então tudo aparece como "fora do catálogo" na revisão —
+  // é um aviso, não um impedimento.
   if (!catalogo.setor.lista.length && !catalogo.funcao.lista.length) {
-    toast('Cadastre a estrutura (setores e cargos) da empresa antes de importar o GHE.', 'w', 6000);
-    return;
+    toast('Esta empresa ainda não tem setores/cargos cadastrados: nenhum nome poderá ser reconhecido, mas a importação segue com os nomes do arquivo.', 'w', 7000);
   }
   // Carregar o de-para ANTES de abrir: se o usuário escolher o arquivo enquanto a consulta
   // ainda está em voo, a conciliação seria montada sem os apelidos aprendidos e o trabalho
   // manual anterior se perderia em silêncio.
   await carregarApelidos(empresaId);
   _gheiState = {
-    empresaId, etapa: 1, aba: 'setor',
+    empresaId, etapa: 1,
     linhas: [], ignoradas: 0, catalogo,
     conc: { setor: [], funcao: [] },
-    previa: null,
+    previa: null, verTudo: false,
   };
   document.getElementById('ghei-input').value = '';
+  const ta = document.getElementById('ghei-colar');
+  if (ta) ta.value = '';
   document.getElementById('ghei-sub').textContent =
-    `Matriz de GHE de ${emp?.nome_fantasia || emp?.nome || 'cliente'} — colunas Agrupamento GHE, Setor e Função.`;
+    `Matriz de GHE de ${emp?.nome_fantasia || emp?.nome || 'cliente'} — arquivo ou texto colado, com as colunas Agrupamento GHE, Setor e Função.`;
   _gheiLimparErro();
   document.getElementById('modal-import-ghe').classList.add('open');
   _gheiRender();
@@ -8745,10 +8760,7 @@ function importarGheArquivo(input) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   const reader = new FileReader();
   reader.onerror = () => _gheiErro('Não foi possível ler o arquivo.');
-  if (ext === 'csv') {
-    reader.onload = e => _gheiProcessar(_parseGHECSV(e.target.result));
-    reader.readAsText(file, 'UTF-8');
-  } else if (ext === 'xlsx' || ext === 'xls') {
+  if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
     reader.onload = e => {
       try {
         const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
@@ -8758,8 +8770,26 @@ function importarGheArquivo(input) {
     };
     reader.readAsArrayBuffer(file);
   } else {
-    _gheiErro('Formato não suportado. Use CSV, XLSX ou XLS.');
+    // Qualquer outra extensão é tratada como texto delimitado (csv, txt, tsv, ou sem
+    // extensão nenhuma). Restringir a lista de extensões não protegia de nada — o conteúdo
+    // é que decide — e só obrigava o usuário a renomear o arquivo para conseguir importar.
+    reader.onload = e => _gheiProcessar(_parseGHECSV(e.target.result));
+    reader.readAsText(file, 'UTF-8');
   }
+}
+
+// Texto colado direto na tela: mesmo caminho do arquivo, sem passar por disco.
+function importarGheTexto() {
+  if (!_gheiState) return;
+  const txt = (document.getElementById('ghei-colar')?.value || '').trim();
+  _gheiLimparErro();
+  if (!txt) return _gheiErro('Cole o texto da matriz antes de continuar (ou escolha um arquivo).');
+  const rows = _parseGHECSV(txt);
+  if (!rows.length) {
+    return _gheiErro('Não consegui ler nenhuma linha. A primeira linha precisa ser o cabeçalho ' +
+      '(ex: "Agrupamento GHE;Setor;Função") e as demais os dados.');
+  }
+  _gheiProcessar(rows);
 }
 
 // Separadores aceitos dentro de uma célula quando o modo multi-valor está ligado.
@@ -8852,14 +8882,26 @@ function _gheiReprocessar(primeiraVez) {
   }
 
   _gheiMontarConciliacao();
+  _gheiMontarPrevia();
   st.etapa = 2;
   _gheiRender();
+  _gheiCoberturaAsync();
 
-  // Aviso, não bloqueio: a etapa 2 já mostra as colunas detectadas e os seletores para corrigir.
+  // Aviso, não bloqueio: a revisão já mostra as colunas detectadas e os seletores para corrigir.
   if (!agrup)                     _gheiErro('Escolha qual coluna do arquivo tem o Agrupamento GHE.');
   else if (!colSetor && !colFuncao) _gheiErro('Escolha ao menos a coluna de Setor.');
   else if (!st.linhas.length)     _gheiErro(`Nenhuma linha utilizável: ${st.ignoradas} linha(s) sem agrupamento ou sem setor/função.`);
   else if (!primeiraVez)          _gheiLimparErro();
+}
+
+// Cobertura depende das respostas (rede): a revisão é pintada primeiro e o bloco se completa
+// quando a consulta volta. O guard de identidade evita que uma consulta antiga sobrescreva a
+// tela depois de o usuário ter trocado de coluna (ou fechado o modal).
+async function _gheiCoberturaAsync() {
+  const st = _gheiState;
+  if (!st || !st.previa) return;
+  await _gheiCobertura();
+  if (_gheiState === st && st.etapa === 2) _gheiRenderPrevia();
 }
 
 function _gheiSetColuna(campo, valor) {
@@ -8891,11 +8933,25 @@ function _gheiMontarConciliacao() {
       .map(ext => {
         const ctx = contextoPor?.get(_gheNormStrong(ext));
         const r = _resolverNome(tipo, ext, st.catalogo, ctx);
+        // O ARQUIVO É A FONTE. Só trocam o nome sozinhos: a correspondência exata (mesmo
+        // nome, e aí a troca é só de acentuação/caixa) e o de-para já aprendido, que é uma
+        // decisão humana tomada numa importação anterior para esta empresa.
+        // Sugestão por semelhança NÃO é mais aplicada: ela passou a ser só um atalho oferecido
+        // na revisão. Antes ela entrava sozinha, o consultor tinha de conferir item a item
+        // antes de avançar, e aceitar sem olhar colocava respondente no GHE errado.
+        const auto = r.status === 'exato' || r.status === 'apelido';
         return {
           ext,
-          status:   r.status,
-          canonico: r.canonico,
+          status:   auto ? r.status : 'livre',
+          // Como este nome foi resolvido ao abrir. Serve para o "desfazer" valer de verdade:
+          // desmarcar um de-para aprendido aqui APAGA a linha de empresa_apelidos no Aplicar —
+          // sem isso ele voltaria sozinho na importação seguinte, e o usuário teria desfeito
+          // uma coisa que reaparece.
+          origem:   auto ? r.status : 'livre',
+          canonico: auto ? r.canonico : '',
+          sugerido: auto ? '' : r.canonico,
           score:    r.score,
+          digitado: _gheEhDigitado(ext),
           // Mesma ordenação da resolução: quem existe no setor declarado vem primeiro,
           // e dentro de cada grupo ordena por semelhança. O combo reflete a decisão.
           opcoes: _ordenarCandidatos(st.catalogo[tipo].lista, ext, ctx).map(o => o.nome),
@@ -8920,29 +8976,39 @@ function _gheiMontarConciliacao() {
   st.conc.funcao = montar('funcao', st.linhas.map(l => l.funcao), ctxFuncao);
 }
 
-function _gheiSetAba(aba) {
-  if (!_gheiState) return;
-  _gheiState.aba = aba;
-  _gheiRender();
-}
-
 // Índice em vez de nome nos handlers: nomes vêm de planilha de terceiro e quebrariam um
 // onchange="...('${nome}')" com apóstrofo (ex.: D'Ávila).
 function _gheiSetConc(tipo, idx, valor) {
   const item = _gheiState?.conc[tipo]?.[idx];
   if (!item) return;
-  if (valor === '__MANTER__') { item.status = 'manter'; item.canonico = item.ext; }
+  if (!valor || valor === '__MANTER__') { item.status = 'livre'; item.canonico = ''; }
   else { item.status = 'manual'; item.canonico = valor; }
-  _gheiRender();
+  _gheiMontarPrevia();
+  // setTimeout: repintar DENTRO do onchange destrói o <select> que acabou de receber o
+  // evento (mesma armadilha já documentada em _gheeSetFuncao e _adAtualizarTabela).
+  // O scroll é preservado porque a lista inteira é reconstruída e a pessoa costuma estar
+  // no meio dela resolvendo um item atrás do outro.
+  setTimeout(() => {
+    const cx = document.getElementById('ghei-revisao');
+    const y = cx?.scrollTop || 0;
+    if (_gheiState?.etapa === 2) { _gheiRenderPendencias(); _gheiRenderPrevia(); }
+    if (cx) cx.scrollTop = y;
+    _gheiCoberturaAsync();
+  }, 0);
+}
+
+function _gheiVerTudo(v) {
+  if (!_gheiState) return;
+  _gheiState.verTudo = !!v;
+  _gheiRenderPendencias();
 }
 
 const GHEI_BADGE = {
-  exato:    { txt: 'exato',       bg: '#dcfce7', cor: '#166534' },
-  apelido:  { txt: 'aprendido',   bg: '#e0e7ff', cor: '#3730a3' },
-  sugestao: { txt: 'sugestão',    bg: '#fef9c3', cor: '#854d0e' },
-  manual:   { txt: 'confirmado',  bg: '#dcfce7', cor: '#166534' },
-  manter:   { txt: 'sem correspondência', bg: '#ffedd5', cor: '#9a3412' },
-  orfao:    { txt: 'sem correspondência', bg: '#fee2e2', cor: '#991b1b' },
+  exato:    { txt: 'igual ao catálogo', bg: '#dcfce7', cor: '#166534' },
+  apelido:  { txt: 'de-para aprendido', bg: '#e0e7ff', cor: '#3730a3' },
+  manual:   { txt: 'classificado agora', bg: '#dcfce7', cor: '#166534' },
+  livre:    { txt: 'fora do catálogo',  bg: '#ffedd5', cor: '#9a3412' },
+  digitado: { txt: 'digitado pelo respondente', bg: '#fef3c7', cor: '#854d0e' },
 };
 
 // Declara em voz alta a que coluna do arquivo cada campo foi ligado.
@@ -8997,65 +9063,95 @@ function _gheiColunasHTML() {
     </div>`;
 }
 
-function _gheiRenderConciliacao() {
+// ── Revisão: pendências e classificação manual ────────────────────────
+// Pendência é nome do arquivo que NÃO existe no catálogo da empresa. Ele é gravado assim
+// mesmo — o arquivo é a fonte —, mas fica sinalizado aqui, porque nenhuma resposta vai cair
+// num par cujo nome ninguém responde. "Outro: X" digitado pelo respondente não é pendência:
+// também não está no cadastro, mas é exatamente o texto que as respostas trazem.
+function _gheiEhPendencia(i) { return i.status === 'livre' && !i.digitado; }
+
+function _gheiItens() {
   const st = _gheiState;
-  const tipo = st.aba;
-  const itens = st.conc[tipo];
-  const el = document.getElementById('ghei-conc-lista');
+  return ['setor', 'funcao'].flatMap(t => (st.conc[t] || []).map((it, i) => ({ it, i, tipo: t })));
+}
 
-  ['setor','funcao'].forEach(t => {
-    const b = document.getElementById('ghei-aba-' + t);
-    if (!b) return;
-    const ativo = t === tipo;
-    // btn-ghost precisa sair: as duas classes coexistindo deixavam a aba ativa
-    // indistinguível da inativa.
-    b.classList.toggle('btn-g', ativo);
-    b.classList.toggle('btn-ghost', !ativo);
-    const n = st.conc[t].filter(i => i.status === 'sugestao' || i.status === 'orfao').length;
-    b.textContent = (t === 'setor' ? 'Setores' : 'Funções') + (n ? ` (${n})` : '');
+// Botão de lote: o valor da sugestão está em resolver várias de uma vez, não em conferir
+// item a item. Nunca roda sozinho — é um clique explícito, e cada linha continua editável.
+function _gheiAplicarSugestoes() {
+  const st = _gheiState;
+  if (!st) return;
+  let n = 0;
+  _gheiItens().forEach(({ it }) => {
+    if (_gheiEhPendencia(it) && it.sugerido) { it.status = 'manual'; it.canonico = it.sugerido; n++; }
   });
+  if (!n) return;
+  _gheiMontarPrevia();
+  _gheiRenderPendencias();
+  _gheiRenderPrevia();
+  _gheiCoberturaAsync();
+  toast(`${n} sugestão(ões) aplicada(s). Revise abaixo — ainda dá para desfazer uma a uma.`, 'g', 5000);
+}
 
-  const pend = itens.filter(i => i.status === 'sugestao' || i.status === 'orfao').length;
-  const resumo = document.getElementById('ghei-conc-resumo');
-  // "aprendido" conta como resolvido e some da contagem de pendências — mas é uma decisão
-  // humana de uma importação passada, que reaplica sozinha e tem prioridade sobre a sugestão.
-  // Um de-para confirmado errado uma vez ficaria invisível para sempre. Caso real: a planilha
-  // trazia "ANALISTA DE VENDAS Pl" (L minúsculo), foi casado com o cargo de outro setor, e a
-  // única resposta daquele par passou a cair fora de todo GHE. Então o número aparece.
-  const aprendidos = itens.filter(i => i.status === 'apelido').length;
-  if (resumo) {
-    const base = pend
-      ? `<strong style="color:var(--red)">${pend}</strong> de ${itens.length} pendente(s) de confirmação`
-      : `${itens.length} item(ns) — tudo resolvido`;
-    resumo.innerHTML = base + (aprendidos
-      ? ` · <strong style="color:#3730a3">${aprendidos}</strong> de importações anteriores <span style="color:var(--tl)">(revise se algum estiver errado)</span>`
-      : '');
-  }
+function _gheiRenderPendencias() {
+  const st = _gheiState;
+  const el = document.getElementById('ghei-pendencias');
+  if (!el || !st) return;
 
-  if (!itens.length) {
-    el.innerHTML = `<p style="font-size:12px;color:var(--tl);text-align:center;padding:24px 0">A planilha não trouxe ${tipo === 'setor' ? 'setores' : 'funções'}.</p>`;
-    return;
-  }
+  const todos = _gheiItens();
+  const pend  = todos.filter(x => _gheiEhPendencia(x.it));
+  const comSug = pend.filter(x => x.it.sugerido).length;
+  const visiveis = st.verTudo ? todos : pend;
 
-  el.innerHTML = itens.map((it, i) => {
-    const b = GHEI_BADGE[it.status] || GHEI_BADGE.orfao;
-    const opts = it.opcoes.map(o =>
-      `<option value="${_esc(o)}"${_gheNormStrong(o) === _gheNormStrong(it.canonico) ? ' selected' : ''}>${_esc(o)}</option>`
-    ).join('');
-    const manterSel = (it.status === 'manter' || it.status === 'orfao') ? ' selected' : '';
+  const linha = ({ it, i, tipo }) => {
+    const chave = it.status === 'manual' ? 'manual'
+                : it.status === 'livre'  ? (it.digitado ? 'digitado' : 'livre')
+                : it.status;
+    const b = GHEI_BADGE[chave] || GHEI_BADGE.livre;
+    const opts = it.opcoes.map(o => {
+      const sug = it.sugerido && _gheNormStrong(o) === _gheNormStrong(it.sugerido);
+      const sel = it.canonico && _gheNormStrong(o) === _gheNormStrong(it.canonico);
+      return `<option value="${_esc(o)}"${sel ? ' selected' : ''}>${sug ? '★ sugerido: ' : ''}${_esc(o)}</option>`;
+    }).join('');
+    const destino = it.canonico
+      ? `<span style="color:var(--g);font-weight:600">${_esc(it.canonico)}</span>`
+      : `<span style="color:var(--tl)">grava como está no arquivo</span>`;
     return `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border)">
+        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tl);width:44px;flex-shrink:0">${tipo === 'setor' ? 'Setor' : 'Função'}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(it.ext)}">${_esc(it.ext)}</div>
-          <span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:${b.bg};color:${b.cor}">${b.txt}</span>
+          <div style="font-size:10px;line-height:1.5">
+            <span style="font-weight:600;padding:0 5px;border-radius:8px;background:${b.bg};color:${b.cor}">${b.txt}</span>
+            <span style="color:var(--tl)"> → </span>${destino}
+          </div>
         </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--tl)" stroke-width="2" width="14" height="14" style="flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        <select class="filter-select" style="flex:1;min-width:0;font-size:12px" onchange="_gheiSetConc('${tipo}',${i},this.value)">
-          <option value="__MANTER__"${manterSel}>— manter como está na planilha —</option>
+        <select class="filter-select" style="flex:1;min-width:0;max-width:260px;font-size:12px" onchange="_gheiSetConc('${tipo}',${i},this.value)">
+          <option value="__MANTER__"${it.canonico ? '' : ' selected'}>— gravar como está no arquivo —</option>
           ${opts}
         </select>
       </div>`;
-  }).join('');
+  };
+
+  const cab = pend.length
+    ? `<div style="font-size:11px;font-weight:700;color:#9a3412">${pend.length} nome(s) do arquivo não existem no catálogo desta empresa</div>
+       <div style="font-size:11px;color:var(--tm);line-height:1.6;margin-top:3px">
+         Eles serão gravados com a grafia do arquivo e ficarão marcados como pendência no painel.
+         Se algum for só um nome diferente para um setor/cargo que já existe, classifique aqui —
+         a escolha fica memorizada e reaplica sozinha na próxima importação desta empresa.
+       </div>`
+    : `<div style="font-size:11px;font-weight:700;color:#166534">Todos os nomes do arquivo foram reconhecidos no catálogo</div>`;
+
+  el.innerHTML = `
+    <div style="border:1px solid var(--border);border-left:3px solid ${pend.length ? '#9a3412' : 'var(--g)'};border-radius:var(--r);padding:10px 12px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">${cab}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${comSug ? `<button class="btn btn-ghost btn-sm" onclick="_gheiAplicarSugestoes()" title="Casa de uma vez os nomes parecidos com algum item do catálogo. Cada linha continua editável depois.">Aplicar ${comSug} sugestão(ões)</button>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="_gheiVerTudo(${st.verTudo ? 'false' : 'true'})">${st.verTudo ? 'Só pendências' : `Ver os ${todos.length} nomes`}</button>
+        </div>
+      </div>
+      ${visiveis.length ? `<div style="margin-top:8px;max-height:230px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">${visiveis.map(linha).join('')}</div>` : ''}
+    </div>`;
 }
 
 // ── Etapa 3: prévia ──────────────────────────────────────────────────────────
@@ -9085,8 +9181,8 @@ function _gheiMontarPrevia() {
     const iF = l.funcao ? mF.get(_gheNormStrong(l.funcao)) : null;
     const s = l.setor  ? (iS?.canonico || l.setor)  : '';
     const f = l.funcao ? (iF?.canonico || l.funcao) : '';
-    if (iS && (iS.status === 'manter' || iS.status === 'orfao')) orfaos.add('Setor: ' + l.setor);
-    if (iF && (iF.status === 'manter' || iF.status === 'orfao')) orfaos.add('Função: ' + l.funcao);
+    if (iS && _gheiEhPendencia(iS)) orfaos.add('Setor: ' + l.setor);
+    if (iF && _gheiEhPendencia(iF)) orfaos.add('Função: ' + l.funcao);
     if (!s) return; // sem setor não há par gravável
 
     const chave = _gheNormStrong(s) + '|||' + _gheNormStrong(f);
@@ -9285,13 +9381,8 @@ function _gheiRenderPrevia() {
       '#854d0e');
   }
 
-  if (p.orfaos.length) {
-    html += bloco(`${p.orfaos.length} nome(s) sem correspondência no catálogo`,
-      p.orfaos.slice(0, 10).map(o => _esc(o)).join('<br>') +
-      (p.orfaos.length > 10 ? `<br><em>… e mais ${p.orfaos.length - 10}</em>` : '') +
-      '<br><span style="color:var(--tl)">Serão gravados com a grafia da planilha e ficarão marcados como pendência. O catálogo não é alterado.</span>',
-      '#9a3412');
-  }
+  // Os nomes sem correspondência não são repetidos aqui: eles são o painel de pendências
+  // no topo da revisão, onde além de listados podem ser classificados.
 
   const c = p.cobertura;
   if (c === null) {
@@ -9320,11 +9411,13 @@ function _gheiRenderPrevia() {
 function _gheiRender() {
   const st = _gheiState;
   if (!st) return;
-  [1,2,3].forEach(n => {
+  [1,2].forEach(n => {
     const el = document.getElementById('ghei-etapa-' + n);
     if (el) el.style.display = st.etapa === n ? '' : 'none';
   });
-  const rotulos = ['Arquivo', 'Conciliação', 'Prévia'];
+  // Duas etapas, não três: a conciliação deixou de ser um passo obrigatório — o arquivo é o
+  // resultado, e a classificação manual virou um painel dentro da própria revisão.
+  const rotulos = ['Arquivo', 'Revisão'];
   document.getElementById('ghei-trilha').innerHTML = rotulos.map((r, i) => {
     const n = i + 1, ativo = st.etapa === n, feito = st.etapa > n;
     const bg = ativo ? 'var(--g)' : feito ? 'var(--gl)' : 'var(--bg)';
@@ -9336,7 +9429,7 @@ function _gheiRender() {
   const btnA = document.getElementById('ghei-btn-avancar');
   btnV.style.display = st.etapa > 1 ? '' : 'none';
   btnA.style.display = st.etapa > 1 ? '' : 'none';
-  btnA.textContent = st.etapa === 3 ? 'Aplicar' : 'Avançar';
+  btnA.textContent = 'Aplicar';
   // _gheiAplicar desabilita o botão enquanto grava e, no sucesso, fecha o modal sem reabilitar:
   // sem este reset a SEGUNDA importação da sessão abriria com "Aplicar" morto.
   btnA.disabled = false;
@@ -9344,14 +9437,18 @@ function _gheiRender() {
   const elCols = document.getElementById('ghei-colunas');
   if (elCols) elCols.innerHTML = st.etapa > 1 ? _gheiColunasHTML() : '';
 
-  if (st.etapa === 2) _gheiRenderConciliacao();
-  if (st.etapa === 3) _gheiRenderPrevia();
+  if (st.etapa === 2) { _gheiRenderPendencias(); _gheiRenderPrevia(); }
 }
 
+// Voltar = trocar o arquivo/texto. O estado de leitura é descartado junto, porque manter a
+// classificação de um arquivo e aplicá-la sobre outro foi de onde vinham as surpresas.
 function _gheiVoltar() {
-  if (!_gheiState || _gheiState.etapa <= 1) return;
+  const st = _gheiState;
+  if (!st || st.etapa <= 1) return;
   _gheiLimparErro();
-  _gheiState.etapa--;
+  st.etapa = 1;
+  st.rows = null; st.linhas = []; st.previa = null; st.verTudo = false;
+  st.conc = { setor: [], funcao: [] };
   _gheiRender();
 }
 
@@ -9359,33 +9456,10 @@ async function _gheiAvancar() {
   const st = _gheiState;
   if (!st) return;
   _gheiLimparErro();
-  if (st.etapa === 2) {
-    // Sugestão por similaridade é palpite, não fato: aplicar sem ninguém ter olhado colocaria
-    // respondentes no GHE errado e o laudo sairia plausível e errado. Não bloqueia — mexer no
-    // combo já conta como confirmação —, mas obriga uma decisão consciente.
-    const naoConfirmadas = ['setor','funcao'].flatMap(t => st.conc[t].filter(i => i.status === 'sugestao'));
-    if (naoConfirmadas.length) {
-      const amostra = naoConfirmadas.slice(0, 6).map(i => `  • ${i.ext}  →  ${i.canonico}`).join('\n');
-      const ok = confirm(
-        `${naoConfirmadas.length} correspondência(s) foram sugeridas por semelhança de nome e ainda não foram confirmadas:\n\n${amostra}` +
-        (naoConfirmadas.length > 6 ? `\n  … e mais ${naoConfirmadas.length - 6}` : '') +
-        '\n\nAvançar aceita essas sugestões como corretas. Continuar?'
-      );
-      if (!ok) return;
-      naoConfirmadas.forEach(i => { i.status = 'manual'; });
-    }
-    _gheiMontarPrevia();
-    if (!st.previa.ghes.length) {
-      return _gheiErro('Nenhum agrupamento com par válido depois da conciliação. Confira a coluna de Setor da planilha.');
-    }
-    st.etapa = 3;
-    _gheiRender();
-    // Cobertura depende das respostas (rede) — renderiza o resto primeiro e completa depois.
-    await _gheiCobertura();
-    if (_gheiState === st && st.etapa === 3) _gheiRenderPrevia();
-    return;
+  if (!st.previa || !st.previa.ghes.length) {
+    return _gheiErro('Nenhum agrupamento com par válido. Confira a coluna de Setor do arquivo.');
   }
-  if (st.etapa === 3) return _gheiAplicar();
+  return _gheiAplicar();
 }
 
 async function _gheiAplicar() {
@@ -9399,19 +9473,47 @@ async function _gheiAplicar() {
   // deixaria de valer sozinha se o catálogo mudasse de grafia).
   const aprender = [];
   ['setor','funcao'].forEach(tipo => st.conc[tipo].forEach(i => {
-    if ((i.status === 'apelido' || i.status === 'manual' || i.status === 'sugestao') &&
+    if ((i.status === 'apelido' || i.status === 'manual') &&
         i.canonico && _gheNormStrong(i.canonico) !== _gheNormStrong(i.ext)) {
       aprender.push({ tipo, apelido: i.ext, canonico: i.canonico });
     }
   }));
   await _upsertApelidos(st.empresaId, aprender);
 
+  // Desfeitos: o que vinha do de-para aprendido e a pessoa voltou para "como está no arquivo".
+  // Precisa ser APAGADO, senão reaplica sozinho na próxima importação e o desfazer some.
+  const esquecer = [];
+  ['setor','funcao'].forEach(tipo => st.conc[tipo].forEach(i => {
+    if (i.origem === 'apelido' && i.status === 'livre') esquecer.push({ tipo, apelido: i.ext });
+  }));
+  await _esquecerApelidos(st.empresaId, esquecer);
+
   const n = st.previa.ghes.length;
   const empresaId = st.empresaId;
   fecharImportGhe();
   await carregarGruposSetor(empresaId);
   renderTabelaAgrupamentos();
-  toast(`${n} Agrupamento(s) GHE importado(s).` + (aprender.length ? ` ${aprender.length} correspondência(s) memorizada(s).` : ''), 'g', 5000);
+  toast(`${n} Agrupamento(s) GHE importado(s).`
+    + (aprender.length ? ` ${aprender.length} correspondência(s) memorizada(s).` : '')
+    + (esquecer.length ? ` ${esquecer.length} de-para removido(s).` : ''), 'g', 5000);
+}
+
+// Remove de-para que o usuário desfez na revisão. Falha aqui não é fatal (o GHE já foi
+// gravado) — só o esquecimento não persiste, e o painel De-para continua podendo removê-lo.
+async function _esquecerApelidos(empresaId, lista) {
+  if (!empresaId || !lista.length) return;
+  try {
+    for (const a of lista) {
+      const { error } = await sbAdmin.from('empresa_apelidos').delete()
+        .eq('empresa_id', empresaId).eq('tipo', a.tipo)
+        .eq('apelido_norm', _gheNormStrong(a.apelido));
+      if (error) throw error;
+    }
+    await carregarApelidos(empresaId);
+  } catch(e) {
+    console.warn('[empresa_apelidos] falha ao remover de-para desfeito:', e.message);
+    toast('GHE salvo, mas um de-para desfeito não pôde ser removido: ' + e.message, 'w', 5000);
+  }
 }
 
 // ── Exportar pares Setor × Função observados nas respostas ───────────────────
@@ -9546,6 +9648,33 @@ function renderListaGhe() {
         </div>
       </div>`;
   }).join('');
+}
+
+// Apagar todos os GHE da empresa de uma vez. Antes só dava para remover um a um, e uma matriz
+// importada errada (ou de outra empresa) custava dezenas de cliques antes de poder reimportar.
+// A importação já substitui tudo — este botão serve para o caso de querer ficar SEM GHE, ou
+// começar do zero com "+ Novo GHE".
+async function limparTodosGhe() {
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId) { toast('Selecione um cliente antes.', 'w'); return; }
+  if (!currentTenantId) {
+    toast('Entre no contexto de uma consultoria (modo suporte) para apagar GHE.', 'w', 5000);
+    return;
+  }
+  if (!gruposGhe.length) { toast('Este cliente não tem nenhum GHE para apagar.', 'w'); return; }
+  const nG = gruposGhe.length;
+  const nP = gruposGhe.reduce((a, g) => a + (g.pares?.length || 0), 0);
+  const ok = confirm(
+    `Apagar TODOS os ${nG} GHE deste cliente (${nP} par(es))?\n\n` +
+    'As respostas coletadas não são afetadas. Mas as telas de Resultados, Gráficos e Relatório ' +
+    'perdem a opção "Por GHE", e um laudo gerado depois disso volta a agrupar por setor.\n\n' +
+    'Esta ação não pode ser desfeita — a matriz precisa ser importada de novo.'
+  );
+  if (!ok) return;
+  if (!await _salvarGheNoBanco(empresaId, [])) return;
+  await carregarGruposSetor(empresaId);
+  renderTabelaAgrupamentos();
+  toast(`${nG} GHE apagado(s).`, 'g');
 }
 
 // ══════════════════════════════════════════
@@ -18788,8 +18917,11 @@ function importarGHEArquivo(input) {
 
 function _parseGHECSV(text) {
   const clean = text.replace(/\r/g, '');
-  // detecta delimitador pela primeira linha
-  const delim = (clean.split('\n')[0] || '').includes(';') ? ';' : ',';
+  // detecta delimitador pela primeira linha. TAB primeiro: é o que vem quando se copia
+  // colunas do Excel e cola direto na tela — nesse texto a vírgula aparece DENTRO das
+  // células ("Analista, Coordenador") e elegê-la deslocaria todas as colunas em silêncio.
+  const cab = clean.split('\n')[0] || '';
+  const delim = cab.includes('\t') ? '\t' : cab.includes(';') ? ';' : ',';
 
   // Parser char-a-char respeitando aspas — evita quebrar linhas quando um
   // valor (ex: nome de setor) contém o proprio delimitador ou uma quebra
