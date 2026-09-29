@@ -114,6 +114,15 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
   - **Sempre conferir `git branch --show-current` antes de commitar** (não só `git status`) e
     **validar que o push subiu** (`git log origin/<branch>..HEAD`) em vez de confiar na mensagem.
 
+  **Reconferir o range IMEDIATAMENTE antes de mergear, não só ao abrir a PR.** Em 2026-09-29
+  a PR #85 foi aberta com **4 commits** e, quatro minutos depois, `main..develop` tinha
+  **15** — outra sessão mergeou as PRs #71/#73/#74/#75/#76 (auditoria de acessos, com 3
+  migrations) direto na `develop`. O usuário havia autorizado o merge olhando os 4. O corpo
+  da PR também fica desatualizado: corrigir com um comentário antes do merge. E **checar a
+  migration no BANCO decide o risco, e costuma ser boa notícia** — `pg_policies` em PROD
+  mostrou que as 3 migrations já estavam aplicadas, ou seja, o lote era o *código alcançando*
+  um banco já endurecido, não DDL novo indo para produção.
+
   **Consequência para decisão de release — a mais importante:** "minha mudança é segura" não é
   a mesma afirmação que "`develop` está pronta para promover". `develop` pode carregar trabalho
   de outras pessoas que você não revisou nem testou. Antes de promover `develop` → `main`,
@@ -1140,6 +1149,11 @@ importação a partir dos conflitos de par, exibido no painel e **declarado no l
 
 ### Histórico de laudos e presets de filtro (2026-09-15)
 
+> **Atualizado em 2026-09-29:** o `<select>` de preset descrito aqui virou **lista de
+> marcação com múltipla seleção** nas três telas — ver "Presets de filtro com múltipla
+> seleção — acumulado" adiante. `_aplicarConfigFiltros` e `PRESET_TELAS` continuam valendo
+> como descrito; `aplicarPreset` (singular) e os ids `preset-sel-*` **não existem mais**.
+
 Fecham as lacunas 3 e 4 da nota de 2026-09-11. As duas respondem ao mesmo pedido — "não
 refazer o trabalho" — por ângulos diferentes: o histórico reaplica **o que foi gerado**, o
 preset guarda **um recorte que se usa sempre**, inclusive em Resultados e Gráficos, que não
@@ -1395,6 +1409,61 @@ node -e "const h=require('fs').readFileSync('psicomap-admin.html','utf8');
  for(const x of m) new Function(x[1]);   // lança se houver erro de sintaxe
  console.log('scripts ok:', m.length);"
 ```
+
+## Presets de filtro com múltipla seleção — acumulado (2026-09-29)
+
+Em PROD desde 2026-09-29 (PR [#85](https://github.com/elevaitconsultoria/pseg-safesign/pull/85),
+merge commit `324e4c1`). Nota completa em
+`.claude/notes/2026-09-29-presets-multipla-selecao-acumulado.md`.
+
+O consultor salvava presets parciais (um por setor) e precisava de um recorte **geral** da
+empresa/ciclo sem refazer a seleção. O `<select>` de preset virou **lista de marcação** nas
+três telas: marcar mais de um **soma os recortes**, e "Salvar atual" guarda o acumulado como
+preset novo. Sem migration — o formato de `filtro_presets.config` não mudou.
+
+- **`_filtroResultados` / `_filtroGraficos` / `_filtroLaudo` são a fonte única de recorte de
+  cada tela**, a partir de uma CONFIGURAÇÃO (o objeto que o preset guarda) e não do estado dos
+  combos. `rodarAnalise`/`renderGraficos`/`renderLaudo` **e** a conferência do acumulado usam
+  as mesmas funções — duas implementações divergiriam e o acumulado "não bateria" com a soma
+  sem nenhum erro visível. `_grupoValoresFiltro` e `_filtroPorGhe` ganharam `selOverride`
+  opcional (retrocompatível) para isso.
+- **Vazio e "todos marcados" significam ambos SEM FILTRO.** Por isso `_mesclarConfigs` não pode
+  unir com um `Set` cru: se um dos presets deixa um eixo aberto, somar as listas produz um
+  recorte **mais ESTREITO** que esse preset — o oposto de acumular. Regra: eixo aberto em
+  qualquer um ⇒ aberto no acumulado, gravado como universo inteiro marcado (lê "Todos (N)" na
+  pílula, em vez de "nenhum selecionado").
+- **Entre combos o filtro é AND**, então a união por eixo pode trazer combinações que nenhum
+  preset selecionou (`Produção/Operador` + `RH/Analista` admite `Produção/Analista`).
+  `_conferirAcumulado` **mede** o acumulado contra a soma dos presets sobre os dados reais e
+  declara a diferença nomeando os pares, em vez de presumir que batem. No Relatório o segundo
+  eixo é **escolaridade**, com o mesmo risco. Chamar `getLinhasParaAnalise` UMA vez: a
+  comparação é por identidade de linha.
+- **Campo de valor único é responsabilidade do descritor `PRESET_TELAS`** (`empresaSel`,
+  `filtrar`, `mesclar`), nunca um `if/else` crescendo dentro da mescla. Segmentação
+  (Resultados) e granularidade (Relatório) valem a do último marcado e avisam; **as seções do
+  laudo SOMAM** (união em ordem canônica de `LAUDO_SECOES`) — "valeu a última" faria o
+  acumulado perder seção que um dos presets somados tinha.
+- **Dois cuidados que não podem ser "limpados"** ao mexer em `_filtroLaudo`: o `gheParesF` é
+  calculado sobre TODAS as linhas (não sobre as do ciclo), como `renderLaudo` sempre fez; e
+  `combo-ld-nivel` fica FORA do recorte de linhas — ele recorta os *fatores* do documento, e
+  somá-lo mudaria o `n` da capa.
+- **`_togglePreset` não repinta a lista** (só marca o item e sincroniza o Excluir): repintar
+  dentro do `onchange` destruiria o próprio checkbox que recebeu o clique — mesma armadilha de
+  `_gheeSetFuncao` e `_adAtualizarTabela`.
+- Comportamentos intencionais: **desmarcar tudo não limpa a tela** (o recorte vigente segue
+  valendo, para não descartar ajustes manuais); **Excluir exige alvo único**; salvar torna o
+  recém-salvo a única seleção.
+- **O caminho legado do `<select>` foi removido**, não mantido como fallback — com as três
+  telas na lista ele seria código morto, e é assim que os dois catálogos de ação divergiram.
+
+**Limitação intencional:** o acumulado é união por eixo, não união de conjuntos de resposta.
+A união de recortes de verdade exigiria que as quatro cadeias de filtro aceitassem uma lista de
+recortes — e, pior, **não seria salvável**: um registro de `filtro_presets` guarda seleções por
+eixo, então um ALL-GERAL gravado assim voltaria como união por eixo na próxima aplicação, que é
+justamente o que o recurso existe para fazer.
+
+**Pendente:** Gráficos e Relatório foram para PROD com os testes automatizados, **sem
+homologação do usuário** — Resultados foi homologado em DEV antes de subir.
 
 ## Busca dos combos de filtro — contrato de `buildCombo` (2026-09-29)
 
