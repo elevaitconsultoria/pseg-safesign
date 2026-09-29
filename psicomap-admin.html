@@ -772,6 +772,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 /* ── FILTER CARD (painel lateral — espaçamento compacto) ── */
 .filter-card{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px}
 .filter-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tm);margin-bottom:6px}
+.preset-list{max-height:132px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);background:var(--w)}
+.preset-item{display:flex;align-items:center;gap:7px;padding:5px 8px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.preset-item:last-child{border-bottom:none}
+.preset-item:hover{background:var(--bg)}
+.preset-item.sel{background:#eef2ff;font-weight:600}
+.preset-item input{margin:0;cursor:pointer}
 .filter-select{width:100%;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);font-family:var(--font-ui);font-size:13px;padding:8px 11px;outline:none;color:var(--tx);cursor:pointer;transition:border-color .15s,background .15s}
 .filter-select:focus{border-color:var(--tx);background:var(--w)}
 .filter-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
@@ -2139,14 +2145,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Presets: recorte de filtro nomeado, por empresa e por tela. -->
       <div class="filter-card">
         <div class="filter-label">Preset de filtro</div>
-        <select id="preset-sel-resultados" class="filter-select" onchange="aplicarPreset('resultados')">
-          <option value="">— nenhum —</option>
-        </select>
+        <!-- Multi-seleção: marcar mais de um preset ACUMULA os recortes, para montar um
+             recorte geral a partir dos parciais já salvos. Ver _mesclarConfigs. -->
+        <div id="preset-list-resultados" class="preset-list"></div>
         <div style="display:flex;gap:6px;margin-top:6px">
           <button class="btn btn-ghost btn-sm" style="flex:1" id="preset-save-resultados" onclick="salvarPreset('resultados')" title="Guarda o recorte atual desta tela com um nome">Salvar atual</button>
-          <button class="btn btn-ghost btn-sm" id="preset-del-resultados" onclick="excluirPreset('resultados')" disabled title="Excluir o preset selecionado">Excluir</button>
+          <button class="btn btn-ghost btn-sm" id="preset-del-resultados" onclick="excluirPreset('resultados')" disabled title="Excluir o preset selecionado (marque exatamente um)">Excluir</button>
         </div>
-        <div style="font-size:10px;color:var(--tl);margin-top:4px">Um recorte de filtros que você salva e reaplica quando quiser.</div>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px">Um recorte de filtros que você salva e reaplica quando quiser. Marque mais de um para somar os recortes e depois use “Salvar atual” para guardar o acumulado.</div>
       </div>
 
       <!-- Filtro Ciclo -->
@@ -5040,9 +5046,12 @@ function _populateGheCombo(comboId, fcId, tipo = 'setor') {
 // livremente pelo respondente ("Outro: rh", "Outro: RH ") caiam no mesmo grupo que a forma
 // selecionada pelo admin, sem exigir que cada variante exata seja adicionada manualmente.
 // Retorna null quando nenhum filtro está ativo (todos ou nenhum selecionado).
-function _grupoValoresFiltro(comboId, tipo = 'setor') {
+// selOverride (array) avalia o filtro a partir de uma CONFIGURAÇÃO SALVA em vez do estado da
+// tela — a conferência do acumulado de presets precisa medir cada preset isoladamente sem
+// mexer nos combos.
+function _grupoValoresFiltro(comboId, tipo = 'setor', selOverride = null) {
   const grupos = tipo === 'setor' ? gruposSetor : gruposFuncao;
-  const sel = [...comboState[comboId]];
+  const sel = selOverride ? [...selOverride] : [...comboState[comboId]];
   if (!sel.length) return null; // vazio = sem filtro (padrão defensivo)
   const todos = grupos.map(g => g.nome);
   if (sel.length === todos.length) return null; // todos = sem filtro
@@ -5060,8 +5069,8 @@ function _grupoValoresFiltro(comboId, tipo = 'setor') {
 // outro faria o filtro "Operacional" trazer um conjunto diferente do bloco "Operacional" —
 // o consultor veria n diferente entre filtrar e segmentar, sem nenhum erro aparente.
 // Reusando agruparPorPares, filtro e segmentação são consistentes por construção.
-function _filtroPorGhe(comboId, linhas) {
-  const sel = [...(comboState[comboId] || [])];
+function _filtroPorGhe(comboId, linhas, selOverride = null) {
+  const sel = selOverride ? [...selOverride] : [...(comboState[comboId] || [])];
   const todos = gruposGhe.map(g => g.nome);
   if (!todos.length || !sel.length || sel.length === todos.length) return null;
   const escolhidos = new Set(sel);
@@ -5070,6 +5079,33 @@ function _filtroPorGhe(comboId, linhas) {
     if (!g._residual && escolhidos.has(g.nome)) g._chaves.forEach(k => chaves.add(k));
   });
   return chaves;
+}
+
+// Recorte da tela Resultados a partir de uma CONFIGURAÇÃO (o mesmo objeto que um preset
+// guarda), não do estado dos combos. rodarAnalise passa a configuração atual; a conferência do
+// acumulado passa a de cada preset. Uma implementação só: duas divergiriam e o acumulado
+// "não bateria" com a soma dos presets sem nenhum erro visível.
+//
+// Nível de risco NÃO entra aqui: não é filtro de linha, é recorte da análise que vem depois.
+function _filtroResultados(cfg, todos) {
+  const f = cfg.filtros || {};
+  const dados = cfg.ciclo_id ? todos.filter(r => r.ciclo_id === cfg.ciclo_id) : todos;
+  const setores = f['combo-setor'] || [];
+  const funcoes = f['combo-funcao'] || [];
+  const gheSetores = _grupoValoresFiltro('combo-ghe', 'setor', f['combo-ghe']);
+  const gheFuncoes = _grupoValoresFiltro('combo-fun-ghe', 'funcao', f['combo-fun-ghe']);
+  // Precisa das linhas: a atribuição de um par ao seu GHE é resolvida por agruparPorPares, a
+  // mesma da segmentação — filtrar "Operacional" e segmentar por "Operacional" têm de dar o
+  // mesmo conjunto.
+  const gheParesF = _filtroPorGhe('combo-ghe-par', dados, f['combo-ghe-par']);
+  // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
+  return dados.filter(r =>
+    (setores.length === 0 || setores.includes(r.setor)) &&
+    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
+    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
+    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
+    (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao)))
+  );
 }
 
 // ── Agrupamentos de setores/funções — persistência no banco ────────────────
@@ -6774,27 +6810,11 @@ async function rodarAnalise() {
   const panel = document.getElementById('resultado-panel');
   panel.innerHTML = _loadingState('Carregando respostas…');
   const emp      = document.getElementById('f-empresa').value;
-  const cicloId  = document.getElementById('f-ciclo')?.value || '';
-  const setores  = [...comboState['combo-setor']];
-  const funcoes  = [...comboState['combo-funcao']];
   const niveis   = [...comboState['combo-nivel']];
-  const gheSetores = _grupoValoresFiltro('combo-ghe');
-  const gheFuncoes = _grupoValoresFiltro('combo-fun-ghe', 'funcao');
   const todosDosBancos = await getLinhasParaAnalise(emp);
-  // Aplicar filtro de ciclo se selecionado
-  const dados = cicloId ? todosDosBancos.filter(r => r.ciclo_id === cicloId) : todosDosBancos;
-  // Precisa das linhas: a atribuicao de um par ao seu GHE e resolvida por agruparPorPares, a
-  // mesma da segmentacao — filtrar "Operacional" e segmentar por "Operacional" tem de dar o
-  // mesmo conjunto.
-  const gheParesF = _filtroPorGhe('combo-ghe-par', dados);
-  // Filtro defensivo: set vazio = "todos incluídos" (guard contra race condition de combos)
-  const filtrado = dados.filter(r =>
-    (setores.length === 0 || setores.includes(r.setor)) &&
-    (funcoes.length  === 0 || funcoes.includes(r.funcao)) &&
-    (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
-    (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
-    (gheParesF  === null  || gheParesF.has(_chavePar(r.setor, r.funcao)))
-  );
+  // O recorte sai de _filtroResultados, a mesma função que mede cada preset na conferência do
+  // acumulado — ver o comentário lá. _presetConfigAtual já lê ciclo + os 6 combos da tela.
+  const filtrado = _filtroResultados(_presetConfigAtual('resultados'), todosDosBancos);
 
   if (!filtrado.length) {
     document.getElementById('resultado-panel').innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
@@ -10251,6 +10271,138 @@ const PRESET_TELAS = {
 
 let _presets = { resultados: [], graficos: [], laudo: [] };
 
+// Presets marcados por tela. Hoje só a tela Resultados tem a lista multi (#preset-list-*);
+// Gráficos e Relatório seguem com o <select> de escolha única.
+let _presetSel = { resultados: new Set(), graficos: new Set(), laudo: new Set() };
+
+// Não repinta a lista inteira: o checkbox que recebeu o clique seria destruído dentro do
+// próprio handler — mesma armadilha já documentada em _gheeSetFuncao e _adAtualizarTabela.
+function _togglePreset(tela, id, el) {
+  const s = _presetSel[tela] || (_presetSel[tela] = new Set());
+  if (el.checked) s.add(id); else s.delete(id);
+  el.closest('.preset-item')?.classList.toggle('sel', el.checked);
+  const btnDel = document.getElementById(`preset-del-${tela}`);
+  if (btnDel) btnDel.disabled = s.size !== 1;   // excluir exige alvo único
+  aplicarPresets(tela);
+}
+
+// Excluir age sobre UM preset. Serve às duas UIs (lista multi e <select> legado).
+function _presetAtivoUnico(tela) {
+  const lista = _presets[tela] || [];
+  if (document.getElementById(`preset-list-${tela}`)) {
+    const ids = [...(_presetSel[tela] || [])];
+    return ids.length === 1 ? (lista.find(p => p.id === ids[0]) || null) : null;
+  }
+  const sel = document.getElementById(`preset-sel-${tela}`);
+  return lista.find(p => p.id === sel?.value) || null;
+}
+
+// União dos recortes, eixo a eixo. NÃO pode ser um Set ingênuo das listas salvas: nesta tela
+// "vazio" e "todos marcados" significam ambos SEM FILTRO (ver _filtroResultados e
+// _grupoValoresFiltro). Se um dos presets deixa um eixo aberto, somar as listas produziria um
+// recorte mais ESTREITO que esse preset — o oposto de acumular. Eixo aberto em qualquer um dos
+// presets ⇒ aberto no acumulado, e marcado por inteiro (fica legível como "Todos (N)" na
+// pílula do combo, em vez de "nenhum selecionado").
+function _mesclarConfigs(cfgs, tela) {
+  const d = PRESET_TELAS[tela];
+  const avisos = [];
+  const filtros = {};
+  d.combos.forEach(cid => {
+    const universo = comboItems[cid]?.() || [];
+    const aberto = cfgs.some(c => {
+      const s = c.filtros?.[cid];
+      return !Array.isArray(s) || s.length === 0 || (universo.length > 0 && s.length >= universo.length);
+    });
+    if (aberto) { filtros[cid] = [...universo]; return; }
+    const u = new Set();
+    cfgs.forEach(c => (c.filtros[cid] || []).forEach(v => u.add(v)));
+    filtros[cid] = [...u];
+  });
+
+  // Campos de valor único não somam — a regra tem de ser explícita, não a ordem de iteração.
+  const ciclos = [...new Set(cfgs.map(c => c.ciclo_id || ''))];
+  let ciclo_id = ciclos[0];
+  if (ciclos.length > 1) {
+    ciclo_id = '';
+    avisos.push('os presets são de ciclos diferentes — caiu para todos os ciclos');
+  }
+  const segs = [...new Set(cfgs.map(c => c.segmentacao).filter(Boolean))];
+  const segmentacao = segs[segs.length - 1];
+  if (segs.length > 1) avisos.push(`segmentações diferentes — valeu "${SEG_LABEL[segmentacao] || segmentacao}"`);
+
+  return { cfg: { filtros, ciclo_id, ...(segmentacao ? { segmentacao } : {}) }, avisos };
+}
+
+// Mede o acumulado contra a soma dos presets em vez de presumir que batem.
+//
+// Entre combos o filtro é AND. Unir eixo a eixo pode, portanto, trazer combinações que nenhum
+// preset selecionou: A = Produção/Operador somado a B = RH/Analista admite Produção/Analista,
+// se essa função existir nos dois setores. Quando os presets diferem em um eixo só — o caso
+// comum, um preset por setor — não há extra nenhum e o total é exatamente a soma.
+async function _conferirAcumulado(cfgs, cfgMesclado) {
+  const emp = document.getElementById('f-empresa')?.value;
+  if (!emp) return null;
+  try {
+    // Uma chamada só: a comparação é por identidade de linha, então as duas medições precisam
+    // percorrer o MESMO array.
+    const todos = await getLinhasParaAnalise(emp);
+    const uniao = new Set();
+    cfgs.forEach(c => _filtroResultados(c, todos).forEach(r => uniao.add(r)));
+    const mesclado = _filtroResultados(cfgMesclado, todos);
+    const extras = mesclado.filter(r => !uniao.has(r));
+    const porPar = new Map();
+    extras.forEach(r => {
+      const k = `${r.setor} — ${r.funcao}`;
+      porPar.set(k, (porPar.get(k) || 0) + 1);
+    });
+    const top = [...porPar.entries()].sort((a, b) => b[1] - a[1]);
+    const pares = top.slice(0, 4).map(([k, n]) => `${k} (${n})`).join(', ')
+      + (top.length > 4 ? `, +${top.length - 4}` : '');
+    return { nUniao: uniao.size, nMesclado: mesclado.length, nExtras: extras.length, pares };
+  } catch(e) {
+    // Conferência é informativa: se falhar, o recorte já aplicado continua válido.
+    console.warn('[presets] conferência do acumulado falhou:', e.message);
+    return null;
+  }
+}
+
+// Marcar N presets ACUMULA os recortes (união eixo a eixo, ver _mesclarConfigs). Com um só
+// marcado o comportamento é idêntico ao <select> de antes.
+async function aplicarPresets(tela) {
+  const escolhidos = [...(_presetSel[tela] || [])]
+    .map(id => (_presets[tela] || []).find(p => p.id === id))
+    .filter(Boolean);
+  // Desmarcar tudo não limpa a tela: o recorte que está lá continua sendo o que o usuário vê,
+  // e zerá-lo descartaria ajustes manuais feitos depois de aplicar o preset.
+  if (!escolhidos.length) return;
+
+  if (escolhidos.length === 1) {
+    const p = escolhidos[0];
+    const perdidos = _aplicarConfigFiltros(p.config || {}, tela);
+    await PRESET_TELAS[tela].render();
+    if (perdidos.length) toast(`Preset "${p.nome}" aplicado, exceto: ` + perdidos.join('; ') + '.', 'w', 6500);
+    else toast(`Preset "${p.nome}" aplicado.`, 'g', 4000);
+    return;
+  }
+
+  const cfgs = escolhidos.map(p => p.config || {});
+  const { cfg, avisos } = _mesclarConfigs(cfgs, tela);
+  const perdidos = _aplicarConfigFiltros(cfg, tela);
+  await PRESET_TELAS[tela].render();
+
+  const nomes = escolhidos.map(p => p.nome).join(' + ');
+  const conf  = await _conferirAcumulado(cfgs, cfg);
+  const notas = [...avisos, ...perdidos];
+  if (conf?.nExtras) {
+    notas.push(`${conf.nExtras} resposta(s) a mais que a soma dos presets — pares que nenhum preset selecionou: ${conf.pares}`);
+  }
+  const base = conf
+    ? `Acumulado ${nomes}: ${conf.nMesclado} respostas (soma dos presets: ${conf.nUniao}).`
+    : `Acumulado ${nomes} aplicado.`;
+  if (notas.length) toast(`${base} Atenção: ` + notas.join('; ') + '.', 'w', 12000);
+  else toast(base, 'g', 6000);
+}
+
 function _presetConfigAtual(tela) {
   const d = PRESET_TELAS[tela];
   const filtros = {};
@@ -10327,6 +10479,7 @@ function _aplicarGranSecoes(cfg, perdidos) {
 
 async function carregarPresets(empresaId) {
   _presets = { resultados: [], graficos: [], laudo: [] };
+  _presetSel = { resultados: new Set(), graficos: new Set(), laudo: new Set() };
   if (!empresaId || isDemoMode || !sbAdmin) return;
   try {
     const { data, error } = await sbAdmin
@@ -10344,6 +10497,8 @@ async function carregarPresets(empresaId) {
 }
 
 function renderPresets(tela) {
+  const box = document.getElementById(`preset-list-${tela}`);
+  if (box) return _renderPresetsMulti(tela, box);
   const sel = document.getElementById(`preset-sel-${tela}`);
   const btnDel = document.getElementById(`preset-del-${tela}`);
   if (!sel) return;
@@ -10353,6 +10508,21 @@ function renderPresets(tela) {
     + lista.map(p => `<option value="${_esc(p.id)}">${_esc(p.nome)}</option>`).join('');
   if (lista.some(p => p.id === atual)) sel.value = atual;
   if (btnDel) btnDel.disabled = !sel.value;
+}
+
+// Lista de marcação (tela Resultados). O id é UUID do banco, não texto de terceiro — por isso
+// pode ir direto no handler; o nome, que vem de digitação livre, só entra escapado no texto.
+function _renderPresetsMulti(tela, box) {
+  const lista = _presets[tela] || [];
+  const s = _presetSel[tela] || (_presetSel[tela] = new Set());
+  [...s].forEach(id => { if (!lista.some(x => x.id === id)) s.delete(id); });  // preset removido
+  box.innerHTML = lista.length
+    ? lista.map(x => `<label class="preset-item${s.has(x.id) ? ' sel' : ''}">
+        <input type="checkbox"${s.has(x.id) ? ' checked' : ''} onchange="_togglePreset('${tela}','${_esc(x.id)}',this)">
+        <span>${_esc(x.nome)}</span></label>`).join('')
+    : '<div style="padding:8px;font-size:11px;color:var(--tl)">Nenhum preset salvo para este cliente.</div>';
+  const btnDel = document.getElementById(`preset-del-${tela}`);
+  if (btnDel) btnDel.disabled = s.size !== 1;
 }
 
 async function aplicarPreset(tela) {
@@ -10403,18 +10573,24 @@ async function salvarPreset(tela) {
     return;
   }
   await carregarPresets(empresaId);
-  renderPresets(tela);
   const salvo = (_presets[tela] || []).find(p => p.nome.toLowerCase() === nome.toLowerCase());
+  // O recém-salvo passa a ser a seleção: é exatamente o recorte que está na tela. Na lista
+  // multi isso também desmarca os presets que foram somados para produzi-lo — o acumulado
+  // agora tem nome próprio, e mantê-los marcados sugeriria que ainda estão sendo somados.
+  if (salvo) _presetSel[tela] = new Set([salvo.id]);
+  renderPresets(tela);
   const sel = document.getElementById(`preset-sel-${tela}`);
-  if (sel && salvo) sel.value = salvo.id;
-  const btnDel = document.getElementById(`preset-del-${tela}`);
-  if (btnDel) btnDel.disabled = !sel?.value;
+  if (sel && salvo) {
+    sel.value = salvo.id;
+    const btnDel = document.getElementById(`preset-del-${tela}`);
+    if (btnDel) btnDel.disabled = !sel.value;
+  }
   toast(`Preset "${nome}" salvo.`, 'g');
 }
 
 async function excluirPreset(tela) {
   const sel = document.getElementById(`preset-sel-${tela}`);
-  const p = (_presets[tela] || []).find(x => x.id === sel?.value);
+  const p = _presetAtivoUnico(tela);
   if (!p) return;
   if (!confirm(`Excluir o preset "${p.nome}"?`)) return;
   try {
