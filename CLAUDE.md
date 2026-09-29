@@ -1516,3 +1516,61 @@ dizia `exit code 3`, sem contexto, por três meses.
 secret existe antes de usá-lo. Sob `bash -e` a ferramenta falha antes da checagem de erro que o
 autor escreveu, e o diagnóstico some. E um check vermelho recorrente que ninguém investiga
 dessensibiliza para a falha que importa — foi o que aconteceu aqui.
+
+## Formulário: fim do "Outro" e Identificação no topo (2026-09-29)
+
+Os dois pedidos que a PR #57 havia só registrado no `ROADMAP.md` foram implementados
+(PR [#84](https://github.com/elevaitconsultoria/pseg-safesign/pull/84), em PROD).
+
+- **Identificação passou para antes das 27 questões** (logo após as Instruções). Quem tem dúvida
+  sobre qual setor marcar precisa resolver isso antes de responder — perguntar ao RH no fim custa
+  perder o rascunho ou expor que já respondeu.
+- **`Outro (especificar)` foi removido** dos combos de Setor e Função: `__outro__` saiu dos dois
+  selects e de toda a cadeia de `enviarResposta`.
+
+**`meta-setor-input` NÃO é a opção "Outro" — não remover.** Ele é o **fallback de empresa sem
+nenhum setor no catálogo**: nesse caso `popularMetaSetor` esconde o `<select>` e mostra o campo
+livre. Removê-lo travaria a coleta dessas empresas por completo. `meta-funcao-input`, esse sim, só
+existia para o "Outro" e foi removido.
+
+**Consequência para todo o pipeline de GHE — a parte que não é óbvia:** respostas novas **não
+geram mais** valores `Outro: X`, mas **as antigas continuam no banco e são imutáveis** (reescrever
+`respostas.setor`/`funcao` segue fora de escopo por decisão do usuário). Portanto continuam
+valendo, e não devem ser "simplificados" por parecerem mortos:
+- o estado `digitado` (✎ âmbar) de `_gheClassePar`;
+- a inclusão deliberada dos `Outro:` em `exportarParesGhe()`;
+- o matching normalizado de `agruparPorGrupos` para variantes de caixa/acento;
+- o grupo **residual** de `agruparPorPares`, que é onde essas respostas caem no laudo.
+O que muda é o **fluxo**: o conjunto de `Outro:` é agora finito e só diminui.
+
+Sem o "Outro", quem não se acha na lista fica sem saída — por isso o card ganhou a nota "Fale com
+o RH da sua empresa". A pré-condição registrada no ROADMAP vale de verdade agora: **um setor
+faltando na planilha vira bloqueio real para o funcionário**, não mais dado sujo.
+
+Corrigido junto um bug pré-existente: `showDevMode()` populava `empresaSetores`/`empresaFuncoes`
+com arrays de **strings**, formato abandonado quando o catálogo GHE virou `{id, nome, setor_id}` —
+`popularMetaFuncao` quebrava em `f.nome.toLowerCase()` e o modo dev (localhost sem token) não
+abria. Só afeta desenvolvimento.
+
+## Auditoria de gestão de acessos — encerrada (2026-09-29)
+
+As 6 PRs de 2026-09-11 (#70–#76) foram todas mergeadas. **#70 chegou a PROD**; #71–#76 estão em
+`develop`. Detalhe completo em `.claude/notes/2026-09-11-auditoria-acessos-handoff.md`.
+
+**O padrão que essa auditoria deixou, e que vale como regra:** durante 18 dias o **banco e as
+Edge Functions estiveram à frente do código versionado**. Isso produziu um bug real em produção —
+`convidar-usuario` já exigia `empresa_id` para Viewer enquanto o `psicomap-admin.html` no ar não
+tinha o campo, então **convidar Viewer falhava em PROD** — e produziu também uma leitura errada de
+urgência: eu classifiquei a #72 (`webhook-billing` fail-open) como exposição ativa repetindo o
+texto da PR, quando a função deployada **já continha o fix desde 11/09**. Antes de agir sobre uma
+PR antiga, **ler o estado real do banco e da função deployada** (`pg_policy`, `get_edge_function`),
+nunca o corpo da PR — ele descreve o mundo da data em que foi escrito.
+
+Conferido em PROD em 2026-09-29, antes de cada merge: policies de `est_perfil`/`riscos_config`
+presentes e `consultor_update_member_perfis` ausente; `viewer_no_insert/update/delete` em setores,
+funções e empresas; `super_admin_tenant_details()` com guard; **zero** tabelas com escrita para
+`anon`; `tenant_modulos` com GRANT; `webhook-billing` v7 com os 4 elementos do fix.
+
+**Divergência DEV↔PROD ainda aberta:** `webhook-billing` tem `verify_jwt = false` em PROD e
+**`true` em DEV**. Com `true`, nenhum provedor de pagamento consegue chamar o webhook em DEV — ele
+exigiria um JWT que Stripe/Asaas não enviam. Alinhar para `false` quando o billing sair do papel.
