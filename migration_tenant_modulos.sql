@@ -30,6 +30,20 @@ CREATE TABLE IF NOT EXISTS tenant_modulos (
 
 ALTER TABLE tenant_modulos ENABLE ROW LEVEL SECURITY;
 
+-- ⚠️ GRANT OBRIGATÓRIO — estava FALTANDO nesta migration (corrigido 2026-09-11).
+-- Sem ele o Postgres barra na camada de privilégio ANTES de checar RLS: as
+-- policies abaixo ficam invisíveis e até o admin do tenant recebe
+-- "42501 permission denied for table tenant_modulos".
+--
+-- O efeito passou despercebido por meses porque `carregarModulosTenant()` falha
+-- ABERTO de propósito (loga warn e mantém tudo visível). Resultado: o gate de
+-- módulos por EST nunca funcionou — em DEV faltava o GRANT, em PROD a tabela
+-- nem existia. Mesma classe do achado de `grupos_setor` (2026-08-17) que
+-- originou a regra no CLAUDE.md.
+GRANT SELECT, INSERT, UPDATE, DELETE ON tenant_modulos TO authenticated;
+-- PROD concede ALL ao `anon` por ALTER DEFAULT PRIVILEGES — revogar explicitamente.
+REVOKE ALL ON tenant_modulos FROM anon;
+
 -- ── Leitura: qualquer usuário do tenant ───────────────────────────────────
 -- Necessária para o boot do admin aplicar os flags. O `OR is_super_admin()`
 -- existe porque super_admin tem tenant_id NULL — sem ele, get_my_tenant_id()
