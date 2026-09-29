@@ -1295,3 +1295,55 @@ node -e "const h=require('fs').readFileSync('psicomap-admin.html','utf8');
  for(const x of m) new Function(x[1]);   // lança se houver erro de sintaxe
  console.log('scripts ok:', m.length);"
 ```
+
+## Busca dos combos de filtro — contrato de `buildCombo` (2026-09-29)
+
+Os 17 multi-selects com busca (Resultados, Gráficos, Relatório, Auditoria) compartilham
+`buildCombo(id, query)`. Marcar um item **perdia a busca**: `toggleComboItem`/`selectAllCombo`/
+`clearCombo` chamavam `buildCombo(id)` e o default do parâmetro era `''` — "sem filtro". O texto
+ficava só no `value` do input, que nunca era lido de volta, então quem buscava "adm" conseguia
+marcar o primeiro resultado e tinha de redigitar para o segundo. PR
+[#81](https://github.com/elevaitconsultoria/pseg-safesign/pull/81).
+
+- **`_comboQuery[id]` é o estado da busca; o `value` do input não é fonte da verdade.** O
+  contrato de `buildCombo` passou a distinguir o chamador pelo **terceiro estado do parâmetro**:
+  `undefined` = re-render interno, **preserva** a busca; string (inclusive `''`) = veio do input,
+  **passa a valer**. Chamar `buildCombo(id, '')` de dentro do código volta a zerar o filtro — é
+  exatamente o que o usuário faz ao apagar o texto, e é o que o bug fazia sem querer.
+- **`_limparBuscaCombo(id)` nos pontos em que o UNIVERSO do combo muda** (`onEmpresaChange`,
+  `_populateGheCombo`, `salvarGHE`, `aplicarGrupo`, `_aplicarConfigFiltros`): a busca anterior era
+  sobre outra lista.
+- **Rede de segurança dentro de `buildCombo`**, porque `comboItems[id]` é reatribuído em ~15
+  pontos e é fácil esquecer um: se a busca preservada não casa com **nada** da lista nova, ela é
+  descartada em vez de exibir um dropdown vazio. Não vale para o que o usuário acabou de digitar
+  — aí o estado vazio ("Nenhum item encontrado") é a resposta certa.
+- **"Todos"/"Limpar" continuam agindo sobre a lista inteira**, não sobre o que a busca mostra
+  (`comboItems[id]().forEach`). Mantido de propósito: com a lista permanecendo filtrada isso ficou
+  mais visível, mas mudar tornaria "Limpar" ambíguo com busca ativa. A pílula de preview segue
+  declarando o total real (`Todos (N)`).
+- O multi-select do `#modal-grupo` **não** tem esse bug e não precisa do mesmo tratamento: ele
+  alterna a classe do item (`el.classList.toggle`) sem reconstruir a lista — mesma razão pela qual
+  `_adAtualizarTabela` repinta só o `<tbody>`.
+
+**Regra geral desta classe de bug:** nesta SPA, todo widget que reconstrói o próprio `innerHTML`
+num handler precisa declarar o que sobrevive à reconstrução (busca, foco, cursor, scroll, canvas).
+Já mordeu em `_adAtualizarTabela` (foco do input), em `_gheeSetFuncao` (o `<select>` que recebeu o
+clique) e agora aqui.
+
+## CI — o heartbeat do Supabase foi removido (2026-09-29)
+
+`.github/workflows/supabase-heartbeat.yml` existia para evitar a pausa por inatividade do plano
+**Free** do Supabase. **Os dois projetos estão em plano pago** — a pausa não se aplica, e o
+workflow foi removido (PR [#82](https://github.com/elevaitconsultoria/pseg-safesign/pull/82)).
+Não recriar keep-alive para este projeto.
+
+Ele também **nunca funcionou**: 21 execuções desde 2026-06-22, 21 falhas. Os secrets
+`SUPABASE_URL`/`SUPABASE_ANON_KEY` nunca foram cadastrados (0 secrets no repo e nos environments
+`Production`/`Preview`), o `curl` recebia URL sem host e saía com código 3. Como o step rodava sob
+`bash -e`, **o job morria no próprio `curl`, antes do `if`** que imprimiria o aviso — o log só
+dizia `exit code 3`, sem contexto, por três meses.
+
+**Vale para qualquer workflow futuro deste repo:** step que consome secret deve validar que o
+secret existe antes de usá-lo. Sob `bash -e` a ferramenta falha antes da checagem de erro que o
+autor escreveu, e o diagnóstico some. E um check vermelho recorrente que ninguém investiga
+dessensibiliza para a falha que importa — foi o que aconteceu aqui.
