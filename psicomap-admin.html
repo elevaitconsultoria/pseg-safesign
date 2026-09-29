@@ -5024,6 +5024,7 @@ function _populateGheCombo(comboId, fcId, tipo = 'setor') {
   if (fc) fc.style.display = nomes.length ? '' : 'none';
   comboItems[comboId] = () => nomes;
   comboState[comboId] = new Set(nomes); // todos selecionados = sem filtro ativo
+  _limparBuscaCombo(comboId);          // a lista trocou; a busca anterior era sobre outra
   buildCombo(comboId);
 }
 
@@ -6465,9 +6466,34 @@ document.addEventListener('click', e => {
   }
 });
 
-function buildCombo(id, query='') {
+// Texto de busca vigente de cada combo. Precisa ser estado, e nao so o value do input:
+// toggleComboItem/selectAllCombo/clearCombo reconstroem a lista e, sem isto, ela voltava
+// completa enquanto o input continuava mostrando "adm" — o usuario nao conseguia marcar o
+// segundo item do resultado da propria busca.
+const _comboQuery = {};
+function _comboBuscaInput(id) { return document.querySelector('#'+id+' .combo-search-wrap input'); }
+
+// Chamada quando o UNIVERSO de itens do combo muda (troca de empresa, reimportacao de
+// agrupamentos, restauracao de preset): a busca anterior era sobre outra lista.
+function _limparBuscaCombo(id) {
+  _comboQuery[id] = '';
+  const inp = _comboBuscaInput(id);
+  if (inp) inp.value = '';
+}
+
+function buildCombo(id, query) {
+  // undefined = chamada interna (re-render apos marcar/desmarcar): preserva a busca.
+  // string (inclusive '') = veio do input de busca: passa a valer.
+  const interna = query === undefined;
+  if (interna) query = _comboQuery[id] || '';
+  else _comboQuery[id] = query;
   const all   = comboItems[id]();
-  const items = query ? all.filter(i => i.toLowerCase().includes(query.toLowerCase())) : all;
+  let items = query ? all.filter(i => i.toLowerCase().includes(query.toLowerCase())) : all;
+  // Rede de seguranca: comboItems[id] e reatribuido em ~15 pontos (troca de empresa, de
+  // ciclo, reimportacao). Se a busca preservada nao casa com NADA da lista nova, ela e de
+  // outro universo — descarta em vez de mostrar um dropdown vazio. Nao vale para o que o
+  // usuario acabou de digitar (ai o "nenhum item encontrado" abaixo e a resposta certa).
+  if (interna && query && !items.length) { _limparBuscaCombo(id); query = ''; items = all; }
   const list  = document.getElementById(id+'-list');
   if (!list) return;
 
@@ -6489,6 +6515,12 @@ function buildCombo(id, query='') {
         ${item}
       </div>`;
     }).join('');
+  }
+  // Busca sem resultado deixava o dropdown vazio, sem dizer por que.
+  if (!items.length && query) {
+    const q = String(query).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    list.innerHTML = `<div style="padding:14px;text-align:center;color:var(--tl);font-size:11px">Nenhum item encontrado para “${q}”.
+      <span onclick="_limparBuscaCombo('${id}');buildCombo('${id}')" style="display:block;margin-top:4px;color:var(--g);font-weight:600;cursor:pointer">Limpar busca</span></div>`;
   }
   updateComboPreview(id);
 }
@@ -6718,6 +6750,8 @@ async function onEmpresaChange() {
   _populateGheCombo('combo-fun-ghe', 'fc-fun-ghe', 'funcao');
   _populateGheCombo('combo-ghe-par', 'fc-ghe-par', 'ghe');
   _atualizarSegSelect();        // habilita/desabilita "Por Agrupamento" pela empresa
+  _limparBuscaCombo('combo-setor');   // outra empresa = outra lista; busca antiga nao vale
+  _limparBuscaCombo('combo-funcao');
   buildCombo('combo-setor');
   _sincronizarComboFuncoes();   // ja entra com a lista correta do ciclo ativo
   await carregarPresets(emp);
@@ -8448,6 +8482,7 @@ function aplicarGrupo(tipo, idx) {
   const id = tipo==='setor' ? 'combo-setor' : 'combo-funcao';
   comboState[id].clear();
   g.itens.forEach(i => comboState[id].add(i));
+  _limparBuscaCombo(id);   // selecao veio do agrupamento, nao da busca em tela
   buildCombo(id);
   toast(`Agrupamento "${g.nome}" aplicado.`, 'g');
 }
@@ -10251,6 +10286,7 @@ function _aplicarConfigFiltros(cfg, tela) {
     const validos = salvos.filter(v => disp.includes(v));
     if (validos.length !== salvos.length) perdidos.push(`${salvos.length - validos.length} item(ns) de filtro`);
     comboState[cid] = new Set(validos);
+    _limparBuscaCombo(cid);  // preset/reaplicar sobrescreve a tela inteira; busca em curso nao vale mais
     buildCombo(cid);
   });
 
@@ -19353,7 +19389,7 @@ async function salvarGHE() {
   // Rebuild todos os combos
   ['combo-setor','combo-funcao','combo-gf-setor','combo-gf-funcao',
    'combo-ld-setor','combo-audit-setor'].forEach(id => {
-    try { if (document.getElementById(id+'-list')) buildCombo(id); } catch(e) {}
+    try { if (document.getElementById(id+'-list')) { _limparBuscaCombo(id); buildCombo(id); } } catch(e) {}
   });
 
   // Atualizar tela Empresas para refletir novos setores
