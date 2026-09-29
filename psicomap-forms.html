@@ -229,20 +229,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <strong>(1) Nunca &nbsp;·&nbsp; (2) Às vezes &nbsp;·&nbsp; (3) Frequente &nbsp;·&nbsp; (4) Sempre</strong>
   </div>
 
-  <!-- Progresso -->
-  <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-  <div class="progress-label" id="progress-label">0 de 27 respondidas</div>
-
-  <!-- Questões geradas dinamicamente -->
-  <div id="questoes-wrap"></div>
-
-  <!-- Metadados opcionais -->
+  <!-- Identificação ANTES das questões: quem tem dúvida sobre qual setor/função
+       marcar precisa descobrir isso antes de responder 27 questões, não depois
+       (perguntar ao RH no fim custa perder o rascunho ou expor que já respondeu). -->
   <div class="card">
     <div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">Identificação <span style="font-size:10px;font-weight:500;color:#dc2626">* obrigatório</span></div>
     <div class="meta-grid">
       <div class="field" id="meta-setor-field" style="display:none">
         <label>Setor / GHE <span style="color:#dc2626">*</span></label>
-        <!-- preenchido por popularMetaSetor() — pode ser <select> ou <input> livre -->
+        <!-- preenchido por popularMetaSetor(): <select> quando a empresa tem GHE
+             cadastrado; o <input> livre abaixo é o FALLBACK para empresa sem nenhum
+             setor no catálogo — não é a antiga opção "Outro (especificar)". -->
         <select id="meta-setor">
           <option value="">Selecione seu setor</option>
         </select>
@@ -258,12 +255,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <select id="meta-funcao" disabled style="opacity:.5;cursor:not-allowed">
           <option value="">Selecione primeiro o setor</option>
         </select>
-        <input id="meta-funcao-input" type="text" placeholder="Digite sua função / cargo"
-          style="display:none;width:100%;border:1.5px solid var(--border);border-radius:var(--r);
-          background:#f7f9f8;color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;
-          font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;margin-top:6px;box-sizing:border-box"
-          onfocus="this.style.borderColor='var(--g)';this.style.background='white'"
-          onblur="this.style.borderColor='var(--border)';this.style.background='#f7f9f8'"/>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <div style="font-size:11px;color:var(--tl);line-height:1.5;background:#f7f9f8;border-radius:var(--r);padding:8px 10px">
+          Não encontrou seu setor ou sua função na lista? Fale com o RH da sua empresa —
+          a lista vem do cadastro que ela enviou e só pode ser corrigida por lá.
+        </div>
       </div>
       <div class="field">
         <label>Escolaridade</label>
@@ -275,6 +272,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
     </div>
   </div>
+
+  <!-- Progresso -->
+  <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="progress-label" id="progress-label">0 de 27 respondidas</div>
+
+  <!-- Questões geradas dinamicamente -->
+  <div id="questoes-wrap"></div>
 
   <!-- Aviso LGPD inline (sem checkbox — base legal é obrigação legal, art. 11, II, "a") -->
   <div style="background:var(--gl);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-top:8px;display:flex;align-items:flex-start;gap:10px">
@@ -555,7 +559,6 @@ async function carregarGHEEmpresa(empId) {
 
 function popularMetaFuncao(setorId) {
   const sel = document.getElementById('meta-funcao');
-  const inp = document.getElementById('meta-funcao-input');
   if (!sel) return;
 
   // Filtra cargos pelo setor selecionado quando há vínculo no banco.
@@ -584,29 +587,11 @@ function popularMetaFuncao(setorId) {
     opt.value = nome; opt.textContent = nome;
     sel.appendChild(opt);
   });
-  const optOutro = document.createElement('option');
-  optOutro.value = '__outro__';
-  optOutro.textContent = 'Outro (especificar)';
-  sel.appendChild(optOutro);
+  // Sem "Outro (especificar)": só cargos do catálogo GHE. Valor livre nunca entrava
+  // no catálogo, ficava de fora da Adesão e caía no grupo residual do laudo.
 
   // Restaura seleção anterior se ainda válida
-  if (valorAtual && [...sel.options].some(o => o.value === valorAtual)) {
-    sel.value = valorAtual;
-  } else {
-    sel.value = '';
-    if (inp) { inp.style.display = 'none'; inp.value = ''; }
-  }
-
-  sel.onchange = function() {
-    if (!inp) return;
-    if (this.value === '__outro__') {
-      inp.style.display = '';
-      inp.focus();
-    } else {
-      inp.style.display = 'none';
-      inp.value = '';
-    }
-  };
+  sel.value = (valorAtual && [...sel.options].some(o => o.value === valorAtual)) ? valorAtual : '';
 }
 
 function popularMetaSetor() {
@@ -628,33 +613,18 @@ function popularMetaSetor() {
         opt.value = s.nome; opt.textContent = s.nome;
         sel.appendChild(opt);
       });
-      // "Outro" sempre por último
-      const optOutro = document.createElement('option');
-      optOutro.value = '__outro__';
-      optOutro.textContent = 'Outro (especificar)';
-      sel.appendChild(optOutro);
+      // Sem "Outro (especificar)": a lista é o catálogo GHE da empresa, e só.
 
       sel.onchange = function() {
-        if (!inp) return;
+        if (inp) { inp.style.display = 'none'; inp.value = ''; }
         if (this.value === '') {
           // Nenhum setor → desabilita funcao
-          inp.style.display = 'none';
-          inp.value = '';
           const selFuncao = document.getElementById('meta-funcao');
           if (selFuncao) { selFuncao.disabled = true; selFuncao.style.opacity = '.5'; selFuncao.style.cursor = 'not-allowed'; selFuncao.innerHTML = '<option value="">Selecione primeiro o setor</option>'; }
           return;
         }
-        if (this.value === '__outro__') {
-          inp.style.display = '';
-          inp.placeholder = 'Digite o nome do seu setor';
-          inp.focus();
-          popularMetaFuncao(null);
-        } else {
-          inp.style.display = 'none';
-          inp.value = '';
-          const setorObj = empresaSetores.find(s => s.nome === this.value);
-          popularMetaFuncao(setorObj ? setorObj.id : null);
-        }
+        const setorObj = empresaSetores.find(s => s.nome === this.value);
+        popularMetaFuncao(setorObj ? setorObj.id : null);
       };
     }
     if (inp) inp.style.display = 'none';
@@ -723,9 +693,23 @@ function showForm() {
 function showDevMode() {
   empresaId      = 'dev-mode';
   empresaNome    = 'Empresa (modo dev)';
-  setorNome      = 'Setor Teste';
-  empresaSetores = ['Administrativo','Produção','Engenharia','Manutenção'];
-  empresaFuncoes = ['Analista','Operador(a)','Técnico(a)','Supervisor(a)','Gerente'];
+  // setorNome vazio de propósito: com setor pré-definido o combo de Identificação
+  // nem aparece, e é justamente ele que o modo dev precisa exercitar.
+  setorNome      = '';
+  // Mesmo formato do catálogo real ({id, nome, setor_id}). Eram arrays de strings —
+  // desde que o GHE virou objeto, popularMetaFuncao quebrava em f.nome.toLowerCase().
+  empresaSetores = [
+    { id: 'dev-s1', nome: 'Administrativo' },
+    { id: 'dev-s2', nome: 'Produção' },
+    { id: 'dev-s3', nome: 'Manutenção' },
+  ];
+  empresaFuncoes = [
+    { id: 'dev-f1', nome: 'Analista',      setor_id: 'dev-s1' },
+    { id: 'dev-f2', nome: 'Assistente',    setor_id: 'dev-s1' },
+    { id: 'dev-f3', nome: 'Operador(a)',   setor_id: 'dev-s2' },
+    { id: 'dev-f4', nome: 'Técnico(a)',    setor_id: 'dev-s3' },
+    { id: 'dev-f5', nome: 'Supervisor(a)', setor_id: null },  // universal
+  ];
   showForm();
 }
 
@@ -885,17 +869,14 @@ async function enviarResposta() {
   }
 
   // ── Sanitização de metadados (previne injeção de strings longas) ──
+  // Sem a opção "Outro": o valor vem do catálogo GHE. O input de setor só entra no
+  // fallback de empresa sem nenhum setor cadastrado (popularMetaSetor esconde o select).
   const funcaoSelect = document.getElementById('meta-funcao')?.value;
-  const funcaoInput  = document.getElementById('meta-funcao-input')?.value?.trim();
-  const funcaoVal    = _sanitizeMeta(
-    funcaoSelect === '__outro__' ? (funcaoInput ? `Outro: ${funcaoInput}` : 'Outro') : funcaoSelect
-  );
+  const funcaoVal    = _sanitizeMeta(funcaoSelect);
   const escolarVal = _sanitizeMeta(document.getElementById('meta-escolaridade')?.value, 60);
   const setorSelect = document.getElementById('meta-setor')?.value;
   const setorInput  = document.getElementById('meta-setor-input')?.value?.trim();
-  const setorRaw = setorSelect === '__outro__'
-    ? (setorInput ? `Outro: ${setorInput}` : 'Outro')
-    : (setorSelect || setorInput);
+  const setorRaw = setorSelect || setorInput;
   const setorVal = _sanitizeMeta(setorNome || setorRaw) || 'Não informado';
 
   // ── Validação obrigatória de setor e função ──────────────
@@ -907,23 +888,11 @@ async function enviarResposta() {
       document.getElementById('meta-setor')?.focus();
       return;
     }
-    if (setorSelect === '__outro__' && !setorInput) {
-      btn.disabled = false; btn.innerHTML = originalBtnHtml;
-      toast('Digite o nome do seu setor.', 'warn');
-      document.getElementById('meta-setor-input')?.focus();
-      return;
-    }
   }
   if (!funcaoVal) {
     btn.disabled = false; btn.innerHTML = originalBtnHtml;
     toast('Selecione sua função / cargo antes de enviar.', 'warn');
     document.getElementById('meta-funcao')?.focus();
-    return;
-  }
-  if (funcaoSelect === '__outro__' && !funcaoInput) {
-    btn.disabled = false; btn.innerHTML = originalBtnHtml;
-    toast('Digite sua função / cargo.', 'warn');
-    document.getElementById('meta-funcao-input')?.focus();
     return;
   }
 
