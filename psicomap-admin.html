@@ -2435,10 +2435,27 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
 
       <div class="filter-card">
-        <label class="filter-label" for="audit-funcao-sel">Função</label>
-        <select id="audit-funcao-sel" onchange="renderTelaAuditoria()" class="filter-select">
-          <option value="">Todas as funções</option>
-        </select>
+        <label class="filter-label">Função</label>
+        <div class="combo" id="combo-audit-funcao">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-funcao')">
+            <div class="combo-preview" id="combo-audit-funcao-preview"><span class="combo-placeholder">Todas as funções</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar função..." oninput="filterCombo('combo-audit-funcao',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-funcao-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-funcao-count">0 selecionadas</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-audit-funcao')">Todas</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-audit-funcao')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="filter-card">
@@ -6510,6 +6527,7 @@ const comboState = {
   'combo-ld-fun-ghe':      new Set(),
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
+  'combo-audit-funcao': new Set(),   // vazio = todas (a lista e dinamica, vem das respostas)
 };
 const comboItems = {
   'combo-setor':       () => SETORES_DEMO,
@@ -6527,6 +6545,7 @@ const comboItems = {
   'combo-ld-ghe':          () => [],
   'combo-ld-fun-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
+  'combo-audit-funcao': () => [],
 };
 
 function toggleCombo(id) {
@@ -6633,6 +6652,7 @@ const COMBO_RENDER = {
   'combo-ld-fun-ghe':   renderLaudo,
   'combo-ld-ghe-par':   renderLaudo,
   'combo-audit-setor':  renderTelaAuditoria,
+  'combo-audit-funcao': renderTelaAuditoria,
 };
 
 // Todo combo agora aplica sozinho. Antes so os 6 de agrupamento faziam isso;
@@ -17985,6 +18005,8 @@ async function onAuditEmpresaChange() {
   const empId = document.getElementById('audit-empresa')?.value || '';
   limparCacheRespostas();
   preencherSelectCiclos('audit-ciclo', empId);
+  comboState['combo-audit-funcao'].clear();
+  _limparBuscaCombo('combo-audit-funcao');
   // Carregar setores das respostas reais (funções são populadas dinamicamente em renderTelaAuditoria)
   if (!isDemoMode && empId && sbAdmin) {
     try {
@@ -18007,7 +18029,6 @@ async function renderTelaAuditoria() {
   const empId    = document.getElementById('audit-empresa')?.value || '';
   const cicloId  = document.getElementById('audit-ciclo')?.value || '';
   const setores  = [...comboState['combo-audit-setor']];
-  const funcaoSel = document.getElementById('audit-funcao-sel')?.value || '';
   const busca    = (document.getElementById('audit-busca')?.value || '').toLowerCase().trim();
 
   const panel = document.getElementById('audit-table-panel');
@@ -18042,18 +18063,18 @@ async function renderTelaAuditoria() {
     return { ...r, _empNome: empNome, _idx: i };
   });
 
-  // Popular select de função com opções únicas
-  const funcaoSel$ = document.getElementById('audit-funcao-sel');
-  if (funcaoSel$) {
-    const funcoes = [...new Set(linhas.map(r => r.funcao).filter(Boolean))].sort();
-    const cur = funcaoSel$.value;
-    funcaoSel$.innerHTML = '<option value="">Todas</option>' + funcoes.map(f => `<option value="${f}"${f===cur?' selected':''}>${f}</option>`).join('');
-  }
+  // Combo de função: opções únicas das respostas (empresa + ciclo). A seleção é podada para
+  // o que ainda existe — troca de ciclo/empresa não pode deixar função "fantasma" filtrando.
+  const funcoes = [...new Set(linhas.map(r => r.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const funcSel = comboState['combo-audit-funcao'];
+  [...funcSel].forEach(f => { if (!funcoes.includes(f)) funcSel.delete(f); });
+  comboItems['combo-audit-funcao'] = () => funcoes;
+  buildCombo('combo-audit-funcao');
 
-  // Aplicar filtros
+  // Aplicar filtros (conjunto vazio = sem filtro de função)
   const filtrado = linhas.filter(r => {
     if (setores.length && !setores.includes(r.setor)) return false;
-    if (funcaoSel && r.funcao !== funcaoSel) return false;
+    if (funcSel.size && !funcSel.has(r.funcao)) return false;
     if (busca) {
       const idResp = (r.id_respondente || r.respondente_id || ('R-' + String(r._idx+1).padStart(3,'0'))).toLowerCase();
       const setor  = (r.setor || '').toLowerCase();
@@ -18189,8 +18210,8 @@ function resetarFiltrosAuditoria() {
   if (sel) sel.value = empId;
   const selCiclo = document.getElementById('audit-ciclo');
   if (selCiclo) selCiclo.value = '';
-  const selFuncao = document.getElementById('audit-funcao-sel');
-  if (selFuncao) selFuncao.value = '';
+  comboState['combo-audit-funcao'].clear();
+  _limparBuscaCombo('combo-audit-funcao');
   const busca = document.getElementById('audit-busca');
   if (busca) busca.value = '';
   renderTelaAuditoria();
