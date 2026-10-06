@@ -5217,6 +5217,10 @@ async function carregarGruposSetor(empresaId) {
     gruposGhe    = [];
   }
 }
+  // O filtro Segmentação (Resultados) habilita "Por Agrupamento" a partir destas listas, mas só
+  // era reavaliado em onEmpresaChange/rodarAnalise. Criar ou importar grupos na tela
+  // Agrupamentos e voltar a Resultados deixava a opção desabilitada até "Ver resultados".
+  try { _atualizarSegSelect(); } catch(e) { console.warn('_atualizarSegSelect:', e); }
 
 // Repete a gravação sem as colunas que este banco ainda não tem. Sem isto, publicar o HTML
 // antes da migration quebraria a importação inteira com "column does not exist" — e o usuário
@@ -7769,10 +7773,13 @@ function _atualizarSegSelect() {
   if (optGrup) {
     optGrup.disabled    = !temGrupos;
     // O rótulo vem de GRAN_OPCOES, não de um literal: escrever 'Por Agrupamento' aqui
+    // Sem Grupos de Setores/Funções a opção só confunde (quem usa só a matriz GHE a lia como
+    // "o agrupamento que eu configurei" e a via travada) — some, como o "Por GHE" faz.
+    optGrup.hidden      = !temGrupos;
     // reescrevia, em tempo de execução, o texto que o select recebeu no boot — a divergência
     // entre Resultados e Relatório voltava sozinha depois da primeira troca de empresa.
     const rotuloAgrup = GRAN_OPCOES.find(o => o.v === 'agrupado')?.opcao || 'Por Agrupamento';
-    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos)`;
+    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos de setores/funções)`;
   }
   // GHE some da lista quando a empresa nao tem matriz importada — nao ha o que oferecer,
   // e um "(sem GHE)" desabilitado so ocuparia espaco no filtro.
