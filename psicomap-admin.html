@@ -4058,6 +4058,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </button>
       </div>
     </div>
+    <div id="agrup-cobertura" style="display:none;margin-top:10px"></div>
     <div id="agrup-lista-ghe" style="margin-top:8px">
       <p style="font-size:12px;color:var(--tl);text-align:center;padding:20px 0">Selecione um cliente para ver os GHE.</p>
     </div>
@@ -5216,6 +5217,10 @@ async function carregarGruposSetor(empresaId) {
     gruposFuncao = [];
     gruposGhe    = [];
   }
+  // O filtro Segmentação (Resultados) habilita "Por Agrupamento" a partir destas listas, mas só
+  // era reavaliado em onEmpresaChange/rodarAnalise. Criar ou importar grupos na tela
+  // Agrupamentos e voltar a Resultados deixava a opção desabilitada até "Ver resultados".
+  try { _atualizarSegSelect(); } catch(e) { console.warn('_atualizarSegSelect:', e); }
 }
 
 // Repete a gravação sem as colunas que este banco ainda não tem. Sem isto, publicar o HTML
@@ -7768,11 +7773,14 @@ function _atualizarSegSelect() {
   const optGrup = sel.querySelector('option[value="agrupado"]');
   if (optGrup) {
     optGrup.disabled    = !temGrupos;
+    // Sem Grupos de Setores/Funções a opção só confunde (quem usa só a matriz GHE a lia como
+    // "o agrupamento que eu configurei" e a via travada) — some, como o "Por GHE" faz.
+    optGrup.hidden      = !temGrupos;
     // O rótulo vem de GRAN_OPCOES, não de um literal: escrever 'Por Agrupamento' aqui
     // reescrevia, em tempo de execução, o texto que o select recebeu no boot — a divergência
     // entre Resultados e Relatório voltava sozinha depois da primeira troca de empresa.
     const rotuloAgrup = GRAN_OPCOES.find(o => o.v === 'agrupado')?.opcao || 'Por Agrupamento';
-    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos)`;
+    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos de setores/funções)`;
   }
   // GHE some da lista quando a empresa nao tem matriz importada — nao ha o que oferecer,
   // e um "(sem GHE)" desabilitado so ocuparia espaco no filtro.
@@ -8900,6 +8908,7 @@ function renderTabelaAgrupamentos() {
   renderListaGhe();
   const btnLimpar = document.getElementById('btn-limpar-ghe');
   if (btnLimpar) btnLimpar.style.display = nG ? '' : 'none';
+  atualizarCoberturaGhe();
   _sincronizarBotaoDePara();
 }
 
@@ -9877,6 +9886,7 @@ function renderListaGhe() {
           <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:5px">
             ${_esc(g.nome)}
             <span style="font-weight:400;font-size:11px;color:var(--tl)">· ${pares.length} par(es)</span>
+            <span class="ghe-n" data-ghe="${_esc(g.nome)}" style="font-weight:400;font-size:11px;color:var(--tl)" title="Respostas que o laudo Por GHE atribui a este GHE"></span>
             ${nPend ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fee2e2;color:#991b1b;margin-left:4px">${nPend} pendência(s)</span>` : ''}
             ${nDig ? `<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:#fef3c7;color:#854d0e;margin-left:4px" title="Valores digitados pelo respondente em &quot;Outro&quot;. Funcionam normalmente no agrupamento.">${nDig} digitado(s)</span>` : ''}
           </div>
@@ -9889,7 +9899,146 @@ function renderListaGhe() {
         </div>
       </div>`;
   }).join('');
+  _preencherContagemGhe();
 }
+
+// ── Cobertura do GHE: quantas respostas o agrupamento realmente considera ───────────────────
+// O número já existia: agruparPorPares devolve `fora` e `total`. Só que ia para console.warn e
+// para a prévia da importação — nenhuma tela mostrava o que o GHE gravado deixa de fora. Caso real
+// (ASSA Porto Feliz): 191 de 555 respostas (34%) fora de todo GHE, sem nenhum aviso. Resposta fora
+// de GHE não some do laudo: cai num bloco por setor, sem GHE, e ninguém percebe.
+// Usa a MESMA função e as MESMAS linhas do laudo (getLinhasParaAnalise), então o número daqui é o
+// número do documento — nunca recalcular a cobertura por outro caminho.
+let _cobGhe = null;          // {empresaId,total,fora,porSetor,porGhe,conflitos}
+let _cobGheAberto = false;   // painel "o que ficou de fora" aberto?
+let _cobGheSeq = 0;          // descarta resposta atrasada quando a empresa muda no meio do cálculo
+
+async function atualizarCoberturaGhe() {
+  const el = document.getElementById('agrup-cobertura');
+  if (!el) return;
+  const empresaId = _empresaAtiva?.id;
+  if (!empresaId || empresaId === 'null' || !gruposGhe.length) {
+    _cobGhe = null; _cobGheAberto = false; el.style.display = 'none'; el.innerHTML = ''; return;
+  }
+  const seq = ++_cobGheSeq;
+  if (!_cobGhe || _cobGhe.empresaId !== empresaId) {
+    el.style.display = '';
+    el.innerHTML = '<div style="font-size:11px;color:var(--tl);padding:8px 0">Calculando cobertura…</div>';
+  }
+  let linhas;
+  try { linhas = await getLinhasParaAnalise(empresaId); }
+  catch(e) { console.warn('[cobertura GHE]', e.message); el.style.display = 'none'; return; }
+  if (seq !== _cobGheSeq || _empresaAtiva?.id !== empresaId) return;
+
+  const r = agruparPorPares(linhas, gruposGhe);
+  const porSetor = r.grupos.filter(g => g._residual).map(g => {
+    const m = new Map();
+    _linhasDoGrupo(g, linhas).forEach(l => {
+      const k = _chavePar(l.setor, l.funcao);
+      if (!m.has(k)) m.set(k, { setor: l.setor, funcao: l.funcao, n: 0 });
+      m.get(k).n++;
+    });
+    return { setor: g.nome, n: g.n,
+             pares: [...m.values()].sort((a, b) => b.n - a.n || String(a.funcao).localeCompare(String(b.funcao), 'pt-BR')) };
+  }).sort((a, b) => b.n - a.n || a.setor.localeCompare(b.setor, 'pt-BR'));
+  _cobGhe = { empresaId, total: r.total, fora: r.fora, porSetor, conflitos: r.conflitos.length,
+              porGhe: new Map(r.grupos.filter(g => !g._residual).map(g => [g.nome, g.n])) };
+  _renderCoberturaGhe();
+  _preencherContagemGhe();
+}
+
+// Contagem por GHE ao lado do nome. GHE sem nenhuma resposta fica sinalizado: ou o par não bate com
+// o que os respondentes marcaram, ou ninguém daquele grupo respondeu — em ambos os casos é o que
+// o consultor precisa saber antes do laudo.
+function _preencherContagemGhe() {
+  if (!_cobGhe || _cobGhe.empresaId !== _empresaAtiva?.id) return;
+  document.querySelectorAll('#agrup-lista-ghe .ghe-n').forEach(sp => {
+    const n = _cobGhe.porGhe.get(sp.dataset.ghe) || 0;
+    sp.textContent = `· ${n} resposta${n !== 1 ? 's' : ''}`;
+    sp.style.color = n ? 'var(--tl)' : '#9a3412';
+    sp.style.fontWeight = n ? '400' : '600';
+  });
+}
+
+function _renderCoberturaGhe() {
+  const el = document.getElementById('agrup-cobertura');
+  const c = _cobGhe;
+  if (!el || !c) return;
+  el.style.display = '';
+  const caixa = (bg, cor, corpo) => `<div style="background:${bg};border:1px solid ${cor}33;border-left:3px solid ${cor};border-radius:var(--r);padding:10px 12px">${corpo}</div>`;
+  if (!c.total) {
+    el.innerHTML = caixa('var(--bg)', '#64748b', '<span style="font-size:12px;color:var(--tm)">Esta empresa ainda não tem respostas — não há cobertura a medir.</span>');
+    return;
+  }
+  const dentro = c.total - c.fora, pf = c.fora / c.total;
+  const pct = Math.round(dentro / c.total * 100);
+  // Faixas pelo quanto do laudo "Por GHE" fica sem GHE: até 3% é ruído; acima de 10% o laudo está incompleto.
+  const [bg, cor] = pf > 0.10 ? ['#fef2f2', '#991b1b'] : pf > 0.03 ? ['#fffbeb', '#854d0e'] : ['#f0fdf4', '#166534'];
+  const resumo = `<span style="font-size:13px;color:var(--tx)"><strong>${c.total}</strong> respostas · <strong style="color:${cor}">${dentro} cobertas (${pct}%)</strong> · <strong style="color:${cor}">${c.fora} fora de todo GHE</strong></span>`;
+  const botao = c.fora
+    ? `<button class="btn btn-ghost btn-sm" onclick="_toggleForaGhe()">${_cobGheAberto ? 'Ocultar' : 'Ver o que ficou de fora'}</button>`
+    : '<span style="font-size:11px;color:#166534;font-weight:600">Tudo coberto ✓</span>';
+  const nota = c.fora
+    ? `<div style="font-size:11px;color:var(--tm);margin-top:4px;line-height:1.5">No laudo e nos resultados "Por GHE", estas respostas saem em blocos separados por setor, sem GHE.</div>` : '';
+  const conf = c.conflitos
+    ? `<div style="font-size:11px;color:#854d0e;margin-top:4px">${c.conflitos} par(es) declarado(s) em mais de um GHE — cada resposta conta num só, pelo de menor ordem.</div>` : '';
+  el.innerHTML = caixa(bg, cor, `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">${resumo}${nota}${conf}</div>${botao}
+      </div>
+      ${_cobGheAberto && c.fora ? _foraGheHTML() : ''}`);
+}
+
+function _toggleForaGhe() { _cobGheAberto = !_cobGheAberto; _renderCoberturaGhe(); }
+
+function _foraGheHTML() {
+  const c = _cobGhe;
+  // Índices, não nomes, nos handlers: setor e cargo vêm de texto digitado pelo respondente e quebrariam
+  // um onchange="...('${nome}')" com apóstrofo ou aspas.
+  const opcoes = rotulo => `<option value="">${rotulo}</option>` +
+    gruposGhe.map(g => `<option value="${_esc(g.id)}">${_esc(g.nome)}</option>`).join('') +
+    '<option value="__novo__">+ Novo GHE…</option>';
+  const ehOutro = t => /^\s*outro\s*:/i.test(t || '');
+  const blocos = c.porSetor.map((b, i) => `
+    <div style="border-top:1px solid var(--border);padding:8px 0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="flex:1;font-size:12px;font-weight:700;color:var(--tx)">${_esc(b.setor)}
+          <span style="font-weight:400;color:var(--tl)">· ${b.n} resposta${b.n !== 1 ? 's' : ''}</span></div>
+        <select class="filter-select" style="font-size:11px;max-width:200px" onchange="_cobAdicionarSetor(${i}, this.value); this.value=''" title="Leva todos os pares deste setor para o editor de um GHE">
+          ${opcoes('Adicionar todos a…')}
+        </select>
+      </div>
+      ${b.pares.map((p, j) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 0 2px 10px">
+          <div style="flex:1;min-width:0;font-size:12px;color:var(--tm)">${ehOutro(p.funcao) || ehOutro(p.setor) ? '✎ ' : ''}${_esc(p.funcao)}
+            <span style="color:var(--tl)">· ${p.n}</span></div>
+          <select class="filter-select" style="font-size:11px;max-width:200px" onchange="_cobAdicionar(${i}, ${j}, this.value); this.value=''">
+            ${opcoes('Adicionar a…')}
+          </select>
+        </div>`).join('')}
+    </div>`).join('');
+  return `<div style="margin-top:10px;max-height:340px;overflow-y:auto">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tm);margin-bottom:2px">Respostas fora de todo GHE — por setor</div>
+    ${blocos}
+    <div style="font-size:10px;color:var(--tl);margin-top:6px;line-height:1.5">“Adicionar” abre o editor do GHE com o par já incluído — nada é gravado até você clicar em Salvar. ✎ = texto digitado pelo respondente.</div>
+  </div>`;
+}
+
+// Abre o editor com o(s) par(es) já dentro. O usuário salva — um clique num combo não grava nada.
+function _cobAbrirEditorCom(gid, pares) {
+  if (!gid || !pares.length) return;
+  if (gid === '__novo__') { abrirNovoGhe(); if (_gheeState) _gheeState.pares = []; }
+  else editarGhe(gid);
+  if (!_gheeState) return; // _gheeAbrir recusa (sem cliente / sem tenant) e já avisou
+  const tem = new Set(_gheeState.pares.map(p => _chavePar(p.s, p.f || '')));
+  pares.forEach(p => {
+    const k = _chavePar(p.setor, p.funcao);
+    if (!tem.has(k)) { tem.add(k); _gheeState.pares.push({ s: p.setor, f: p.funcao }); }
+  });
+  _gheeRender();
+}
+function _cobAdicionar(i, j, gid) { const p = _cobGhe?.porSetor[i]?.pares[j]; if (p) _cobAbrirEditorCom(gid, [p]); }
+function _cobAdicionarSetor(i, gid) { const b = _cobGhe?.porSetor[i]; if (b) _cobAbrirEditorCom(gid, b.pares); }
 
 // Apagar todos os GHE da empresa de uma vez. Antes só dava para remover um a um, e uma matriz
 // importada errada (ou de outra empresa) custava dezenas de cliques antes de poder reimportar.
@@ -15456,6 +15605,16 @@ async function gerarLaudoPDF() {
     );
 
     if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+
+    // Laudo "Por GHE" com muita resposta fora de GHE sai incompleto: elas viram blocos por setor
+    // sem GHE. Não bloqueia (pode ser intencional), mas ninguém deve descobrir só no PDF.
+    if (_granularidadeLaudo() === 'ghe') {
+      const cob = agruparPorPares(linhas, gruposGhe);
+      if (cob.total && cob.fora / cob.total > 0.10 &&
+          !confirm(`${cob.fora} de ${cob.total} respostas (${Math.round(cob.fora / cob.total * 100)}%) não pertencem a nenhum GHE e sairão em blocos por setor, sem GHE, neste laudo.\n\nPara ver e corrigir: Agrupamentos GHE → "Ver o que ficou de fora".\n\nGerar o laudo assim mesmo?`)) {
+        win.close(); return;
+      }
+    }
 
     // Guardado aqui, e nao no preview: _registrarLaudo dispara do botao Imprimir DESTA janela,
     // entao este e o numero do documento que o cliente recebe.
