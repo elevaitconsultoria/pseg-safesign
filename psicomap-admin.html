@@ -2349,6 +2349,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar Imagem
       </button>
+      <!-- Nao-viewer - visibilidade controlada por _podeAnexosCliente() (via _sincronizarBotaoPacote) -->
+      <button class="btn btn-g" onclick="baixarAnexosCliente(this)" id="btn-export-anexos" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Anexos para o cliente
+      </button>
       <!-- Restrito a admin/super_admin - visibilidade controlada por _podeBaixarTodos() -->
       <button class="btn btn-g" onclick="baixarTodasAnalises(this)" id="btn-export-all" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -7098,6 +7103,21 @@ async function exportarResultados(fmt, opts = {}) {
   if (!vc || !vc.children.length) { toast('Rode a análise primeiro.', 'w'); return; }
   if (!opts.silencioso) toast('Gerando PNG — aguarde...', 'g');
 
+  const canvas = await _capturarAnaliseCanvas(3);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const sufixo = opts.sufixo ? opts.sufixo + '-' : '';
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${sufixo}${today}.png` });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
+}
+
+// Captura #view-content (secoes abertas, recorte aplicado, largura A4) num canvas.
+// Fonte unica da imagem: PNG avulso, pacote e "Anexos para o cliente" saem daqui.
+// `fatias` (opcional, array): recebe o Y (px do documento A4 @96dpi) do topo de cada card,
+// para o PDF cortar entre cards em vez de no meio de um.
+async function _capturarAnaliseCanvas(scale, fatias) {
+  const vc = document.getElementById('view-content');
   const wasHidden = [...vc.querySelectorAll('.qa-arr')]
     .map(a => ({ arrow: a, body: a.parentElement?.nextElementSibling }))
     .filter(({ body }) => body && body.style.display === 'none');
@@ -7121,19 +7141,121 @@ async function exportarResultados(fmt, opts = {}) {
   _copiarCanvases(vc, clone);
   await new Promise(r => setTimeout(r, 60));
 
+  if (Array.isArray(fatias)) {
+    const y0 = wrap.getBoundingClientRect().top;
+    clone.querySelectorAll('[style*="border-radius:8px"][style*="overflow:hidden"], [style*="border-radius: 8px"][style*="overflow: hidden"]')
+      .forEach(el => fatias.push(Math.round(el.getBoundingClientRect().top - y0)));
+  }
+
   let canvas;
   try {
-    canvas = await html2canvas(wrap, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false });
+    canvas = await html2canvas(wrap, { scale, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false });
   } finally {
     document.body.removeChild(wrap);
     wasHidden.forEach(({ arrow, body }) => { body.style.display = 'none'; arrow.textContent = '▶'; });
   }
+  return canvas;
+}
 
-  const today = new Date().toISOString().slice(0, 10);
-  const sufixo = opts.sufixo ? opts.sufixo + '-' : '';
-  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${sufixo}${today}.png` });
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
+// PDF direto do canvas, sem janela de impressao (logo sem cabecalho/rodape do navegador e
+// com download automatico). Pagina A4 com margem; corta preferindo o intervalo entre cards.
+// Texto vira imagem — e o preco de nao passar pelo window.print().
+function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  const PW = 210, PH = 297, M = 10;
+  const util = { w: PW - 2 * M, h: PH - 2 * M };
+  const pxPorMm = canvas.width / util.w;
+  const paginaPx = Math.floor(util.h * pxPorMm);
+  const scale = canvas.width / 794;              // 794 = largura A4 usada na captura
+  // Corte: o topo de card mais proximo ABAIXO do fim da pagina (nunca no meio de um card).
+  // Se o card que estoura e maior que meia pagina de folga, corta duro — evita pagina vazia.
+  // (_calcPageBreaks so aceita hint a 60px do alvo, o que cortava cards de ~220px ao meio.)
+  const tops = (cortes || []).map(y => Math.round(y * scale)).sort((a, b) => a - b);
+  const inicios = [0];
+  let y = 0;
+  while (y + paginaPx < canvas.height) {
+    const alvo = y + paginaPx;
+    let corte = alvo;
+    for (const t of tops) { if (t > y + paginaPx * 0.5 && t <= alvo) corte = t; }
+    inicios.push(corte);
+    y = corte;
+  }
+  inicios.forEach((y0, i) => {
+    const y1 = i + 1 < inicios.length ? inicios[i + 1] : canvas.height;
+    const h  = y1 - y0;
+    if (h <= 0) return;
+    const parte = document.createElement('canvas');
+    parte.width = canvas.width; parte.height = h;
+    const ctx = parte.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, parte.width, parte.height);
+    ctx.drawImage(canvas, 0, y0, canvas.width, h, 0, 0, canvas.width, h);
+    if (i > 0) pdf.addPage();
+    pdf.addImage(parte.toDataURL('image/jpeg', 0.92), 'JPEG', M, M, util.w, h / pxPorMm);
+  });
+  pdf.save(nomeArquivo);
+}
+
+// "Assa Abloy Porto Feliz" -> "assa-abloy-porto-feliz"
+function _slugNome(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'empresa';
+}
+
+const _SEG_SLUG = { consolidado: 'visao-geral', segregado: 'setor', agrupado: 'agrupamento', ghe: 'ghe' };
+
+// Anexos para o cliente: 3 PDFs + 1 PNG, download automatico (sem dialogo de impressao).
+// Sequencial: as analises compartilham #view-content. risco/tabela e capturada UMA vez e
+// serve ao PDF e ao PNG.
+const ANEXOS_CLIENTE = [
+  { vm: 'risco',   dm: 'grafica', nome: 'risco_grafico',   titulo: 'Riscos — gráfico',   png: false },
+  { vm: 'risco',   dm: 'tabela',  nome: 'risco_tabela',    titulo: 'Riscos — tabela',    png: true  },
+  { vm: 'questao', dm: 'grafica', nome: 'questao_grafico', titulo: 'Questões — gráfico', png: false },
+];
+
+async function baixarAnexosCliente(btn) {
+  if (!_podeAnexosCliente()) { toast('Ação indisponível para o seu perfil.', 'r'); return; }
+  if (!window._analiseData) { toast('Rode a análise primeiro.', 'w'); return; }
+  if (btn?.dataset.busy === '1') return;
+
+  const htmlOrig = btn ? btn.innerHTML : '';
+  const vmOrig = window._viewMode, dmOrig = window._displayMode;
+  const empSel = document.getElementById('f-empresa');
+  const empNome = empSel?.options[empSel.selectedIndex]?.text || '';
+  const base = _slugNome(empNome) + '_' + (_SEG_SLUG[window._segMode] || _SEG_SLUG[SEG_PADRAO]) + '_';
+  if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
+
+  const falhas = [];
+  try {
+    for (let i = 0; i < ANEXOS_CLIENTE.length; i++) {
+      const a = ANEXOS_CLIENTE[i];
+      if (btn) btn.textContent = `Gerando ${i + 1}/${ANEXOS_CLIENTE.length} — ${a.titulo}…`;
+      try {
+        _renderAnaliseParaExport(a.vm, a.dm);
+        await new Promise(r => setTimeout(r, 120));
+        const cortes = [];
+        const canvas = await _capturarAnaliseCanvas(2, cortes);
+        _baixarPdfDeCanvas(canvas, base + a.nome + '.pdf', cortes);
+        if (a.png) {
+          await new Promise(r => setTimeout(r, 400));   // navegadores engasgam com downloads simultaneos
+          const el = Object.assign(document.createElement('a'),
+            { href: canvas.toDataURL('image/png'), download: base + a.nome + '.png' });
+          document.body.appendChild(el); el.click(); el.remove();
+        }
+      } catch (e) {
+        console.warn('baixarAnexosCliente ' + a.nome + ':', e);
+        falhas.push(a.titulo);
+      }
+      await new Promise(r => setTimeout(r, 400));
+    }
+    toast(falhas.length ? `Concluído com falhas: ${falhas.join(', ')}.`
+                        : '✓ 4 arquivos baixados. Se faltar algum, permita downloads múltiplos neste site.',
+          falhas.length ? 'w' : 'g', 5000);
+  } finally {
+    window._displayMode = dmOrig;
+    try { _setViewMode(vmOrig); } catch (e) { console.warn('restaurar view:', e); }
+    if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
+  }
 }
 
 // Role do app, normalizado. currentUser.role carrega 'authenticated' (role do JWT
@@ -7158,8 +7280,14 @@ function _podeBaixarTodos() {
 // e nada o trazia de volta ate a analise seguinte (bug real em producao 2026-09-11).
 function _sincronizarBotaoPacote() {
   const btn = document.getElementById('btn-export-all');
-  if (!btn) return;
-  btn.style.display = (_podeBaixarTodos() && window._analiseData) ? 'inline-flex' : 'none';
+  if (btn) btn.style.display = (_podeBaixarTodos() && window._analiseData) ? 'inline-flex' : 'none';
+  const btnAx = document.getElementById('btn-export-anexos');
+  if (btnAx) btnAx.style.display = (_podeAnexosCliente() && window._analiseData) ? 'inline-flex' : 'none';
+}
+
+// Anexos para o cliente: quem entrega material (admin, consultor, super_admin); viewer nao.
+function _podeAnexosCliente() {
+  return _roleAtual() !== 'cliente_viewer';
 }
 
 // As tres analises da tela de Resultados. A combinacao (viewMode, displayMode)
