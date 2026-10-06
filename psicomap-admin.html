@@ -7196,12 +7196,6 @@ function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes) {
   pdf.save(nomeArquivo);
 }
 
-// "Assa Abloy Porto Feliz" -> "assa-abloy-porto-feliz"
-function _slugNome(s) {
-  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'empresa';
-}
-
 const _SEG_SLUG = { consolidado: 'visao-geral', segregado: 'setor', agrupado: 'agrupamento', ghe: 'ghe' };
 
 // Anexos para o cliente: 3 PDFs + 1 PNG, download automatico (sem dialogo de impressao).
@@ -7220,9 +7214,7 @@ async function baixarAnexosCliente(btn) {
 
   const htmlOrig = btn ? btn.innerHTML : '';
   const vmOrig = window._viewMode, dmOrig = window._displayMode;
-  const empSel = document.getElementById('f-empresa');
-  const empNome = empSel?.options[empSel.selectedIndex]?.text || '';
-  const base = _slugNome(empNome) + '_' + (_SEG_SLUG[window._segMode] || _SEG_SLUG[SEG_PADRAO]) + '_';
+  const base = (_SEG_SLUG[window._segMode] || _SEG_SLUG[SEG_PADRAO]) + '_';
   if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
 
   const falhas = [];
