@@ -18006,6 +18006,7 @@ async function onAuditEmpresaChange() {
   limparCacheRespostas();
   preencherSelectCiclos('audit-ciclo', empId);
   comboState['combo-audit-funcao'].clear();
+  _auditFuncaoReiniciar = true;
   _limparBuscaCombo('combo-audit-funcao');
   // Carregar setores das respostas reais (funções são populadas dinamicamente em renderTelaAuditoria)
   if (!isDemoMode && empId && sbAdmin) {
@@ -18022,6 +18023,9 @@ async function onAuditEmpresaChange() {
   buildCombo('combo-audit-setor');
   renderTelaAuditoria();
 }
+
+// true = próximo render marca todas as funções (estado inicial, troca de empresa, "Limpar filtros")
+let _auditFuncaoReiniciar = true;
 
 async function renderTelaAuditoria() {
   _popularSelectAudit();
@@ -18067,7 +18071,13 @@ async function renderTelaAuditoria() {
   // o que ainda existe — troca de ciclo/empresa não pode deixar função "fantasma" filtrando.
   const funcoes = [...new Set(linhas.map(r => r.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const funcSel = comboState['combo-audit-funcao'];
+  // Mesmo comportamento do Setor: nasce com tudo marcado ("Todos (N)") e, se estava tudo
+  // marcado, continua assim quando a lista muda (ciclo/empresa) — senão função nova ficaria de fora.
+  const funcAnt = comboItems['combo-audit-funcao']();
+  const estavaTodas = _auditFuncaoReiniciar || (funcAnt.length > 0 && funcAnt.every(f => funcSel.has(f)));
+  _auditFuncaoReiniciar = false;
   [...funcSel].forEach(f => { if (!funcoes.includes(f)) funcSel.delete(f); });
+  if (estavaTodas) funcoes.forEach(f => funcSel.add(f));
   comboItems['combo-audit-funcao'] = () => funcoes;
   buildCombo('combo-audit-funcao');
 
@@ -18211,6 +18221,7 @@ function resetarFiltrosAuditoria() {
   const selCiclo = document.getElementById('audit-ciclo');
   if (selCiclo) selCiclo.value = '';
   comboState['combo-audit-funcao'].clear();
+  _auditFuncaoReiniciar = true;
   _limparBuscaCombo('combo-audit-funcao');
   const busca = document.getElementById('audit-busca');
   if (busca) busca.value = '';
