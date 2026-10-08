@@ -4777,8 +4777,10 @@ async function carregarRiscosDB() {
   } catch(e) { console.warn('[PsicoMap] carregarRiscosDB:', e.message); }
 }
 
+// Devolve true se gravou (ou se não há banco a gravar), false se o banco recusou.
+// Quem chama decide o toast: antes o erro morria em console.warn e a tela dizia "salvo".
 async function _salvarRiscosDB() {
-  if (isDemoMode || !sbAdmin) return;
+  if (isDemoMode || !sbAdmin) return true;
   const upserts = Object.entries(RISCOS_DETALHES).map(([k, v]) => ({
     tenant_id:     currentTenantId,
     empresa_id:    null,
@@ -4793,7 +4795,8 @@ async function _salvarRiscosDB() {
       .from('riscos_config')
       .upsert(upserts, { onConflict: 'tenant_id,empresa_id,cd_risco' });
     if (error) throw error;
-  } catch(e) { console.warn('[PsicoMap] _salvarRiscosDB:', e.message); }
+    return true;
+  } catch(e) { console.warn('[PsicoMap] _salvarRiscosDB:', e.message); return false; }
 }
 
 // cd_risco → detalhes do risco (fonte: Planilha Riscos Psicossociais e Fontes Geradoras — PsicoMap)
@@ -6105,7 +6108,7 @@ async function carregarEmpresas() {
     // cadastrado" — o usuário concluía que os dados sumiram.
     console.warn('carregarEmpresas:', e);
     _empresasErro = e?.message || 'falha ao consultar o banco';
-    toast('Erro ao carregar clientes. Verifique a conexão.', 'w', 5000);
+    toast('Erro ao carregar clientes. Verifique a conexão.', 'r', 5000);
     renderTelaEmpresas();
     return;
   }
@@ -6223,7 +6226,7 @@ async function salvarEdicaoInlineEmpresa(empId) {
       const { error } = await sbAdmin.from('empresas').update({ nome, cnpj: cnpj || null }).eq('id', empId);
       if (error) throw new Error(error.message);
     } catch(e) {
-      toast('Erro ao salvar: ' + e.message, 'w'); return;
+      toast('Erro ao salvar: ' + e.message, 'r'); return;
     }
   }
 
@@ -6398,7 +6401,7 @@ async function excluirEmpresa(empresaId, nomeEsc, nLinks) {
     try {
       const { error } = await sbAdmin.from('empresas').delete().eq('id', empresaId);
       if (error) throw error;
-    } catch(e) { toast('Erro ao excluir: ' + e.message, 'w'); return; }
+    } catch(e) { toast('Erro ao excluir: ' + e.message, 'r'); return; }
   }
   _empresas = _empresas.filter(e => e.id !== empresaId);
   popularSelectsEmpresas();
@@ -11015,7 +11018,7 @@ function renderRiscosModal() {
   body.innerHTML = html;
 }
 
-function salvarRiscos() {
+async function salvarRiscos() {
   let alterados = 0;
   Object.keys(RISCOS_DETALHES).forEach(k => {
     const nomeEl = document.getElementById(`rk-nome-${k}`);
@@ -11041,8 +11044,9 @@ function salvarRiscos() {
   fecharModalRiscos();
   if (alterados > 0) {
     try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
-    _salvarRiscosDB();
-    toast(`${alterados} risco(s) atualizado(s) e salvos no banco.`, 'g');
+    const okDB = await _salvarRiscosDB();
+    if (okDB) toast(`${alterados} risco(s) atualizado(s) e salvos no banco.`, 'g');
+    else toast(`${alterados} risco(s) alterado(s) só neste navegador — o banco recusou a gravação. Outros usuários não verão a mudança.`, 'r', 7000);
     renderQuestoes();
     renderCoberturaCompacta();
   } else {
@@ -11225,7 +11229,7 @@ function fecharModalNovoRisco() {
   document.getElementById('modal-novo-risco').classList.remove('open');
 }
 
-function confirmarSalvarRisco() {
+async function confirmarSalvarRisco() {
   const nome = document.getElementById('nr-nome').value.trim();
   const cat  = document.getElementById('nr-cat').value;
   const sVal = document.getElementById('nr-s-val').value;
@@ -11235,39 +11239,44 @@ function confirmarSalvarRisco() {
   if (!cat)  { toast('Selecione a categoria.', 'w'); return; }
   if (!sVal) { toast('Selecione a Severidade (S) — campo obrigatório.', 'w'); return; }
   const s = parseInt(sVal);
+  let msgOk = '';
   if (cdEd) {
     const cd = parseInt(cdEd);
     RISCOS_DETALHES[cd] = {...RISCOS_DETALHES[cd], nome, cat, s, cons};
-    toast('Risco cd'+cd+' atualizado.', 'g');
+    msgOk = 'Risco cd'+cd+' atualizado.';
   } else {
     const cdNovo = Math.max(0, ...Object.keys(RISCOS_DETALHES).map(Number)) + 1;
     RISCOS_DETALHES[cdNovo] = {nome, cat, s, cons};
-    toast('Risco cd'+cdNovo+' criado com sucesso.', 'g');
+    msgOk = 'Risco cd'+cdNovo+' criado com sucesso.';
   }
   Object.keys(RISCOS_DETALHES).forEach(k => {
     FATORES[k] = RISCOS_DETALHES[k].nome.length > 32 ? RISCOS_DETALHES[k].nome.slice(0,30)+'…' : RISCOS_DETALHES[k].nome;
   });
   try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
-  _salvarRiscosDB();
+  const okDB = await _salvarRiscosDB();
+  if (okDB) toast(msgOk, 'g');
+  else toast(msgOk + ' Porém só neste navegador — o banco recusou a gravação.', 'r', 7000);
   fecharModalNovoRisco();
   renderTelaRiscos();
 }
 
-function excluirRisco(cd) {
+async function excluirRisco(cd) {
   const r = RISCOS_DETALHES[cd]; if (!r) return;
   const qsV = questoes.filter(q => q.cd === cd);
   if (qsV.length) { toast('Não é possível excluir: '+qsV.length+' questão(ões) vinculadas a cd'+cd+'. Remova-as primeiro.', 'w'); return; }
   if (!confirm('Excluir risco "'+r.nome+'" (cd'+cd+')? Não pode ser desfeito.')) return;
   delete RISCOS_DETALHES[cd]; delete FATORES[cd];
-  // Remover do banco também
+  // Remover do banco também — .is(), não .match(): match({empresa_id:null}) vira "eq.null" e não casa linha nenhuma
+  let okDB = true;
   if (sbAdmin && !isDemoMode) {
-    sbAdmin.from('riscos_config')
-      .delete()
-      .match({ empresa_id: null, cd_risco: parseInt(cd) })
-      .then(({ error }) => { if (error) console.warn('[PsicoMap] excluirRisco DB:', error.message); });
+    try {
+      const { error } = await sbAdmin.from('riscos_config').delete().is('empresa_id', null).eq('cd_risco', parseInt(cd));
+      if (error) throw error;
+    } catch(e) { okDB = false; console.warn('[PsicoMap] excluirRisco DB:', e.message); }
   }
   try { localStorage.setItem('pseg_riscos_v1', JSON.stringify(RISCOS_DETALHES)); } catch(e) {}
-  toast('Risco cd'+cd+' excluído.', 'g');
+  if (okDB) toast('Risco cd'+cd+' excluído.', 'g');
+  else toast('Risco cd'+cd+' removido só neste navegador — o banco recusou a exclusão.', 'r', 7000);
   renderTelaRiscos();
 }
 
@@ -11322,7 +11331,7 @@ async function carregarLinks() {
     renderLinks();
   } catch(e) {
     console.warn('carregarLinks:', e);
-    toast('Erro ao carregar links. Verifique a conexão.', 'w');
+    toast('Erro ao carregar links. Verifique a conexão.', 'r');
   }
 }
 
@@ -12393,7 +12402,7 @@ async function toggleLink(id) {
       .from('links_coleta')
       .update(update)
       .eq('id', id);
-    if (error) { toast('Erro ao atualizar link.', 'w'); return; }
+    if (error) { toast('Erro ao atualizar link.', 'r'); return; }
   }
   Object.assign(l, update);
   renderLinks();
@@ -12410,7 +12419,7 @@ async function finalizarLink(id) {
       .from('links_coleta')
       .update({ ativo: false, encerrado_em: encerradoEm })
       .eq('id', id);
-    if (error) { toast('Erro ao finalizar campanha.', 'w'); return; }
+    if (error) { toast('Erro ao finalizar campanha.', 'r'); return; }
   }
   l.ativo = false;
   l.encerrado_em = encerradoEm;
@@ -12431,10 +12440,10 @@ async function excluirLink(id, nRespostas, isTeste, token) {
   if (!isDemoMode) {
     if (isTeste && nRespostas > 0) {
       const { error: erDel } = await sbAdmin.from('respostas').delete().eq('link_token', token);
-      if (erDel) { toast('Erro ao excluir respostas: ' + erDel.message, 'w'); return; }
+      if (erDel) { toast('Erro ao excluir respostas: ' + erDel.message, 'r'); return; }
     }
     const { error } = await sbAdmin.from('links_coleta').delete().eq('id', id);
-    if (error) { toast('Erro ao excluir link: ' + error.message, 'w'); return; }
+    if (error) { toast('Erro ao excluir link: ' + error.message, 'r'); return; }
   }
   const empresaIdDel = isTeste && nRespostas > 0 ? (_links.find(l => l.id === id)?.empresa_id) : null;
   _links = _links.filter(l => l.id !== id);
@@ -12503,7 +12512,7 @@ async function gerarLink() {
         criado:        new Date(data.criado_em).toLocaleDateString('pt-BR'),
         expira:        data.expira_em ? new Date(data.expira_em).toLocaleDateString('pt-BR') : '—',
       });
-    } catch(e) { toast('Erro ao criar link: ' + e.message, 'w'); return; }
+    } catch(e) { toast('Erro ao criar link: ' + e.message, 'r'); return; }
   } else {
     const emp = _empresas.find(e => e.id === empresaId);
     const cic = _ciclos.find(c => c.id === cicloId);
@@ -12686,7 +12695,7 @@ async function gerarLinksBatch() {
         });
         criados++;
       } catch(e) {
-        toast(`Erro ao criar link para "${setor}": ${e.message}`, 'w');
+        toast(`Erro ao criar link para "${setor}": ${e.message}`, 'r');
       }
     } else {
       _links.unshift({
@@ -12789,7 +12798,7 @@ async function loadRespostasParaEmpresa(empresaId) {
     return linhas;
   } catch(e) {
     console.warn('loadRespostasParaEmpresa:', e);
-    toast('Erro ao carregar respostas do banco.', 'w');
+    toast('Erro ao carregar respostas do banco.', 'r');
     return null;
   }
 }
@@ -15648,7 +15657,7 @@ async function gerarLaudoPDF() {
   } catch(e) {
     win.close();
     console.error('[PsicoMap] gerarLaudoPDF:', e);
-    toast('Erro ao gerar laudo: ' + e.message, 'w');
+    toast('Erro ao gerar laudo: ' + e.message, 'r');
   }
 }
 
@@ -16260,8 +16269,8 @@ async function enviarConviteEST() {
   const resp  = document.getElementById('est-resp').value.trim();
   const btn   = document.getElementById('btn-enviar-convite');
 
-  if (!nome || !email) { toast('Preencha nome e e-mail.', 'r'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'r'); return; }
+  if (!nome || !email) { toast('Preencha nome e e-mail.', 'w'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'w'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Enviando...';
@@ -17098,7 +17107,7 @@ async function alterarRoleUsuario(id, novoRole) {
   if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
 
   const { error } = await sbAdmin.from('perfis').update({ role: novoRole }).eq('id', id);
-  if (error) { toast('Erro ao alterar perfil: ' + error.message, 'w'); carregarUsuarios(); return; }
+  if (error) { toast('Erro ao alterar perfil: ' + error.message, 'r'); carregarUsuarios(); return; }
   // Promover para Viewer sem empresa vinculada deixa o usuário com o painel vazio —
   // esta rota não pede empresa como o modal de convite pede.
   if (novoRole === 'cliente_viewer' && !alvo?.empresa_id) {
@@ -17179,7 +17188,7 @@ async function toggleAtivoUsuario(id, ativo) {
   if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
 
   const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
-  if (error) { toast('Erro: ' + error.message, 'w'); return; }
+  if (error) { toast('Erro: ' + error.message, 'r'); return; }
   carregarUsuarios();
 }
 
@@ -17303,7 +17312,7 @@ async function salvarNovoUsuario() {
   const role  = document.getElementById('nu-role').value;
   const callerRole = currentUser?.role;
   if (!email) { toast('Informe o e-mail.', 'w'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'r'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('E-mail inválido.', 'w'); return; }
   if (!sbAdmin) { toast('Modo demo — não é possível criar usuários reais.', 'w'); return; }
 
   let tenantId = null;
@@ -17349,7 +17358,7 @@ async function salvarNovoUsuario() {
     if (isNotFound) {
       toast('Edge Function não configurada. Convide manualmente via Supabase → Authentication → Users → Invite user.', 'w', 8000);
     } else if (/already been registered|already registered|already exists/i.test(msg)) {
-      toast('Este e-mail já está cadastrado no sistema.', 'r');
+      toast('Este e-mail já está cadastrado no sistema.', 'w');
     } else {
       toast('Erro ao convidar usuário: ' + msg, 'r');
     }
@@ -18006,7 +18015,7 @@ async function atualizarTipoCiclo(cicloId, novoTipo) {
   } catch(e) {
     ciclo.tipo_ciclo = tipoAnterior;
     renderCiclosModal(_cicloEmpresaId);
-    toast('Erro ao atualizar: ' + e.message, 'w');
+    toast('Erro ao atualizar: ' + e.message, 'r');
   }
 }
 
@@ -18035,7 +18044,7 @@ async function salvarCiclo() {
       _ciclos.unshift(data);
       popularSelectsEmpresas();
       toast('Ciclo criado!', 'g');
-    } catch(e) { toast('Erro: ' + e.message, 'w'); return; }
+    } catch(e) { toast('Erro: ' + e.message, 'r'); return; }
   }
   document.getElementById('nc-data-inicio').value = '';
   document.getElementById('nc-data-fim').value = '';
@@ -18047,7 +18056,7 @@ async function removerCiclo(id) {
   if (!confirm('Remover este ciclo?')) return;
   if (!isDemoMode && sbAdmin) {
     const { error } = await sbAdmin.from('ciclos').delete().eq('id', id);
-    if (error) { toast('Erro: ' + error.message, 'w'); return; }
+    if (error) { toast('Erro: ' + error.message, 'r'); return; }
   }
   _ciclos = _ciclos.filter(c => c.id !== id);
   popularSelectsEmpresas();
@@ -20006,7 +20015,7 @@ async function salvarGHE() {
       const hcMsg = hcSalvo > 0 ? ` + quadro de ${hcSalvo} linha(s)` : '';
       toast(`GHE salvo com sucesso!${hcMsg}`, 'g');
     } catch(e) {
-      toast('Erro ao salvar GHE: ' + e.message, 'w'); return;
+      toast('Erro ao salvar GHE: ' + e.message, 'r'); return;
     }
   }
 
@@ -20658,7 +20667,7 @@ async function exportarPlanoCSV() {
   const a    = document.createElement('a');
   a.href = url; a.download = `plano_acao_${empNome.replace(/\s/g,'_')}.csv`;
   a.click(); URL.revokeObjectURL(url);
-  toast('CSV exportado!', 'green');
+  toast('CSV exportado!', 'g');
 }
 
 // ══════════════════════════════════════════
@@ -21272,7 +21281,7 @@ async function iniciarPagamento(plano, provider, metodo = 'cartao') {
       throw new Error('Resposta inesperada do servidor de pagamento');
     }
   } catch(e) {
-    toast('Erro: ' + e.message, 'w');
+    toast('Erro: ' + e.message, 'r');
     console.error('[PsicoMap Billing] iniciarPagamento:', e);
   } finally {
     if (btn) { btn.textContent = provider === 'stripe' ? '💳 Pagar com cartão' : '⚡ PIX / Boleto'; btn.disabled = false; }
