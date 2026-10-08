@@ -17,7 +17,10 @@
 | S4 seed placeholder | **aplicado** (35 itens, 12 invertidos, 7 dimensões, benchmark geral) | **nunca** | só médias gerais do benchmark; as 13 médias setoriais precisam ser transcritas da fonte |
 | S5 formulário HSE | **implementado e testado em DEV** (`FORM_VERSION 2026-10-hse-1`) | pendente — só promover **depois** de S2 e S3 em PROD | HSE 35 itens via RPC, lista vertical sem estouro a 320 px, envio gravou 35 itens; BS 27 itens e link sem ciclo inalterados; erro permanente não repete nem fica na fila. **Falta:** teste do form antigo em cache e da fila offline legada; tela com falha da RPC |
 | S6 admin: escolha da metodologia, selos e guardas | **implementado e testado com harness** (sem login; não exercitado com dados reais) | pendente — seguro de promover antes do HSE em PROD (sem a migration o seletor nem aparece) | seletor no modal "Novo ciclo" (só com HSE publicado no ambiente), atalho "criar também…", selos/rótulos nos 5 selects e na lista de links, guardas em Análise/Gráficos/Laudo/Auditoria/Plano, Comparativo só BS, módulo `hse`. **Falta:** trocar a metodologia pela UI antes do 1º link (o banco já permite), conferir com dados reais logado, Dashboard/Clientes com selo |
-| S7…S11 | não iniciadas | — | |
+| S7 loader, motor e análise HSE | **implementado; motor validado contra SQL; tela testada com banco falso** (sem login) | pendente (depende de S1/S3/S5 em PROD para haver dado) | `carregarRespostasHSE`, `calcDimensoesHSE`, `rodarAnaliseHSE`, CSV HSE; segmentação Geral/Setor/GHE/Agrupamento e filtros reaproveitados; selo "indicativo"; **n mínimo PROVISÓRIO = 5 só no HSE** (constante `HSE_N_MIN_PROVISORIO`; valor definitivo = decisão do S9) |
+| S8…S11 | não iniciadas | — | |
+
+Dados de teste do S7 em DEV: link não-teste `hsetests7a001` (ciclo "[TESTE S5] Avaliação HSE"), 8 respostas (5 em "S7 Setor A", 3 em "S7 Setor B"), valores `((k*7+ordem*3)%5)+1`. Scores de referência (SQL): Relacionamentos 2,8438 · Mudanças 2,8750 · Apoio da gestão 2,9250 · Papel 2,9750 · Suporte colegas 3,0000 · Demandas 3,0469 · Controle 3,1042.
 
 Dados de teste deixados em DEV (empresa Allmed, links `is_teste`): `hsetests5a01` (ciclo HSE), `bstests5a001` (ciclo BS), `semciclos5a01` (sem ciclo), ciclos "[TESTE S5] …" e 2 respostas de teste. Remover quando não forem mais úteis.
 
