@@ -6,6 +6,19 @@
 > `2026-10-08-referencia-hse-player-avalia-nr01.md`. Acompanhar o andamento marcando as etapas
 > abaixo (S0…S11) conforme forem concluídas e verificadas.
 
+## Andamento (atualizar a cada etapa)
+
+| Etapa | DEV | PROD | Observação |
+|---|---|---|---|
+| S0 higiene/baseline | parcial | — | `_dev/check-inline-js.js` e baselines de `salvar_resposta` feitos; **falta** fast-forward `develop`←`main`, dataset de teste e golden master (precisa de login no admin de DEV) |
+| S1 esquema | **aplicado e testado** (2026-10-08) | pendente — **B12 (PITR)** | trava de metodologia, congelamento de itens, limites 1–5 e ausência de privilégio do `anon` verificados |
+| S2 RPC `obter_instrumento_link` | **aplicada e testada como `anon`** | pendente (aplicar antes do formulário) | mesmo erro para token inexistente/inativo/expirado; HSE não vaza `inversa`/`dimensao` |
+| S3 `salvar_resposta` | **aplicada e testada** (`migration_salvar_resposta_hse_dev.sql`) | pendente — arquivo próprio de PROD (`session_id` uuid, 2 overloads) | BS 27 itens ok (também como `anon`), idempotência ok, HSE 35 itens ok, 9 rejeições sem resíduo, overloads mortos sem EXECUTE |
+| S4 seed placeholder | **aplicado** (35 itens, 12 invertidos, 7 dimensões, benchmark geral) | **nunca** | só médias gerais do benchmark; as 13 médias setoriais precisam ser transcritas da fonte |
+| S5…S11 | não iniciadas | — | |
+
+Pendência técnica anotada no S3: a fila offline do formulário (formato legado) chama a RPC com 7 parâmetros nomeados; em DEV isso agora resolve para o overload de 10 args. Conferir no S5.
+
 ## Context
 
 Hoje o PsicoMap aplica **uma metodologia só**: BS 8800 (27 questões Q01..Q27, escala 1–4, P×S, alto = pior). A decisão de produto (2026-08-03) é a consultoria poder **escolher a metodologia ao criar o ciclo**, começando pelo **HSE Management Standards / ICAO-35** (35 itens H01..H35, 7 dimensões, escala 1–5, média por dimensão, alto = melhor, classificação por bandas relativas ao benchmark HSE 2023).
