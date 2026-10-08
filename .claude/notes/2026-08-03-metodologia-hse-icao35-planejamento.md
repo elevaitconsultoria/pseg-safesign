@@ -6,6 +6,25 @@
 > organização do plano em camadas (mapa abaixo), a análise de impacto (§15) e o backlog
 > consolidado (§16). Nenhuma linha de código ou migration foi aplicada — planejamento apenas.
 
+> **Revisão 2026-10-08 — LEIA ANTES DE EXECUTAR.** Este documento foi revalidado contra o código e
+> os dois bancos de hoje. O plano de execução vigente é
+> `2026-10-08-plano-implantacao-hse.md`; os aprendizados de mercado estão em
+> `2026-10-08-referencia-hse-player-avalia-nr01.md`. O que mudou e **substitui** o texto abaixo:
+> - **Tabelas separadas** (`hse_itens`, `resposta_itens_hse`) em vez de reaproveitar `questoes` /
+>   `resposta_itens` → substitui §6.1 (colunas em `questoes`), §6.2 (relaxar CHECKs, trigger
+>   `fn_valida_escala_item`, `bloco='HSE'`) e §7 (seed em `questoes` com `is_oficial=false`).
+> - **`anon` não lê `ciclos`** → o embed `ciclos(id, metodologia)` de §8.2a **quebra todo link**;
+>   a metodologia chega ao formulário por RPC anônima `obter_instrumento_link(token)`.
+> - **Texto dos itens no banco**, não em `BLOCOS_HSE` no JS (§8.1, §11.1, B13): a PR 5 deixa de ser
+>   retida de `main`; o go-live passa a ser aplicar o seed validado em PROD.
+> - **`salvar_resposta`** (§4, §6.4): a de 10 args **não está no repo** (só a de 7); DEV tem 3
+>   overloads e PROD 2; os overloads mortos têm `EXECUTE` para `anon`; a falha **não** é auditável
+>   (ver correção em §6.4).
+> - Linhas de código citadas aqui estão **velhas** (admin ~21,4 mil linhas; credenciais do forms em
+>   `:337-338`). Não há mais `COMBOS_AUTO_APPLY`; `exportarCSV` já foi corrigido (§17).
+> - **PROD hoje:** 1.855 respostas / 50.085 itens; 3 links sem ciclo (ciclo NULL ⇒ BS 8800).
+> - Backlog novo B14–B21 (abaixo, em §16).
+
 ## Mapa de camadas
 
 O plano está organizado em camadas independentes. Cada camada só faz sentido depois da anterior
@@ -352,8 +371,11 @@ SELECT v_resposta_id, (item->>'questao_id')::uuid, (item->>'valor')::int
 FROM jsonb_array_elements(p_itens) AS item;   -- sem WHERE
 ```
 
-O `EXCEPTION WHEN OTHERS` existente já marca `respostas_fila` como erro e re-`RAISE` — a falha fica
-auditável e o form cai no retry + backup localStorage. O `DROP` do overload morto de 9 args fica
+~~O `EXCEPTION WHEN OTHERS` existente já marca `respostas_fila` como erro e re-`RAISE` — a falha fica
+auditável.~~ **Correção 2026-10-08: falso.** O handler faz `UPDATE respostas_fila … 'erro'` e depois
+`RAISE`; a transação inteira é desfeita, inclusive `respostas_fila` e `respostas_raw_backup`. Uma
+rejeição não deixa linha nenhuma no banco — só log do Postgres e o backup `localStorage` do cliente
+(que reenvia). O form cai no retry + backup localStorage. O `DROP` do overload morto de 9 args fica
 para a PR 8, depois de o novo comportamento rodar em PROD.
 
 ---
@@ -1106,6 +1128,14 @@ camada a que pertence — para acompanhamento entre sessões de planejamento.
 | B9 | Fase 1.1 — comparativo entre ciclos, plano de ação por dimensão, exportações, tela de Metodologia HSE (ver mapa de camadas) | 1.1 | Baixa | Depende da Camada 1 estar em produção | Adiado |
 | B10 | Decidir se e como avançar a Camada 2 (combo) — resolver design de fadiga de resposta antes de estimar esforço (§13) | 2 | Baixa | Nada hoje — ideia registrada | Não avaliado |
 | B11 | Decidir se e como avançar a Camada 3 (COPSOQ) — decisão de portfólio, sem impeditivo técnico (§14.11) | 3 | Baixa | Recomendado não iniciar antes da Camada 1 validar em produção | Não avaliado |
+| B14 | *(2026-10-08)* Ponte HSE → inventário PGR (P 1–5 por faixa do índice 0–100, S por dimensão, matriz 5×5 por lookup): opt-in, versionada, declarada no laudo, nunca no mesmo gráfico do BS 8800; faixas validadas por SST. Origem: relatório do player AVALIA NR01. | 1.1 | Média | Camada 1 em produção + validação SST | Fase 1.1 (decidido) |
+| B15 | *(2026-10-08)* **n mínimo por grupo** (HSE e BS 8800): helper `_nMinimo(n)` em segmentações, laudo, barras por item e política de acesso às linhas por respondente da Auditoria. Hoje não existe nenhum limite. Valor a definir pelo usuário com o jurídico. | Transversal | **Alta** — independe do HSE | S9 do plano de implantação | Aberto — falta o valor |
+| B16 | *(2026-10-08)* Checagem pré-geração do laudo: bloquear/avisar campos obrigatórios (consultoria, cidade/UF, responsável técnico); nunca imprimir texto de fallback | Transversal | Média | Laudo HSE (S8) | Aberto |
+| B17 | *(2026-10-08)* Coleta em papel + digitação em lote | — | Baixa | — | Sem desenho |
+| B18 | *(2026-10-08)* `empresas`: CNAE e grau de risco (NR-4) — hoje ausentes do repositório | Transversal | Baixa | — | Aberto |
+| B19 | *(2026-10-08)* Vários responsáveis técnicos por laudo (TST + médico + psicólogo) | Transversal | Baixa | — | Aberto |
+| B20 | *(2026-10-08)* Reavaliação recomendada derivada do resultado/ciclo, não fixa | 1 | Baixa | — | Aberto |
+| B21 | *(2026-10-08)* Versionar o texto do instrumento por `questionarios.id` (mudou uma palavra → questionário novo). `respostas.questionario_id` é NULL em 100% do histórico de PROD; só vale para o HSE daqui em diante | 0 | Média | S1/S3 | Embutido no desenho |
 
 **Regra de sequenciamento do backlog**: B1 é o único item que bloqueia hard a Camada 1. B2 e B3
 podem correr em paralelo à implementação de banco/formulário (§11, PRs 1 e 2 não dependem deles).
