@@ -71,6 +71,19 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .q-item.error .q-text{color:var(--red)}
 .q-item.error .q-dot{border-color:#f5c6c6}
 
+/* ── HSE: opções em lista vertical (5 opções com rótulo longo não cabem em 320–360px na linha) ── */
+.h-opts{display:flex;flex-direction:column;gap:6px}
+.h-opt{position:relative}
+.h-opt input{position:absolute;opacity:0;pointer-events:none}
+.h-opt label{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border:2px solid var(--border);border-radius:8px;background:white;font-size:13px;color:var(--tx);cursor:pointer;transition:all .15s;user-select:none;line-height:1.3}
+.h-opt .h-n{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tm)}
+.h-opt:hover label{border-color:var(--g);background:var(--gp)}
+.h-opt input:checked+label{background:var(--g);border-color:var(--g);color:white}
+.h-opt input:checked+label .h-n{border-color:white;color:white}
+.h-opt input:focus-visible+label{outline:3px solid rgba(26,122,60,.35);outline-offset:1px}
+.q-item.error .h-opt label{border-color:#f5c6c6}
+.h-parte-sub{font-size:12px;color:var(--tm);margin:-6px 0 12px;line-height:1.5}
+
 /* ── METADADOS ── */
 .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:5px}
@@ -172,7 +185,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="consent-section"><div class="consent-section-title">Dados coletados</div>
         <ul>
-          <li>Respostas numéricas (escala 1–4) para cada questão</li>
+          <li id="lgpd-escala">Respostas numéricas (escala 1–4) para cada questão</li>
           <li>Setor/GHE, função e escolaridade <em>(opcionais)</em></li>
           <li>Código de sessão gerado automaticamente pelo navegador (pseudônimo — sem nome, CPF ou e-mail)</li>
           <li>Data e hora do envio</li>
@@ -221,7 +234,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 
   <!-- Instruções -->
-  <div class="instrucoes">
+  <div class="instrucoes" id="instrucoes-box">
     <strong>Instruções:</strong><br><br>
     O questionário a seguir é composto por <strong id="instrucoes-total">27</strong> questões sobre sua percepção em relação ao seu trabalho. Você <strong>não será identificado</strong> e suas respostas são <strong>anônimas</strong> — por isso, procure responder com sinceridade.<br><br>
     Leia com atenção e assinale <strong>apenas uma alternativa</strong>, a que melhor representa a frequência dos acontecimentos no seu trabalho <strong>nos últimos 6 meses</strong>.<br><br>
@@ -422,6 +435,13 @@ let empresaSetores = []; // [{id, nome}]
 let empresaFuncoes = []; // [{id, nome, setor_id}]
 let empresaLogo    = ''; // base64 do logo do cliente (exibido no formulário)
 let permiteMultiResposta = false; // link configurado para permitir várias respostas no mesmo dispositivo
+// Instrumento do ciclo. null = BS 8800 (comportamento histórico, inalterado).
+// HSE: {questionarioId, versao, config, itens:[{id,codigo,ordem,parte,texto,escala_labels}]} vindo da RPC
+// obter_instrumento_link — o texto dos itens vive no BANCO, não neste arquivo.
+let _instr = null;
+const FORM_VERSION = '2026-10-hse-1';
+const _ERROS_PERMANENTES = /^(instrumento_incompativel|hse_incompleto|item_duplicado|valor_fora_da_escala|ciclo_inexistente|instrumento_indisponivel)/;
+function _escHtml(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // LGPD + rastreabilidade
 const _sessionId  = crypto.randomUUID(); // gerado ao abrir o form — sem dados pessoais
 let _lgpdAceito   = true; // base legal: obrigação legal (art. 11, II, "a") — não depende de consentimento
@@ -445,6 +465,11 @@ async function init() {
 
   // Salvar token globalmente para uso no envio
   linkToken = token;
+
+  // Metodologia do ciclo: dispara em paralelo ao fetch do link (sem somar latência).
+  // anon não lê `ciclos`; a RPC é o único caminho.
+  const _instrP = Promise.resolve(sb.rpc('obter_instrumento_link', { p_token: token }))
+    .catch(e => ({ data: null, error: e }));
 
   try {
     // Buscar link pelo token na tabela links_coleta (schema v3)
@@ -484,6 +509,30 @@ async function init() {
 
     empresaId   = linkData.empresa_id;
     cicloId     = linkData.ciclo_id || null;
+
+    // Link sem ciclo = BS 8800. Com ciclo: o instrumento vem da RPC; falha NÃO é engolida
+    // em "Token inválido" nem vira BS 8800 em silêncio (o servidor rejeitaria o envio).
+    _instr = null;
+    if (cicloId) {
+      const { data: inst, error: instErr } = await _instrP;
+      const rpcAusente = instErr && (instErr.code === 'PGRST202' || instErr.status === 404);
+      if (rpcAusente) {
+        // Ambiente sem a RPC = ambiente sem HSE (as migrations vão juntas): segue como BS 8800.
+        console.warn('obter_instrumento_link ausente neste ambiente; assumindo BS 8800');
+      } else if (instErr || !inst) {
+        showError('Não foi possível carregar o questionário agora. Verifique sua conexão e recarregue a página.');
+        return;
+      } else if (inst.metodologia === 'HSE_ICAO35') {
+        if (!Array.isArray(inst.itens) || inst.itens.length === 0) {
+          showError('Este questionário está indisponível no momento. Solicite um novo link ao responsável.');
+          return;
+        }
+        _instr = { questionarioId: inst.questionario_id, versao: inst.versao, config: inst.config || {}, itens: inst.itens };
+      } else if (inst.metodologia !== 'BS8800') {
+        showError('Esta página está desatualizada. Recarregue a página para continuar.');
+        return;
+      }
+    }
     empresaNome = linkData.empresas?.nome || 'Empresa';
     empresaLogo = linkData.empresas?.logo_base64 || '';
     setorNome   = linkData.setor_sugerido || '';
@@ -673,9 +722,10 @@ function showForm() {
   buildQuestoes();
 
   // Atualiza contagem de questões nas instruções
-  const totalQ = BLOCOS.reduce((acc, b) => acc + b.questoes.length, 0);
+  const totalQ = _instr ? _instr.itens.length : BLOCOS.reduce((acc, b) => acc + b.questoes.length, 0);
   const elTotal = document.getElementById('instrucoes-total');
   if (elTotal) elTotal.textContent = totalQ;
+  if (_instr) renderInstrucoesHSE(totalQ);
 
   // Popula metadados dinâmicos
   // Se o setor já vem pré-definido no link, popula funções imediatamente.
@@ -729,7 +779,55 @@ function fecharModalLGPD() {
   document.getElementById('lgpd-modal-bg').style.display = 'none';
 }
 
+// Instruções do HSE: texto vem de questionarios.config (validado junto com os itens).
+function renderInstrucoesHSE(total) {
+  const box = document.getElementById('instrucoes-box');
+  if (box) {
+    const instr = _escHtml(_instr.config.instrucoes || 'As perguntas a seguir referem-se aos últimos 6 meses de trabalho.');
+    box.innerHTML = `<strong>Instruções:</strong><br><br>
+      O questionário a seguir é composto por <strong>${total}</strong> questões sobre sua percepção em relação ao seu trabalho. Você <strong>não será identificado</strong> e suas respostas são <strong>anônimas</strong> — por isso, procure responder com sinceridade.<br><br>
+      ${instr}<br><br>
+      Assinale <strong>apenas uma alternativa</strong> em cada questão. Essas perguntas fazem parte do levantamento de riscos psicossociais, necessário para o atendimento das Normas Regulamentadoras <strong>NR-17</strong> (Ergonomia) e <strong>NR-01</strong> (PGR) do MTE.`;
+  }
+  const li = document.getElementById('lgpd-escala');
+  if (li) li.textContent = 'Respostas numéricas (escala 1–5) para cada questão';
+  updateProgress();
+}
+
+// HSE: itens na ordem original, em duas partes (frequência / concordância). O nome da dimensão
+// NÃO é mostrado ao respondente (enviesaria a resposta). Lista vertical: 5 opções com rótulo
+// longo ("Discordo totalmente") não cabem em linha a 320–360 px.
+function buildQuestoesHSE() {
+  const wrap = document.getElementById('questoes-wrap');
+  const cfg = _instr.config || {};
+  const rotFreq = cfg.rotulos_freq    || ['Nunca','Raramente','Às vezes','Frequentemente','Sempre'];
+  const rotConc = cfg.rotulos_concord || ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'];
+  const cab = { 1: cfg.cabecalho_parte1 || '', 2: cfg.cabecalho_parte2 || '' };
+  const nomes = { 1: 'Parte 1', 2: 'Parte 2' };
+  let html = '';
+  [1, 2].forEach(parte => {
+    const itens = _instr.itens.filter(i => i.parte === parte).sort((a, b) => a.ordem - b.ordem);
+    if (!itens.length) return;
+    html += `<div class="card"><div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">${nomes[parte]}</div>`;
+    if (cab[parte]) html += `<div class="h-parte-sub">${_escHtml(cab[parte])}</div>`;
+    itens.forEach(it => {
+      const rot = it.escala_labels === 'concord' ? rotConc : rotFreq;
+      html += `<div class="q-item" id="qi-h${it.ordem}">
+        <div class="q-num-text"><span class="q-num">${it.ordem}</span><div><div class="q-text">${_escHtml(it.texto)}</div></div></div>
+        <div class="h-opts" role="radiogroup">
+          ${rot.map((r, i) => `<div class="h-opt">
+            <input type="radio" name="h${it.ordem}" value="${i + 1}" id="h${it.ordem}_${i + 1}" onchange="onAnswer('h${it.ordem}')"/>
+            <label for="h${it.ordem}_${i + 1}"><span class="h-n">${i + 1}</span>${_escHtml(r)}</label>
+          </div>`).join('')}
+        </div></div>`;
+    });
+    html += `</div>`;
+  });
+  wrap.innerHTML = html;
+}
+
 function buildQuestoes() {
+  if (_instr) { buildQuestoesHSE(); return; }
   const wrap = document.getElementById('questoes-wrap');
   let html = '';
 
@@ -773,8 +871,10 @@ function onAnswer(qId) {
 }
 
 function updateProgress() {
-  const total = 27;
-  const done  = BLOCOS.flatMap(b => b.questoes)
+  const total = _instr ? _instr.itens.length : 27;
+  const done  = _instr
+    ? _instr.itens.filter(i => document.querySelector(`input[name="h${i.ordem}"]:checked`)).length
+    : BLOCOS.flatMap(b => b.questoes)
     .filter(q => document.querySelector(`input[name="q${q.id}"]:checked`))
     .length;
   const pct = Math.round(done / total * 100);
@@ -788,6 +888,15 @@ function updateProgress() {
 function coletarRespostas() {
   const respostas = {};
   let invalidas = [];
+
+  if (_instr) {   // HSE: chave = ordem do item; invalidas = 'h<ordem>' (casa com id="qi-h<ordem>")
+    _instr.itens.forEach(it => {
+      const sel = document.querySelector(`input[name="h${it.ordem}"]:checked`);
+      if (sel) respostas[it.ordem] = parseInt(sel.value);
+      else { invalidas.push('h' + it.ordem); document.getElementById('qi-h' + it.ordem)?.classList.add('error'); }
+    });
+    return { respostas, invalidas };
+  }
 
   BLOCOS.flatMap(b => b.questoes).forEach(q => {
     const sel = document.querySelector(`input[name="q${q.id}"]:checked`);
@@ -815,8 +924,8 @@ function _sanitizeMeta(val, maxLen = 120) {
 }
 
 // Valida que todos os valores de resposta são inteiros 1–4
-function _validarItens(itens) {
-  return itens.every(i => Number.isInteger(i.valor) && i.valor >= 1 && i.valor <= 4);
+function _validarItens(itens, max = 4) {
+  return itens.every(i => Number.isInteger(i.valor) && i.valor >= 1 && i.valor <= max);
 }
 
 // Valida formato do token (12 chars alphanum gerados por Math.random().toString(36).slice(2,14))
@@ -857,11 +966,11 @@ async function enviarResposta() {
 
   _tsUltimoEnvio = Date.now();
 
-  // Garantir que o mapa de UUIDs está carregado
-  if (Object.keys(_mapaQuestoesUUID).length === 0) {
+  // Garantir que o mapa de UUIDs está carregado (BS 8800; no HSE os ids vêm do próprio instrumento)
+  if (!_instr && Object.keys(_mapaQuestoesUUID).length === 0) {
     await carregarMapaQuestoes();
   }
-  if (Object.keys(_mapaQuestoesUUID).length === 0) {
+  if (!_instr && Object.keys(_mapaQuestoesUUID).length === 0) {
     btn.disabled = false;
     btn.innerHTML = 'Tentar novamente';
     toast('Não foi possível carregar as questões. Verifique sua conexão.', 'warn');
@@ -896,8 +1005,14 @@ async function enviarResposta() {
     return;
   }
 
-  // Montar itens com UUIDs — apenas valores válidos 1-4
-  const itens = Object.entries(respostas)
+  // Montar itens com UUIDs — apenas valores válidos (BS 8800: 1-4 · HSE: 1-5)
+  const _max = _instr ? 5 : 4;
+  const itens = _instr
+    ? _instr.itens.map(it => {
+        const v = parseInt(respostas[it.ordem]);
+        return (v >= 1 && v <= _max) ? { questao_id: it.id, valor: v } : null;
+      }).filter(Boolean)
+    : Object.entries(respostas)
     .map(([qId, valor]) => {
       const uuid = _mapaQuestoesUUID[parseInt(qId)];
       const v    = parseInt(valor);
@@ -905,7 +1020,8 @@ async function enviarResposta() {
     }).filter(Boolean);
 
   // ── Validação final do payload ───────────────────────
-  if (!_validarItens(itens) || itens.length === 0) {
+  // HSE: exige TODOS os itens (o servidor também exige; falhar aqui evita enviar payload curto).
+  if (!_validarItens(itens, _max) || itens.length === 0 || (_instr && itens.length !== _instr.itens.length)) {
     btn.disabled = false;
     btn.innerHTML = 'Tentar novamente';
     toast('Erro ao preparar as respostas. Recarregue a página.', 'warn');
@@ -927,7 +1043,9 @@ async function enviarResposta() {
 
   // ── Backup local ANTES do envio (chave inclui token para rastreabilidade) ──
   const localKey = 'pseg_offline_' + linkToken + '_' + Date.now();
-  const localPayload = { rpcParams, tentativa: new Date().toISOString(), token: linkToken };
+  // metodologia/ciclo/form_version: informativos (o payload é autossuficiente e o servidor valida contra o ciclo)
+  const localPayload = { rpcParams, tentativa: new Date().toISOString(), token: linkToken,
+    metodologia: _instr ? 'HSE_ICAO35' : 'BS8800', ciclo_id: cicloId || null, form_version: FORM_VERSION };
   try { localStorage.setItem(localKey, JSON.stringify(localPayload)); } catch(e) { /* storage cheio */ }
 
   // Limpar entradas offline com mais de 7 dias (evita acúmulo)
@@ -957,6 +1075,16 @@ async function enviarResposta() {
         localStorage.removeItem(localKey);
         salvoComSucesso = true;
       } catch (e) {
+        if (_ERROS_PERMANENTES.test(String(e.message || ''))) {
+          // Rejeição definitiva do servidor (instrumento/ciclo): repetir não adianta e deixar na
+          // fila offline faria o reenvio falhar para sempre.
+          try { localStorage.removeItem(localKey); } catch(_) {}
+          console.warn('Envio recusado em definitivo:', e.message);
+          btn.disabled = false;
+          btn.innerHTML = 'Enviar Respostas';
+          toast('Esta pesquisa foi atualizada. Recarregue a página e responda novamente.', 'warn');
+          return;
+        }
         tentativas++;
         if (tentativas >= MAX_TENTATIVAS) {
           console.warn('Falha no envio após', MAX_TENTATIVAS, 'tentativas:', e.message);
@@ -1065,8 +1193,13 @@ async function reenviarPendentes() {
       localStorage.removeItem(chave);
       ok++;
     } catch(e) {
-      console.warn('Reenvio falhou:', e.message);
-      fail++;
+      if (_ERROS_PERMANENTES.test(String(e.message || ''))) {
+        localStorage.removeItem(chave); descartados++;   // nunca vai ser aceita
+        console.warn('Pendente descartada (recusa definitiva):', e.message);
+      } else {
+        console.warn('Reenvio falhou:', e.message);
+        fail++;
+      }
     }
   }
 
@@ -1115,6 +1248,7 @@ function toast(msg, type) {
 // ══════════════════════════════════════════════════════════
 // START
 // ══════════════════════════════════════════════════════════
+console.info('psicomap-forms', FORM_VERSION);
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <footer style="text-align:center;padding:16px 8px;font-size:11px;color:#bbb;">
