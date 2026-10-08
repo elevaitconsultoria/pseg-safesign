@@ -2026,7 +2026,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Questionário</div>
-      <div class="page-sub">Configure as questões e os parâmetros de risco</div>
+      <div class="page-sub">Configure as questões e os parâmetros de risco<span id="q-sub-hse"></span></div>
     </div>
     <div class="page-hdr-actions">
       <button class="btn btn-ghost" onclick="abrirModalRiscos()" style="font-size:12px">
@@ -4297,6 +4297,24 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div style="font-size:10px;color:#6b7280;margin-bottom:10px">
         💡 Refere-se ao período que a coleta representa — não precisa ser o mês atual. O nome do ciclo é gerado automaticamente a partir disso.
       </div>
+      <!-- Metodologia: só aparece quando o instrumento HSE está publicado neste ambiente (ver _hseAtivo) -->
+      <div id="nc-met-wrap" style="display:none;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:6px">Metodologia desta avaliação</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div id="nc-card-BS8800" onclick="_ncSelecionarMet('BS8800')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
+            <div style="font-size:12px;font-weight:700;color:var(--tx)">BS 8800 (PsicoMap)</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">27 questões. Classifica cada fator em níveis de risco, de irrelevante a crítico. Alimenta o inventário do PGR.</div>
+          </div>
+          <div id="nc-card-HSE_ICAO35" onclick="_ncSelecionarMet('HSE_ICAO35')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
+            <div style="font-size:12px;font-weight:700;color:var(--tx)">HSE (ICAO-35)</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">35 questões. Mede 7 dimensões das condições de trabalho e compara com a base internacional. Sem nível P×S.</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">🔒 A metodologia não muda depois que o ciclo tem link ou resposta. Para trocar, crie um novo ciclo.</div>
+        <label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--tx);cursor:pointer">
+          <input type="checkbox" id="nc-ambas"> <span id="nc-ambas-txt">Criar também um ciclo com HSE (links separados)</span>
+        </label>
+      </div>
       <div class="g2" style="margin-bottom:10px">
         <div class="field">
           <label>Data início</label>
@@ -4898,6 +4916,7 @@ const MODULOS_CATALOGO = [
   { id:'auditoria',   nome:'Auditoria',               desc:'Trilha de auditoria das respostas' },
   { id:'graficos',    nome:'Gráficos',                desc:'Tela de gráficos' },
   { id:'links',       nome:'Links de coleta',         desc:'Geração e gestão de links do formulário' },
+  { id:'hse',         nome:'Metodologia HSE',         desc:'Seletor de metodologia HSE ao criar o ciclo (sem linha = ligado)' },
 ];
 
 // Telas cuja visibilidade é governada por um módulo (id de goScreen → módulo).
@@ -4907,8 +4926,105 @@ const MODULO_POR_TELA = {
   auditoria:'auditoria', graficos:'graficos', links:'links', adesao:'adesao',
 };
 
+// ==== HSE BEGIN — metodologia por ciclo (plano: .claude/notes/2026-10-08-plano-implantacao-hse.md) ====
+// A metodologia é propriedade do CICLO. Ciclo sem o campo, link sem ciclo e ambiente sem a migration
+// = BS 8800 (comportamento histórico). Os motores e o loader do BS 8800 NÃO são tocados: respostas HSE
+// vivem em tabela própria e nunca chegam a eles. Estas funções só decidem o que mostrar e bloquear.
+const METODOLOGIA_BS  = 'BS8800';
+const METODOLOGIA_HSE = 'HSE_ICAO35';
+let _hseDisponivel = false;      // existe questionário HSE PUBLICADO neste ambiente? (chave geral)
+let _ncMet = METODOLOGIA_BS;     // metodologia escolhida no modal "Novo ciclo"
+const _avisoHSEFora = new Set(); // empresas já avisadas de que ciclos HSE não entram na análise BS
+
+async function carregarDisponibilidadeHSE() {
+  _hseDisponivel = false;
+  try {
+    if (!isDemoMode && sbAdmin) {
+      const { data, error } = await sbAdmin.from('questionarios').select('id')
+        .eq('metodologia', METODOLOGIA_HSE).eq('publicado', true).limit(1);
+      if (error) throw error;
+      _hseDisponivel = !!(data && data.length);
+    }
+  } catch (e) {
+    // Coluna ausente = ambiente sem a migration do HSE: segue só com BS 8800.
+    console.info('HSE indisponível neste ambiente:', e?.message || e);
+  }
+  const sub = document.getElementById('q-sub-hse');
+  if (sub) sub.textContent = _hseAtivo() ? ' Vale para ciclos BS 8800; o instrumento HSE é fechado e não pode ser personalizado.' : '';
+}
+// Avaliado no uso (e não gravado): o módulo 'hse' pode ser desligado depois da carga.
+function _hseAtivo() { return _hseDisponivel && moduloOn('hse'); }
+
+function _metodologiaDoCiclo(cicloId) {
+  const c = _ciclos.find(x => x.id === cicloId);
+  return c && c.metodologia === METODOLOGIA_HSE ? METODOLOGIA_HSE : METODOLOGIA_BS;
+}
+// Ponto de extensão do combo (v2): lista de instrumentos do ciclo. Na v1 sempre 1 elemento.
+function _instrumentosDoCiclo(cicloId) { return [_metodologiaDoCiclo(cicloId)]; }
+function _cicloEhHSE(c) { return !!c && c.metodologia === METODOLOGIA_HSE; }
+function _empresaTemCicloHSE(empId) { return _ciclos.some(c => c.empresa_id === empId && _cicloEhHSE(c)); }
+
+// Rótulo do ciclo para <select>/listas. Dois ciclos do mesmo mês teriam o MESMO nome; o rótulo distingue.
+function _cicloLabel(c) {
+  if (!c) return '';
+  const nome = c.nome || '—';
+  if (_cicloEhHSE(c)) return /HSE/i.test(nome) ? nome : `${nome} · HSE`;
+  return _hseAtivo() ? `${nome} · BS 8800` : nome;
+}
+function _seloMetodologia(c) {
+  if (_cicloEhHSE(c)) return '<span class="tag tp" style="font-size:9px">HSE</span>';
+  return _hseAtivo() ? '<span class="tag tgr" style="font-size:9px">BS 8800</span>' : '';
+}
+// Selo do link (a metodologia vem do ciclo; link sem ciclo = BS 8800)
+function _seloLinkMetodologia(l) {
+  if (!l.ciclo_id) return _hseAtivo() ? ' <span class="tag tgr" style="font-size:9px" title="Link sem ciclo usa a metodologia BS 8800">sem ciclo · BS 8800</span>' : '';
+  const c = _ciclos.find(x => x.id === l.ciclo_id);
+  return c ? ' ' + _seloMetodologia(c) : '';
+}
+
+// Telas que só leem BS 8800. Se o ciclo escolhido é HSE, explica em vez de mostrar "nenhuma resposta".
+// Devolve true quando bloqueou (o chamador deve dar return).
+function _guardaTelaBS(cicloId, panel, situacao) {
+  if (!cicloId || _metodologiaDoCiclo(cicloId) !== METODOLOGIA_HSE || !panel) return false;
+  const c = _ciclos.find(x => x.id === cicloId);
+  const nome = String(c?.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  panel.innerHTML = `<div class="card"><div class="alert alert-y"><strong>Ciclo HSE.</strong> O ciclo “${nome}” usa a metodologia HSE (ICAO-35). Esta tela ainda não lê resultados HSE — ${situacao}.</div></div>`;
+  window._analiseData = null;
+  if (typeof _sincronizarBotaoPacote === 'function') _sincronizarBotaoPacote();
+  return true;
+}
+// "Todos os ciclos" numa empresa com ciclo HSE: as telas BS ignoram as respostas HSE (estrutura própria).
+function _avisarHSEForaDaAnaliseBS(empId, cicloId) {
+  if (cicloId || !empId || _avisoHSEFora.has(empId) || !_empresaTemCicloHSE(empId)) return;
+  _avisoHSEFora.add(empId);
+  toast('Esta empresa tem ciclo HSE: as respostas HSE não entram nesta análise BS 8800. Selecione o ciclo para ver cada metodologia.', 'w', 6000);
+}
+
+function _ncSelecionarMet(m) {
+  _ncMet = m === METODOLOGIA_HSE ? METODOLOGIA_HSE : METODOLOGIA_BS;
+  [METODOLOGIA_BS, METODOLOGIA_HSE].forEach(k => {
+    const el = document.getElementById('nc-card-' + k);
+    if (!el) return;
+    const on = k === _ncMet;
+    el.style.borderColor = on ? 'var(--g)' : 'var(--border)';
+    el.style.background  = on ? '#f0faf4' : 'transparent';
+  });
+  const t = document.getElementById('nc-ambas-txt');
+  if (t) t.textContent = _ncMet === METODOLOGIA_HSE
+    ? 'Criar também um ciclo com BS 8800 (links separados)'
+    : 'Criar também um ciclo com HSE (links separados)';
+}
+function _ncInicializarMetodologia() {
+  const wrap = document.getElementById('nc-met-wrap');
+  if (!wrap) return;
+  wrap.style.display = _hseAtivo() ? 'block' : 'none';
+  const amb = document.getElementById('nc-ambas'); if (amb) amb.checked = false;
+  _ncSelecionarMet(METODOLOGIA_BS);
+}
+// ==== HSE END ====
+
 const BLOCOS_INFO = {
-  A:{nome:'Bloco A — Demandas de Trabalho',     cor:'#4b5ea8',bg:'#f0f2fb'},
+  A:{nome:'Bloco A — Demandas de Trabalho',    cor:'#4b5ea8',bg:'#f0f2fb'},
   B:{nome:'Bloco B — Relações Interpessoais',    cor:'#2d6e9e',bg:'#f0f6fb'},
   C:{nome:'Bloco C — Fatores Organizacionais',   cor:'#8b5e2e',bg:'#faf5ec'},
   EXTRA:{nome:'Questões Extras',                 cor:'#4b5563',bg:'#f3f4f6'},
@@ -6053,17 +6169,24 @@ async function carregarEmpresas() {
   try {
     const tid = _supportMode && _supportTenant?.id;
     const isViewer = currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id;
-    const [{ data: emps }, { data: cics }, { data: setData }, { data: funData }] = await Promise.all([
+    // Ciclos: pede `metodologia` junto. Em ambiente sem a migration do HSE a coluna não existe e o
+    // erro desta query era ENGOLIDO (cics = null → lista de ciclos vazia). Por isso há refazer sem ela.
+    const _colsCiclos = 'id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada';
+    const _qCiclos = (cols) => { let q = sbAdmin.from('ciclos').select(cols); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('empresa_id', currentUser.empresa_id); return q.order('criado_em', { ascending: false }); };
+    const [{ data: emps }, { data: cics0, error: cicErr0 }, { data: setData }, { data: funData }] = await Promise.all([
       // viewer: filtrar no banco — evita enviar dados de outras empresas pela rede
       (() => { let q = sbAdmin.from('empresas').select('id,nome,cnpj,razao_social,endereco,contato,logo_base64,ativo,numero_cliente').eq('ativo',true); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('id', currentUser.empresa_id); return q.order('nome'); })(),
-      (() => { let q = sbAdmin.from('ciclos').select('id,nome,empresa_id,data_inicio,data_fim,descricao,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada'); if (tid) q = q.eq('tenant_id',tid); if (isViewer) q = q.eq('empresa_id', currentUser.empresa_id); return q.order('criado_em', { ascending: false }); })(),
+      _qCiclos(_colsCiclos + ',metodologia'),
       _fetchAllSupabase(() => tid
         ? sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_setores').select('id,empresa_id,nome,ordem,grupo').eq('ativo',true).order('empresa_id').order('ordem')),
       _fetchAllSupabase(() => tid
         ? sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).eq('tenant_id',tid).order('empresa_id').order('ordem')
         : sbAdmin.from('empresa_funcoes').select('empresa_id,nome,ordem,setor_id').eq('ativo',true).order('empresa_id').order('ordem')),
+      carregarDisponibilidadeHSE(),
     ]);
+    let cics = cics0;
+    if (cicErr0 && _colunaAusente(cicErr0)) { const r2 = await _qCiclos(_colsCiclos); cics = r2.data; }
     // viewer: filtrar para só a empresa vinculada ao perfil (antes de montar objetos)
     const empsRaw = (currentUser?.role === 'cliente_viewer' && currentUser?.empresa_id)
       ? (emps || []).filter(e => e.id === currentUser.empresa_id)
@@ -6147,8 +6270,8 @@ function popularSelectCiclos(empresaId) {
   const ciclosFiltrados = empresaId
     ? _ciclos.filter(c => c.empresa_id === empresaId)
     : _ciclos;
-  el.innerHTML = '<option value="">Sem ciclo</option>' +
-    ciclosFiltrados.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  el.innerHTML = `<option value="">${_hseAtivo() ? 'Sem ciclo (usa BS 8800)' : 'Sem ciclo'}</option>` +
+    ciclosFiltrados.map(c => `<option value="${c.id}">${_cicloLabel(c)}</option>`).join('');
 }
 
 // ══════════════════════════════════════════
@@ -6879,6 +7002,9 @@ async function rodarAnalise() {
   const panel = document.getElementById('resultado-panel');
   panel.innerHTML = _loadingState('Carregando respostas…');
   const emp      = document.getElementById('f-empresa').value;
+  const cicloSel = document.getElementById('f-ciclo')?.value || '';
+  if (_guardaTelaBS(cicloSel, panel, 'a análise dos resultados HSE está em desenvolvimento')) return;
+  _avisarHSEForaDaAnaliseBS(emp, cicloSel);
   const niveis   = [...comboState['combo-nivel']];
   const todosDosBancos = await getLinhasParaAnalise(emp);
   // O recorte sai de _filtroResultados, a mesma função que mede cada preset na conferência do
@@ -11466,7 +11592,7 @@ function renderLinks() {
           <div style="width:8px;height:8px;border-radius:50%;background:${l.ativo?'#4caf50':l.encerrado_em?'#7c3aed':'#bbb'};flex-shrink:0"></div>
           <div style="min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--tx)">${l.nomeEmpresa}</div>
-            <div style="font-size:11px;color:#374151;margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}</div>
+            <div style="font-size:11px;color:#374151;margin-top:1px">${l.setor_sugerido?`Setor: ${l.setor_sugerido} `:''} ${l.ciclo?`· ${l.ciclo}`:''}${_seloLinkMetodologia(l)}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px">
@@ -11677,7 +11803,7 @@ function _adRenderCicloSel() {
   const ciclos = _ciclos.filter(c => c.empresa_id === emp);
   const atual  = sel.value;
   sel.innerHTML = '<option value="">Todos os ciclos</option>' +
-    ciclos.map(c => `<option value="${c.id}">${_escAd(c.nome || '—')}</option>`).join('');
+    ciclos.map(c => `<option value="${c.id}">${_escAd(_cicloLabel(c))}</option>`).join('');
   sel.disabled = !ciclos.length;
   if (atual && ciclos.some(c => c.id === atual)) sel.value = atual;
 }
@@ -12558,8 +12684,8 @@ function onGheBatchEmpresaChange() {
   const cicloSel = document.getElementById('gb-ciclo');
   if (cicloSel) {
     const ciclosEmp = empresaId ? _ciclos.filter(c => c.empresa_id === empresaId) : [];
-    cicloSel.innerHTML = '<option value="">Sem ciclo específico</option>' +
-      ciclosEmp.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    cicloSel.innerHTML = `<option value="">${_hseAtivo() ? 'Sem ciclo específico (usa BS 8800)' : 'Sem ciclo específico'}</option>` +
+      ciclosEmp.map(c => `<option value="${c.id}">${_cicloLabel(c)}</option>`).join('');
   }
 
   const gheSection = document.getElementById('gb-ghe-section');
@@ -12945,6 +13071,7 @@ function calcDistribuicaoQuestoes(linhas) {
 // ── RENDER PRINCIPAL ──
 async function renderGraficos() {
   const emp      = document.getElementById('gf-empresa').value;
+  if (_guardaTelaBS(document.getElementById('gf-ciclo')?.value || '', document.getElementById('graficos-panel'), 'prevista na fase 1.1')) return;
   const todosDados = await getLinhasParaAnalise(emp);
   // Mesma função que a conferência do acumulado de presets usa para medir cada preset.
   const linhas   = _filtroGraficos(_presetConfigAtual('graficos'), todosDados);
@@ -14636,6 +14763,8 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
+  if (_guardaTelaBS(cicloId, document.getElementById('laudo-preview-panel'), 'o laudo HSE está em desenvolvimento')) return;
+  _avisarHSEForaDaAnaliseBS(emp, cicloId);
   const niveisLd = [...comboState['combo-ld-nivel']];   // recorta os FATORES, não as linhas
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
@@ -15585,6 +15714,11 @@ async function gerarLaudoPDF() {
     const empId     = document.getElementById('ld-empresa')?.value || '';
     const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
     const cicloId   = document.getElementById('ld-ciclo')?.value || '';
+    if (_metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE ainda não existe: não gerar documento BS errado
+      win.close();
+      toast('O laudo de ciclos HSE ainda está em desenvolvimento.', 'w');
+      return;
+    }
     const setores   = [...(comboState['combo-ld-setor'] || new Set())];
     const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
     const escolaridadesLd = [...(comboState['combo-ld-escolaridade'] || new Set())];
@@ -17908,6 +18042,7 @@ function abrirModalCiclo(empresaId) {
   const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
   if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
   renderCiclosModal(empresaId);
+  _ncInicializarMetodologia();
   document.getElementById('modal-ciclo').classList.add('open');
 }
 
@@ -17940,7 +18075,7 @@ function renderCiclosModal(empresaId) {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);gap:8px;flex-wrap:wrap">
       <div style="min-width:0;flex:1">
         <div style="font-size:12px;font-weight:600;color:var(--tx);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          ${c.nome}
+          ${c.nome} ${_seloMetodologia(c)}
           ${c.referencia_estimada ? '<span style="font-size:9px;font-weight:700;color:var(--amber);background:var(--amberbg);border-radius:4px;padding:1px 5px" title="Mês/ano inferidos automaticamente — confira se está correto">⏱ estimado</span>' : ''}
           ${tipoAtual === 'Não classificado' ? '<span style="font-size:9px;font-weight:700;color:var(--tl);background:white;border:1px solid var(--border);border-radius:4px;padding:1px 5px">Não classificado</span>' : ''}
         </div>
@@ -17979,26 +18114,41 @@ async function salvarCiclo() {
   const dataInicio = document.getElementById('nc-data-inicio').value || null;
   const dataFim    = document.getElementById('nc-data-fim').value || null;
   if (!mes || !ano) { toast('Selecione o mês e o ano de referência.', 'w'); return; }
-  const nome = `Avaliação — ${MES_NOME_CICLO[mes]} ${ano}`;
-
-  if (isDemoMode) {
-    const novo = { id: 'c' + Date.now(), empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
-                   ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false };
-    _ciclos.unshift(novo);
-    popularSelectsEmpresas();
-    toast('Ciclo criado!', 'g');
-  } else {
-    try {
-      const { data, error } = await sbAdmin.from('ciclos')
-        .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
-                  ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false, tenant_id: currentTenantId })
-        .select('id,nome,empresa_id,data_inicio,data_fim,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada').single();
-      if (error) throw error;
-      _ciclos.unshift(data);
-      popularSelectsEmpresas();
-      toast('Ciclo criado!', 'g');
-    } catch(e) { toast('Erro: ' + e.message, 'w'); return; }
+  // Metodologia: sem HSE publicado no ambiente nada muda (insert idêntico ao de sempre, sem a coluna).
+  // Com HSE, o ciclo nasce com a metodologia escolhida; o atalho cria também o ciclo da outra,
+  // com links separados — cada um tem análise e laudo próprios.
+  const hseOn = _hseAtivo();
+  const metodologias = [hseOn ? _ncMet : METODOLOGIA_BS];
+  if (hseOn && document.getElementById('nc-ambas')?.checked) {
+    metodologias.push(metodologias[0] === METODOLOGIA_HSE ? METODOLOGIA_BS : METODOLOGIA_HSE);
   }
+  const colsRetorno = 'id,nome,empresa_id,data_inicio,data_fim,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada' + (hseOn ? ',metodologia' : '');
+  let criados = 0;
+  for (const metod of metodologias) {
+    // O nome distingue os dois ciclos do mesmo mês (antes seriam idênticos em todos os selects).
+    const nome = metod === METODOLOGIA_HSE
+      ? `Avaliação HSE — ${MES_NOME_CICLO[mes]} ${ano}`
+      : `Avaliação — ${MES_NOME_CICLO[mes]} ${ano}`;
+    if (isDemoMode) {
+      const novo = { id: 'c' + Date.now() + criados, empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
+                     ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false };
+      _ciclos.unshift(novo);
+    } else {
+      try {
+        const { data, error } = await sbAdmin.from('ciclos')
+          .insert({ empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
+                    ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false, tenant_id: currentTenantId,
+                    ...(hseOn ? { metodologia: metod } : {}) })
+          .select(colsRetorno).single();
+        if (error) throw error;
+        _ciclos.unshift(data);
+      } catch(e) { toast('Erro: ' + e.message, 'w'); break; }
+    }
+    criados++;
+  }
+  if (!criados) return;
+  popularSelectsEmpresas();
+  toast(criados > 1 ? 'Ciclos criados!' : 'Ciclo criado!', 'g');
   document.getElementById('nc-data-inicio').value = '';
   document.getElementById('nc-data-fim').value = '';
   renderCiclosModal(_cicloEmpresaId);
@@ -18316,6 +18466,7 @@ async function renderTelaAuditoria() {
 
   const panel = document.getElementById('audit-table-panel');
   if (!panel) return;
+  if (_guardaTelaBS(cicloId, panel, 'prevista na fase 1.1')) return;
 
   // Buscar dados
   let todosLinhas = await getLinhasParaAnalise(empId || null);
@@ -18685,7 +18836,7 @@ function _gheRenderCicloSel() {
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const ciclosEmp = _ciclos.filter(c => c.empresa_id === _gheEmpresaId);
   sel.innerHTML = '<option value="">Todos os ciclos</option>' +
-    ciclosEmp.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+    ciclosEmp.map(c => `<option value="${c.id}">${esc(_cicloLabel(c))}</option>`).join('');
   sel.value = _gheCicloSelecionado || '';
   sel.disabled = ciclosEmp.length === 0;
 }
@@ -20239,7 +20390,7 @@ function preencherSelectCiclos(selId, empId) {
   const lista = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
   lista.forEach(c => {
     const opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = c.nome;
+    opt.value = c.id; opt.textContent = _cicloLabel(c);
     sel.appendChild(opt);
   });
   // preserva o ciclo do contexto global quando ele pertence a esta empresa
@@ -20262,10 +20413,11 @@ async function renderComparativo() {
   panel.innerHTML = _loadingState('Carregando dados dos ciclos…');
 
   // Buscar todos os ciclos da empresa
-  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
+  // Só ciclos BS 8800: o comparativo usa o eixo P (1–4) e não comparamos metodologias diferentes.
+  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId && !_cicloEhHSE(c)));
 
   if (ciclos.length < 2) {
-    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) cadastrado(s).</div></div>';
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) BS 8800 cadastrado(s).' + (_empresaTemCicloHSE(empId) ? ' Ciclos HSE não entram no comparativo (previsto na fase 1.1).' : '') + '</div></div>';
     return;
   }
 
@@ -20495,6 +20647,7 @@ async function renderPlanoAcao() {
   // Atualizar select de ciclos
   preencherSelectCiclos('plano-ciclo', empId);
   if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
+  if (_guardaTelaBS(cicloId, panel, 'prevista na fase 1.1')) return;
 
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
 
