@@ -1492,7 +1492,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span id="empresa-chip-nome" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Selecionar cliente</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink:0;opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
       <div class="chip-dropdown" id="chip-dropdown">
-        <div class="chip-dd-header">Empresa cliente</div>
+        <div class="chip-dd-header">Cliente</div>
         <div id="chip-dd-list"></div>
       </div>
     </div>
@@ -1514,7 +1514,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <div class="ham-drop-sep"></div>
           <button class="ham-drop-item" onclick="goScreen('assinatura',document.getElementById('nb-assinatura'));fecharHamMenu()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Assinatura & Plano
+            Assinatura
           </button>
           <div class="ham-drop-sep"></div>
           <button class="ham-drop-item" onclick="fazerLogout();fecharHamMenu()" style="color:var(--red)">
@@ -1541,7 +1541,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span class="nav-label">Dashboard</span>
     </button>
 
-    <div class="sidebar-section">Coleta</div>
+    <div class="sidebar-section">Cadastro</div>
 
     <button class="nav-item" id="nb-empresas" data-label="Clientes" onclick="goScreen('empresas',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -1559,11 +1559,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span class="nav-label">Agrupamentos GHE</span>
     </button>
 
-    <button class="nav-item" id="nb-adesao" data-modulo="adesao" data-label="Adesão" onclick="goScreen('adesao',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      <span class="nav-label">Adesão</span>
-      <span class="nav-badge" id="nb-adesao-badge" style="display:none"></span>
+    <button class="nav-item" id="nb-q" data-label="Questionário" onclick="goScreen('q',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+      <span class="nav-label">Questionário</span>
     </button>
+
+    <div class="sidebar-section">Coleta</div>
 
     <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -1571,9 +1572,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span class="nav-badge" id="nb-links-badge" style="display:none"></span>
     </button>
 
-    <button class="nav-item" id="nb-q" data-label="Questionário" onclick="goScreen('q',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
-      <span class="nav-label">Questionário</span>
+    <button class="nav-item" id="nb-adesao" data-modulo="adesao" data-label="Adesão" onclick="goScreen('adesao',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span class="nav-label">Adesão</span>
+      <span class="nav-badge" id="nb-adesao-badge" style="display:none"></span>
     </button>
 
     <div class="sidebar-section">Análise</div>
@@ -1599,11 +1601,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span class="nav-label">Auditoria</span>
     </button>
 
-    <div class="sidebar-section">Exportar</div>
+    <div class="sidebar-section">Entrega</div>
 
-    <button class="nav-item" id="nb-laudo" data-modulo="laudo" data-label="Relatório" onclick="goScreen('laudo',this)">
+    <button class="nav-item" id="nb-laudo" data-modulo="laudo" data-label="Laudo" onclick="goScreen('laudo',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-      <span class="nav-label">Relatório</span>
+      <span class="nav-label">Laudo</span>
+    </button>
+
+    <button class="nav-item" id="nb-plano" data-modulo="plano" data-label="Plano de Ação" onclick="goScreen('plano',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="nav-label">Plano de Ação</span>
     </button>
 
     <div class="sidebar-section">Conta</div>
@@ -1613,22 +1620,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <span class="nav-label">Perfil da EST</span>
     </button>
 
+    <button class="nav-item" id="nb-usuarios" data-label="Equipe" onclick="goScreen('usuarios',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="nav-label">Equipe</span>
+    </button>
+
     <button class="nav-item" id="nb-assinatura" data-label="Assinatura" onclick="goScreen('assinatura',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
       <span class="nav-label">Assinatura</span>
       <span class="nav-badge" id="nb-assinatura-badge" style="display:none"></span>
-    </button>
-
-    <div class="sidebar-section">Configuração</div>
-
-    <button class="nav-item" id="nb-plano" data-modulo="plano" data-label="Plano de Ação" onclick="goScreen('plano',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      <span class="nav-label">Plano de Ação</span>
-    </button>
-
-    <button class="nav-item" id="nb-usuarios" data-label="Equipe" onclick="goScreen('usuarios',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      <span class="nav-label">Equipe</span>
     </button>
 
     <button class="nav-item" id="nb-riscos" data-modulo="riscos" data-label="Configurar Riscos" onclick="goScreen('riscos',this)">
@@ -1668,7 +1668,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 ══════════════════════════════════════════════════════ -->
 <div class="screen" id="sc-assinatura">
   <div class="page-header">
-    <div class="page-title">Assinatura & Plano</div>
+    <div class="page-title">Assinatura</div>
     <div class="page-sub">Plano atual, uso do período e histórico de pagamentos</div>
   </div>
 
@@ -1688,7 +1688,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--tl);margin-bottom:12px">Uso do período</div>
       <div class="ass-uso-row">
-        <div class="ass-uso-lbl">Empresas</div>
+        <div class="ass-uso-lbl">Clientes</div>
         <div class="ass-uso-track"><div class="ass-uso-fill" id="ass-ub-empresas" style="width:0%"></div></div>
         <div class="ass-uso-count" id="ass-uc-empresas">—</div>
       </div>
@@ -1900,7 +1900,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
       <div class="field">
-        <label>Empresa vinculada <span style="font-size:10px;color:var(--tl)">(obrigatório para Viewer)</span></label>
+        <label>Cliente vinculado <span style="font-size:10px;color:var(--tl)">(obrigatório para Viewer)</span></label>
         <select id="reconf-empresa-id">
           <option value="">— Nenhuma —</option>
         </select>
@@ -1942,7 +1942,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Só para Viewer: sem empresa_id a policy RESTRICTIVE de empresas
            devolve zero linhas e o usuário loga num painel vazio. -->
       <div class="field" id="nu-empresa-field" style="display:none">
-        <label>Empresa <span style="color:var(--red)">*</span></label>
+        <label>Cliente <span style="color:var(--red)">*</span></label>
         <select id="nu-empresa-id"></select>
         <div style="font-size:10px;color:var(--tl);margin-top:4px">O Viewer enxerga apenas os dados desta empresa.</div>
       </div>
@@ -1969,7 +1969,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div class="page-hdr-actions" id="dash-hdr-actions">
       <button class="btn btn-g" onclick="irParaNovaEmpresa()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nova empresa
+        Novo cliente
       </button>
     </div>
   </div>
@@ -2386,7 +2386,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-auditoria" data-modulo="auditoria">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Auditoria de Respostas</div>
+      <div class="page-title">Auditoria</div>
       <div class="page-sub">Respostas individuais coletadas — exportação e verificação</div>
     </div>
     <div class="page-hdr-actions">
@@ -2502,7 +2502,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-graficos" data-modulo="graficos">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Distribuição de Respostas</div>
+      <div class="page-title">Distribuição</div>
       <div class="page-sub">Distribuição de frequência por questão</div>
     </div>
     <div class="page-hdr-actions">
@@ -2701,7 +2701,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-laudo" data-modulo="laudo">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Laudo & Relatório</div>
+      <div class="page-title">Laudo</div>
       <div class="page-sub">Relatório técnico — NR-01 / NR-17 / BS 8800</div>
     </div>
     <div class="page-hdr-actions">
@@ -3281,7 +3281,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-metodologia">
   <div class="page-header">
-    <div class="page-title">Metodologia & Racional</div>
+    <div class="page-title">Metodologia</div>
     <div class="page-sub">Fundamentos técnicos da avaliação psicossocial, critérios de cálculo e interpretação dos resultados</div>
   </div>
 
@@ -3715,7 +3715,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-comparativo" data-modulo="comparativo">
   <div class="page-header">
-    <div class="page-title">Comparativo de Ciclos</div>
+    <div class="page-title">Comparativo</div>
     <div class="page-sub">Evolução temporal dos fatores de risco entre avaliações</div>
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
@@ -3743,7 +3743,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-plano" data-modulo="plano">
   <div class="page-header">
-    <div class="page-title">Plano de Ação 5W2H</div>
+    <div class="page-title">Plano de Ação</div>
     <div class="page-sub">Ações corretivas geradas a partir dos riscos identificados (MÉDIO, ALTO e CRÍTICO)</div>
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end">
@@ -3784,7 +3784,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-gestao-ests">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Painel Eleva IT</div>
+      <div class="page-title">Gestão de ESTs</div>
       <div class="page-sub">Visão consolidada de todas as ESTs na plataforma</div>
     </div>
     <div class="page-hdr-actions">
@@ -4107,7 +4107,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-adesao" data-modulo="adesao">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Acompanhamento de Adesão</div>
+      <div class="page-title">Adesão</div>
       <div class="page-sub">Quantas pessoas já responderam, quem ainda falta e se a coleta parou</div>
     </div>
     <div class="page-hdr-actions">
@@ -4146,13 +4146,13 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-links" data-modulo="links">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Coleta &amp; Links</div>
+      <div class="page-title">Links de Coleta</div>
       <div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div>
     </div>
     <div class="page-hdr-actions" id="links-action-btns">
       <button class="btn btn-ghost" onclick="irParaNovaEmpresa()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Nova empresa
+        Novo cliente
       </button>
       <button class="btn btn-g" onclick="abrirModalLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -4221,7 +4221,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div class="page-hdr-actions">
       <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nova empresa
+        Novo cliente
       </button>
     </div>
   </div>
@@ -4325,7 +4325,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <div class="modal-sub">O link gerado pode ser enviado por WhatsApp, e-mail ou impresso como QR Code. O funcionário não precisa de login.</div>
     <div class="g2" style="margin-bottom:12px">
       <div class="field">
-        <label>Empresa <span style="color:var(--red)">*</span></label>
+        <label>Cliente <span style="color:var(--red)">*</span></label>
         <select id="nl-empresa" onchange="popularSetoresModal(); popularSelectCiclos(this.value)">
           <option value="">Selecione...</option>
         </select>
@@ -4387,7 +4387,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
     <div class="g2" style="margin-bottom:14px">
       <div class="field">
-        <label>Empresa <span style="color:var(--red)">*</span></label>
+        <label>Cliente <span style="color:var(--red)">*</span></label>
         <select id="gb-empresa" onchange="onGheBatchEmpresaChange()">
           <option value="">Selecione...</option>
         </select>
@@ -4890,14 +4890,14 @@ const FATORES = Object.fromEntries(
 // em tenant_modulos.modulo e usado no atributo data-modulo do HTML.
 // Acrescentar módulo aqui é seguro: nasce habilitado para todas as ESTs.
 const MODULOS_CATALOGO = [
-  { id:'laudo',       nome:'Relatório final (Laudo)', desc:'Tela de laudo e botões de geração/exportação' },
+  { id:'laudo',       nome:'Laudo',                  desc:'Tela de laudo e botões de geração/exportação' },
   { id:'adesao',      nome:'Adesão',                  desc:'Badge e coluna de adesão na GHE + painel na tela de Links' },
-  { id:'plano',       nome:'Plano de ação',           desc:'Tela de plano de ação' },
-  { id:'riscos',      nome:'Riscos',                  desc:'Tela de configuração de riscos' },
+  { id:'plano',       nome:'Plano de Ação',           desc:'Tela de plano de ação' },
+  { id:'riscos',      nome:'Configurar Riscos',       desc:'Tela de configuração de riscos' },
   { id:'comparativo', nome:'Comparativo',             desc:'Comparação entre ciclos/empresas' },
   { id:'auditoria',   nome:'Auditoria',               desc:'Trilha de auditoria das respostas' },
-  { id:'graficos',    nome:'Gráficos',                desc:'Tela de gráficos' },
-  { id:'links',       nome:'Links de coleta',         desc:'Geração e gestão de links do formulário' },
+  { id:'graficos',    nome:'Distribuição',            desc:'Tela de distribuição de respostas por questão' },
+  { id:'links',       nome:'Links de Coleta',         desc:'Geração e gestão de links do formulário' },
 ];
 
 // Telas cuja visibilidade é governada por um módulo (id de goScreen → módulo).
@@ -6163,7 +6163,7 @@ let _neEditId = null; // null = criar; string = editar
 
 function abrirModalEmpresa() {
   _neEditId = null;
-  document.getElementById('ne-title').textContent = 'Nova empresa';
+  document.getElementById('ne-title').textContent = 'Novo cliente';
   document.getElementById('ne-sub').textContent = 'Cadastre uma empresa para poder gerar links de coleta vinculados a ela.';
   document.getElementById('ne-nome').value = '';
   document.getElementById('ne-cnpj').value = '';
@@ -6171,7 +6171,7 @@ function abrirModalEmpresa() {
   document.getElementById('ne-erro').style.display = 'none';
   const btn = document.getElementById('ne-btn');
   btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar empresa`;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar cliente`;
   document.getElementById('modal-empresa').classList.add('open');
   setTimeout(() => document.getElementById('ne-nome').focus(), 50);
 }
@@ -6180,7 +6180,7 @@ function abrirEditarEmpresa(empresaId) {
   const emp = _empresas.find(e => e.id === empresaId);
   if (!emp) return;
   _neEditId = empresaId;
-  document.getElementById('ne-title').textContent = 'Editar empresa';
+  document.getElementById('ne-title').textContent = 'Editar cliente';
   document.getElementById('ne-sub').textContent = `Atualize os dados de "${emp.nome}".`;
   document.getElementById('ne-nome').value    = emp.nome    || '';
   document.getElementById('ne-cnpj').value    = emp.cnpj    || '';
@@ -6254,7 +6254,7 @@ function abrirModalClientePerfil(empId) {
     return;
   }
 
-  document.getElementById('cp-title').textContent = isNovo ? 'Nova empresa' : 'Configurar cliente';
+  document.getElementById('cp-title').textContent = isNovo ? 'Novo cliente' : 'Configurar cliente';
   document.getElementById('cp-sub').textContent   = isNovo ? 'Preencha os dados da empresa cliente.' : `Editando "${emp.nome}"`;
   document.getElementById('cp-nome').value         = emp?.nome         || '';
   document.getElementById('cp-razao-social').value = emp?.razao_social || '';
@@ -6264,7 +6264,7 @@ function abrirModalClientePerfil(empId) {
   document.getElementById('cp-erro').style.display = 'none';
   const cpBtn = document.getElementById('cp-btn');
   cpBtn.disabled = false;
-  cpBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14" style="pointer-events:none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ${isNovo ? 'Cadastrar empresa' : 'Salvar'}`;
+  cpBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14" style="pointer-events:none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ${isNovo ? 'Cadastrar cliente' : 'Salvar'}`;
 
   if (!isNovo) _cpLogoBase64 = emp.logo_base64 || '';
   const prev = document.getElementById('cp-logo-preview');
@@ -6383,7 +6383,7 @@ async function salvarPerfilCliente() {
     erroEl.textContent = 'Erro ao salvar: ' + e.message;
     erroEl.style.display = '';
     btn.disabled = false;
-    btn.textContent = isNovo ? 'Cadastrar empresa' : 'Salvar';
+    btn.textContent = isNovo ? 'Cadastrar cliente' : 'Salvar';
   }
 }
 
@@ -6502,7 +6502,7 @@ async function salvarNovaEmpresa() {
     erroEl.textContent = 'Erro ao salvar: ' + e.message;
     erroEl.style.display = 'block';
     btn.disabled = false;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar empresa`;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="pointer-events:none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Cadastrar cliente`;
   }
 }
 
@@ -17288,8 +17288,8 @@ async function nuCarregarEmpresas() {
   const { data: emps, error } = await sbAdmin.from('empresas')
     .select('id, nome').eq('tenant_id', tid).eq('ativo', true).order('nome');
   if (error) { sel.innerHTML = '<option value="">Erro ao carregar empresas</option>'; return; }
-  if (!emps?.length) { sel.innerHTML = '<option value="">Nenhuma empresa cadastrada nesta EST</option>'; return; }
-  sel.innerHTML = '<option value="">— Selecione a empresa —</option>';
+  if (!emps?.length) { sel.innerHTML = '<option value="">Nenhum cliente cadastrado nesta EST</option>'; return; }
+  sel.innerHTML = '<option value="">— Selecione o cliente —</option>';
   emps.forEach(e => {
     const opt = document.createElement('option');
     opt.value = e.id; opt.textContent = e.nome;
@@ -17316,7 +17316,7 @@ async function salvarNovoUsuario() {
   let empresaId = null;
   if (role === 'cliente_viewer') {
     empresaId = document.getElementById('nu-empresa-id').value;
-    if (!empresaId) { toast('Selecione a empresa que o Viewer poderá acessar.', 'w'); return; }
+    if (!empresaId) { toast('Selecione o cliente que o Viewer poderá acessar.', 'w'); return; }
   }
 
   const btn = document.getElementById('btn-salvar-novo-usuario');
@@ -17466,7 +17466,7 @@ function _renderDashLista(metricas) {
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <div class="empty-state-title">Nenhum cliente cadastrado</div>
       <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="irParaNovaEmpresa()">Cadastrar empresa</button>
+      <button class="btn btn-g" onclick="irParaNovaEmpresa()">Cadastrar cliente</button>
     </div>`;
     return;
   }
@@ -17716,7 +17716,7 @@ function renderTelaEmpresas() {
       icone: 'cliente',
       titulo: 'Nenhum cliente cadastrado',
       texto: 'Cadastre a primeira empresa cliente para iniciar a coleta.',
-      acao: '<button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Nova empresa</button>',
+      acao: '<button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Novo cliente</button>',
     })}</div>`;
     grid.innerHTML = vazio;
     lista.innerHTML = vazio;
@@ -17944,7 +17944,7 @@ function abrirModalCiclo(empresaId) {
   document.getElementById('nc-data-fim').value = '';
   const sub = document.getElementById('ciclo-empresa-sub');
   const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
-  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
+  if (sub) sub.textContent = emp ? `Cliente: ${emp.nome}` : 'Selecione o cliente para ver os ciclos.';
   renderCiclosModal(empresaId);
   document.getElementById('modal-ciclo').classList.add('open');
 }
@@ -17958,7 +17958,7 @@ function mudarEmpresaCiclo(empresaId) {
   _cicloEmpresaId = empresaId || null;
   const emp = empresaId ? _empresas.find(e=>e.id===empresaId) : null;
   const sub = document.getElementById('ciclo-empresa-sub');
-  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa para ver os ciclos.';
+  if (sub) sub.textContent = emp ? `Cliente: ${emp.nome}` : 'Selecione o cliente para ver os ciclos.';
   renderCiclosModal(empresaId);
 }
 
@@ -18615,7 +18615,7 @@ function mudarEmpresaGHE(empresaId) {
   _gheEmpresaId = empresaId;
   const emp = _gheGetEmpresa(empresaId);
   const sub = document.getElementById('ghe-empresa-sub');
-  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : '';
+  if (sub) sub.textContent = emp ? `Cliente: ${emp.nome}` : '';
   const { hier, uni } = _gheEmpToHier(emp);
   _gheTempHierarquia = hier;
   _gheTempUniversais = uni;
@@ -18668,7 +18668,7 @@ function _setupTelaGHE(empresaId) {
   _gheEmpresaId = empresaId || null;
   const emp = empresaId ? _gheGetEmpresa(empresaId) : null;
   const sub = document.getElementById('ghe-empresa-sub');
-  if (sub) sub.textContent = emp ? `Empresa: ${emp.nome}` : 'Selecione a empresa acima para configurar seus GHEs.';
+  if (sub) sub.textContent = emp ? `Cliente: ${emp.nome}` : 'Selecione o cliente acima para configurar seus GHEs.';
   const { hier, uni } = _gheEmpToHier(emp);
   _gheTempHierarquia = hier;
   _gheTempUniversais = uni;
@@ -21329,21 +21329,21 @@ function copiarPix() {
 
     <div class="tutorial-steps" id="tutorial-steps">
 
-      <!-- PASSO 1: Cadastrar empresa -->
+      <!-- PASSO 1: Cadastrar cliente -->
       <div class="tut-step" data-step="0">
         <div class="tut-num">1</div>
         <div class="tut-body">
           <div class="tut-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Cadastrar uma empresa cliente
-            <span class="tut-tag">Empresas</span>
+            <span class="tut-tag">Clientes</span>
           </div>
           <p class="tut-desc">Antes de qualquer avaliação, cadastre a empresa que será analisada. Cada empresa pode ter múltiplos setores e ciclos de coleta.</p>
           <div class="tut-steps-inner">
-            <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Empresas</strong></div>
-            <div class="tut-step-inner" data-n="2">Clique em <strong>Nova empresa</strong> no canto superior direito</div>
+            <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Clientes</strong></div>
+            <div class="tut-step-inner" data-n="2">Clique em <strong>Novo cliente</strong> no canto superior direito</div>
             <div class="tut-step-inner" data-n="3">Preencha o nome e CNPJ da empresa</div>
-            <div class="tut-step-inner" data-n="4">Após salvar, clique em <strong>Configurar GHE</strong> para cadastrar os setores e funções da empresa</div>
+            <div class="tut-step-inner" data-n="4">Após salvar, abra <strong>Setores &amp; Funções</strong> para cadastrar os setores e funções do cliente</div>
           </div>
           <div class="tut-tip">💡 GHE = Grupos Homogêneos de Exposição. Cadastre todos os setores antes de gerar os links de coleta.</div>
         </div>
@@ -21361,7 +21361,7 @@ function copiarPix() {
           <p class="tut-desc">Os links são URLs únicas que você envia para os colaboradores. Cada link pertence a um setor/função específico e pode ter data de expiração.</p>
           <div class="tut-steps-inner">
             <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Links de Coleta</strong></div>
-            <div class="tut-step-inner" data-n="2">Selecione a empresa e o ciclo de avaliação (ex.: <em>PGR — Ciclo 2025/1</em>)</div>
+            <div class="tut-step-inner" data-n="2">Selecione o cliente e o ciclo de avaliação (ex.: <em>PGR — Ciclo 2025/1</em>)</div>
             <div class="tut-step-inner" data-n="3">Escolha os setores desejados e clique em <strong>Gerar links</strong></div>
             <div class="tut-step-inner" data-n="4">Copie o link de cada setor e envie por e-mail, WhatsApp ou intranet para os colaboradores</div>
             <div class="tut-step-inner" data-n="5">Acompanhe o número de respostas em tempo real na coluna <strong>Respostas</strong></div>
@@ -21381,7 +21381,7 @@ function copiarPix() {
           </div>
           <p class="tut-desc">Com respostas coletadas, o sistema calcula automaticamente o nível de risco de cada fator psicossocial usando a Matriz P × S (Probabilidade × Severidade).</p>
           <div class="tut-steps-inner">
-            <div class="tut-step-inner" data-n="1">Selecione a empresa no seletor no topo da página</div>
+            <div class="tut-step-inner" data-n="1">Selecione o cliente no seletor no topo da página</div>
             <div class="tut-step-inner" data-n="2">Clique em <strong>Resultados</strong> para ver a tabela de riscos por fator — cada linha mostra P, S e o nível (Irrelevante → Crítico)</div>
             <div class="tut-step-inner" data-n="3">Use <strong>Distribuição</strong> para visualizar os gráficos de barras por questão e setor</div>
             <div class="tut-step-inner" data-n="4">Use os filtros de <strong>Setor</strong> e <strong>Função</strong> para comparar grupos específicos</div>
@@ -21398,15 +21398,15 @@ function copiarPix() {
           <div class="tut-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Exportar o relatório (laudo técnico)
-            <span class="tut-tag">Relatório</span>
+            <span class="tut-tag">Laudo</span>
           </div>
           <p class="tut-desc">O laudo técnico é o documento formal entregue à empresa — inclui metodologia, resultados por setor, gráficos e plano de ações recomendadas.</p>
           <div class="tut-steps-inner">
             <div class="tut-step-inner" data-n="1">No menu lateral, clique em <strong>Relatório</strong></div>
-            <div class="tut-step-inner" data-n="2">Selecione a empresa, o ciclo e os setores a incluir</div>
+            <div class="tut-step-inner" data-n="2">Selecione o cliente, o ciclo e os setores a incluir</div>
             <div class="tut-step-inner" data-n="3">Escolha as seções desejadas: Capa, Metodologia, Resultados, Gráficos e Ações</div>
             <div class="tut-step-inner" data-n="4">Visualize o preview no lado direito e ajuste os grupos de setor conforme necessário</div>
-            <div class="tut-step-inner" data-n="5">Clique em <strong>Gerar PDF</strong> para baixar o documento final pronto para entrega</div>
+            <div class="tut-step-inner" data-n="5">Clique em <strong>Exportar PDF</strong> para baixar o documento final pronto para entrega</div>
           </div>
           <div class="tut-tip">💡 O relatório inclui automaticamente a metodologia completa (Matriz P×S, critérios de probabilidade e severidade) e as ações recomendadas por nível de risco.</div>
         </div>
