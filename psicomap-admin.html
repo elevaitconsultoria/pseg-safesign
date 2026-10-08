@@ -16457,9 +16457,47 @@ function aplicarModulos() {
   if (mod && _modulosOff.has(mod)) {
     goScreen('dashboard', document.getElementById('nb-dashboard'));
   }
+
+  // Módulo desligado esconde itens via .modulo-off DEPOIS de aplicarRestricoesPorRole() ter
+  // decidido os rótulos — recalcular para não deixar seção vazia (ex.: "Exportar" sem laudo).
+  _sincronizarSecoesSidebar();
 }
 
+// Rótulo de seção do sidebar aparece SE E SÓ SE algum item da seção está visível.
+// Substitui listas fixas de texto em aplicarRestricoesPorRole (['Conta','Administração'],
+// ['Coleta','Análise','Exportar']) que quebravam em silêncio ao renomear uma seção — e que
+// já deixavam um rótulo órfão (ex.: "Exportar" sem itens com o módulo `laudo` desligado).
+// Lê getComputedStyle, não style.display: pega tanto o display inline do RBAC quanto a classe
+// .modulo-off (display:none!important), por isso precisa rodar DEPOIS de aplicarModulos().
+function _sincronizarSecoesSidebar() {
+  // super_admin fora do Modo Suporte tem um menu mínimo montado à mão (só Equipe + Gestão de
+  // ESTs, sem rótulos além de Administração) — a regra derivada não se aplica a ele.
+  if (_roleAtual() === 'super_admin' && !_supportMode) return;
+  const sidebar = document.querySelector('aside.sidebar');
+  if (!sidebar) return;
+  let secao = null, algumVisivel = false;
+  const fechar = () => { if (secao) secao.style.display = algumVisivel ? '' : 'none'; };
+  for (const el of sidebar.children) {
+    if (el.classList.contains('sidebar-section')) {
+      fechar();
+      secao = el; algumVisivel = false;
+    } else if (el.classList.contains('nav-item') && !el.classList.contains('nav-toggle-sidebar')
+               && getComputedStyle(el).display !== 'none') {
+      algumVisivel = true;
+    }
+  }
+  fechar();
+}
+
+// Nome público preservado (vários pontos chamam e o CLAUDE.md documenta). O corpo tem
+// vários `return` antecipados por role; o wrapper garante que os rótulos sejam
+// sincronizados em todos eles sem espalhar a chamada.
 function aplicarRestricoesPorRole() {
+  _aplicarRestricoesPorRoleCore();
+  _sincronizarSecoesSidebar();
+}
+
+function _aplicarRestricoesPorRoleCore() {
   // Normalizar: Supabase coloca 'authenticated' em currentUser.role (JWT role).
   // Sobrescrever com o role real do app após loadPerfil(); caso loadPerfil falhe,
   // usar 'consultor' como fallback seguro em vez de cair no bloco cliente_viewer.
@@ -16521,12 +16559,9 @@ function aplicarRestricoesPorRole() {
       if (el) el.style.display = 'none';
     });
 
-    // Ocultar seções "Conta" e "Administração" (ficam vazias para consultor)
-    document.querySelectorAll('.sidebar-section').forEach(sec => {
-      if (['Conta','Administração'].includes(sec.textContent.trim())) sec.style.display = 'none';
-    });
-    const sbSecAdmin = document.getElementById('sb-sec-admin');
-    if (sbSecAdmin) sbSecAdmin.style.display = 'none';
+    // Rótulos de seção (Conta, Administração...) NÃO são tratados aqui: derivam dos itens
+    // visíveis em _sincronizarSecoesSidebar(). Antes havia uma lista de textos fixos, e
+    // renomear uma seção quebrava o RBAC do menu sem erro nenhum.
 
     // Ocultar botão "Novo usuário" (consultor não convida membros)
     const usuariosNewBtn = document.getElementById('usuarios-new-btn-area');
@@ -16545,11 +16580,7 @@ function aplicarRestricoesPorRole() {
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.style.display = permitidosViewer.has(btn.id) ? '' : 'none';
   });
-  // Mostrar apenas seções relevantes ao viewer
-  document.querySelectorAll('.sidebar-section').forEach(sec => {
-    const txt = sec.textContent.trim();
-    sec.style.display = ['Coleta','Análise','Exportar'].includes(txt) ? '' : 'none';
-  });
+  // Rótulos de seção: derivados dos itens visíveis (_sincronizarSecoesSidebar).
   // Ocultar botões de escrita (links, dashboard e novo usuário)
   ['links-action-btns', 'dash-hdr-actions', 'usuarios-new-btn-area'].forEach(eid => {
     const el = document.getElementById(eid);
