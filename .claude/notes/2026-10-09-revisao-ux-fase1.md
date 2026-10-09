@@ -57,3 +57,17 @@ módulos desligados removem passos; cartão (grade e lista) e modal renderizam; 
 
 ## Fase 4 (2026-10-09)
 Botão "Links por setor" em Campanhas; campanha obrigatória no lote; `ciclo_id` no objeto de `_links`; `applyCombo` removida. `onboarding-overlay` mantido (é o overlay de criação de tenant). Testado: lote recusa sem campanha, cria 2 links com `ciclo_id` com campanha; RBAC do menu idêntico ao baseline.
+
+## Encerramento da sessão (2026-10-09)
+- Entrega: PR #92 mergeado em `develop` (`07b7c43`). Fases 1, 1b, guia, 2, 3b e 4 — ver seções acima e o CLAUDE.md.
+  Fase 3 do plano original foi dividida em 3a (guia, pedido durante a sessão) e 3b (checklist por cliente).
+- Decisões do usuário: fatiar em fases; checklist por cliente; campanha = promover `ciclos`; filtros como 1b;
+  visual só cabeçalhos; proteção de ciclo só no painel; guia pulável, tela própria, "já vi" por usuário no navegador.
+- Método de teste: harnesses Playwright (menu/RBAC com baseline JSON por role, guia, filtros, campanhas, passo a
+  passo, lote) + checagem de sintaxe dos `<script>`. Nada foi testado contra banco real autenticado.
+- Lições: (1) renomear separador de menu quebrava RBAC por comparação de texto — resolvido por
+  `_sincronizarSecoesSidebar`; (2) respostas sem ciclo sumiam de filtros por ciclo — `_linhasDoCiclo` único;
+  (3) `respostas` não tem UPDATE para admin, o que inviabilizou "associar link antigo a campanha" pela tela;
+  (4) objeto local criado após INSERT precisa de todos os campos usados pelo agrupamento (`ciclo_id`);
+  (5) `#onboarding-overlay` parecia morto mas é o fluxo de criação de tenant — verificar chamadores antes de remover.
+- Pendências: lista em "Revisão de UX — estado de release e pendências" no CLAUDE.md.

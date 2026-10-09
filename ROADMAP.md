@@ -125,3 +125,4 @@ Site separado voltado para conversão — apresenta o PsicoMap para potenciais c
 | Planos e billing (Stripe + Asaas) | v1.3 |
 | Portal de upgrade com trial banner | v1.3 |
 | Autenticação obrigatória (sem bypass) | v1.3 |
+| Revisão de UX: menu reagrupado, guia "Como usar", Campanhas, passo a passo por cliente, filtros em cascata | v1.4 (em develop, PR #92) |

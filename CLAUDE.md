@@ -1660,7 +1660,7 @@ Menu "Links de Coleta" → **Campanhas** (id `nb-links`/`sc-links`/módulo `link
   filtrado, campanhas ainda sem link aparecem vazias. "Nova campanha" no topo abre o modal de ciclos.
 - **Link NOVO exige campanha** (`gerarLink`); atalho "Criar campanha" no modal de link. Os links antigos
   sem ciclo **continuam válidos e coletando** — regra de formulário, não de banco. Ficam no grupo
-  **"Sem campanha"**. `gerarLinksBatch` (modal sem botão, ver Fase 4) NÃO foi alterado.
+  **"Sem campanha"**. `gerarLinksBatch` também exige campanha e ganhou botão na Fase 4.
 - **`CICLO_SEM = '__sem__'` + `_linhasDoCiclo` / `_cicloCasa`**: um helper para os 8 filtros por ciclo
   (Resultados, Gráficos, Laudo + PDF, Auditoria, Plano, Adesão, cascata). Sem ele, respostas sem ciclo só
   apareciam em "Todos os ciclos". A opção "Sem campanha" do select só existe para clientes com link sem ciclo.
@@ -1707,3 +1707,22 @@ Só `psicomap-admin.html`, sem migration.
 - **Campanha obrigatória também no lote** (`gb-ciclo`, "Selecione a campanha…"; `gerarLinksBatch` recusa sem ela), igual a `gerarLink`. O objeto em `_links` agora leva `ciclo_id` — sem isso o agrupamento por campanha só acertava após recarregar.
 - O label preso em "Gerando…" já era restaurado por `_comFeedback`; a atribuição manual redundante saiu.
 - `applyCombo` removida (0 chamadas). **`#onboarding-overlay` NÃO é código morto**: é o fluxo de criação de tenant — não remover.
+
+## Revisão de UX — estado de release e pendências (2026-10-09)
+
+As Fases 1, 1b, guia, 2, 3b e 4 foram mergeadas em `develop` pelo PR
+[#92](https://github.com/elevaitconsultoria/pseg-safesign/pull/92) (merge commit `07b7c43`, 14 commits,
+incluiu #90/#91 que vinham de `main`). **Ainda não estão em PROD**: falta a PR `develop` → `main`
+(merge commit; conferir `git log origin/main..origin/develop` e rodar `/validar-formulario`). Nenhuma
+migration em nenhuma fase, então não há ordem DEV→PROD de SQL a respeitar.
+
+**Pendências em aberto** (nenhuma bloqueia a promoção):
+- **`riscos_config`**: upsert com `empresa_id` NULL duplica linhas em DEV e falharia em PROD. DB + JS, PR à parte.
+- **"EST" → "Consultoria"** na UI (~47 ocorrências): aguarda decisão do usuário.
+- **Proteção de ciclo no banco**: FKs `ciclo_id` seguem `ON DELETE SET NULL`; só o painel protege. A tentativa de
+  `NO ACTION` parou porque apagar empresa por cascata estoura 60s em DEV — investigar a lentidão primeiro
+  (provável FK sem índice em filha de `respostas`) e provar com empresa descartável dentro de transação.
+- **Teste real não feito**: consulta agregada de `laudos` (passo a passo) sob RLS de cada role; fluxos de salvar
+  com rede real. Tudo foi validado por harness Playwright com dados simulados, não por sessão logada.
+- **Links sem campanha em PROD** (3 links, 8 respostas, contas internas): seguem coletando, ficam em "Sem campanha".
+- Só 5 das ~26 escritas têm `_comFeedback`; `salvarGHE` continua não atômico (apaga e regrava).
