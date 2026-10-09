@@ -414,15 +414,31 @@ client `service_role` para a operação de Admin API.
   (incluindo como testar `SECURITY DEFINER` via `set_config('request.jwt.claims', ...)` sem
   precisar de uma sessão HTTP real).
 
-## Segunda metodologia de avaliação — planejamento em andamento (2026-08-03)
+## Segunda metodologia de avaliação — HSE/ICAO-35 (planejada 2026-08-03; v1 em DEV desde 2026-10-09)
 
 O produto hoje aplica **uma única metodologia** de risco psicossocial (BS 8800 / Mulhausen &
-Damiano, 27 questões, escala 1–4, P×S com lookup 4×4). Está em planejamento — **nada implementado
-ainda** — a adição do **HSE Management Standards Indicator Tool**, via a adaptação brasileira
+Damiano, 27 questões, escala 1–4, P×S com lookup 4×4). A adição do **HSE Management Standards Indicator Tool**, via a adaptação brasileira
 validada **ICAO-35** (35 itens, 7 dimensões, escala 1–5, direção oposta: alto = melhor condição).
 Plano completo, incluindo análise antecipada de um terceiro instrumento candidato (COPSOQ) e de
 uma ideia de "combo" de metodologias, em
 `.claude/notes/2026-08-03-metodologia-hse-icao35-planejamento.md`.
+
+> **Estado (2026-10-09):** v1 implementada na branch `feat/hse-icao35`, **aplicada só em DEV; PROD intocado e
+> sem push**. Guia de retomada e ordem para PROD: `.claude/notes/2026-10-09-hse-andamento-pendencias-e-risco.md` §8.
+> O parágrafo acima descreve o planejamento original; o que vale hoje:
+> - `ciclos.metodologia` (fonte da verdade, **imutável** depois que há link ou resposta) e `respostas.metodologia`
+>   (snapshot). Link sem ciclo = BS 8800. Uma metodologia por ciclo.
+> - Tabelas **separadas** do HSE: `hse_itens` (35 itens, congelados ao publicar), `resposta_itens_hse` (escala 1–5),
+>   `hse_benchmark`, `hse_riscos_config`. Nunca reusar `questoes`/`resposta_itens` (H01 colidiria com Q01).
+> - **`obter_instrumento_link(token)` é RPC ANÔNIMA de propósito** (`anon` não lê `ciclos`). Não devolve `inversa`/`dimensao`.
+> - `salvar_resposta` (10 args, **mesma assinatura**) ganhou o ramo HSE: exige os 35 itens, sem duplicar, valor 1–5, e
+>   rejeita item HSE num ciclo BS. Erros permanentes: `instrumento_incompativel`, `hse_incompleto`, `item_duplicado`,
+>   `valor_fora_da_escala`, `ciclo_inexistente`, `instrumento_indisponivel`. **Um arquivo por ambiente**:
+>   `migration_salvar_resposta_hse_dev.sql` (session_id `text`, 3 overloads) e `..._prod.sql` (session_id `uuid`,
+>   2 overloads) — nunca aplicar um no outro.
+> - O filtro `BETWEEN 1 AND 4` do ramo BS foi **mantido** (endurecê-lo é decisão separada).
+> - Backup/restauração: `RESTAURACAO_BACKUP.md` tem passos próprios para HSE (3-HSE/4-HSE); os passos BS filtram por metodologia.
+> - Texto dos itens é `[RASCUNHO]` até B1 (texto validado + permissão dos autores da ICAO); a chave geral é `questionarios.publicado`.
 
 Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
 antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:
@@ -433,7 +449,7 @@ antes da implementação, porque foram descobertos auditando o banco de produç�
   e "Obrigado!" na tela do funcionário. Isso é um bug pré-existente, independente da segunda
   metodologia — vale corrigir (fazer a validação falhar em voz alta) mesmo que o plano de HSE não
   avance.
-- **Existem dois overloads de `salvar_resposta` em PROD** (9 e 10 argumentos; o de 9 é morto) —
+- **Existem dois overloads de `salvar_resposta` em PROD** (9 e 10 argumentos; o de 9 é morto; DEV tem três, com o de 7 args também morto) —
   qualquer PR que mexer na assinatura dessa RPC deve usar `CREATE OR REPLACE` sobre a de 10 args,
   nunca criar um terceiro overload (risco de `PGRST203`, ambiguidade que quebra o formulário
   inteiro).
@@ -600,6 +616,13 @@ O `anon` tinha CRUD em 23 tabelas; hoje tem **SELECT em exatamente 5**: `questoe
 `SECURITY DEFINER` e grava como owner**, então `respostas`/`resposta_itens`/`respostas_fila`/
 `respostas_raw_backup` não precisam — e não devem ter — GRANT para `anon`.
 Ao dar ao formulário acesso a uma tabela nova, atualizar `migration_revoke_anon.sql`.
+
+**Funções executáveis pelo `anon`** (as SECURITY DEFINER que o formulário chama): exatamente
+`salvar_resposta` (10 args) e **`obter_instrumento_link(text)`** (2026-10-09, metodologia HSE). Overloads
+antigos de `salvar_resposta` (7 e 9 args) precisam estar **sem EXECUTE** para `anon` — driblariam as
+validações do ramo HSE. Query de conferência em `migration_revoke_anon.sql`. Uma RPC anônima nova é
+superfície nova: ela não pode virar oráculo (token inexistente/inativo/expirado devolvem o mesmo erro) nem
+devolver mais do que o formulário precisa.
 
 **Ao testar `salvar_resposta`**: o payload casa por **`questao_id` (uuid)**, não por `codigo` —
 com `codigo` a resposta grava com **zero itens e sem erro nenhum**.

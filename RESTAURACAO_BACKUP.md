@@ -20,6 +20,15 @@ Cada resposta recebida pelo formulário é gravada em **3 camadas independentes*
 
 A restauração usa a **1ª camada** para reconstruir a **3ª**.
 
+> ⚠️ **Respostas HSE/ICAO-35 (desde a segunda metodologia).** Os Passos 3–4 abaixo restauram **apenas
+> respostas BS 8800**. O backup bruto de uma resposta HSE tem `itens[].item_id`/`questao_id` apontando
+> para `hse_itens` e valores 1–5. Rodar o Passo 4 sobre elas **descarta os itens em silêncio** (o filtro
+> `BETWEEN 1 AND 4` os ignora e o `JOIN` não os encontra), e o Passo 3 as gravaria como `BS8800`
+> (default da coluna). Por isso os passos 3 e 4 filtram por metodologia, e os passos **3-HSE** e
+> **4-HSE** logo depois cuidam das respostas HSE. A metodologia vem do **ciclo** do payload, nunca
+> do formato dos itens.
+
+
 ---
 
 ## Passo 1 — Confirmar que o backup tem os dados
@@ -84,7 +93,9 @@ SELECT
   gravado_em,
   gravado_em
 FROM respostas_raw_backup rb
-WHERE NOT EXISTS (
+WHERE COALESCE((SELECT c.metodologia FROM ciclos c
+                 WHERE c.id = (rb.payload->>'ciclo_id')::uuid), 'BS8800') = 'BS8800'
+  AND NOT EXISTS (
   SELECT 1 FROM respostas r
   WHERE r.session_id = (rb.payload->>'session_id')::uuid
 );
@@ -109,11 +120,61 @@ JOIN respostas r
 CROSS JOIN jsonb_array_elements(rb.payload->'itens') AS item
 WHERE (item->>'valor')::int BETWEEN 1 AND 4
   AND (item->>'questao_id') IS NOT NULL
+  AND r.metodologia = 'BS8800'
   AND NOT EXISTS (
     SELECT 1 FROM resposta_itens ri
     WHERE ri.resposta_id = r.id
   );
 ```
+
+---
+
+## Passo 3-HSE e 4-HSE — Restaurar respostas HSE/ICAO-35
+
+Só necessário se houver ciclos HSE. Descubra antes se há backups HSE a restaurar:
+
+```sql
+SELECT count(*) AS backups_hse
+FROM respostas_raw_backup rb
+JOIN ciclos c ON c.id = (rb.payload->>'ciclo_id')::uuid
+WHERE c.metodologia = 'HSE_ICAO35';
+```
+
+**3-HSE — `respostas`** (grava `metodologia` e o questionário HSE publicado):
+
+```sql
+INSERT INTO respostas (empresa_id, ciclo_id, questionario_id, tenant_id, link_token, session_id,
+                       setor, funcao, escolaridade, lgpd_aceito, lgpd_aceito_em, respondido_em, metodologia)
+SELECT (rb.payload->>'empresa_id')::uuid, (rb.payload->>'ciclo_id')::uuid,
+       (SELECT id FROM questionarios WHERE metodologia='HSE_ICAO35' AND publicado ORDER BY versao DESC LIMIT 1),
+       (SELECT tenant_id FROM empresas WHERE id = (rb.payload->>'empresa_id')::uuid),
+       rb.payload->>'link_token', (rb.payload->>'session_id')::uuid,
+       rb.payload->>'setor', rb.payload->>'funcao', rb.payload->>'escolaridade',
+       (rb.payload->>'lgpd_aceito')::boolean, rb.gravado_em, rb.gravado_em, 'HSE_ICAO35'
+FROM respostas_raw_backup rb
+JOIN ciclos c ON c.id = (rb.payload->>'ciclo_id')::uuid AND c.metodologia = 'HSE_ICAO35'
+WHERE NOT EXISTS (SELECT 1 FROM respostas r WHERE r.session_id = (rb.payload->>'session_id')::uuid);
+```
+
+**4-HSE — `resposta_itens_hse`** (escala 1–5; o id do item vem de `item_id` **ou** `questao_id`):
+
+```sql
+INSERT INTO resposta_itens_hse (resposta_id, item_id, valor)
+SELECT r.id,
+       lower(COALESCE(item->>'item_id', item->>'questao_id'))::uuid,
+       (item->>'valor')::int
+FROM respostas_raw_backup rb
+JOIN respostas r ON r.session_id = (rb.payload->>'session_id')::uuid AND r.metodologia = 'HSE_ICAO35'
+CROSS JOIN jsonb_array_elements(rb.payload->'itens') AS item
+WHERE (item->>'valor')::int BETWEEN 1 AND 5
+  AND NOT EXISTS (SELECT 1 FROM resposta_itens_hse x WHERE x.resposta_id = r.id)
+ON CONFLICT DO NOTHING;
+```
+
+Conferência obrigatória: cada resposta HSE restaurada deve ter **35 itens** (ou o total publicado em
+`hse_itens`). `SELECT resposta_id, count(*) FROM resposta_itens_hse GROUP BY 1 HAVING count(*) <> 35;`
+deve voltar vazio. Se `hse_itens` do questionário original não existir mais, **pare**: itens HSE são
+`ON DELETE RESTRICT` e o texto é congelado, então isso indicaria um problema maior que a restauração.
 
 ---
 
@@ -127,6 +188,8 @@ SELECT
 FROM respostas r
 LEFT JOIN resposta_itens ri ON ri.resposta_id = r.id;
 ```
+
+(Conta só BS 8800; as respostas HSE se conferem pela consulta do Passo 4-HSE.)
 
 Compare com o total do Passo 1. Os números devem bater.
 

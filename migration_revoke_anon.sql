@@ -87,4 +87,34 @@ GRANT SELECT ON public.empresa_funcoes TO anon;
 -- que e filtro e nao validacao: um payload com `codigo` grava a resposta com
 -- ZERO itens, sem erro nenhum. (Bug pre-existente ja registrado no CLAUDE.md;
 -- reproduzido sem querer ao escrever este teste.)
+
+-- ── RPCs EXECUTAVEIS PELO ANON (acrescentado em 2026-10-09, metodologia HSE) ───────────
+-- Alem das 5 tabelas acima, o formulario publico chama DUAS funcoes SECURITY DEFINER:
+--   salvar_resposta(uuid,uuid,text,text,text,text,jsonb,uuid,boolean,text)   [10 args]
+--   obter_instrumento_link(text)   -- devolve a metodologia do ciclo do link e, no HSE, os
+--                                     35 itens SEM `inversa`/`dimensao`. E ANONIMA DE PROPOSITO:
+--                                     `anon` nao tem SELECT em `ciclos`, e embutir
+--                                     `ciclos(metodologia)` no select de links_coleta derrubaria
+--                                     todo link com "Token invalido".
+-- Overloads antigos de salvar_resposta (7 e 9 args) tem de estar SEM EXECUTE para anon: eles
+-- driblam as validacoes do ramo HSE (migration_salvar_resposta_hse_*.sql).
+-- As tabelas hse_itens, resposta_itens_hse, hse_benchmark e hse_riscos_config NAO entram na
+-- lista do anon e ja nascem com REVOKE nas proprias migrations (o loop acima tambem as cobre).
+--
+-- Verificacao (rodar em DEV e PROD). Atencao: `anon` executa MAIS funcoes SECURITY DEFINER do que
+-- estas duas — em DEV (2026-10-09) sao 17, por causa do EXECUTE padrao do PUBLIC (helpers de RLS
+-- como auth_role()/is_super_admin(), criar_tenant, aplicar_plano_tenant, super_admin_stats, etc.;
+-- estas dependem de guard no corpo, ver "Auditoria de gestao de acessos" no CLAUDE.md). Por isso a
+-- conferencia DESTA metodologia e restrita aos overloads que importam:
+--
+--   SELECT p.oid::regprocedure AS sig, has_function_privilege('anon', p.oid, 'execute') AS anon_exec
+--   FROM pg_proc p
+--   WHERE p.pronamespace = 'public'::regnamespace
+--     AND p.proname IN ('salvar_resposta', 'obter_instrumento_link')
+--   ORDER BY 1;
+--   -- Esperado: salvar_resposta com 10 args = true; obter_instrumento_link(text) = true;
+--   -- TODO overload antigo de salvar_resposta (7 e 9 args) = false.
+--
+-- Para detectar RPC anonima NOVA no futuro, comparar a lista completa de SECURITY DEFINER com
+-- `anon_exec` contra a anterior (17 em DEV em 2026-10-09), nao contra "2".
 -- ============================================================================

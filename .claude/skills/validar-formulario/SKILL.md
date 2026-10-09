@@ -72,6 +72,36 @@ ORDER BY oid DESC LIMIT 1;
 - `SET search_path TO 'public'` está presente (segurança contra search_path injection)
 - O bloco `EXCEPTION WHEN OTHERS` atualiza `respostas_fila` com status='erro'
 
+### 2b. Metodologia HSE/ICAO-35 (desde a segunda metodologia)
+
+O RPC agora tem **dois ramos**, escolhidos pelo `ciclos.metodologia` do `p_ciclo_id` (NULL ⇒ BS 8800).
+
+- **Há um arquivo de migration por ambiente** (`migration_salvar_resposta_hse_dev.sql` / `_prod.sql`).
+  Se a definição viva tiver `p_session_id::text`, é a de DEV; sem cast, a de PROD. Nunca troque.
+- **Conferir os overloads mortos**: só o de 10 args pode ter EXECUTE para `anon`:
+
+```sql
+SELECT p.oid::regprocedure AS sig, has_function_privilege('anon', p.oid, 'execute') AS anon_exec
+FROM pg_proc p WHERE p.proname IN ('salvar_resposta','obter_instrumento_link')
+  AND p.pronamespace='public'::regnamespace ORDER BY 1;
+-- esperado: salvar_resposta(...10 args) = true; obter_instrumento_link(text) = true; demais overloads = false
+```
+
+- **Teste do ramo HSE** (rodar como `anon`, dentro de `BEGIN … ROLLBACK`, com link `is_teste` de ciclo HSE):
+  1. `SELECT obter_instrumento_link('<token>')` devolve 35 itens e **não** contém `inversa`/`dimensao`.
+  2. Envio de 35 itens com `item_id` (uuid) e valores 1–5 ⇒ devolve UUID; `resposta_itens_hse` com 35 linhas e
+     `respostas.metodologia='HSE_ICAO35'`.
+  3. Rejeições (cada uma deve **falhar em voz alta** e não deixar linha): 34 itens (`hse_incompleto`),
+     item repetido (`item_duplicado`), valor 0 ou 6 (`valor_fora_da_escala`), item de outro instrumento
+     (`instrumento_incompativel`), ciclo inexistente (`ciclo_inexistente`).
+  4. Ramo BS num ciclo BS: valor 5 continua sendo **descartado em silêncio** (filtro `BETWEEN 1 AND 4`
+     mantido de propósito); item HSE num ciclo BS é rejeitado.
+- O payload HSE aceita `item_id` **ou** `questao_id`; o BS casa só por **`questao_id`** (com `codigo`, grava com zero itens e sem erro).
+- `SELECT id FROM questoes LIMIT 3` **pode devolver itens que não são oficiais/BS**; use
+  `WHERE is_oficial` para o teste BS e `hse_itens` do questionário publicado para o HSE.
+- Em PROD, `respostas.session_id` é `uuid` e em DEV `text`: ao montar consultas de limpeza use `session_id::text`
+  (como abaixo), que serve nos dois.
+
 ### 3. Verificar GRANTs das tabelas críticas
 
 ```sql
@@ -79,12 +109,13 @@ ORDER BY oid DESC LIMIT 1;
 SELECT grantee, table_name, privilege_type
 FROM information_schema.role_table_grants
 WHERE table_name IN ('respostas','respostas_raw_backup','respostas_fila',
-                     'resposta_itens','empresa_headcount')
+                     'resposta_itens','empresa_headcount',
+                     'resposta_itens_hse','hse_itens','hse_benchmark','hse_riscos_config')
   AND grantee IN ('authenticated','anon')
 ORDER BY table_name, grantee, privilege_type;
 ```
 
-**O que verificar:** Tabelas criadas via SQL direto (não pelo dashboard) podem não ter GRANTs
+**O que verificar:** as 4 tabelas `hse_*`/`resposta_itens_hse` **não** podem ter nenhum GRANT para `anon` (só SELECT para `authenticated`, e escrita onde a migration prevê). Tabelas criadas via SQL direto (não pelo dashboard) podem não ter GRANTs
 automáticos. Sem o GRANT, o RLS nem chega a ser avaliado — a operação é negada antes.
 `empresa_headcount` em particular precisa de SELECT/INSERT/UPDATE/DELETE para `authenticated`.
 
@@ -218,7 +249,8 @@ ORDER BY r.respondido_em DESC LIMIT 5;
 | Submissão de teste | Retorna UUID sem erro |
 | 4 tabelas | Todas com COUNT > 0 |
 | Idempotência | Segunda chamada retorna mesmo UUID, COUNT=1 |
-| Limpeza | Todos os registros de teste removidos |
+| Limpeza | Todos os registros de teste removidos (inclui `resposta_itens_hse` nos testes HSE) |
+| HSE | Overloads mortos sem EXECUTE para `anon`; 35 itens gravados; 5 rejeições sem resíduo |
 
 ## Quando algo falhar
 
