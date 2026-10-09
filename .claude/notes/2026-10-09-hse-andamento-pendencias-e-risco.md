@@ -107,13 +107,22 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | S3 | **`migration_salvar_resposta_hse_prod.sql`** (arquivo próprio: `session_id` uuid, 2 overloads) e teste em PROD com link `is_teste` |
 | S1/S2 em PROD | Aplicar migration e RPC **antes** de promover o formulário (senão todo link com ciclo falha) |
 | S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
-| S5 | Testar formulário antigo em cache, fila offline legada e erro de boot da RPC |
+| S5 | ~~Testar formulário antigo, fila offline legada e erro de boot~~ — feito em 2026-10-09, ver §5.5 |
 | S6 | Trocar a metodologia **pela interface** antes do 1º link (o banco já permite); selo no Dashboard e em Clientes |
 | S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; tela para SST cadastrar severidade (hoje SQL) |
 | S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
 | S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
 | Seed | Transcrever as **13 médias setoriais** do relatório HSE 2023 (hoje só as gerais) |
 | Dados | Limpar os dados de teste de DEV quando não servirem mais |
+
+### 5.5 Testes do formulário em cenários de borda (2026-10-09, DEV)
+Harness: cópia do `psicomap-forms.html` (e do `origin/develop`, para o formulário antigo) com credenciais de DEV, `fetch` interceptado.
+- **Boot, RPC `obter_instrumento_link` falhando** (HTTP 500, rede caída, 404 de proxy, resposta nula): erro claro "Não foi possível carregar…", sem virar BS 8800 em silêncio. Itens vazios e metodologia desconhecida: mensagens próprias. PGRST202 (função ausente) segue como BS 8800, de propósito.
+- **Defeito achado e corrigido:** RPC que **pendura** deixava "carregando" para sempre. Agora `Promise.race` de 20 s → mesmo erro (medido: 20,5 s).
+- **Defeito achado e corrigido:** o PostgREST **continua listando os overloads revogados** e responde `PGRST203` (HTTP 300) a chamadas com 7 ou 9 chaves — o `REVOKE` não tira a função do schema cache. A fila offline **legada** (formato `payload`+`itens`, 7 chaves) nunca reenviava (já era assim em PROD com 9+10 args). `reenviarPendentes` agora completa `p_session_id`/`p_lgpd_aceito`/`p_device_info`, e a chamada casa só com a de 10 args (400 funcional). Resposta HSE recusada é descartada; erro transitório fica na fila.
+- **Formulário antigo contra link HSE** (código pré-S5, não corrigível): mostra 27 questões; o servidor recusa com `hse_incompleto`, **nada é gravado**, mas o respondente vê "guardada localmente — tente novamente" e fica uma pendência que nunca passa. O formulário novo limpa essa pendência (erro permanente → descarta). **Regra operacional:** promover o formulário (S5) **antes** de criar qualquer ciclo HSE em PROD; o HTML do CF Pages revalida (`_headers` não cacheia), então o risco real é só aba já aberta.
+- Regressão: links BS (com e sem ciclo) seguem com 27 questões × 4 opções, sem erro.
+- Não testado: fila legada contra link BS válido (gravaria resposta real); recarga com `bfcache`.
 
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,

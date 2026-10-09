@@ -514,7 +514,11 @@ async function init() {
     // em "Token inválido" nem vira BS 8800 em silêncio (o servidor rejeitaria o envio).
     _instr = null;
     if (cicloId) {
-      const { data: inst, error: instErr } = await _instrP;
+      // Sem timeout, uma conexão que pendura deixa a tela de "carregando" para sempre.
+      const { data: inst, error: instErr } = await Promise.race([
+        _instrP,
+        new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 20000)),
+      ]);
       const rpcAusente = instErr && (instErr.code === 'PGRST202' || instErr.status === 404);
       if (rpcAusente) {
         // Ambiente sem a RPC = ambiente sem HSE (as migrations vão juntas): segue como BS 8800.
@@ -1180,6 +1184,12 @@ async function reenviarPendentes() {
           p_funcao:       payload.funcao     || null,
           p_escolaridade: payload.escolaridade || null,
           p_itens:        itens || [],
+          // O formato legado só tinha 7 parâmetros. O PostgREST resolve por NOMES e, com os overloads
+          // antigos ainda no banco, uma chamada de 7 ou 9 chaves volta PGRST203 (HTTP 300) para sempre.
+          // Completar as 3 chaves faz a chamada casar só com a função de 10 argumentos.
+          p_session_id:   crypto.randomUUID(),
+          p_lgpd_aceito:  true,
+          p_device_info:  null,
         };
       }
 
