@@ -2179,7 +2179,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Filtro Ciclo -->
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="f-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);_sincronizarComboFuncoes();rodarAnalise()">
+        <select id="f-ciclo" class="filter-select" onchange="_onCicloChange(this,_sincronizarComboFuncoes,rodarAnalise)">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2431,7 +2431,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <label class="filter-label" for="audit-ciclo">Ciclo</label>
-        <select id="audit-ciclo" onchange="setCicloAtivo(this.value);renderTelaAuditoria()" class="filter-select">
+        <select id="audit-ciclo" onchange="_onCicloChange(this,null,renderTelaAuditoria)" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2478,6 +2478,78 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
               <div class="combo-footer-actions">
                 <span class="cfa-todos" onclick="selectAllCombo('combo-audit-funcao')">Todas</span>
                 <span class="cfa-limpar" onclick="clearCombo('combo-audit-funcao')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-card" id="fc-audit-ghe" style="display:none">
+        <div class="filter-label">Agrupamento de Setores</div>
+        <div class="combo" id="combo-audit-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-ghe')">
+            <div class="combo-preview" id="combo-audit-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-audit-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-audit-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-audit-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-card" id="fc-audit-fun-ghe" style="display:none">
+        <div class="filter-label">Agrupamento de Função</div>
+        <div class="combo" id="combo-audit-fun-ghe">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-fun-ghe')">
+            <div class="combo-preview" id="combo-audit-fun-ghe-preview"><span class="combo-placeholder">Todos os agrupamentos</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar agrupamento..." oninput="filterCombo('combo-audit-fun-ghe',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-fun-ghe-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-fun-ghe-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-audit-fun-ghe')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-audit-fun-ghe')">Limpar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-card" id="fc-audit-ghe-par" style="display:none">
+        <div class="filter-label">GHE (setor × função)</div>
+        <div class="combo" id="combo-audit-ghe-par">
+          <div class="combo-trigger" onclick="toggleCombo('combo-audit-ghe-par')">
+            <div class="combo-preview" id="combo-audit-ghe-par-preview"><span class="combo-placeholder">Todos os GHE</span></div>
+            <svg class="combo-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Buscar GHE..." oninput="filterCombo('combo-audit-ghe-par',this.value)"/>
+            </div>
+            <div class="combo-list" id="combo-audit-ghe-par-list"></div>
+            <div class="combo-footer">
+              <span class="combo-footer-count" id="combo-audit-ghe-par-count">0 selecionados</span>
+              <div class="combo-footer-actions">
+                <span class="cfa-todos" onclick="selectAllCombo('combo-audit-ghe-par')">Todos</span>
+                <span class="cfa-limpar" onclick="clearCombo('combo-audit-ghe-par')">Limpar</span>
               </div>
             </div>
           </div>
@@ -2564,7 +2636,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="gf-ciclo" class="filter-select" onchange="setCicloAtivo(this.value);renderGraficos()">
+        <select id="gf-ciclo" class="filter-select" onchange="_onCicloChange(this,_sincronizarComboFuncoesGraf,renderGraficos)">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -2763,7 +2835,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <div class="filter-label">Ciclo</div>
-        <select id="ld-ciclo" onchange="setCicloAtivo(this.value);renderLaudo()" class="filter-select">
+        <select id="ld-ciclo" onchange="_onCicloChange(this,null,renderLaudo)" class="filter-select">
           <option value="">Todos os ciclos</option>
         </select>
       </div>
@@ -3782,7 +3854,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
     <div class="filter-grp">
       <label class="filter-lbl">Ciclo</label>
-      <select id="plano-ciclo" class="filter-sel" onchange="setCicloAtivo(this.value);renderPlanoAcao()">
+      <select id="plano-ciclo" class="filter-sel" onchange="_onCicloChange(this,null,renderPlanoAcao)">
         <option value="">Todos os ciclos</option>
       </select>
     </div>
@@ -6572,6 +6644,9 @@ const comboState = {
   // Tela Auditoria
   'combo-audit-setor': new Set(SETORES_DEMO),
   'combo-audit-funcao': new Set(),   // vazio = todas (a lista e dinamica, vem das respostas)
+  'combo-audit-ghe':     new Set(),
+  'combo-audit-fun-ghe': new Set(),
+  'combo-audit-ghe-par': new Set(),
 };
 const comboItems = {
   'combo-setor':       () => SETORES_DEMO,
@@ -6590,6 +6665,9 @@ const comboItems = {
   'combo-ld-fun-ghe':      () => [],
   'combo-audit-setor': () => SETORES_DEMO,
   'combo-audit-funcao': () => [],
+  'combo-audit-ghe':     () => [],
+  'combo-audit-fun-ghe': () => [],
+  'combo-audit-ghe-par': () => [],
 };
 
 function toggleCombo(id) {
@@ -6697,6 +6775,9 @@ const COMBO_RENDER = {
   'combo-ld-ghe-par':   renderLaudo,
   'combo-audit-setor':  renderTelaAuditoria,
   'combo-audit-funcao': renderTelaAuditoria,
+  'combo-audit-ghe':     renderTelaAuditoria,
+  'combo-audit-fun-ghe': renderTelaAuditoria,
+  'combo-audit-ghe-par': renderTelaAuditoria,
 };
 
 // Todo combo agora aplica sozinho. Antes so os 6 de agrupamento faziam isso;
@@ -6704,7 +6785,8 @@ const COMBO_RENDER = {
 // esse modo "dava impressao de delay".
 // Combos que reconfiguram outro combo antes de re-renderizar a tela.
 const COMBO_CASCATA = {
-  'combo-setor': () => _sincronizarComboFuncoes(),
+  'combo-setor':    () => _sincronizarComboFuncoes(),
+  'combo-gf-setor': () => _sincronizarComboFuncoesGraf(),
 };
 
 const _comboDebounce = {};
@@ -6805,15 +6887,27 @@ let _paresSetorFuncao = [];
 // Fallback de catalogo quando a empresa ainda nao tem nenhuma resposta.
 let _funcoesFallback = [];
 
-function _funcoesDisponiveis() {
-  if (!_paresSetorFuncao.length) return _funcoesFallback;
-  const cicloId = document.getElementById('f-ciclo')?.value || '';
-  const sel     = comboState['combo-setor'];
-  const todos   = comboItems['combo-setor']();
+// Cascata Setor -> Funcao, uma implementacao para as telas que a tem. Cada tela declara onde
+// estao seus combos, o select de ciclo e a base de pares; a logica e a mesma (antes so
+// Resultados a tinha, e em Graficos a lista de funcoes mostrava cargos de setores desmarcados).
+const _paresGraf = { pares: [], fallback: [] };
+const CASCATA_TELAS = {
+  resultados: { setor: 'combo-setor',    funcao: 'combo-funcao',    ciclo: 'f-ciclo',
+                pares: () => _paresSetorFuncao,  fallback: () => _funcoesFallback },
+  graficos:   { setor: 'combo-gf-setor', funcao: 'combo-gf-funcao', ciclo: 'gf-ciclo',
+                pares: () => _paresGraf.pares,   fallback: () => _paresGraf.fallback },
+};
+
+function _funcoesDisponiveisDe(c) {
+  const pares = c.pares();
+  if (!pares.length) return c.fallback();
+  const cicloId = document.getElementById(c.ciclo)?.value || '';
+  const sel     = comboState[c.setor];
+  const todos   = comboItems[c.setor]();
   // Set vazio ou completo = "sem filtro de setor" (mesma convencao defensiva de rodarAnalise)
   const semFiltroSetor = sel.size === 0 || sel.size === todos.length;
   const out = new Set();
-  _paresSetorFuncao.forEach(p => {
+  pares.forEach(p => {
     if (cicloId && p.ciclo_id !== cicloId) return;
     if (!semFiltroSetor && !sel.has(p.setor)) return;
     out.add(p.funcao);
@@ -6821,18 +6915,30 @@ function _funcoesDisponiveis() {
   return [...out].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-// Repopula combo-funcao preservando a selecao do usuario quando ela ainda faz sentido.
-function _sincronizarComboFuncoes() {
-  if (!comboState['combo-funcao']) return;
-  const disp     = _funcoesDisponiveis();
-  const antes    = comboState['combo-funcao'];
-  const eraTodas = antes.size === 0 || antes.size === comboItems['combo-funcao']().length;
-  comboItems['combo-funcao'] = () => disp;
+// Repopula o combo de funcao preservando a selecao do usuario quando ela ainda faz sentido.
+function _sincronizarComboFuncoesDe(c) {
+  if (!comboState[c.funcao]) return;
+  const disp     = _funcoesDisponiveisDe(c);
+  const antes    = comboState[c.funcao];
+  const eraTodas = antes.size === 0 || antes.size === comboItems[c.funcao]().length;
+  comboItems[c.funcao] = () => disp;
   const mantidas = eraTodas ? disp : disp.filter(f => antes.has(f));
   // Nenhuma das escolhidas sobreviveu ao novo setor -> volta a "todas" em vez de
   // deixar o usuario num filtro vazio sem entender por que.
-  comboState['combo-funcao'] = new Set(mantidas.length ? mantidas : disp);
-  buildCombo('combo-funcao');
+  comboState[c.funcao] = new Set(mantidas.length ? mantidas : disp);
+  buildCombo(c.funcao);
+}
+
+function _funcoesDisponiveis()       { return _funcoesDisponiveisDe(CASCATA_TELAS.resultados); }
+function _sincronizarComboFuncoes()  { _sincronizarComboFuncoesDe(CASCATA_TELAS.resultados); }
+function _sincronizarComboFuncoesGraf() { _sincronizarComboFuncoesDe(CASCATA_TELAS.graficos); }
+
+// Handler unico do select de ciclo das telas de analise: grava o ciclo ativo, ressincroniza a
+// lista dependente (se a tela tiver) e re-renderiza. Eram quatro handlers inline que divergiam.
+function _onCicloChange(el, sincronizar, render) {
+  setCicloAtivo(el.value);
+  if (sincronizar) sincronizar();
+  render();
 }
 
 async function onEmpresaChange() {
@@ -10838,6 +10944,11 @@ function _aplicarConfigFiltros(cfg, tela) {
     }
   }
 
+  // Combo dependente (Funcao) valida o valor salvo contra a lista do combo; essa lista depende do
+  // ciclo e dos setores. Sem recalcular antes, um preset com funcoes de OUTRO setor perdia essas
+  // funcoes (a lista ainda era a da selecao anterior) e o toast dizia "N itens de filtro".
+  d.combos.forEach(cid => COMBO_CASCATA[cid]?.());
+
   // Só o que ainda existe na lista atual do combo. Um setor que saiu do catálogo não pode ser
   // "selecionado": ficaria num estado que a UI não mostra e o filtro não casa.
   d.combos.forEach(cid => {
@@ -10849,6 +10960,7 @@ function _aplicarConfigFiltros(cfg, tela) {
     comboState[cid] = new Set(validos);
     _limparBuscaCombo(cid);  // preset/reaplicar sobrescreve a tela inteira; busca em curso nao vale mais
     buildCombo(cid);
+    COMBO_CASCATA[cid]?.();  // o setor acabou de mudar: a proxima lista (funcao) ja valida contra o novo recorte
   });
 
   if (d.aplicar) d.aplicar(cfg, perdidos);
@@ -12961,7 +13073,7 @@ async function onGrafFiltroChange() {
   if (!isDemoMode && empId && sbAdmin) {
     try {
       const { data } = await sbAdmin
-        .from('respostas').select('setor, funcao').eq('empresa_id', empId);
+        .from('respostas').select('setor, funcao, ciclo_id').eq('empresa_id', empId);
       const empresaObj = _empresas.find(e => e.id === empId);
       const normSetores = (data || []).map(r => r.setor || 'Geral');
       const normFuncoes = (data || []).map(r => r.funcao || '—');
@@ -12971,14 +13083,19 @@ async function onGrafFiltroChange() {
       comboItems['combo-gf-funcao'] = () => funcoes;
       comboState['combo-gf-setor']  = new Set(setores);
       comboState['combo-gf-funcao'] = new Set(funcoes);
-    } catch(e) { console.warn('onGrafFiltroChange:', e); }
+      // Base da cascata Setor -> Funcao (mesma normalizacao Geral / — da engine de analise)
+      _paresGraf.pares    = (data || []).map(r => ({ setor: r.setor || 'Geral', funcao: r.funcao || '—', ciclo_id: r.ciclo_id || null }));
+      _paresGraf.fallback = funcoes;
+    } catch(e) { console.warn('onGrafFiltroChange:', e); _paresGraf.pares = []; }
     await carregarGruposSetor(empId);
     _populateGheCombo('combo-gf-ghe', 'fc-gf-ghe');
     _populateGheCombo('combo-gf-fun-ghe', 'fc-gf-fun-ghe', 'funcao');
     _populateGheCombo('combo-gf-ghe-par', 'fc-gf-ghe-par', 'ghe');
   }
+  _limparBuscaCombo('combo-gf-funcao');
   buildCombo('combo-gf-setor');
-  buildCombo('combo-gf-funcao');
+  if (!isDemoMode && empId) _sincronizarComboFuncoesGraf();   // lista de funcoes ja entra filtrada pelo ciclo ativo
+  else buildCombo('combo-gf-funcao');
   await carregarPresets(empId);
   renderPresets('graficos');
 }
@@ -18424,7 +18541,11 @@ async function onAuditEmpresaChange() {
       comboItems['combo-audit-setor'] = () => setores;
       comboState['combo-audit-setor'] = new Set(setores);
     } catch(e) { console.warn('onAuditEmpresaChange:', e); }
+    await carregarGruposSetor(empId);
   }
+  _populateGheCombo('combo-audit-ghe', 'fc-audit-ghe');
+  _populateGheCombo('combo-audit-fun-ghe', 'fc-audit-fun-ghe', 'funcao');
+  _populateGheCombo('combo-audit-ghe-par', 'fc-audit-ghe-par', 'ghe');
   buildCombo('combo-audit-setor');
   renderTelaAuditoria();
 }
@@ -18446,6 +18567,12 @@ async function renderTelaAuditoria() {
   // Buscar dados
   let todosLinhas = await getLinhasParaAnalise(empId || null);
   let linhas = cicloId ? todosLinhas.filter(r => r.ciclo_id === cicloId) : todosLinhas;
+
+  if (!linhas.length && _respostasErro) {
+    panel.innerHTML = _errorState('Não foi possível carregar as respostas deste cliente.', 'renderTelaAuditoria()');
+    document.getElementById('btn-audit-export')?.style && (document.getElementById('btn-audit-export').style.display = 'none');
+    return;
+  }
 
   if (!linhas.length) {
     panel.innerHTML = `<div class="card"><div class="empty-state">
@@ -18474,7 +18601,9 @@ async function renderTelaAuditoria() {
 
   // Combo de função: opções únicas das respostas (empresa + ciclo). A seleção é podada para
   // o que ainda existe — troca de ciclo/empresa não pode deixar função "fantasma" filtrando.
-  const funcoes = [...new Set(linhas.map(r => r.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  // Cascata Setor -> Funcao: so entram as funcoes dos setores marcados (conjunto vazio = sem filtro).
+  const baseFuncoes = setores.length ? linhas.filter(r => setores.includes(r.setor)) : linhas;
+  const funcoes = [...new Set(baseFuncoes.map(r => r.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const funcSel = comboState['combo-audit-funcao'];
   // Mesmo comportamento do Setor: nasce com tudo marcado ("Todos (N)") e, se estava tudo
   // marcado, continua assim quando a lista muda (ciclo/empresa) — senão função nova ficaria de fora.
@@ -18487,9 +18616,17 @@ async function renderTelaAuditoria() {
   buildCombo('combo-audit-funcao');
 
   // Aplicar filtros (conjunto vazio = sem filtro de função)
+  // Agrupamentos: mesmos helpers de Resultados/Graficos/Laudo (matching normalizado; GHE por par
+  // resolvido por agruparPorPares, para filtro e segmentacao darem o mesmo conjunto).
+  const gheSetores = _grupoValoresFiltro('combo-audit-ghe');
+  const gheFuncoes = _grupoValoresFiltro('combo-audit-fun-ghe', 'funcao');
+  const gheParesF  = _filtroPorGhe('combo-audit-ghe-par', linhas);
   const filtrado = linhas.filter(r => {
     if (setores.length && !setores.includes(r.setor)) return false;
     if (funcSel.size && !funcSel.has(r.funcao)) return false;
+    if (gheSetores !== null && !gheSetores.has(_gheNormStrong(r.setor))) return false;
+    if (gheFuncoes !== null && !gheFuncoes.has(_gheNormStrong(r.funcao))) return false;
+    if (gheParesF  !== null && !gheParesF.has(_chavePar(r.setor, r.funcao))) return false;
     if (busca) {
       const idResp = (r.id_respondente || r.respondente_id || ('R-' + String(r._idx+1).padStart(3,'0'))).toLowerCase();
       const setor  = (r.setor || '').toLowerCase();
@@ -18628,6 +18765,12 @@ function resetarFiltrosAuditoria() {
   comboState['combo-audit-funcao'].clear();
   _auditFuncaoReiniciar = true;
   _limparBuscaCombo('combo-audit-funcao');
+  // Agrupamentos: todos marcados = sem filtro (mesma convencao dos outros combos)
+  ['combo-audit-ghe', 'combo-audit-fun-ghe', 'combo-audit-ghe-par'].forEach(cid => {
+    comboState[cid] = new Set(comboItems[cid]());
+    _limparBuscaCombo(cid);
+    buildCombo(cid);
+  });
   const busca = document.getElementById('audit-busca');
   if (busca) busca.value = '';
   renderTelaAuditoria();

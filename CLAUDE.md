@@ -1258,8 +1258,8 @@ onde os universais não aparecem. Normalização idêntica à de `loadRespostasP
 **`COMBO_CASCATA`** (novo, ao lado de `COMBO_RENDER`): mapa `id → função`, chamado no topo de
 `_renderParaCombo` de forma **síncrona**. Cobre `toggleComboItem`/`selectAllCombo`/`clearCombo`/
 `applyCombo` de uma vez. Ao criar um combo que reconfigura outro, registrar aqui — não
-espalhar a chamada nas quatro funções. Hoje só `combo-setor` (Resultados); Gráficos e Laudo
-não têm cascata.
+espalhar a chamada nas quatro funções. Hoje `combo-setor` (Resultados) e `combo-gf-setor` (Gráficos) — ver
+"Filtros — Fase 1b" ao final; Laudo não tem combo de Função.
 
 **Botão "Baixar todas as análises"** (`btn-export-all`, `baixarTodasAnalises()`) — restrito a
 `admin`/`super_admin` via `_podeBaixarTodos()`, nas três camadas de sempre (`rodarAnalise` +
@@ -1627,3 +1627,24 @@ o modal `#tutorial-overlay` (removido, estava desatualizado). Só `psicomap-admi
   `localStorage['psicomap_guia_v1_<userId>']` (por usuário, por navegador — sem coluna em `perfis`).
   Falha de leitura do storage = **não convida**. Só convida com role CRU já resolvido (`admin|consultor|
   cliente_viewer`), nunca em modo suporte nem para `super_admin`. Subir `v1` reexibe após mudança grande.
+
+## Filtros — Fase 1b (2026-10-09)
+
+Só `psicomap-admin.html`, sem migration; **nenhum id de combo foi renomeado** (presets guardam ids).
+
+- **Cascata Setor→Função em Gráficos** (`combo-gf-setor` → `combo-gf-funcao`). A lógica virou uma só:
+  `CASCATA_TELAS` (cada tela declara combos, select de ciclo e base de pares) +
+  `_funcoesDisponiveisDe` / `_sincronizarComboFuncoesDe`; `_sincronizarComboFuncoes()` (Resultados) é
+  wrapper, comportamento idêntico ao anterior (testado contra `main`). Ao criar cascata em tela nova:
+  entrada em `CASCATA_TELAS` + `COMBO_CASCATA` + base de pares carregada com `ciclo_id`.
+- **Auditoria**: Função agora só lista funções dos setores marcados; ganhou os 3 filtros de
+  agrupamento que as outras telas têm (`combo-audit-ghe`, `combo-audit-fun-ghe`, `combo-audit-ghe-par`,
+  mesmos helpers `_grupoValoresFiltro`/`_filtroPorGhe`) e estado de erro com "Tentar novamente".
+- **`_onCicloChange(el, sincronizar, render)`** é o handler único do select de ciclo (Resultados,
+  Gráficos, Auditoria, Laudo, Plano). Só Gráficos/Resultados passam `sincronizar`.
+- **Presets**: `_aplicarConfigFiltros` recalcula a cascata antes de validar e depois de aplicar cada
+  combo. Sem isso, preset com funções de outro setor perdia essas funções (a lista ainda era a da seleção
+  anterior) e o toast dizia "N itens de filtro".
+- **Laudo continua SEM combo de Função, por decisão**: o laudo é por setor/GHE/agrupamento (o filtro
+  "Agrupamento de Função" existe); um combo novo mexeria nas 4 cadeias de filtro, nos presets e no
+  histórico de um documento entregue a cliente, sem pedido concreto.

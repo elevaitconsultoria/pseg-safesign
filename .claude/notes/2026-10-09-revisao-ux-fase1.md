@@ -34,3 +34,9 @@ todo "Ir para" aponta para tela existente e visível; convite não aparece com r
 suporte, para super_admin, com storage quebrado, nem para quem já dispensou; usuário B não herda o "já vi"
 de A. RBAC do menu idêntico ao anterior em 8 cenários, exceto o novo item `nb-ajuda` (visível a todos).
 Não testado em navegador logado/DEV.
+
+## Fase 1b — Filtros (mesma branch, commits separados)
+Ver seção "Filtros — Fase 1b" no CLAUDE.md. Testado por harness: cascata de Resultados idêntica à de `main`;
+Gráficos filtra funções por setor e ciclo; preset restaura função de outro setor sem perda; Auditoria filtra
+função por setor, aplica Agrupamento de Setores (A+B=3 de 4 linhas) e mostra erro de carga com retry.
+Não testado em navegador logado/DEV.
