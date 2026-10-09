@@ -311,7 +311,7 @@ elimina toda a categoria de bugs de link quebrado.
 | ajuda (Como usar) | ✅ | ✅ | ✅ | ✅ |
 | empresas (Clientes) | ✅ | ✅ | ✅ | ❌ |
 | ghe (Setores/Funções) | ✅ | ✅ | ✅ | ❌ |
-| links de coleta | ✅ | ✅ | ✅ | ✅ leitura |
+| campanhas (links de coleta, `links`) | ✅ | ✅ | ✅ | ✅ leitura |
 | questionário | ✅ | ✅ | ✅ | ❌ |
 | analise / graficos | ✅ | ✅ | ✅ | ✅ |
 | comparativo | ✅ | ✅ | ✅ | ❌ |
@@ -715,9 +715,10 @@ empresa que terminou a coleta com sucesso aparecia igual a uma que nunca recebeu
   badge "Inativo" cinza) / Finalizado (`ativo=false, encerrado_em` preenchido, badge roxo `.tp`).
   **Reativar sempre limpa `encerrado_em`** — não existe "ativo e finalizado" ao mesmo tempo
   (`toggleLink()`, `psicomap-admin.html`).
-- **Ação é por link individual, não em lote por empresa/ciclo** — decisão de escopo tomada com
-  o usuário: uma empresa pode ter vários links simultâneos (um por setor via "Gerar em lote"),
-  e cada um se finaliza separadamente. Botão "🏁 Finalizar campanha" → `finalizarLink(id)`.
+- **Ação por link (`finalizarLink`, botão "🏁 Finalizar link") E por campanha inteira**
+  (`finalizarCampanha(empresaId, cicloId)`, botão "🏁 Finalizar campanha" no cabeçalho do grupo). **A decisão
+  original (só por link) foi invertida em 2026-10-09** quando a tela passou a agrupar por campanha — ver
+  "Campanhas" ao final.
 - **Desativar um link nunca escondeu respostas já coletadas** de nenhuma análise/laudo/adesão —
   `loadRespostasParaEmpresa()` sempre filtrou só por `is_teste`, nunca por `link.ativo`. Isso
   continua valendo para links finalizados: o dado coletado segue entrando normalmente em tudo.
@@ -1648,3 +1649,33 @@ Só `psicomap-admin.html`, sem migration; **nenhum id de combo foi renomeado** (
 - **Laudo continua SEM combo de Função, por decisão**: o laudo é por setor/GHE/agrupamento (o filtro
   "Agrupamento de Função" existe); um combo novo mexeria nas 4 cadeias de filtro, nos presets e no
   histórico de um documento entregue a cliente, sem pedido concreto.
+
+## Campanhas — o ciclo vira a campanha (2026-10-09)
+
+Só `psicomap-admin.html`. **Nenhuma mudança de schema, nenhuma migration** (decisão do usuário; ver abaixo).
+Menu "Links de Coleta" → **Campanhas** (id `nb-links`/`sc-links`/módulo `links` intactos).
+
+- **Campanha = ciclo.** A tela agrupa os links por (cliente, ciclo): cabeçalho com estado (Em coleta /
+  Pausada / Finalizada), nº de links e respostas, "+ Novo link" e "Finalizar campanha". Com um cliente
+  filtrado, campanhas ainda sem link aparecem vazias. "Nova campanha" no topo abre o modal de ciclos.
+- **Link NOVO exige campanha** (`gerarLink`); atalho "Criar campanha" no modal de link. Os links antigos
+  sem ciclo **continuam válidos e coletando** — regra de formulário, não de banco. Ficam no grupo
+  **"Sem campanha"**. `gerarLinksBatch` (modal sem botão, ver Fase 4) NÃO foi alterado.
+- **`CICLO_SEM = '__sem__'` + `_linhasDoCiclo` / `_cicloCasa`**: um helper para os 8 filtros por ciclo
+  (Resultados, Gráficos, Laudo + PDF, Auditoria, Plano, Adesão, cascata). Sem ele, respostas sem ciclo só
+  apareciam em "Todos os ciclos". A opção "Sem campanha" do select só existe para clientes com link sem ciclo.
+  **`laudos.ciclo_id` é uuid: nunca gravar o sentinela** (`_cicloIdReal`) — daria 22P02 e o laudo não
+  seria registrado. Ao criar novo filtro por ciclo, usar o helper, não `r.ciclo_id === cicloId`.
+- **`removerCiclo()` recusa ciclo com links ou respostas.** `respostas.ciclo_id`, `links_coleta.ciclo_id`
+  e `laudos.ciclo_id` são `ON DELETE SET NULL` (DEV e PROD): apagar o ciclo zerava, em silêncio, o ciclo de
+  todas as respostas coletadas. A proteção é **só no painel** — o banco continua permitindo. Tentei
+  `NO ACTION` nas FKs; o teste de apagar uma empresa por cascata estourou o timeout (60s) duas vezes em DEV,
+  então a mudança de FK **não foi aplicada** e a lentidão virou tarefa separada.
+- **Não existe "associar link antigo a uma campanha" pela tela, de propósito.** `respostas` **não tem policy
+  de UPDATE** para admin/consultor (só `super_admin`); associar só o link deixaria a campanha com links e
+  **zero respostas**. Os 3 links sem campanha em PROD (8 respostas) são das contas internas (Eleva IT e
+  TREINAMENTO). Se um dia precisarem entrar numa campanha: SQL revisado, em transação, link + respostas
+  NULL daquele `link_token`, com o OK do usuário.
+- `gerarLink` agora devolve `ciclo_id` no `.select()` e no objeto `_links` (antes o agrupamento só acertava
+  após recarregar). `modal-ciclo` ganha z-index acima do modal de link quando aberto por ele (vem antes
+  no DOM e ficaria escondido).

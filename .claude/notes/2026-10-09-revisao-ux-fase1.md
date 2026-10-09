@@ -40,3 +40,11 @@ Ver seção "Filtros — Fase 1b" no CLAUDE.md. Testado por harness: cascata de 
 Gráficos filtra funções por setor e ciclo; preset restaura função de outro setor sem perda; Auditoria filtra
 função por setor, aplica Agrupamento de Setores (A+B=3 de 4 linhas) e mostra erro de carga com retry.
 Não testado em navegador logado/DEV.
+
+## Fase 2 — Campanhas (mesma branch)
+Ver seção "Campanhas" no CLAUDE.md. Sem schema. Descobertas que mudaram o desenho: FKs de ciclo são SET NULL
+em 3 tabelas (apagar ciclo zerava o ciclo das respostas); `respostas` sem policy de UPDATE (inviabiliza
+"associar link antigo" pela tela); cascata de exclusão de empresa estoura 60s em DEV (investigar à parte).
+Testado por harness: agrupamento (todos/filtrado/vazio/sem campanha/viewer), finalizarCampanha, gerarLink
+sem e com campanha, filtros por ciclo com o sentinela, opções do select, menu (visibilidade idêntica) e guia.
+Não testado em navegador logado/DEV com o banco real.

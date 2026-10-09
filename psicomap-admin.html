@@ -1575,9 +1575,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
     <div class="sidebar-section">Coleta</div>
 
-    <button class="nav-item" id="nb-links" data-modulo="links" data-label="Links de Coleta" onclick="goScreen('links',this)">
+    <button class="nav-item" id="nb-links" data-modulo="links" data-label="Campanhas" onclick="goScreen('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-      <span class="nav-label">Links de Coleta</span>
+      <span class="nav-label">Campanhas</span>
       <span class="nav-badge" id="nb-links-badge" style="display:none"></span>
     </button>
 
@@ -4245,13 +4245,17 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <div class="screen" id="sc-links" data-modulo="links">
   <div class="page-header">
     <div class="page-hdr-left">
-      <div class="page-title">Links de Coleta</div>
-      <div class="page-sub">Gere e distribua os links de formulário por cliente e ciclo de avaliação</div>
+      <div class="page-title">Campanhas</div>
+      <div class="page-sub">Cada campanha reúne os links de um cliente em um ciclo de avaliação — gere, distribua e acompanhe a coleta</div>
     </div>
     <div class="page-hdr-actions" id="links-action-btns">
       <button class="btn btn-ghost" onclick="irParaNovaEmpresa()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Novo cliente
+      </button>
+      <button class="btn btn-ghost" onclick="abrirModalCiclo(document.getElementById('link-f-empresa')?.value || _empresaAtiva?.id || null)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Nova campanha
       </button>
       <button class="btn btn-g" onclick="abrirModalLink()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -4367,8 +4371,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 <!-- ══ MODAL CICLOS ══ -->
 <div class="modal-bg" id="modal-ciclo">
   <div class="modal" style="max-width:500px">
-    <div class="modal-title">Ciclos de Avaliação</div>
-    <div class="modal-sub" id="ciclo-empresa-sub">Gerencie os ciclos de coleta deste cliente.</div>
+    <div class="modal-title">Campanhas (ciclos de avaliação)</div>
+    <div class="modal-sub" id="ciclo-empresa-sub">Gerencie as campanhas de coleta deste cliente.</div>
     <div id="ciclo-empresa-row" class="field" style="margin-bottom:14px">
       <label>Cliente</label>
       <select id="ciclo-empresa-sel" onchange="mudarEmpresaCiclo(this.value)">
@@ -4430,10 +4434,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
       <div class="field">
-        <label>Ciclo de avaliação</label>
+        <label>Campanha (ciclo de avaliação) <span style="color:var(--red)">*</span></label>
         <select id="nl-ciclo">
-          <option value="">Sem ciclo específico</option>
+          <option value="">Selecione a campanha…</option>
         </select>
+        <div style="font-size:10px;color:var(--tl);margin-top:4px;line-height:1.5">
+          Toda resposta fica ligada a uma campanha. Ainda não existe?
+          <a href="#" onclick="criarCampanhaDoLink();return false" style="color:var(--g);font-weight:600">Criar campanha</a>
+        </div>
       </div>
     </div>
     <div class="field" style="margin-bottom:12px">
@@ -4999,7 +5007,7 @@ const MODULOS_CATALOGO = [
   { id:'comparativo', nome:'Comparativo',             desc:'Comparação entre ciclos/empresas' },
   { id:'auditoria',   nome:'Auditoria',               desc:'Trilha de auditoria das respostas' },
   { id:'graficos',    nome:'Distribuição',            desc:'Tela de distribuição de respostas por questão' },
-  { id:'links',       nome:'Links de Coleta',         desc:'Geração e gestão de links do formulário' },
+  { id:'links',       nome:'Campanhas',               desc:'Campanhas e links de coleta do formulário' },
 ];
 
 // Telas cuja visibilidade é governada por um módulo (id de goScreen → módulo).
@@ -6269,7 +6277,7 @@ function popularSelectCiclos(empresaId) {
   const ciclosFiltrados = empresaId
     ? _ciclos.filter(c => c.empresa_id === empresaId)
     : _ciclos;
-  el.innerHTML = '<option value="">Sem ciclo</option>' +
+  el.innerHTML = '<option value="">Selecione a campanha…</option>' +
     ciclosFiltrados.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 }
 
@@ -11632,7 +11640,7 @@ function renderLinks() {
   const links = filtEmp ? _links.filter(l=>l.empresa_id===filtEmp) : _links;
   document.getElementById('links-count').textContent = `${links.length} link(s)`;
 
-  if (!links.length) {
+  if (!links.length && !(filtEmp && _ciclos.some(c => c.empresa_id === filtEmp))) {
     list.innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--tl)">Nenhum link gerado ainda. Clique em "Novo link" para começar.</div>`;
     return;
   }
@@ -11652,7 +11660,7 @@ function renderLinks() {
 
   // URL correta para GitHub Pages: preserva o caminho base (ex: /psicomap/)
   const _basePath = window.location.pathname.replace(/\/[^/]*$/, '');
-  list.innerHTML = links.map(l => {
+  const cardHTML = l => {
     const url      = `${window.location.origin}${_basePath}/psicomap-forms.html?token=${l.token}`;
     const nomeEsc  = (l.nomeEmpresa || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const waMsg    = encodeURIComponent(`Pesquisa Psicossocial PsicoMap — responda clicando:\n${url}`);
@@ -11690,8 +11698,8 @@ function renderLinks() {
           ${l.ativo?'Desativar':'Reativar'}
         </button>
         ${!l.encerrado_em ? `
-        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--purple);border-color:var(--purple)" onclick="finalizarLink('${l.id}')" title="Marca a campanha deste link como concluída — deixa de aceitar novas respostas, se ainda não deixou">
-          🏁 Finalizar campanha
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--purple);border-color:var(--purple)" onclick="finalizarLink('${l.id}')" title="Marca este link como concluído — deixa de aceitar novas respostas, se ainda não deixou">
+          🏁 Finalizar link
         </button>` : ''}
         <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;flex-shrink:0;color:var(--red);border-color:var(--red);${(!l.is_teste&&l.respostas>0)?'opacity:.4;cursor:not-allowed':''}" onclick="excluirLink('${l.id}',${l.respostas},${l.is_teste},'${l.token}')" title="${(!l.is_teste&&l.respostas>0)?'Link com respostas — não pode ser excluído':l.is_teste?'Excluir link de teste e suas respostas':'Excluir link'}">
           🗑 Excluir
@@ -11706,6 +11714,66 @@ function renderLinks() {
         </button>
       </div>
       <div id="adesao-${l.id}" data-modulo="adesao" style="display:none;border-top:1px solid var(--border);padding:12px 16px;background:var(--bg)"></div>
+    </div>`;
+  };
+
+  // ── Agrupamento por campanha (empresa + ciclo) ──────────────────────────────────────────
+  // O ciclo é a unidade que toda a análise consome; mostrar links soltos escondia isso. Links
+  // sem ciclo (criados antes de a campanha ser obrigatória) ficam num grupo próprio, que continua
+  // coletando normalmente — só não pertencem a nenhuma campanha.
+  const gruposMap = new Map();
+  const chaveGrupo = (emp, cic) => emp + '|' + (cic || '');
+  links.forEach(l => {
+    const k = chaveGrupo(l.empresa_id, l.ciclo_id);
+    if (!gruposMap.has(k)) gruposMap.set(k, { empresa_id: l.empresa_id, ciclo_id: l.ciclo_id || null, nomeEmpresa: l.nomeEmpresa, links: [] });
+    gruposMap.get(k).links.push(l);
+  });
+  // Com um cliente filtrado, campanhas ainda sem link aparecem (vazias) — é onde se cria o primeiro.
+  if (filtEmp) {
+    _ciclos.filter(c => c.empresa_id === filtEmp).forEach(c => {
+      const k = chaveGrupo(filtEmp, c.id);
+      if (!gruposMap.has(k)) gruposMap.set(k, { empresa_id: filtEmp, ciclo_id: c.id,
+        nomeEmpresa: _empresas.find(e => e.id === filtEmp)?.nome || '—', links: [] });
+    });
+  }
+  const ordemCiclo = id => {
+    const c = _ciclos.find(x => x.id === id);
+    return c ? (c.ano_referencia || 0) * 100 + (c.mes_referencia || 0) : -1;
+  };
+  const grupos = [...gruposMap.values()].sort((a, b) =>
+    (a.nomeEmpresa || '').localeCompare(b.nomeEmpresa || '', 'pt-BR') ||
+    // mais recente primeiro; "Sem campanha" por último dentro do cliente
+    (a.ciclo_id ? 0 : 1) - (b.ciclo_id ? 0 : 1) ||
+    ordemCiclo(b.ciclo_id) - ordemCiclo(a.ciclo_id));
+
+  const podeEscrever = _roleAtual() !== 'cliente_viewer';
+  list.innerHTML = grupos.map(g => {
+    const ciclo   = g.ciclo_id ? _ciclos.find(c => c.id === g.ciclo_id) : null;
+    const titulo  = g.ciclo_id ? (ciclo?.nome || 'Campanha') : 'Sem campanha';
+    const nResp   = g.links.reduce((t, l) => t + (l.respostas || 0), 0);
+    const nAtivos = g.links.filter(l => l.ativo).length;
+    const nFinal  = g.links.filter(l => l.encerrado_em).length;
+    const todosFinal = g.links.length > 0 && g.links.every(l => l.encerrado_em);
+    const estado = !g.links.length ? '' : nAtivos ? '<span class="tag tg" style="font-size:10px">Em coleta</span>'
+                 : todosFinal ? '<span class="tag tp" style="font-size:10px">Finalizada</span>'
+                 : '<span class="tag tgr" style="font-size:10px">Pausada</span>';
+    const podeFinalizar = podeEscrever && g.ciclo_id && g.links.some(l => !l.encerrado_em);
+    const nota = !g.ciclo_id
+      ? `<div style="font-size:11px;color:var(--tm);margin:2px 0 8px;line-height:1.5">Links criados antes de as campanhas existirem. Continuam funcionando e recebendo respostas normalmente; só não pertencem a uma campanha. As respostas deles aparecem em <strong>Sem campanha</strong> nos filtros de ciclo.</div>` : '';
+    return `<div class="camp-grupo" style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:800;color:var(--tx)">${g.nomeEmpresa}</div>
+        <div style="font-size:12px;color:var(--tm)">· ${titulo}</div>
+        ${estado}
+        <span class="tag tb" style="font-size:10px">${g.links.length} link(s)</span>
+        <span class="tag tb" style="font-size:10px">${nResp} resp.</span>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+          ${podeEscrever && g.ciclo_id ? `<button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="novoLinkDaCampanha('${g.empresa_id}','${g.ciclo_id}')">+ Novo link</button>` : ''}
+          ${podeFinalizar ? `<button class="btn btn-ghost" style="font-size:10px;padding:4px 9px;color:var(--purple);border-color:var(--purple)" onclick="finalizarCampanha('${g.empresa_id}','${g.ciclo_id}')" title="Encerra a coleta de todos os links desta campanha">🏁 Finalizar campanha</button>` : ''}
+        </div>
+      </div>
+      ${nota}
+      ${g.links.length ? g.links.map(cardHTML).join('') : `<div class="card" style="text-align:center;padding:18px;color:var(--tl);font-size:12px">Nenhum link nesta campanha ainda.</div>`}
     </div>`;
   }).join('');
 
@@ -12594,19 +12662,51 @@ async function toggleLink(id) {
 async function finalizarLink(id) {
   const l = _links.find(x=>x.id===id);
   if (!l) return;
-  if (!confirm('Finalizar esta campanha? O link deixará de aceitar novas respostas (se ainda estava ativo) e ficará marcado como concluído.')) return;
+  if (!confirm('Finalizar este link? Ele deixará de aceitar novas respostas (se ainda estava ativo) e ficará marcado como concluído.')) return;
   const encerradoEm = new Date().toISOString();
   if (!isDemoMode) {
     const { error } = await sbAdmin
       .from('links_coleta')
       .update({ ativo: false, encerrado_em: encerradoEm })
       .eq('id', id);
-    if (error) { toast('Erro ao finalizar campanha.', 'r'); return; }
+    if (error) { toast('Erro ao finalizar o link.', 'r'); return; }
   }
   l.ativo = false;
   l.encerrado_em = encerradoEm;
   renderLinks();
-  toast('Campanha finalizada.', 'g');
+  toast('Link finalizado.', 'g');
+}
+
+// Finaliza TODOS os links de uma campanha (cliente + ciclo) de uma vez. Só links ainda não finalizados;
+// os já finalizados mantêm a data em que foram encerrados. Respostas coletadas não são tocadas.
+async function finalizarCampanha(empresaId, cicloId) {
+  if (!empresaId || empresaId === 'null' || !cicloId) return;
+  const alvo = _links.filter(l => l.empresa_id === empresaId && l.ciclo_id === cicloId && !l.encerrado_em);
+  if (!alvo.length) { toast('Esta campanha já está finalizada.', 'w'); return; }
+  const nomeCiclo = _ciclos.find(c => c.id === cicloId)?.nome || 'esta campanha';
+  const nAtivos = alvo.filter(l => l.ativo).length;
+  if (!confirm(`Finalizar "${nomeCiclo}"?\n\n${alvo.length} link(s) serão marcados como concluídos` +
+      (nAtivos ? ` e ${nAtivos} que ainda recebem respostas deixarão de aceitar novas.` : '.') +
+      `\nAs respostas já coletadas continuam em todas as análises. Para retomar, reative os links.`)) return;
+  const encerradoEm = new Date().toISOString();
+  if (!isDemoMode) {
+    const { error } = await sbAdmin.from('links_coleta')
+      .update({ ativo: false, encerrado_em: encerradoEm })
+      .in('id', alvo.map(l => l.id));
+    if (error) { toast('Erro ao finalizar a campanha: ' + error.message, 'r'); return; }
+  }
+  alvo.forEach(l => { l.ativo = false; l.encerrado_em = encerradoEm; });
+  renderLinks();
+  toast(`Campanha finalizada (${alvo.length} link(s)).`, 'g');
+}
+
+// "+ Novo link" no cabeçalho de uma campanha: abre o modal já com cliente e campanha escolhidos.
+function novoLinkDaCampanha(empresaId, cicloId) {
+  abrirModalLink();
+  const emp = document.getElementById('nl-empresa');
+  if (emp) { emp.value = empresaId; popularSetoresModal(); popularSelectCiclos(empresaId); }
+  const cic = document.getElementById('nl-ciclo');
+  if (cic && cicloId) cic.value = cicloId;
 }
 
 async function excluirLink(id, nRespostas, isTeste, token) {
@@ -12665,6 +12765,9 @@ async function gerarLink() {
   if (!empresaId) { toast('Selecione um cliente.', 'w'); return; }
   const setor   = document.getElementById('nl-setor').value.trim();
   const cicloId = document.getElementById('nl-ciclo').value || null;
+  // Link NOVO exige campanha: link sem ciclo gera respostas que ficam fora de qualquer análise por
+  // ciclo. Os links antigos sem campanha continuam válidos — a regra é do formulário, não do banco.
+  if (!cicloId) { toast('Selecione a campanha. Se ainda não existe, use "Criar campanha".', 'w'); return; }
   const val     = parseInt(document.getElementById('nl-validade').value) || 0;
   const token   = Math.random().toString(36).slice(2,14);
   const expira_em = val > 0 ? new Date(Date.now() + val * 86400000).toISOString() : null;
@@ -12678,12 +12781,13 @@ async function gerarLink() {
         .insert({ empresa_id: empresaId, ciclo_id: cicloId || undefined,
                   setor_sugerido: setor || null, token, ativo: true,
                   expira_em: expira_em, tenant_id: currentTenantId, is_teste, permite_multi_resposta })
-        .select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, empresas(nome), ciclos(nome)')
+        .select('id, token, ativo, is_teste, permite_multi_resposta, setor_sugerido, expira_em, criado_em, empresa_id, ciclo_id, empresas(nome), ciclos(nome)')
         .single();
       if (error) throw error;
       _links.unshift({
         id:            data.id,
         empresa_id:    data.empresa_id,
+        ciclo_id:      data.ciclo_id || null,   // sem isto o agrupamento por campanha só acertava após recarregar
         nomeEmpresa:   data.empresas?.nome || '—',
         setor_sugerido: data.setor_sugerido || '',
         ciclo:         data.ciclos?.nome || '',
@@ -12699,7 +12803,7 @@ async function gerarLink() {
     const emp = _empresas.find(e => e.id === empresaId);
     const cic = _ciclos.find(c => c.id === cicloId);
     _links.unshift({
-      id:'lk'+Date.now(), empresa_id: empresaId,
+      id:'lk'+Date.now(), empresa_id: empresaId, ciclo_id: cicloId,
       nomeEmpresa: emp?.nome || empresaId,
       setor_sugerido: setor, ciclo: cic?.nome || '',
       token, ativo: true, encerrado_em: null, respostas: 0,
@@ -18024,7 +18128,7 @@ function renderTelaEmpresas() {
           </div>
           <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${ciclosEmp.length}</div>
-            <div style="font-size:9px;color:var(--tl);margin-top:1px">Ciclos</div>
+            <div style="font-size:9px;color:var(--tl);margin-top:1px">Campanhas</div>
           </div>
         </div>
         ${_empBarraAdesao(emp)}
@@ -18126,7 +18230,7 @@ function _renderEmpresasLista(filtradas) {
       <div style="display:flex;gap:4px;flex-shrink:0;margin-left:auto">
         ${btn('Configurar', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', `abrirModalClientePerfil('${emp.id}')`)}
         ${btn('Setores', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', `abrirModalGHE('${emp.id}')`)}
-        ${btn('Ciclos', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', `abrirModalCiclo('${emp.id}')`)}
+        ${btn('Campanhas', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', `abrirModalCiclo('${emp.id}')`)}
         ${btn('Links', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>', `goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)`)}
         ${btn('Resultados', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', `setEmpresaAtiva('${emp.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))`)}
         ${btn('Excluir', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>', `excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})`, 'color:var(--red);border-color:transparent')}
@@ -18172,6 +18276,7 @@ function abrirModalCiclo(empresaId) {
 
 function fecharModalCiclo() {
   document.getElementById('modal-ciclo').classList.remove('open');
+  document.getElementById('modal-ciclo').style.zIndex = '';
   _cicloEmpresaId = null;
 }
 
@@ -18231,6 +18336,17 @@ async function atualizarTipoCiclo(cicloId, novoTipo) {
   }
 }
 
+// Atalho do modal de link: abre o cadastro de campanha (ciclo) do cliente escolhido.
+function criarCampanhaDoLink() {
+  const empresaId = document.getElementById('nl-empresa')?.value || '';
+  if (!empresaId) { toast('Selecione o cliente primeiro.', 'w'); return; }
+  abrirModalCiclo(empresaId);
+  // modal-ciclo vem ANTES de modal-link no DOM e os dois têm o mesmo z-index: sem isto o cadastro
+  // de campanha abriria escondido atrás do modal de link.
+  const mc = document.getElementById('modal-ciclo');
+  if (mc) mc.style.zIndex = 'calc(var(--z-modal) + 1)';
+}
+
 async function salvarCiclo() {
   if (!_cicloEmpresaId) { toast('Selecione um cliente.', 'w'); return; }
   const mes        = parseInt(document.getElementById('nc-mes').value);
@@ -18262,6 +18378,13 @@ async function salvarCiclo() {
   document.getElementById('nc-data-fim').value = '';
   renderCiclosModal(_cicloEmpresaId);
   renderTelaEmpresas();
+  // Se o cadastro foi aberto a partir do modal de link, a campanha nova já aparece e vem escolhida.
+  if (document.getElementById('modal-link')?.classList.contains('open')
+      && document.getElementById('nl-empresa')?.value === _cicloEmpresaId) {
+    popularSelectCiclos(_cicloEmpresaId);
+    const nl = document.getElementById('nl-ciclo');
+    if (nl && _ciclos[0]?.empresa_id === _cicloEmpresaId) nl.value = _ciclos[0].id;
+  }
 }
 
 async function removerCiclo(id) {
@@ -18274,7 +18397,7 @@ async function removerCiclo(id) {
       .from('respostas').select('id', { count: 'exact', head: true }).eq('ciclo_id', id);
     if (errCont) { toast('Não foi possível conferir se o ciclo tem respostas: ' + errCont.message, 'r'); return; }
     if (nLinks > 0 || (nResp || 0) > 0) {
-      toast(`Este ciclo tem ${nLinks} link(s) e ${nResp || 0} resposta(s) e não pode ser removido. Para encerrar a coleta, use "Finalizar campanha" na tela de links.`, 'w', 7000);
+      toast(`Este ciclo tem ${nLinks} link(s) e ${nResp || 0} resposta(s) e não pode ser removido. Para encerrar a coleta, use "Finalizar campanha" na tela de links (as respostas coletadas continuam nas análises).`, 'w', 7000);
       return;
     }
   }
@@ -21503,17 +21626,17 @@ const GUIA_PASSOS = [
     paraQue:'Junta setores ou funções parecidos, ou importa a matriz de GHE do PGR, para analisar e emitir o laudo por grupo — sem alterar o cadastro do cliente.',
     como:['Abra <strong>Agrupamentos</strong> e escolha o cliente','Crie grupos de setores, de funções, ou importe a matriz do PGR','Depois, use o agrupamento nos filtros de Resultados e do Laudo'],
     dica:'Pode pular este passo se o laudo for apresentado por setor.' },
-  { titulo:'Criar o ciclo de avaliação', telas:['empresas'],
-    paraQue:'O ciclo é uma rodada de avaliação (por exemplo, 2026/1). Respostas de ciclos diferentes nunca se misturam nas análises, o que permite comparar a evolução depois.',
-    como:['Em <strong>Clientes</strong>, localize o cliente','Clique em <strong>Ciclos</strong> no cartão do cliente','Informe o período e salve'],
-    dica:'O ciclo refere-se ao período que a coleta representa; não precisa ser o mês atual.' },
+  { titulo:'Criar a campanha', telas:['links'], roles:['admin','consultor','super_admin'],
+    paraQue:'A campanha é uma rodada de avaliação de um cliente (por exemplo, março de 2026) e reúne todos os links dessa rodada. Respostas de campanhas diferentes nunca se misturam nas análises, o que permite comparar a evolução depois.',
+    como:['Abra <strong>Campanhas</strong>','Clique em <strong>Nova campanha</strong>, escolha o cliente e informe o mês e o ano de referência','Salve'],
+    dica:'O período refere-se ao que a coleta representa; não precisa ser o mês atual. Também dá para criar a campanha na hora de gerar o link.' },
   { titulo:'Gerar e distribuir o link', telas:['links'], roles:['admin','consultor','super_admin'],
     paraQue:'O link é o endereço que os funcionários abrem no celular para responder, sem login. Um mesmo link pode ser compartilhado com vários funcionários do mesmo setor.',
-    como:['Abra <strong>Links de Coleta</strong>','Clique em <strong>Novo link</strong>, escolha o cliente, o ciclo e (se quiser) o setor','Copie o link ou use o QR Code e envie por WhatsApp, e-mail ou intranet','Para pausar a coleta, desative o link; para encerrá-la de vez, use <strong>Finalizar campanha</strong>'],
+    como:['Abra <strong>Campanhas</strong>','Clique em <strong>Novo link</strong> (ou em <strong>+ Novo link</strong> na própria campanha) e escolha cliente, campanha e, se quiser, o setor','Copie o link ou use o QR Code e envie por WhatsApp, e-mail ou intranet','Para pausar um link, desative-o; para encerrar a coleta de todos os links da campanha de uma vez, use <strong>Finalizar campanha</strong>'],
     dica:'As respostas são anônimas: o sistema guarda setor, função e escolaridade — nunca nome ou CPF.' },
-  { titulo:'Ver os links e o andamento da coleta', telas:['links'], roles:['cliente_viewer'],
-    paraQue:'Aqui você acompanha os links de coleta da sua empresa e quantas respostas já chegaram.',
-    como:['Abra <strong>Links de Coleta</strong>','Veja o número de respostas de cada link'],
+  { titulo:'Ver as campanhas e o andamento da coleta', telas:['links'], roles:['cliente_viewer'],
+    paraQue:'Aqui você acompanha as campanhas e os links de coleta da sua empresa e quantas respostas já chegaram.',
+    como:['Abra <strong>Campanhas</strong>','Veja o número de respostas de cada link, agrupado por campanha'],
     dica:'Nesta tela você só consulta; quem gera e gerencia os links é a consultoria.' },
   { titulo:'Acompanhar a adesão', telas:['adesao'],
     paraQue:'Mostra quantos funcionários já responderam em relação ao quadro, por setor e função, e quais setores estão atrasados. A meta de referência é 70%.',
@@ -21537,7 +21660,7 @@ const GUIA_TELAS = {
   ghe:'Setores, funções e quadro de funcionários do cliente.',
   agrupamentos:'Grupos de setores/funções e matriz de GHE para analisar por grupo.',
   q:'As 27 questões do questionário e o peso de cada uma.',
-  links:'Gerar, copiar, pausar e finalizar os links de coleta.',
+  links:'Criar campanhas e gerar, copiar, pausar e finalizar os links de coleta.',
   adesao:'Quantos já responderam, por setor, e quem está atrasado.',
   analise:'Riscos por fator, setor e função, em tabela e gráfico.',
   graficos:'Distribuição das respostas em cada questão.',
@@ -21555,7 +21678,7 @@ const GUIA_TELAS = {
 
 const GUIA_DUVIDAS = [
   { p:'O funcionário não encontra o setor dele no formulário', r:'Cadastre ou importe o setor em <strong>Setores &amp; Funções</strong>. O formulário lê o cadastro a cada abertura — não é preciso gerar um link novo.', roles:['admin','consultor','super_admin'] },
-  { p:'O link não abre ou não aceita a resposta', r:'Em <strong>Links de Coleta</strong>, confira se o link está ativo (não pausado nem finalizado) e se não passou da validade.', roles:['admin','consultor','super_admin'] },
+  { p:'O link não abre ou não aceita a resposta', r:'Em <strong>Campanhas</strong>, confira se o link está ativo (não pausado nem finalizado) e se não passou da validade.', roles:['admin','consultor','super_admin'] },
   { p:'A adesão está baixa', r:'Abra <strong>Adesão</strong>, veja quais setores têm mais pendências e reenvie o link a eles. A meta de referência é 70% do quadro.', roles:['admin','consultor','super_admin'] },
   { p:'Os números não são os que eu esperava', r:'Confira os filtros no topo da tela, principalmente o <strong>ciclo</strong>: cada ciclo é analisado separadamente.' },
   { p:'As respostas são anônimas?', r:'Sim. O sistema registra setor, função e escolaridade — nunca nome ou CPF — e o relatório de adesão mostra apenas totais.' },
