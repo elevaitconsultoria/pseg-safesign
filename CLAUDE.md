@@ -308,6 +308,7 @@ elimina toda a categoria de bugs de link quebrado.
 | Tela | super_admin | admin | consultor | cliente_viewer |
 |------|-------------|-------|-----------|----------------|
 | dashboard | ✅ | ✅ | ✅ | ✅ |
+| ajuda (Como usar) | ✅ | ✅ | ✅ | ✅ |
 | empresas (Clientes) | ✅ | ✅ | ✅ | ❌ |
 | ghe (Setores/Funções) | ✅ | ✅ | ✅ | ❌ |
 | links de coleta | ✅ | ✅ | ✅ | ✅ leitura |
@@ -1608,3 +1609,21 @@ campanha = promover `ciclos`, onboarding por cliente, defeitos estruturais) em
   constraint `(tenant_id, empresa_id, cd_risco)` — em DEV cada salvamento DUPLICA as linhas
   (provado com rollback); em PROD o índice parcial `riscos_config_global_cd_unique` faria o
   segundo salvamento falhar. Tabela vazia nos dois bancos hoje. Corrigir à parte (DB + JS).
+
+## Guia "Como usar" (2026-10-09)
+
+Tela `#sc-ajuda` (`nb-ajuda`, seção Início, **liberada a todos os roles** — inclusive `cliente_viewer`
+e `super_admin` fora do modo suporte, onde só aparece o passo "Entrar em uma consultoria"). Substitui
+o modal `#tutorial-overlay` (removido, estava desatualizado). Só `psicomap-admin.html`, sem migration.
+
+- **Fonte única do conteúdo**: `GUIA_PASSOS` (passos na ordem do trabalho), `GUIA_TELAS` (uma linha por
+  item do menu), `GUIA_DUVIDAS`. **Ao criar/renomear tela, acrescentar a linha em `GUIA_TELAS`** — o
+  rótulo vem do próprio sidebar, mas a descrição não.
+- **Nada de regra de acesso própria**: um passo/botão só aparece se o item do menu (`#nb-<tela>`) está
+  visível (`_guiaTelaVisivel`), o que já reflete role **e** módulo desligado. Itens de `como` podem ser
+  `['tela','texto']` para sumirem junto com a tela. O guia nunca navega por fora de `goScreen`.
+- **Convite no primeiro acesso** (`_guiaOferecer`, chamado no fim do boot em `_iniciarAppAposTenant`):
+  card discreto com Ver o guia / Agora não / Não mostrar de novo. **Nunca bloqueia.** "Já vi" fica em
+  `localStorage['psicomap_guia_v1_<userId>']` (por usuário, por navegador — sem coluna em `perfis`).
+  Falha de leitura do storage = **não convida**. Só convida com role CRU já resolvido (`admin|consultor|
+  cliente_viewer`), nunca em modo suporte nem para `super_admin`. Subir `v1` reexibe após mudança grande.

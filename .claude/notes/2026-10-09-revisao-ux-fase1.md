@@ -26,3 +26,11 @@ Branch `claude/ajustes-gerais-matriz-5q7ln4`. Escopo e garantias: zero migration
 ## Pendente
 - Fase 1b (filtros), Fase 2 (campanha), 3 (onboarding), 4 (estruturais) — ver plano.
 - Bug `riscos_config` (acima). Decisão "EST → Consultoria".
+
+## Fase 3a — Guia "Como usar" (mesma branch)
+Tela própria + convite pulável no 1º acesso; ver seção no CLAUDE.md. Testado por harness: passos e botões
+coerentes com o menu de cada role (super_admin, modo suporte, admin, consultor, viewer, módulos desligados);
+todo "Ir para" aponta para tela existente e visível; convite não aparece com role não resolvido, em modo
+suporte, para super_admin, com storage quebrado, nem para quem já dispensou; usuário B não herda o "já vi"
+de A. RBAC do menu idêntico ao anterior em 8 cenários, exceto o novo item `nb-ajuda` (visível a todos).
+Não testado em navegador logado/DEV.
