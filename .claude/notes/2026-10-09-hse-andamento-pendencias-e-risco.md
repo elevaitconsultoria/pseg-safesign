@@ -194,3 +194,33 @@ Isso mostra o ponto sensível: **com P vindo de apenas 4 faixas, a severidade pa
 Ver R1–R25 no plano. Os que estão mais vivos agora: promover o formulário antes da RPC em PROD (R2); texto `[RASCUNHO]` chegando a PROD (R4);
 resultado de grupo pequeno no BS 8800 (R5, ainda sem proteção); erro de sintaxe no JS inline sem CI (R6, mitigado por `_dev/check-inline-js.js`);
 primeira resposta HSE real torna o esquema irreversível (R3, mitigado por `publicado=false` como chave geral).
+
+## 8. COMO RETOMAR (leia isto primeiro numa sessão nova)
+
+**Estado do repositório (2026-10-09, fim da sessão):** branch `feat/hse-icao35`, **10 commits à frente de `origin/develop`, nenhum push**, working tree limpo
+(só `deno.lock` e `supabase/.temp/` sem versionamento, que não são nossos). Nenhum servidor local ficou rodando.
+Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 · `91e9571` S5 · `b570271` S6 · `0b2f59d` S7 · `eb83ad9` S8 · `0e921d5` doc · `098ebad` S8b.
+
+**Estado dos bancos:** DEV (`szqatgvgghxvyyncsjxl`) tem tudo aplicado: S1, S2, S3, S4 (seed `[RASCUNHO]`), S8b (tabela + seed de TESTE).
+**PROD (`vftyiildukrpgmnbcnao`) não tem nada.** Antes de qualquer coisa em PROD: **B12 (PITR)** e janela calma (`select count(*) from respostas where respondido_em > now() - interval '7 days'` = 0 em 2026-10-08).
+
+**Ordem para ir a PROD** (cada passo só depois do anterior verificado):
+1. Usuário confirma B12. 2. `git fetch` e fast-forward `develop ← main` (publica o DEV). 3. Capturar o golden master do BS 8800 (precisa do usuário logado no admin de DEV).
+4. Aplicar em PROD: `migration_metodologia_hse_icao35.sql` → `migration_obter_instrumento_link.sql` → **criar** `migration_salvar_resposta_hse_prod.sql` (modelo: o `_dev`, mas `session_id` é **uuid** e o comparativo é `session_id=p_session_id` sem `::text`; só 2 overloads: revogar o de 9 args) → `migration_hse_riscos_config.sql` (vazia). Testar cada um (`SET LOCAL ROLE anon`, `/validar-formulario` com link `is_teste`).
+5. Só então promover o app. Sem o seed validado o HSE fica invisível em PROD. 6. Seed validado (texto B1 + severidade validada por SST) → teste de aceite → piloto.
+
+**Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
+
+**Pendências técnicas, em ordem de valor:** (1) arquivo S3 de PROD; (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) tela para SST cadastrar `hse_riscos_config`;
+(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) PR de hardening do `build.js`.
+
+**Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.
+Isso prova lógica e DOM, **não** o carregamento real com RLS: o usuário precisa abrir o admin de DEV logado e percorrer ciclo HSE → responder → analisar → laudo.
+
+**Cuidados aprendidos (para não repetir):**
+- `develop` é compartilhada e vai inteira para `main`; nunca `git add -A`; conferir `git branch --show-current` antes de commitar.
+- O formulário público tem credenciais de PROD hardcoded (`:350-351` hoje); `build.js` as troca por regex — não editar essas linhas.
+- O erro da query de ciclos em `carregarEmpresas` era engolido: por isso o fallback sem `metodologia`.
+- Não usar `.eq('is_oficial', true)`/`r.q` para HSE (H01..H27 colidiria com Q01..Q27): HSE tem loader e tabelas próprios.
+- Dados de teste em DEV (Allmed): links `hsetests5a01`, `bstests5a001`, `semciclos5a01` (`is_teste`) e `hsetests7a001` (não-teste, 8 respostas); limpar quando não servirem.
+
