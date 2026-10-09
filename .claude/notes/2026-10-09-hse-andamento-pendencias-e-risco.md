@@ -109,7 +109,7 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
 | S5 | ~~Testar formulário antigo, fila offline legada e erro de boot~~ — feito em 2026-10-09, ver §5.5 |
 | S6 | Trocar a metodologia **pela interface** antes do 1º link (o banco já permite); selo no Dashboard e em Clientes |
-| S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; tela para SST cadastrar severidade (hoje SQL) |
+| S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; ~~tela para SST cadastrar severidade~~ (feita em 2026-10-09, ver §5.6) |
 | S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
 | S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
 | Seed | Transcrever as **13 médias setoriais** do relatório HSE 2023 (hoje só as gerais) |
@@ -123,6 +123,15 @@ Harness: cópia do `psicomap-forms.html` (e do `origin/develop`, para o formulá
 - **Formulário antigo contra link HSE** (código pré-S5, não corrigível): mostra 27 questões; o servidor recusa com `hse_incompleto`, **nada é gravado**, mas o respondente vê "guardada localmente — tente novamente" e fica uma pendência que nunca passa. O formulário novo limpa essa pendência (erro permanente → descarta). **Regra operacional:** promover o formulário (S5) **antes** de criar qualquer ciclo HSE em PROD; o HTML do CF Pages revalida (`_headers` não cacheia), então o risco real é só aba já aberta.
 - Regressão: links BS (com e sem ciclo) seguem com 27 questões × 4 opções, sem erro.
 - Não testado: fila legada contra link BS válido (gravaria resposta real); recarga com `bfcache`.
+
+### 5.6 Tela do critério de severidade HSE (2026-10-09)
+Card **"Critério de risco do HSE"** em **Gestão de ESTs** (`#hse-riscos-card`; `hseRiscosCfgRender`/`hseRiscosCfgSalvar`, bloco `HSE (S8b-UI)`). Só super_admin: é quem a RLS deixa gravar e a tela já é exclusiva dele; o guard também está nas funções.
+- **Critério único e global** (vale para todas as ESTs): versão única para as 7 dimensões (o laudo imprime o maior valor); a assinatura cobre o conjunto.
+- **Validação nunca é implícita:** qualquer mudança em S ou danos derruba a assinatura de **todas** as linhas e sobe a versão; validar exige as 7 severidades + responsável (nome e registro, ≥5 caracteres) + confirmação. Rascunho parcial é permitido. Salvar sem mudança não grava nada.
+- Diferente do loader do laudo (que degrada para "critério ausente"), a tela **mostra o erro** se a tabela não existe (migration não aplicada).
+- Testes: harness com `sbAdmin` fake que imita o CHECK (13 cenários, 0 violações) + **banco real de DEV** com `set_config`/ROLLBACK: super_admin grava no formato da tela; admin é barrado pela RLS (UPSERT) e não altera nada (UPDATE); CHECK `hse_riscos_validado_completo` barra "validado sem responsável"; DEV voltou intacto.
+- **Quem valida de fato:** o super_admin digita o nome/registro de quem assinou — o sistema registra a declaração, não autentica o profissional de SST. A assinatura real continua sendo fora do sistema (por escrito).
+- Não testado: renderização visual (login real no DEV) e o fluxo logado de ponta a ponta.
 
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
@@ -220,7 +229,7 @@ Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 ·
 
 **Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
 
-**Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) tela para SST cadastrar `hse_riscos_config`;
+**Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) ~~tela para SST cadastrar `hse_riscos_config`~~ (feita, §5.6);
 (4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) PR de hardening do `build.js`.
 
 **Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.

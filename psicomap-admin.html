@@ -3852,6 +3852,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </table>
     </div>
   </div>
+
+  <!-- Critério de risco do HSE (S8b): severidade por dimensão. Escrita só super_admin (RLS). -->
+  <div class="card" style="margin-top:18px;padding:0;overflow:hidden" id="hse-riscos-card">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;font-weight:600;color:var(--tx)">Critério de risco do HSE — severidade por dimensão</span>
+      <div style="font-size:11px;color:var(--tl);margin-top:3px;line-height:1.5">Vale para <strong>todas</strong> as ESTs. A severidade (S1–S4) de cada dimensão é decisão de profissional de SST e, junto com a faixa do HSE (P), define o nível de risco no PGR. Sem as 7 severidades <strong>validadas</strong>, o laudo HSE não pode ser entregue a cliente. Qualquer alteração remove a validação e cria uma nova versão do critério.</div>
+    </div>
+    <div id="hse-riscos-cfg" style="padding:14px 18px;font-size:12px;color:var(--tl)">Carregando…</div>
+  </div>
 </div>
 
 <!-- Banner: modo suporte ativo -->
@@ -5328,6 +5337,110 @@ function exportarCSVHSE() {
   a.click(); URL.revokeObjectURL(a.href);
 }
 // ==== HSE (S7) END ====
+
+// ==== HSE (S8b-UI) BEGIN — cadastro do critério de severidade por dimensão (só super_admin) ====
+// A tabela hse_riscos_config só aceita escrita de super_admin (RLS) e vale para todas as ESTs. O critério é UM
+// só: a versão é única para as 7 dimensões (o laudo imprime o maior valor) e a assinatura cobre o conjunto.
+// Regras: qualquer mudança de S ou de danos remove a validação de TODAS as linhas e sobe a versão; validar exige
+// as 7 severidades e um responsável identificado (nome + registro). Validação nunca é implícita.
+let _hseCfgAtual = {};
+const _HSE_SEV_OPC = ['', 'S1 — Leve', 'S2 — Moderado', 'S3 — Sério', 'S4 — Severo'];
+
+async function hseRiscosCfgRender() {
+  const box = document.getElementById('hse-riscos-cfg');
+  if (!box) return;
+  if (_roleAtual() !== 'super_admin') { box.innerHTML = ''; return; }
+  box.textContent = 'Carregando…';
+  let data;
+  try {
+    const r = await sbAdmin.from('hse_riscos_config')
+      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em');
+    if (r.error) throw r.error;
+    data = r.data || [];
+  } catch (e) {
+    // Diferente do loader do laudo (que degrada para "critério ausente"), aqui o erro precisa aparecer:
+    // tabela inexistente = migration não aplicada neste ambiente.
+    box.innerHTML = `<span style="color:#d32f2f">Não foi possível ler o critério: ${_hEsc(e?.message || e)}. Verifique se <code>migration_hse_riscos_config.sql</code> foi aplicada neste ambiente.</span>`;
+    return;
+  }
+  _hseCfgAtual = Object.fromEntries(data.map(r => [r.dimensao, r]));
+  const completo = _hseRiscoCompleto(_hseCfgAtual), validado = _hseRiscoValidado(_hseCfgAtual);
+  const versao = Math.max(0, ...data.map(r => r.versao || 1));
+  const quem = [...new Set(data.filter(r => r.validado && r.validado_por).map(r => r.validado_por))].join('; ');
+  const quando = data.map(r => r.validado_em).filter(Boolean).sort().pop();
+  const estado = validado
+    ? `<span style="background:#2e7d32;color:#fff;padding:2px 9px;border-radius:4px;font-weight:700;font-size:10.5px">VALIDADO · v${versao}</span> por ${_hEsc(quem)}${quando ? ' em ' + new Date(quando).toLocaleDateString('pt-BR') : ''}`
+    : `<span style="background:#f9a825;color:#1c1c1e;padding:2px 9px;border-radius:4px;font-weight:700;font-size:10.5px">${completo ? 'RASCUNHO · NÃO VALIDADO' : 'INCOMPLETO'}${data.length ? ' · v' + versao : ''}</span> <span style="color:var(--tl)">o laudo HSE ${completo ? 'sai marcado “CRITÉRIO NÃO VALIDADO”' : 'não gera'} até a validação</span>`;
+  const inp = 'padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--tx);font-size:12px;box-sizing:border-box';
+  box.innerHTML = `
+    <div style="margin-bottom:12px;color:var(--tx)">${estado}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--bg2)">
+        <th style="padding:8px 10px;text-align:left;color:var(--tl);font-weight:600">Dimensão</th>
+        <th style="padding:8px 10px;text-align:left;color:var(--tl);font-weight:600">Severidade (S)</th>
+        <th style="padding:8px 10px;text-align:left;color:var(--tl);font-weight:600;width:55%">Possíveis danos (impresso no inventário)</th></tr></thead>
+      <tbody>${HSE_DIMS.map(d => {
+        const a = _hseCfgAtual[d.id] || {};
+        return `<tr><td style="padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600;color:var(--tx);white-space:nowrap">${_hEsc(d.nome)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid var(--border)"><select id="hsecfg-s-${d.id}" style="${inp}">${_HSE_SEV_OPC.map((t, i) => `<option value="${i || ''}"${Number(a.severidade) === i && i ? ' selected' : ''}>${i ? t : '— definir —'}</option>`).join('')}</select></td>
+          <td style="padding:6px 10px;border-bottom:1px solid var(--border)"><textarea id="hsecfg-d-${d.id}" rows="2" style="${inp};width:100%;resize:vertical;font-family:inherit">${_hEsc(a.danos || '')}</textarea></td></tr>`;
+      }).join('')}</tbody></table></div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;align-items:end">
+      <div><label style="display:block;font-size:11px;font-weight:600;color:var(--tl);margin-bottom:4px">Responsável pela validação (nome + registro profissional)</label>
+        <input id="hsecfg-resp" type="text" maxlength="200" value="${_hEsc(quem.split('; ')[0] || '').replace(/"/g, '&quot;')}" placeholder="Ex.: Maria Silva — CRP 00/00000" style="${inp};width:100%"></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--tx);cursor:pointer"><input id="hsecfg-validar" type="checkbox" style="margin-top:2px">
+        <span>Validar este critério (assinatura). Exige as 7 severidades e o responsável.</span></label>
+    </div>
+    <div style="margin-top:14px"><button class="btn btn-g" id="hsecfg-salvar" onclick="hseRiscosCfgSalvar()" style="font-size:12px">Salvar critério</button></div>`;
+}
+
+async function hseRiscosCfgSalvar() {
+  if (_roleAtual() !== 'super_admin') { toast('Apenas o super admin edita o critério de risco do HSE.', 'warn'); return; }
+  const validar = !!document.getElementById('hsecfg-validar')?.checked;
+  const resp = (document.getElementById('hsecfg-resp')?.value || '').trim();
+  const novo = HSE_DIMS.map(d => ({
+    dimensao: d.id,
+    severidade: parseInt(document.getElementById('hsecfg-s-' + d.id)?.value, 10) || null,
+    danos: (document.getElementById('hsecfg-d-' + d.id)?.value || '').trim() || null,
+  }));
+  if (validar) {
+    if (novo.some(r => !r.severidade)) { toast('Para validar, defina a severidade das 7 dimensões.', 'warn'); return; }
+    if (resp.length < 5) { toast('Informe o responsável pela validação (nome e registro profissional).', 'warn'); return; }
+  }
+  const antes = _hseCfgAtual || {};
+  const existe = Object.keys(antes).length > 0;
+  // linha que não existe e continua vazia NÃO é mudança (senão salvar o formulário em branco criaria 7 linhas vazias)
+  const mudou = novo.some(r => {
+    const a = antes[r.dimensao];
+    if (!a) return r.severidade != null || r.danos != null;
+    return a.severidade !== r.severidade || (a.danos || null) !== r.danos;
+  });
+  if (!mudou && !validar) { toast('Nada foi alterado.', ''); return; }
+  if (validar && !confirm('Confirma que ' + resp + ' validou a severidade das 7 dimensões?\nO laudo HSE passará a sair como validado.')) return;
+  const base = Math.max(1, ...Object.values(antes).map(a => a.versao || 1));
+  const versao = !existe ? 1 : (mudou ? base + 1 : base);
+  const agora = new Date().toISOString();
+  const rows = novo.map(r => ({
+    ...r, versao, atualizado_em: agora,
+    // validar assina o conjunto; mudar sem validar derruba a assinatura de todas as linhas
+    validado: validar ? true : (mudou ? false : antes[r.dimensao]?.validado === true),
+    validado_por: validar ? resp : (mudou ? null : (antes[r.dimensao]?.validado_por || null)),
+    validado_em: validar ? agora : (mudou ? null : (antes[r.dimensao]?.validado_em || null)),
+  }));
+  const btn = document.getElementById('hsecfg-salvar');
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await sbAdmin.from('hse_riscos_config').upsert(rows, { onConflict: 'dimensao' });
+    if (error) throw error;
+    toast(validar ? `Critério validado (v${versao}).` : `Rascunho salvo (v${versao}) — não validado.`, 'green');
+  } catch (e) {
+    toast('Erro ao salvar o critério: ' + (e?.message || e), 'warn');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+  hseRiscosCfgRender();
+}
+// ==== HSE (S8b-UI) END ====
 
 // ==== HSE (S8) BEGIN — laudo HSE: UM gerador para preview e PDF, e checagem pré-geração ====
 // O laudo do BS 8800 tem dois geradores independentes (renderLaudo e _buildLaudoHTML) que já divergiram
@@ -21484,6 +21597,7 @@ function goScreen(id, btn) {
           break;
         case 'gestao-ests':
           carregarESTs();
+          hseRiscosCfgRender();
           break;
         case 'est-perfil':
           preencherFormEstPerfil();
