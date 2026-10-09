@@ -4991,6 +4991,69 @@ function _seloLinkMetodologia(l) {
   return c ? ' ' + _seloMetodologia(c) : '';
 }
 
+// Metodologias presentes numa empresa: os ciclos dela + link sem ciclo (= BS 8800). Ordem fixa: BS, HSE.
+function _metodologiasDaEmpresa(ciclosEmp, linksEmp) {
+  const set = new Set();
+  (ciclosEmp || []).forEach(c => set.add(_cicloEhHSE(c) ? METODOLOGIA_HSE : METODOLOGIA_BS));
+  (linksEmp || []).forEach(l => { if (!l.ciclo_id) set.add(METODOLOGIA_BS); });
+  return [METODOLOGIA_BS, METODOLOGIA_HSE].filter(k => set.has(k));
+}
+// Selo(s) de metodologia de uma EMPRESA (Dashboard e Clientes). Sem HSE publicado no ambiente nada aparece:
+// o selo só tem sentido quando existe mais de um instrumento.
+function _seloEmpresaMetodologias(m) {
+  if (!_hseAtivo() || !m || !m.metodologias || !m.metodologias.length) return '';
+  const tag = k => k === METODOLOGIA_HSE
+    ? '<span class="tag tp" style="font-size:9px">HSE</span>'
+    : '<span class="tag tgr" style="font-size:9px">BS 8800</span>';
+  const tt = (m.respBS && m.respHSE)
+    ? ` title="Respostas: BS 8800 ${m.respBS} · HSE ${m.respHSE}. A adesão usa o instrumento com mais respostas (a mesma pessoa não conta duas vezes)."`
+    : '';
+  return `<span${tt} style="display:inline-flex;gap:4px;align-items:center">${m.metodologias.map(tag).join('')}</span>`;
+}
+
+// Trocar a metodologia de um ciclo que ainda não tem link nem resposta. O banco é a autoridade
+// (trigger tg_ciclo_metodologia_imutavel); a tela só evita oferecer o botão quando já há link carregado.
+function _cicloTemLink(cicloId) { return _links.some(l => l.ciclo_id === cicloId); }
+function _nomeCicloAuto(c, metod) {
+  // Só renomeia nomes gerados pelo sistema; nome editado à mão é preservado.
+  const mes = MES_NOME_CICLO[c.mes_referencia], ano = c.ano_referencia;
+  if (!mes || !ano) return c.nome;
+  const bs = `Avaliação — ${mes} ${ano}`, hse = `Avaliação HSE — ${mes} ${ano}`;
+  if (c.nome !== bs && c.nome !== hse) return c.nome;
+  return metod === METODOLOGIA_HSE ? hse : bs;
+}
+async function trocarMetodologiaCiclo(cicloId) {
+  const c = _ciclos.find(x => x.id === cicloId);
+  if (!c || !_hseAtivo()) return;
+  if (_cicloTemLink(cicloId)) { toast('Este ciclo já tem link: a metodologia não pode mais ser trocada. Crie um novo ciclo.', 'w'); renderCiclosModal(_cicloEmpresaId); return; }
+  const de = _cicloEhHSE(c) ? METODOLOGIA_HSE : METODOLOGIA_BS;
+  const para = de === METODOLOGIA_HSE ? METODOLOGIA_BS : METODOLOGIA_HSE;
+  const rot = k => k === METODOLOGIA_HSE ? 'HSE (ICAO-35)' : 'BS 8800';
+  if (!confirm(`Trocar a metodologia do ciclo "${c.nome}" de ${rot(de)} para ${rot(para)}?\n\nSó é possível enquanto o ciclo não tem link nem resposta.`)) return;
+  const nome = _nomeCicloAuto(c, para);
+  if (isDemoMode) {
+    c.metodologia = para; c.nome = nome;
+  } else {
+    try {
+      const { data, error } = await sbAdmin.from('ciclos').update({ metodologia: para, nome }).eq('id', cicloId).select('id,nome,metodologia').single();
+      if (error) throw error;
+      c.metodologia = data.metodologia; c.nome = data.nome;
+    } catch (e) {
+      const msg = String(e?.message || e);
+      toast(/metodologia_imutavel/.test(msg)
+        ? 'Este ciclo já tem link ou resposta: a metodologia não pode mais ser trocada. Crie um novo ciclo.'
+        : 'Erro ao trocar a metodologia: ' + msg, 'w');
+      renderCiclosModal(_cicloEmpresaId);
+      return;
+    }
+  }
+  popularSelectsEmpresas();
+  renderCiclosModal(_cicloEmpresaId);
+  renderTelaEmpresas();
+  if (typeof renderDashboard === 'function') renderDashboard();
+  toast(`Metodologia do ciclo alterada para ${rot(para)}.`, 'g');
+}
+
 // Telas que só leem BS 8800. Se o ciclo escolhido é HSE, explica em vez de mostrar "nenhuma resposta".
 // Devolve true quando bloqueou (o chamador deve dar return).
 function _guardaTelaBS(cicloId, panel, situacao) {
@@ -18171,7 +18234,7 @@ function renderDashboard() {
   // Adesão bruta da carteira: soma das respostas ÷ soma dos quadros importados.
   const ativas = metricas.filter(x => !x.m.inativa);
   const quadroTot = ativas.reduce((s, x) => s + x.m.quadro, 0);
-  const respComQuadro = ativas.filter(x => x.m.quadro > 0).reduce((s, x) => s + x.m.respTotal, 0);
+  const respComQuadro = ativas.filter(x => x.m.quadro > 0).reduce((s, x) => s + x.m.respAdesao, 0);
   const pctCart = quadroTot > 0 ? Math.round(respComQuadro / quadroTot * 100) : null;
 
   const setKpi = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -18281,7 +18344,7 @@ function _renderDashLista(metricas) {
     // Chip de adesão: só existe quando há quadro importado — sem denominador
     // "43 respostas" não diz nada sobre cobertura.
     const chipAd = m.quadro > 0
-      ? `<span title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} no quadro" style="font-size:10px;font-weight:700;color:${_gheCorAdesao(m.pctBruto).cor};background:${_gheCorAdesao(m.pctBruto).bg};border:1px solid ${_gheCorAdesao(m.pctBruto).cor};border-radius:4px;padding:1px 6px">${m.respTotal}/${m.quadro} · ${m.pctBruto}%</span>`
+      ? `<span title="Adesão bruta: ${m.respAdesao} respostas ÷ ${m.quadro} no quadro" style="font-size:10px;font-weight:700;color:${_gheCorAdesao(m.pctBruto).cor};background:${_gheCorAdesao(m.pctBruto).bg};border:1px solid ${_gheCorAdesao(m.pctBruto).cor};border-radius:4px;padding:1px 6px">${m.respAdesao}/${m.quadro} · ${m.pctBruto}%</span>`
       : `<span title="Sem quadro de funcionários importado — não há denominador para calcular adesão" style="font-size:10px;color:#6b7280">${m.respTotal} resp. · sem quadro</span>`;
     // Empresa inativa não está sendo cobrada — o alarme vermelho só confunde.
     const chipParado = m.inativa ? ''
@@ -18299,6 +18362,7 @@ function _renderDashLista(metricas) {
           </div>
           <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span class="tag ${st.tag}">${st.rotulo}</span>
+            ${_seloEmpresaMetodologias(m)}
             ${chipAd}
             ${chipParado}
             <span style="font-size:10px;color:#6b7280">${m.linksAtiv} link(s) ativo(s)</span>
@@ -18427,6 +18491,16 @@ function _calcMetricasEmpresa(emp) {
   // propósito (não apenas pausado/nunca ativado) — distingue de "Sem links".
   const finalizada = !linksAtiv && linksEmp.some(l => l.encerrado_em);
   const ciclosEmp = _ciclos.filter(c => c.empresa_id === emp.id);
+  // Respostas por instrumento (link sem ciclo = BS 8800). A adesão compara respostas de UM instrumento com o
+  // quadro: somar BS + HSE contaria a mesma pessoa duas vezes e passaria de 100%. Com um instrumento só,
+  // respAdesao === respTotal (comportamento histórico).
+  let respBS = 0, respHSE = 0;
+  linksEmp.forEach(l => {
+    if (l.ciclo_id && _metodologiaDoCiclo(l.ciclo_id) === METODOLOGIA_HSE) respHSE += (l.respostas || 0);
+    else respBS += (l.respostas || 0);
+  });
+  const respAdesao = Math.max(respBS, respHSE);
+  const metodologias = _metodologiasDaEmpresa(ciclosEmp, linksEmp);
   const nSetores  = (emp.setores || []).length;
   const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
   const codigo    = emp.numero_cliente ? `CLI-${String(emp.numero_cliente).padStart(3,'0')}` : '';
@@ -18437,14 +18511,14 @@ function _calcMetricasEmpresa(emp) {
   // entram aqui. O rótulo na UI diz "adesão bruta" para não recriar a
   // divergência de números de 2026-08-27.
   const quadro   = _headcountPorEmpresa?.[emp.id] || 0;
-  const pctBruto = quadro > 0 ? Math.round(respTotal / quadro * 100) : null;
+  const pctBruto = quadro > 0 ? Math.round(respAdesao / quadro * 100) : null;
 
   // Última resposta entre todos os links da empresa
   let ultima = null;
   linksEmp.forEach(l => { if (l.ultimaResposta && (!ultima || l.ultimaResposta > ultima)) ultima = l.ultimaResposta; });
   const diasParado = linksAtiv ? _diasDesde(ultima) : null;
 
-  const m = { linksEmp, respTotal, linksAtiv, finalizada, ciclosEmp, nSetores, nomeEsc, codigo,
+  const m = { linksEmp, respTotal, respBS, respHSE, respAdesao, metodologias, linksAtiv, finalizada, ciclosEmp, nSetores, nomeEsc, codigo,
               inativa, quadro, pctBruto, ultima, diasParado };
   const st = _statusEmpresa(m);
   m.st = st;
@@ -18460,7 +18534,7 @@ function _urgenciaEmpresa(m) {
   if (m.inativa || !m.linksAtiv) return -1;         // nada a cobrar
   if (m.st.chave === 'completa') return 0;          // já bateu a meta
   const alvo   = m.quadro > 0 ? Math.ceil(m.quadro * AD_META_PCT / 100) : 0;
-  const faltam = Math.max(0, alvo - m.respTotal);
+  const faltam = Math.max(0, alvo - m.respAdesao);
   const dias   = m.diasParado === null ? 30 : Math.min(m.diasParado, 60);
   // Pendências pesam mais que tempo parado, mas empresa sem quadro importado
   // ainda pontua pelo tempo — senão sumiria da lista de urgência.
@@ -18550,7 +18624,8 @@ function renderTelaEmpresas() {
   if (_empresasViewMode === 'lista') { _renderEmpresasLista(filtradas); return; }
 
   grid.innerHTML = filtradas.map(emp => {
-    const { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo, status, statusBg, statusColor } = _calcMetricasEmpresa(emp);
+    const _mEmp = _calcMetricasEmpresa(emp);
+    const { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo, status, statusBg, statusColor } = _mEmp;
 
     const avatarHtml = emp.logo_base64
       ? `<div style="width:40px;height:40px;border-radius:8px;background:white;border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:3px">
@@ -18569,6 +18644,7 @@ function renderTelaEmpresas() {
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
                 ${codigo ? `<span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;flex-shrink:0">${codigo}</span>` : ''}
+                ${_seloEmpresaMetodologias(_mEmp)}
               </div>
               <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
             </div>
@@ -18580,7 +18656,7 @@ function renderTelaEmpresas() {
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
           </div>
-          <div title="Respostas recebidas. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
+          <div title="Respostas recebidas${_mEmp.respBS && _mEmp.respHSE ? ` (BS 8800 ${_mEmp.respBS} · HSE ${_mEmp.respHSE})` : ''}. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
           </div>
@@ -18638,10 +18714,10 @@ function _empBarraAdesao(emp) {
   }
   const { cor } = _gheCorAdesao(m.pctBruto);
   const larg = Math.min(100, m.pctBruto);
-  return `<div style="margin-bottom:8px" title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} funcionários no quadro. Inclui respostas com setor/função fora do GHE.">
+  return `<div style="margin-bottom:8px" title="Adesão bruta: ${m.respAdesao} respostas ÷ ${m.quadro} funcionários no quadro. Inclui respostas com setor/função fora do GHE.">
     <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:10px;margin-bottom:3px">
       <span style="color:var(--tm);font-weight:600">Adesão</span>
-      <span style="color:${cor};font-weight:700">${m.respTotal} / ${m.quadro} · ${m.pctBruto}%</span>
+      <span style="color:${cor};font-weight:700">${m.respAdesao} / ${m.quadro} · ${m.pctBruto}%</span>
     </div>
     <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
       <div style="height:100%;width:${larg}%;background:${cor}"></div>
@@ -18674,18 +18750,19 @@ function _renderEmpresasLista(filtradas) {
   const btn = (title, svg, onclick, extraStyle) => `<button class="btn btn-ghost" title="${title}" style="padding:5px 7px;${extraStyle||''}" onclick="${onclick}">${svg}</button>`;
 
   lista.innerHTML = filtradas.map(emp => {
-    const { linksAtiv, respTotal, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp, quadro } = _calcMetricasEmpresa(emp);
+    const _mEmp = _calcMetricasEmpresa(emp);
+    const { linksAtiv, respTotal, respAdesao, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp, quadro } = _mEmp;
 
     return `<div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="emp-row-${emp.id}">
       <span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;min-width:56px;text-align:center">${codigo||'—'}</span>
       <div style="min-width:0;flex:1 1 220px">
-        <div style="font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome} ${_seloEmpresaMetodologias(_mEmp)}</div>
         <div style="font-size:11px;color:var(--tl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.cnpj||'Sem CNPJ'}</div>
       </div>
       <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
       <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
         <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
-        <span title="Respostas recebidas ÷ quadro de funcionários (adesão bruta). A adesão classificada fica na tela Adesão."><strong>${respTotal}</strong>${quadro ? ` / ${quadro}` : ''} resp.</span>
+        <span title="Respostas recebidas ÷ quadro de funcionários (adesão bruta, do instrumento com mais respostas). A adesão classificada fica na tela Adesão."><strong>${quadro ? respAdesao : respTotal}</strong>${quadro ? ` / ${quadro}` : ''} resp.</span>
         <span title="Setores"><strong>${nSetores}</strong> set.</span>
         <span title="Ciclos"><strong>${ciclosEmp.length}</strong> cic.</span>
       </div>
@@ -18774,6 +18851,9 @@ function renderCiclosModal(empresaId) {
         <select onchange="atualizarTipoCiclo('${c.id}',this.value)" style="margin-top:5px;font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;color:var(--tm)">
           ${TIPOS_CICLO.map(t => `<option value="${t}"${t===tipoAtual?' selected':''}>${t}</option>`).join('')}
         </select>
+        ${_hseAtivo() ? (_cicloTemLink(c.id)
+          ? '<span style="font-size:9px;color:var(--tl);margin-left:6px" title="A metodologia não muda depois que o ciclo tem link ou resposta. Para trocar, crie um novo ciclo.">🔒 metodologia travada</span>'
+          : `<button onclick="trocarMetodologiaCiclo('${c.id}')" style="margin-left:6px;font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:4px;background:white;color:var(--tm);cursor:pointer" title="Enquanto o ciclo não tem link nem resposta, a metodologia pode ser trocada.">⇄ Trocar para ${_cicloEhHSE(c) ? 'BS 8800' : 'HSE'}</button>`) : ''}
       </div>
       <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px;flex-shrink:0" title="Remover">&times;</button>
     </div>`;

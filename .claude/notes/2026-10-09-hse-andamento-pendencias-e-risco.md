@@ -108,7 +108,7 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | S1/S2 em PROD | Aplicar migration e RPC **antes** de promover o formulário (senão todo link com ciclo falha) |
 | S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
 | S5 | ~~Testar formulário antigo, fila offline legada e erro de boot~~ — feito em 2026-10-09, ver §5.5 |
-| S6 | Trocar a metodologia **pela interface** antes do 1º link (o banco já permite); selo no Dashboard e em Clientes |
+| S6 | ~~Trocar a metodologia pela interface; selo no Dashboard e em Clientes~~ — feito em 2026-10-09, ver §5.7 |
 | S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; ~~tela para SST cadastrar severidade~~ (feita em 2026-10-09, ver §5.6) |
 | S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
 | S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
@@ -132,6 +132,13 @@ Card **"Critério de risco do HSE"** em **Gestão de ESTs** (`#hse-riscos-card`;
 - Testes: harness com `sbAdmin` fake que imita o CHECK (13 cenários, 0 violações) + **banco real de DEV** com `set_config`/ROLLBACK: super_admin grava no formato da tela; admin é barrado pela RLS (UPSERT) e não altera nada (UPDATE); CHECK `hse_riscos_validado_completo` barra "validado sem responsável"; DEV voltou intacto.
 - **Quem valida de fato:** o super_admin digita o nome/registro de quem assinou — o sistema registra a declaração, não autentica o profissional de SST. A assinatura real continua sendo fora do sistema (por escrito).
 - Não testado: renderização visual (login real no DEV) e o fluxo logado de ponta a ponta.
+
+### 5.7 Troca de metodologia e selos por empresa (2026-10-09)
+- **Trocar metodologia pela interface** (modal Ciclos): botão "⇄ Trocar para HSE/BS 8800" só enquanto o ciclo não tem link carregado; com link aparece "🔒 metodologia travada". O banco é a autoridade (trigger `tg_ciclo_metodologia_imutavel`): se outra sessão criou link/resposta no meio, a recusa vira mensagem clara e o estado local não muda. Renomeia **só** nomes gerados pelo sistema (`Avaliação — Mês Ano` ↔ `Avaliação HSE — Mês Ano`); nome editado à mão é preservado. Só existe com HSE publicado e módulo `hse` ligado.
+- **Selos por empresa** (Dashboard, grade e lista de Clientes): `BS 8800` e/ou `HSE` conforme os ciclos da empresa (+ link sem ciclo = BS). Sem HSE publicado nada aparece (comportamento anterior idêntico).
+- **Bug de números evitado:** a "adesão bruta" dividia a **soma** das respostas de todos os links pelo quadro. Com um ciclo BS e outro HSE na mesma empresa isso contava a mesma pessoa duas vezes (80 BS + 60 HSE = 140/100). Agora `m.respAdesao` = respostas do instrumento com **mais** respostas (`max(BS, HSE)`); com um instrumento só, é igual a `respTotal` (nada muda). Vale para chip do Dashboard, barra de Clientes, urgência e KPI da carteira (no teste: 83% → 63%). `respTotal` continua sendo o total (tile "Respostas", status "N resp.") e o tooltip mostra a divisão BS/HSE.
+- **Não alterado, vale revisar:** a tela **Adesão** (`calcRepresentatividade`) e o painel por link seguem com a lógica própria; não verifiquei como elas tratam empresa com os dois instrumentos.
+- Testes: banco real de DEV (admin troca sem link; trigger barra com link; viewer 0 linhas; ROLLBACK) + harness com 13 verificações de UI e números. Não testado: sessão logada real.
 
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
