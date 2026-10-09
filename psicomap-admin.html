@@ -18016,7 +18016,12 @@ async function removerCiclo(id) {
   if (!confirm('Remover este ciclo?')) return;
   if (!isDemoMode && sbAdmin) {
     const { error } = await sbAdmin.from('ciclos').delete().eq('id', id);
-    if (error) { toast('Erro: ' + error.message, 'w'); return; }
+    if (error) {
+      // 23503 = FK violada: ciclo tem respostas ou links (migration_ciclos_protecao_exclusao.sql)
+      if (error.code === '23503') toast('Este ciclo tem respostas ou links de coleta e não pode ser removido.', 'w');
+      else toast('Erro: ' + error.message, 'w');
+      return;
+    }
   }
   _ciclos = _ciclos.filter(c => c.id !== id);
   popularSelectsEmpresas();
