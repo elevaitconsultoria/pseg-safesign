@@ -206,12 +206,12 @@ Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 ·
 
 **Ordem para ir a PROD** (cada passo só depois do anterior verificado):
 1. Usuário confirma B12. 2. `git fetch` e fast-forward `develop ← main` (publica o DEV). 3. Capturar o golden master do BS 8800 (precisa do usuário logado no admin de DEV).
-4. Aplicar em PROD: `migration_metodologia_hse_icao35.sql` → `migration_obter_instrumento_link.sql` → **criar** `migration_salvar_resposta_hse_prod.sql` (modelo: o `_dev`, mas `session_id` é **uuid** e o comparativo é `session_id=p_session_id` sem `::text`; só 2 overloads: revogar o de 9 args) → `migration_hse_riscos_config.sql` (vazia). Testar cada um (`SET LOCAL ROLE anon`, `/validar-formulario` com link `is_teste`).
+4. Aplicar em PROD: `migration_metodologia_hse_icao35.sql` → `migration_obter_instrumento_link.sql` → `migration_salvar_resposta_hse_prod.sql` (**já escrita em 2026-10-09, NÃO aplicada**; gerada do `_dev` com `session_id` uuid e REVOKE só do overload de 9 args; hash da função viva em PROD conferido = baseline; reconferir antes de aplicar) → `migration_hse_riscos_config.sql` (vazia). Testar cada um (`SET LOCAL ROLE anon`, `/validar-formulario` com link `is_teste`).
 5. Só então promover o app. Sem o seed validado o HSE fica invisível em PROD. 6. Seed validado (texto B1 + severidade validada por SST) → teste de aceite → piloto.
 
 **Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
 
-**Pendências técnicas, em ordem de valor:** (1) arquivo S3 de PROD; (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) tela para SST cadastrar `hse_riscos_config`;
+**Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) tela para SST cadastrar `hse_riscos_config`;
 (4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) PR de hardening do `build.js`.
 
 **Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.
