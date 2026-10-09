@@ -103,7 +103,7 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 ### 5.2 Técnicas (eu posso fazer)
 | Etapa | Pendência |
 |---|---|
-| S0 | Fast-forward `develop`; dataset formal de teste; **golden master** do BS 8800; PR de hardening do `build.js` |
+| S0 | Fast-forward `develop`; dataset formal de teste; **golden master** do BS 8800; ~~PR de hardening do `build.js`~~ (feito, §5.8) |
 | S3 | **`migration_salvar_resposta_hse_prod.sql`** (arquivo próprio: `session_id` uuid, 2 overloads) e teste em PROD com link `is_teste` |
 | S1/S2 em PROD | Aplicar migration e RPC **antes** de promover o formulário (senão todo link com ciclo falha) |
 | S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
@@ -139,6 +139,13 @@ Card **"Critério de risco do HSE"** em **Gestão de ESTs** (`#hse-riscos-card`;
 - **Bug de números evitado:** a "adesão bruta" dividia a **soma** das respostas de todos os links pelo quadro. Com um ciclo BS e outro HSE na mesma empresa isso contava a mesma pessoa duas vezes (80 BS + 60 HSE = 140/100). Agora `m.respAdesao` = respostas do instrumento com **mais** respostas (`max(BS, HSE)`); com um instrumento só, é igual a `respTotal` (nada muda). Vale para chip do Dashboard, barra de Clientes, urgência e KPI da carteira (no teste: 83% → 63%). `respTotal` continua sendo o total (tile "Respostas", status "N resp.") e o tooltip mostra a divisão BS/HSE.
 - **Não alterado, vale revisar:** a tela **Adesão** (`calcRepresentatividade`) e o painel por link seguem com a lógica própria; não verifiquei como elas tratam empresa com os dois instrumentos.
 - Testes: banco real de DEV (admin troca sem link; trigger barra com link; viewer 0 linhas; ROLLBACK) + harness com 13 verificações de UI e números. Não testado: sessão logada real.
+
+### 5.8 Hardening do `build.js` (2026-10-09)
+Risco R15 do plano: o formulário público tem as credenciais de PROD literais e o build as troca por regex; um regex que não casa devolve o texto intacto **sem erro** (DEV serviria o banco de PROD, ou o inverso).
+- Cada troca é **contada** e o resultado **conferido** (ver CLAUDE.md, gotchas). Validações novas: `SUPA_ANON` = JWT `role=anon` do mesmo projeto da URL; cruzamento DEV↔PROD quando `APP_ENV` é explícito; Stripe test/live × tipo do link; `_redirects`/`_headers` obrigatórios; `</body>` para o banner de DEV.
+- **Saída idêntica:** build real com o `.env` produz os 6 arquivos byte a byte iguais ao anterior.
+- **Teste:** `node _dev/check-build.js` (21 cenários). Provado contra o `build.js` antigo (`CHECK_BUILD_ROOT`): ele falha 16 deles — o teste não é vazio.
+- **Atenção no deploy:** (1) o aviso de Stripe vazio já aparece no `.env` local — se no Cloudflare as variáveis `STRIPE_*` também estão vazias, o build **grava `""` e descarta os links de teste do código**; confirmar no painel. (2) Se algum ambiente do Cloudflare usa `APP_ENV` apontando para o banco do outro lado de propósito, o build passa a falhar (é o objetivo, mas confira antes de promover). (3) `package.json` ganhou `check:build`.
 
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
@@ -237,7 +244,7 @@ Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 ·
 **Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
 
 **Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) ~~tela para SST cadastrar `hse_riscos_config`~~ (feita, §5.6);
-(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) PR de hardening do `build.js`.
+(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) ~~PR de hardening do `build.js`~~ (feito, §5.8).
 
 **Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.
 Isso prova lógica e DOM, **não** o carregamento real com RLS: o usuário precisa abrir o admin de DEV logado e percorrer ciclo HSE → responder → analisar → laudo.

@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node build.js",
     "build:dev": "APP_ENV=development node build.js",
-    "build:prod": "APP_ENV=production node build.js"
+    "build:prod": "APP_ENV=production node build.js",
+    "check:build": "node _dev/check-build.js"
   },
   "engines": {
     "node": ">=18"

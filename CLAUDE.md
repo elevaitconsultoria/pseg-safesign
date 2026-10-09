@@ -527,9 +527,17 @@ visitada continuariam valendo fora do modo suporte.
 - **Textos de questões hardcoded em dois lugares**: `QS_OFICIAIS` (admin, ln ~3989) e `BLOCOS`
   (forms, ln ~30). Qualquer atualização de texto **deve ser feita nos dois arquivos** — nunca
   só em um. A tabela `questoes.texto` existe mas não é fonte de verdade do admin.
-- **`psicomap-forms.html` tem credenciais PROD hardcoded** (linhas 332–333). O `build.js` substitui
-  via regex — se o código ao redor mudar, o regex falha silenciosamente sem erro. O admin usa
-  placeholders seguros (`__SUPA_URL__`); o forms não. Cuidado ao reformatar essas linhas.
+- **`psicomap-forms.html` tem credenciais PROD hardcoded** (`const SUPABASE_URL`/`SUPABASE_ANON`, ~ln 350).
+  O `build.js` as substitui por regex. O admin usa placeholders (`__SUPA_URL__`); o forms não. Cuidado ao
+  reformatar essas linhas. **Desde 2026-10-09 o build não falha mais em silêncio**: cada substituição é
+  contada (forms: exatamente 1 URL e 1 chave; admin: placeholders e `STRIPE_PAYMENT_LINKS`) e o resultado é
+  conferido (sem placeholder sobrando, nenhuma URL Supabase de outro projeto). Também valida que `SUPA_ANON`
+  é um JWT `role=anon` do **mesmo projeto** da `SUPA_URL` (barra `service_role` no navegador), que `APP_ENV`
+  declarado não aponta para o banco do outro ambiente, e que o modo do Stripe bate com o tipo do link
+  (`/test_`). `_redirects`/`_headers` ausentes derrubam o build. Se o formato dessas linhas mudar, o build
+  quebra com a mensagem dizendo qual regex ajustar — é o comportamento desejado. Verificar com
+  `node _dev/check-build.js` (21 cenários, sem rede nem `.env`). Um build sem `APP_ENV` (preview) assume
+  `production` mas **não** faz o cruzamento DEV↔PROD.
 - **Hard delete sem soft-delete**: `excluirEmpresa()` (ln ~4996) é irreversível com CASCADE.
   Dados apagados não são recuperáveis (caso real: ELEVA IT CONSULTORIA 2026-07-22).
 - **`_redirects` e `_headers` devem estar em `dist/`**: o Cloudflare Pages serve a partir de
