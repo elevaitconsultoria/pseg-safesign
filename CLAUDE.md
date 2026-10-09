@@ -437,6 +437,9 @@ uma ideia de "combo" de metodologias, em
 >   `migration_salvar_resposta_hse_dev.sql` (session_id `text`, 3 overloads) e `..._prod.sql` (session_id `uuid`,
 >   2 overloads) — nunca aplicar um no outro.
 > - O filtro `BETWEEN 1 AND 4` do ramo BS foi **mantido** (endurecê-lo é decisão separada).
+> - **n mínimo de anonimato** (`N_MIN_ANONIMATO`, hoje **5, PROVISÓRIO**, 0 desliga): abaixo dele nenhum recorte BS 8800 nem HSE exibe resultado
+>   (Resultados, Gráficos, Plano, Comparativo e Laudo; grupo pequeno no laudo sai omitido com nota). Nunca ler "oculto" como "sem risco".
+>   Não cobertos: Auditoria por respondente, `exportarCSV` e k-anonimato de filtros combinados (ver `.claude/notes/2026-10-09-hse-andamento-pendencias-e-risco.md` §5.10).
 > - Backup/restauração: `RESTAURACAO_BACKUP.md` tem passos próprios para HSE (3-HSE/4-HSE); os passos BS filtram por metodologia.
 > - Texto dos itens é `[RASCUNHO]` até B1 (texto validado + permissão dos autores da ICAO); a chave geral é `questionarios.publicado`.
 

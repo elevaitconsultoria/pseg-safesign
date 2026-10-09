@@ -155,6 +155,16 @@ Risco R15 do plano: o formulário público tem as credenciais de PROD literais e
 - **Cautela ao usar:** são organizações **britânicas** que escolheram a ferramenta (o relatório diz que não se pode inferir bom/ruim desempenho) e vários grupos são pequenos (Healthcare 242, Energy 252, Retail 263 respondentes; BPO 297 em 3 organizações). **Nenhum setor é "Brasil"** — comparar empresa brasileira com setor britânico precisa ser declarado no laudo.
 - **Correção às notas antigas:** o relatório traz médias **por setor com Min/Mean/Max entre organizações**; não há percentis por setor, e o grupo "Public Sector" (26.261) pesa 66% do total geral de 39.484.
 
+### 5.10 n mínimo também no BS 8800 (2026-10-09) — valor PROVISÓRIO
+`N_MIN_ANONIMATO = 5` (uma constante só, em `psicomap-admin.html`; `HSE_N_MIN_PROVISORIO` virou alias; **0 desliga** = rollback). **O valor definitivo continua sendo seu e do jurídico** — 5 é o que o HSE já usava e foi mantido para não haver dois números.
+**Isto muda de propósito o que o BS 8800 mostra hoje** (a única mudança intencional de comportamento do plano). Regra: abaixo do mínimo o recorte **não exibe resultado** e diz por quê; "oculto" nunca pode parecer "sem risco".
+- **Resultados** (Gráfica, Risco, Questão): cada segmento < 5 vira cartão "Resultado oculto: N respondentes…"; vale também para "Geral" (total < 5 = tudo oculto).
+- **Gráficos** e **Plano de Ação**: recorte inteiro < 5 ⇒ mensagem no lugar. **Comparativo**: ciclo < 5 sai do comparativo, com toast/nota dizendo qual.
+- **Laudo**: total < 5 **bloqueia** (preview e PDF); grupo < 5 fica **omitido com nota** em Resultados, Análise gráfica, Gráficos e Ações — e o PDF pergunta antes (`confirm` listando os grupos). Sem isso a seção de ações cairia em "todos os fatores IRRELEVANTE/BAIXO" (falsa tranquilidade).
+- **Efeito prático a avisar aos consultores:** durante a coleta, enquanto o recorte tem < 5 respostas, a análise em tempo real não mostra nada (antes mostrava com 1).
+- Testes (harness, dados sintéticos A=3 / B=8): 3 views × segregado/consolidado, limite exato (5 aparece, 4 oculta), PDF com 4 omissões do grupo pequeno e nenhuma frase de tranquilidade, preview, Gráficos, Plano, Comparativo, `gerarLaudoPDF` (confirm + bloqueio).
+- **NÃO coberto — decisão sua:** (a) **Auditoria** mostra `session_id`/dispositivo por respondente a consultores e admins (conflita com a promessa de anonimato do modal LGPD) — a política de acesso é decisão de produto; (b) **`exportarCSV`** exporta uma linha por respondente (setor/função/escolaridade + respostas); (c) **k-anonimato do cruzamento** setor × função × escolaridade (filtros combinados podem fatiar um recorte até n=1 sem passar pelos agrupadores — o mínimo vale sobre o recorte final, mas um recorte de 5 com filtro por função raro ainda identifica); (d) Adesão só conta (não revela respostas).
+
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
 CNAE e grau de risco em `empresas`, vários responsáveis técnicos no laudo, reavaliação derivada do resultado, seções editáveis do laudo HSE, combo.
@@ -252,7 +262,7 @@ Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 ·
 **Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
 
 **Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) ~~tela para SST cadastrar `hse_riscos_config`~~ (feita, §5.6);
-(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) ~~13 médias setoriais do benchmark~~ (feito, §5.9); (8) ~~PR de hardening do `build.js`~~ (feito, §5.8).
+(4) ~~`_nMinimo` também no BS 8800~~ (feito com valor PROVISÓRIO 5, §5.10); (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) ~~13 médias setoriais do benchmark~~ (feito, §5.9); (8) ~~PR de hardening do `build.js`~~ (feito, §5.8).
 
 **Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.
 Isso prova lógica e DOM, **não** o carregamento real com RLS: o usuário precisa abrir o admin de DEV logado e percorrer ciclo HSE → responder → analisar → laudo.

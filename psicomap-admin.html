@@ -4935,6 +4935,30 @@ const MODULO_POR_TELA = {
   auditoria:'auditoria', graficos:'graficos', links:'links', adesao:'adesao',
 };
 
+// ==== N MÍNIMO (anonimato) BEGIN — vale para BS 8800 e HSE ====
+// Um resultado agregado de poucas pessoas identifica quem respondeu (e o formulário promete anonimato).
+// Abaixo deste número o recorte NÃO exibe resultado: some o card/seção e aparece o motivo. "Oculto" nunca
+// pode ser lido como "sem risco" — por isso toda saída que oculta diz que ocultou e por quê.
+// ⚠ VALOR PROVISÓRIO (5): o definitivo é decisão do usuário/jurídico. É o ÚNICO lugar a mudar; 0 desliga
+// (rollback). O HSE já usava 5 (HSE_N_MIN_PROVISORIO é alias desta constante).
+const N_MIN_ANONIMATO = 5;
+function _abaixoDoMinimo(n) { return N_MIN_ANONIMATO > 0 && n < N_MIN_ANONIMATO; }
+function _textoOculto(n) { return `${n} respondente${n === 1 ? '' : 's'}, abaixo do mínimo de ${N_MIN_ANONIMATO} para preservar o anonimato`; }
+function _rotuloRecorte(label) {
+  if (label) return label;
+  return window._segMode === 'consolidado' ? 'Todos os setores filtrados' : 'Setor não informado';
+}
+// Tela (Resultados): cartão no lugar do bloco omitido.
+function _ocultoCardHTML(label, n) {
+  return `<div style="margin-bottom:24px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:8px;padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);border-radius:0 6px 6px 0">${_esc(_rotuloRecorte(label))}</div>
+    <div class="alert alert-y">Resultado oculto: ${_textoOculto(n)}. Use uma segmentação mais ampla (Geral ou Agrupamento).</div></div>`;
+}
+// Laudo (preview e PDF): nota no lugar da seção omitida.
+function _omitidoLaudoHTML(n) {
+  return `<p style="color:#6b7280;font-size:11px;margin-bottom:14px">Resultado omitido: ${_textoOculto(n)}. Este recorte não deve ser lido como ausência de risco.</p>`;
+}
+// ==== N MÍNIMO (anonimato) END ====
+
 // ==== HSE BEGIN — metodologia por ciclo (plano: .claude/notes/2026-10-08-plano-implantacao-hse.md) ====
 // A metodologia é propriedade do CICLO. Ciclo sem o campo, link sem ciclo e ambiente sem a migration
 // = BS 8800 (comportamento histórico). Os motores e o loader do BS 8800 NÃO são tocados: respostas HSE
@@ -5103,7 +5127,7 @@ const HSE_ESCALA_MAX = 5;
 // PROVISÓRIO: o valor definitivo do n mínimo é decisão do usuário/jurídico (etapa S9, vale também para o
 // BS 8800). Até lá, o HSE já NÃO exibe resultado de recorte com menos respondentes que isto — evita repetir
 // o erro de relatórios que imprimem item a item de 1 pessoa. Trocar só esta constante.
-const HSE_N_MIN_PROVISORIO = 5;
+const HSE_N_MIN_PROVISORIO = N_MIN_ANONIMATO;
 const HSE_DIMS = [
   { id:'DEMANDS',         nome:'Demandas' },
   { id:'CONTROL',         nome:'Controle' },
@@ -8722,6 +8746,7 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
     if (!linhasSetor.length) return;
+    if (_abaixoDoMinimo(linhasSetor.length)) { html += _ocultoCardHTML(label, linhasSetor.length); return; }
 
     const fatores = calcFatores(linhasSetor);
     const resultado = fatores
@@ -8841,6 +8866,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
   segmentos.forEach(({label, linhas}) => {
     const linhasSetor = linhas;
     if (!linhasSetor.length) return;
+    if (_abaixoDoMinimo(linhasSetor.length)) { html += _ocultoCardHTML(label, linhasSetor.length); return; }
 
     const todosRiscos = calcFatores(linhasSetor);
     const resultado = todosRiscos
@@ -8917,6 +8943,7 @@ function renderViewQuestao({grupos, filtrado, setoresAtivos}) {
   grupos.forEach(grupo => {
     const linhas = _linhasDoGrupo(grupo, filtrado);
     if (!linhas.length) return;
+    if (_abaixoDoMinimo(linhas.length)) { html += _ocultoCardHTML(grupo.nome, linhas.length); return; }
     const distQs = calcDistribuicaoQuestoes(linhas);
     if (!distQs.length) return;
 
@@ -13834,6 +13861,10 @@ async function renderGraficos() {
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
     return;
   }
+  if (_abaixoDoMinimo(linhas.length)) {
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Resultado oculto: ${_textoOculto(linhas.length)}. Amplie os filtros (mais setores/ciclos) para ver os gráficos.</div></div>`;
+    return;
+  }
   if (!grafBlocosVisiveis.size) {
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Selecione ao menos um bloco nos filtros.</div></div>`;
     return;
@@ -15530,6 +15561,10 @@ async function renderLaudo() {
   const hoje    = _laudoDataEmissao();
 
   if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
+  if (_abaixoDoMinimo(linhas.length)) {
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Laudo bloqueado: ${_textoOculto(linhas.length)}. Amplie os filtros (setores/ciclo) para gerar o documento.</div></div>`;
+    return;
+  }
 
   const fatores  = calcFatores(linhas);
   // Fonte única: antes esta linha era sempre agruparPorGrupos, e as seções de análise de risco
@@ -15630,6 +15665,10 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
     _gruposPreview.forEach(grupo => {
       const lSetor  = _linhasDoGrupo(grupo, linhas);
       if (!lSetor.length) return;
+      if (_abaixoDoMinimo(lSetor.length)) {
+        html += `<div class="laudo-section"><div class="laudo-sec-title">Resultados — ${grupo.nome ? _esc(grupo.nome) : 'Setor não informado'}</div>${_omitidoLaudoHTML(lSetor.length)}</div>`;
+        return;
+      }
       const fSetor  = calcFatores(lSetor)
         .filter(f => f.nivel !== 'IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b) => NIVEIS_ORDER.indexOf(b.nivel) - NIVEIS_ORDER.indexOf(a.nivel));
@@ -15729,6 +15768,10 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
+      if (_abaixoDoMinimo(lGrupo.length)) {
+        html += `<div class="laudo-section"><div class="laudo-sec-title">Análise gráfica por fator de risco — ${_esc(grupo.nome || 'Setor não informado')}</div>${_omitidoLaudoHTML(lGrupo.length)}</div>`;
+        return;
+      }
       // Mesmo recorte do PDF: IRRELEVANTE fora (o preview mostrava, o PDF não).
       const fatores = calcFatores(lGrupo)
         .filter(f => f && f.nivel !== 'IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)));
@@ -15814,6 +15857,10 @@ ${_laudoBlocoWrap('metodologia.intro', _laudoTexto('metodologia.intro'))}
     grupos.forEach(grupo => {
       const lGrupo = _linhasDoGrupo(grupo, linhas);
       if (!lGrupo.length) return;
+      if (_abaixoDoMinimo(lGrupo.length)) {   // sem isto cairia em "todos os fatores IRRELEVANTE/BAIXO" — falsa tranquilidade
+        html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${_esc(grupo.nome || 'Setor não informado')}</div>${_omitidoLaudoHTML(lGrupo.length)}</div>`;
+        return;
+      }
       const fGrupo = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NIVEIS_ORDER);
       if (!fGrupo.length) {
         html += `<div class="laudo-section"><div class="laudo-sec-title">Ações recomendadas — ${grupo.nome}</div>
@@ -16085,6 +16132,10 @@ tr:last-child td{border-bottom:none}
   let resultadosHTML = '';
   gruposLaudo.forEach(grupo => {
     const lS = _linhasDoGrupo(grupo, linhas);
+    if (lS.length && _abaixoDoMinimo(lS.length)) {
+      resultadosHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>${_omitidoLaudoHTML(lS.length)}`;
+      return;
+    }
     const fS = calcFatores(lS).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
       .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
     if (!fS.length) return;
@@ -16148,6 +16199,10 @@ tr:last-child td{border-bottom:none}
     gruposLaudo.forEach(grupo => {
       const linhasGrupo = _linhasDoGrupo(grupo, linhas);
       if (!linhasGrupo.length) return;
+      if (_abaixoDoMinimo(linhasGrupo.length)) {
+        graficosHTML += `<div class="sec-title sub">${e(grupo.nome || 'Setor não informado')}</div>${_omitidoLaudoHTML(linhasGrupo.length)}`;
+        return;
+      }
       const dist = calcDistribuicaoQuestoes(_normalizeLinhasGraficos(linhasGrupo));
       if (gruposLaudo.length > 1) {
         graficosHTML += `<div class="sec-title sub">${e(grupo.nome)}</div>`;
@@ -16163,6 +16218,11 @@ tr:last-child td{border-bottom:none}
   let acoesHTML = '';
   if (laudoSecoesAtivas.has('acoes')) {
     gruposLaudo.forEach(grupo => {
+      const _nGrp = _linhasDoGrupo(grupo, linhas).length;
+      if (_nGrp && _abaixoDoMinimo(_nGrp)) {
+        acoesHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>${_omitidoLaudoHTML(_nGrp)}`;
+        return;
+      }
       const itens = _laudoAcoesDoGrupo(grupo, linhas, niveisLd, NORDEM);
       if (!itens.length) return;
       acoesHTML += `<div class="sec-title setor">${grupo.nome ? e(grupo.nome) : '<em style="font-weight:400;opacity:.75">Setor não informado</em>'}</div>`;
@@ -16248,6 +16308,10 @@ tr:last-child td{border-bottom:none}
     gruposLaudo.forEach(grupo => {
       const linhasGrupo = _linhasDoGrupo(grupo, linhas);
       if (!linhasGrupo.length) return;
+      if (_abaixoDoMinimo(linhasGrupo.length)) {
+        corposAR += `<div class="sec-title sub">${e(grupo.nome || 'Setor não informado')}</div>${_omitidoLaudoHTML(linhasGrupo.length)}`;
+        return;
+      }
       const fatoresGrupo = calcFatores(linhasGrupo).filter(f=>f.nivel!=='IRRELEVANTE' && (!niveisLd.length || niveisLd.includes(f.nivel)))
         .sort((a,b)=>NORDEM.indexOf(b.nivel)-NORDEM.indexOf(a.nivel));
       if (gruposLaudo.length > 1) {
@@ -16493,6 +16557,16 @@ async function gerarLaudoPDF() {
     );
 
     if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+    if (_abaixoDoMinimo(linhas.length)) { win.close(); toast(`Laudo bloqueado: ${_textoOculto(linhas.length)}. Amplie os filtros.`, 'w', 6000); return; }
+    {   // Grupos pequenos saem OMITIDOS (com nota) — ninguém deve descobrir só no PDF.
+      const _peq = _gruposPorGranularidade(linhas, _granularidadeLaudo())
+        .map(g => ({ nome: g.nome || 'Setor não informado', n: _linhasDoGrupo(g, linhas).length }))
+        .filter(x => x.n > 0 && _abaixoDoMinimo(x.n));
+      if (_peq.length && !confirm(`${_peq.length} recorte(s) têm menos de ${N_MIN_ANONIMATO} respondentes e terão o resultado OMITIDO neste laudo (com uma nota explicando):\n\n` +
+          _peq.map(x => `• ${x.nome} (${x.n})`).join('\n') + `\n\nPara incluí-los, escolha uma granularidade mais ampla (Agrupamento ou Geral).\n\nGerar o laudo assim mesmo?`)) {
+        win.close(); return;
+      }
+    }
 
     // Laudo "Por GHE" com muita resposta fora de GHE sai incompleto: elas viram blocos por setor
     // sem GHE. Não bloqueia (pode ser intencional), mas ninguém deve descobrir só no PDF.
@@ -21209,17 +21283,23 @@ async function renderComparativo() {
 
   // Carregar respostas de cada ciclo
   const dadosPorCiclo = [];
+  const ciclosOcultos = [];   // abaixo do n mínimo: ficam de fora, e a tela diz quais
   for (const ciclo of ciclos) {
     const todasLinhas = await getLinhasParaAnalise(empId);
     const linhas = todasLinhas.filter(r => r.ciclo_id === ciclo.id && (!setor || r.setor === setor));
     if (!linhas.length) continue;
+    if (_abaixoDoMinimo(linhas.length)) { ciclosOcultos.push(`${ciclo.nome} (${linhas.length})`); continue; }
     const fatores = calcFatores(linhas);
     dadosPorCiclo.push({ ciclo, linhas, fatores });
   }
 
+  if (ciclosOcultos.length && dadosPorCiclo.length >= 2) {
+    toast(`Ciclo(s) fora do comparativo por anonimato (menos de ${N_MIN_ANONIMATO} respondentes): ${ciclosOcultos.join('; ')}.`, 'w', 7000);
+  }
   if (dadosPorCiclo.length < 2) {
     panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos <strong>com respostas</strong> para exibir o comparativo. ' +
-      'Certifique-se de que os respondentes informaram o ciclo correto ao preencher o formulário.</div></div>';
+      'Certifique-se de que os respondentes informaram o ciclo correto ao preencher o formulário.' +
+      (ciclosOcultos.length ? `<br><strong>Fora por anonimato</strong> (menos de ${N_MIN_ANONIMATO} respondentes): ${_esc(ciclosOcultos.join('; '))}.` : '') + '</div></div>';
     return;
   }
 
@@ -21427,6 +21507,10 @@ async function renderPlanoAcao() {
 
   if (!linhas.length) {
     panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta encontrada para os filtros selecionados.</div></div>';
+    return;
+  }
+  if (_abaixoDoMinimo(linhas.length)) {
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Plano de ação oculto: ${_textoOculto(linhas.length)}. Amplie o ciclo/filtros.</div></div>`;
     return;
   }
 
