@@ -5210,9 +5210,25 @@ function _filtroPorGhe(comboId, linhas, selOverride = null) {
 // "não bateria" com a soma dos presets sem nenhum erro visível.
 //
 // Nível de risco NÃO entra aqui: não é filtro de linha, é recorte da análise que vem depois.
+// Respostas sem ciclo (links criados antes de a campanha ser obrigatória) formam o grupo
+// "Sem campanha". Um valor sentinela no select de ciclo as torna filtráveis; sem ele, elas só
+// apareciam em "Todos os ciclos" e sumiam ao filtrar por qualquer campanha. UM helper para todas
+// as telas: editar cada filtro à mão deixaria uma delas escondendo respostas.
+const CICLO_SEM = '__sem__';
+function _cicloCasa(cicloDaLinha, selecionado) {
+  if (!selecionado) return true;                          // '' = todos os ciclos
+  if (selecionado === CICLO_SEM) return !cicloDaLinha;    // só as sem ciclo
+  return cicloDaLinha === selecionado;
+}
+function _linhasDoCiclo(linhas, selecionado) {
+  return selecionado ? linhas.filter(r => _cicloCasa(r.ciclo_id, selecionado)) : linhas;
+}
+// laudos.ciclo_id é uuid: o sentinela nunca pode ir para a coluna (22P02 e o laudo não seria registrado).
+function _cicloIdReal(v) { return v && v !== CICLO_SEM ? v : null; }
+
 function _filtroResultados(cfg, todos) {
   const f = cfg.filtros || {};
-  const dados = cfg.ciclo_id ? todos.filter(r => r.ciclo_id === cfg.ciclo_id) : todos;
+  const dados = _linhasDoCiclo(todos, cfg.ciclo_id);
   const setores = f['combo-setor'] || [];
   const funcoes = f['combo-funcao'] || [];
   const gheSetores = _grupoValoresFiltro('combo-ghe', 'setor', f['combo-ghe']);
@@ -5234,7 +5250,7 @@ function _filtroResultados(cfg, todos) {
 // Gráficos: mesmo contrato de _filtroResultados, outros combos e sem nível de risco.
 function _filtroGraficos(cfg, todos) {
   const f = cfg.filtros || {};
-  const dados = cfg.ciclo_id ? todos.filter(r => r.ciclo_id === cfg.ciclo_id) : todos;
+  const dados = _linhasDoCiclo(todos, cfg.ciclo_id);
   const setores = f['combo-gf-setor'] || [];
   const funcoes = f['combo-gf-funcao'] || [];
   const gheSetores = _grupoValoresFiltro('combo-gf-ghe', 'setor', f['combo-gf-ghe']);
@@ -5263,7 +5279,7 @@ function _filtroLaudo(cfg, todos) {
   const gheParesF = _filtroPorGhe('combo-ld-ghe-par', todos, f['combo-ld-ghe-par']);
   const cicloId = cfg.ciclo_id || '';
   return todos.filter(r =>
-    (!cicloId || r.ciclo_id === cicloId) &&
+    _cicloCasa(r.ciclo_id, cicloId) &&
     (setores.length === 0 || setores.includes(r.setor)) &&
     (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
     (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
@@ -6908,7 +6924,7 @@ function _funcoesDisponiveisDe(c) {
   const semFiltroSetor = sel.size === 0 || sel.size === todos.length;
   const out = new Set();
   pares.forEach(p => {
-    if (cicloId && p.ciclo_id !== cicloId) return;
+    if (!_cicloCasa(p.ciclo_id, cicloId)) return;
     if (!semFiltroSetor && !sel.has(p.setor)) return;
     out.add(p.funcao);
   });
@@ -11715,7 +11731,7 @@ async function calcRepresentatividade(empId, cicloId) {
   // Adesão/Auditoria mostravam outro para a mesma empresa).
   const todasLinhas = await getLinhasParaAnalise(empId);
   // `data` preserva respondido_em: sem ela não há curva de adesão nem "parada há N dias".
-  const respList = (cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas)
+  const respList = _linhasDoCiclo(todasLinhas, cicloId)
     .map(r => ({ setor: r.setor, funcao: r.funcao, data: r.data_registro || null }));
 
   // Índices de contagem de respostas: por (setor×funcao) e por setor.
@@ -15183,7 +15199,7 @@ async function _registrarLaudo() {
       empresa_id:    empresaId,
       // A coluna existe desde o schema v3 e NUNCA era preenchida: todo laudo ficava sem ciclo,
       // e o historico nao tinha como dizer a que rodada de avaliacao cada um se referia.
-      ciclo_id:      _cfg.ciclo_id || null,
+      ciclo_id:      _cicloIdReal(_cfg.ciclo_id),
       gerado_em:     new Date().toISOString(),
       gerado_por:    currentUser?.email || currentUser?.id || null,
       // Granularidade e grupos vão para o snapshot: sem isso não há como provar, depois, sob
@@ -15800,7 +15816,7 @@ async function gerarLaudoPDF() {
     // setores/funções/ciclos.
     const gheParesF = _filtroPorGhe('combo-ld-ghe-par', todos);
     const linhas    = todos.filter(r =>
-      (!cicloId || r.ciclo_id === cicloId) &&
+      _cicloCasa(r.ciclo_id, cicloId) &&
       (setores.length === 0 || setores.includes(r.setor)) &&
       (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
       (gheFuncoes === null  || gheFuncoes.has(_gheNormStrong(r.funcao))) &&
@@ -18249,6 +18265,19 @@ async function salvarCiclo() {
 }
 
 async function removerCiclo(id) {
+  // Apagar um ciclo que já tem coleta NÃO é só remover o ciclo: as FKs de respostas e links são
+  // ON DELETE SET NULL, então cada resposta já coletada perderia o ciclo em silêncio e passaria a
+  // aparecer em "Sem campanha". Recusar aqui; a proteção no banco fica para depois (decisão 09/10).
+  if (!isDemoMode && sbAdmin) {
+    const nLinks = _links.filter(l => l.ciclo_id === id).length;
+    const { count: nResp, error: errCont } = await sbAdmin
+      .from('respostas').select('id', { count: 'exact', head: true }).eq('ciclo_id', id);
+    if (errCont) { toast('Não foi possível conferir se o ciclo tem respostas: ' + errCont.message, 'r'); return; }
+    if (nLinks > 0 || (nResp || 0) > 0) {
+      toast(`Este ciclo tem ${nLinks} link(s) e ${nResp || 0} resposta(s) e não pode ser removido. Para encerrar a coleta, use "Finalizar campanha" na tela de links.`, 'w', 7000);
+      return;
+    }
+  }
   if (!confirm('Remover este ciclo?')) return;
   if (!isDemoMode && sbAdmin) {
     const { error } = await sbAdmin.from('ciclos').delete().eq('id', id);
@@ -18566,7 +18595,7 @@ async function renderTelaAuditoria() {
 
   // Buscar dados
   let todosLinhas = await getLinhasParaAnalise(empId || null);
-  let linhas = cicloId ? todosLinhas.filter(r => r.ciclo_id === cicloId) : todosLinhas;
+  let linhas = _linhasDoCiclo(todosLinhas, cicloId);
 
   if (!linhas.length && _respostasErro) {
     panel.innerHTML = _errorState('Não foi possível carregar as respostas deste cliente.', 'renderTelaAuditoria()');
@@ -20535,8 +20564,16 @@ function preencherSelectCiclos(selId, empId) {
     opt.value = c.id; opt.textContent = c.nome;
     sel.appendChild(opt);
   });
+  // "Sem campanha" só existe para quem tem link sem ciclo (de onde vêm as respostas sem ciclo):
+  // para o resto seria uma opção morta.
+  const temSem = _links.some(l => l.empresa_id === empId && !l.ciclo_id);
+  if (temSem) {
+    const opt = document.createElement('option');
+    opt.value = CICLO_SEM; opt.textContent = 'Sem campanha';
+    sel.appendChild(opt);
+  }
   // preserva o ciclo do contexto global quando ele pertence a esta empresa
-  if (_cicloAtivo && lista.some(c => c.id === _cicloAtivo)) sel.value = _cicloAtivo;
+  if (_cicloAtivo && (lista.some(c => c.id === _cicloAtivo) || (temSem && _cicloAtivo === CICLO_SEM))) sel.value = _cicloAtivo;
 }
 
 // ══════════════════════════════════════════
@@ -20792,7 +20829,7 @@ async function renderPlanoAcao() {
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
 
   const todasLinhas = await getLinhasParaAnalise(empId);
-  const linhas = cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas;
+  const linhas = _linhasDoCiclo(todasLinhas, cicloId);
 
   if (!linhas.length) {
     panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta encontrada para os filtros selecionados.</div></div>';
