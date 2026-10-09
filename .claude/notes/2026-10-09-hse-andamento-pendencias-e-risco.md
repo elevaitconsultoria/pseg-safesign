@@ -1,0 +1,172 @@
+# HSE/ICAO-35 — o que foi feito, pendências e como calcular risco a partir do HSE
+
+> Documento de passagem de bastão, escrito em 2026-10-09. Complementa
+> `2026-10-08-plano-implantacao-hse.md` (plano, com quadro de andamento por etapa),
+> `2026-10-08-referencia-hse-player-avalia-nr01.md` (aprendizados do concorrente) e
+> `2026-08-03-metodologia-hse-icao35-planejamento.md` (plano original, parcialmente substituído).
+> Branch: **`feat/hse-icao35`**, 8 commits, **nenhum push**. **PROD não foi tocado.**
+
+## 1. Estado em uma página
+
+| | |
+|---|---|
+| Código da v1 (S0–S8) | **Escrito, commitado e testado em DEV** (com harness; ver §5 sobre o que não foi exercitado) |
+| DEV (banco) | Migration, RPCs e seed **aplicados** |
+| PROD (banco e app) | **Nada aplicado.** Bloqueado por B12 (PITR) e por decisões de conteúdo |
+| Caminho crítico até PROD | Pessoas e conteúdo, não engenharia: B12, B1, valor do n mínimo, revisão de SST |
+| Branch | `feat/hse-icao35` a partir de `develop` (87b7864); `develop` está 3 commits atrás de `main` (squash dos PRs #90/#91) |
+
+## 2. O que foi feito
+
+### 2.1 Pesquisa e planejamento
+- Retomada do plano de agosto (HSE/ICAO-35, 35 itens, 7 dimensões) e **revalidação contra o código e os dois bancos**.
+- Análise de dois materiais de um concorrente (formulário impresso e relatório de teste de 23 páginas): fórmulas
+  reconstruídas e conferidas, defeitos catalogados, ponte HSE→PGR documentada.
+- Plano de implantação em 12 etapas (S0–S11), 25 riscos, estimativa ~37–43 dias-dev, aprovado.
+- Decisões do usuário: tabelas separadas para o HSE; n mínimo como trilha própria; exposição livre às ESTs;
+  ponte HSE→PGR só na fase 1.1; **uma metodologia por ciclo** com atalho para criar os dois; combo (62 itens) fora da v1
+  mas com porta aberta (`_instrumentosDoCiclo`).
+
+### 2.2 Correções ao plano de agosto (achados que mudaram o desenho)
+1. **`anon` não lê `ciclos`**: o embed `ciclos(metodologia)` quebraria todo link ("Token inválido") → RPC anônima.
+2. `salvar_resposta` de 10 args **não existe no repo** (só a de 7); DEV tem 3 overloads, PROD 2; `session_id` é `uuid` em PROD e `text` em DEV.
+3. A falha da RPC **não é auditável** (o `RAISE` desfaz a transação inteira, fila e backup incluídos).
+4. Overloads mortos têm **`EXECUTE` para `anon`** nos dois bancos.
+5. `respostas.questionario_id` é **NULL em 100%** de PROD (versionar texto só vale daqui em diante).
+6. Reusar `questoes`/`resposta_itens` colidiria `H01..H27` com `Q01..Q27` → tabelas separadas.
+
+### 2.3 Implementação (commits da branch)
+
+| Etapa | Commit | O que entrega | Onde está aplicado |
+|---|---|---|---|
+| Docs + S0 parcial | `a2eac7c` | plano, referência do concorrente, `_dev/check-inline-js.js` | repo |
+| **S1** esquema | `3e5bf24` | `ciclos/respostas/questionarios.metodologia`; trigger de imutabilidade; `hse_itens` (congelados ao publicar); `resposta_itens_hse` (1..5); `hse_benchmark`; baselines de `salvar_resposta` | **DEV** |
+| **S2** RPC `obter_instrumento_link` + **S4** seed | `4917f5b` | metodologia do ciclo sem dar SELECT em `ciclos` ao `anon`; seed de 35 itens `[RASCUNHO]` + benchmark geral 2023 | **DEV** |
+| **S3** `salvar_resposta` | `21f18de` | ramo HSE validado (35 itens, 1..5, sem duplicar, sem item de outro instrumento); ramo BS idêntico; `REVOKE` dos overloads mortos | **DEV** |
+| **S5** formulário | `91e9571` | HSE 35 itens em 2 partes, lista vertical, erro permanente não repete; BS e linhas de credencial intocados | repo (testado contra DEV) |
+| **S6** admin: escolha e guardas | `b570271` | cartões BS/HSE no "Novo ciclo", atalho "criar também…", selos, guardas nas telas só-BS, fallback sem a coluna | repo |
+| **S7** análise HSE | `0b2f59d` | loader próprio, `calcDimensoesHSE`, tela, CSV, n mínimo provisório = 5 | repo |
+| **S8** laudo HSE | `eb83ad9` | gerador único (preview = PDF), OGL em toda página, checagem pré-geração, metodologia no histórico | repo |
+
+### 2.4 Arquivos criados ou alterados
+- **Novos:** `migration_metodologia_hse_icao35.sql`, `migration_obter_instrumento_link.sql`, `migration_salvar_resposta_hse_dev.sql`,
+  `seed_hse_icao35_dev_placeholder.sql`, `_dev/check-inline-js.js`, `_dev/baseline/salvar_resposta_{dev,prod}_2026-10-08.sql`, as notas.
+- **Alterados:** `psicomap-forms.html` (S5), `psicomap-admin.html` (S6–S8; código novo em regiões `// ==== HSE … BEGIN/END ====`).
+- **Intocados de propósito:** motores e loader do BS 8800 (`calcFatores`, `calcDistribuicaoQuestoes`, `loadRespostasParaEmpresa`),
+  `build.js`, linhas `SUPABASE_URL/ANON` do formulário.
+
+### 2.5 Dados de teste deixados em DEV (empresa Allmed)
+Links `is_teste`: `hsetests5a01` (HSE), `bstests5a001` (BS), `semciclos5a01` (sem ciclo); ciclos "[TESTE S5] …"; respostas de teste;
+link **não-teste** `hsetests7a001` com 8 respostas (5 em "S7 Setor A", 3 em "S7 Setor B") — valores `((k*7+ordem*3)%5)+1`.
+Scores de referência (SQL): Relacionamentos 2,8438 · Mudanças 2,8750 · Apoio da gestão 2,9250 · Papel 2,9750 · Suporte dos colegas 3,0000 · Demandas 3,0469 · Controle 3,1042.
+Remover quando não forem mais úteis.
+
+## 3. Como o HSE funciona no sistema (resumo)
+- **Fluxo:** consultor escolhe a metodologia ao criar o ciclo (trava depois do 1º link/resposta); links herdam; o funcionário nunca escolhe.
+  Link sem ciclo = BS 8800. Empresa com as duas = dois ciclos.
+- **Cálculo:** valor do item = bruto, ou `6 − v` nos itens invertidos (Demandas e Relacionamentos inteiras); média por item; **score da dimensão = média das médias** (1,00–5,00, alto = melhor).
+- **Classificação:** 4 faixas relativas à média de referência HSE 2023: `< ref − 0,50` Ação urgente · `< ref` Necessidade clara de melhoria · `< ref + 0,40` Bom, mas há o que melhorar · acima, Muito bem.
+  **Não são percentis oficiais** (não existem na fonte).
+- **Taxa de resposta** = respostas do ciclo ÷ quadro; `< 50%` ou sem quadro ⇒ "dados apenas indicativos".
+- **Anonimato:** recorte com `< 5` respondentes não exibe resultado (valor **provisório**, só no HSE).
+
+## 4. Testes realizados e o que NÃO foi exercitado
+
+**Feito (DEV, com rollback quando aplicável):** trava de metodologia; congelamento de itens; limite 1–5; ausência de privilégio do `anon`
+nas tabelas novas; `obter_instrumento_link` como `anon` (token inválido/inativo/expirado/nulo, sem ciclo, BS, HSE, sem vazar `inversa`/`dimensao`);
+`salvar_resposta` (BS 27 itens também como `anon`, idempotência, HSE 35 itens, 9 rejeições sem resíduo); formulário real a 320/375 px
+(sem estouro, envio gravou 35 itens, BS inalterado, erro permanente não repete); motor JS contra cálculo de referência em SQL nas 7 dimensões
+e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, criação de ciclos, tela de análise, preflight, histórico).
+
+**Não exercitado — importante:**
+- **Nenhum teste logado no admin real de DEV** (a ferramenta não gera sessão). O harness provou a lógica e o DOM, não o carregamento
+  real com RLS por EST de `hse_itens`/`hse_benchmark`/`resposta_itens_hse`.
+- **PDF real nunca foi impresso** (só o HTML foi verificado). A paginação precisa de olho humano.
+- Formulário **antigo em cache** contra link HSE; fila offline legada (7 parâmetros); tela de erro quando a RPC falha no boot.
+- **Golden master do BS 8800** (S0) nunca foi capturado; a regressão do BS foi garantida por construção (código intocado) e por testes pontuais.
+- Nada foi testado em PROD.
+
+## 5. Pendências
+
+### 5.1 Dependem de você (humanas / externas)
+| # | Pendência | Bloqueia |
+|---|---|---|
+| B12 | Confirmar **PITR ativo em PROD** (Dashboard Supabase) | qualquer migration em PROD |
+| B1 | Texto **validado** dos 35 itens + **permissão dos autores da ICAO** para uso comercial (Ferreira, Freitas, Devotto, Damásio); fallback: tradução profissional do HSE original | go-live |
+| S9 | **Valor definitivo do n mínimo** (com o jurídico). Hoje: 5, provisório, só no HSE (`HSE_N_MIN_PROVISORIO`) | S9; amplia a proteção ao BS 8800 |
+| SST | Revisar **textos fixos do laudo** e **definição das faixas** (±0,50 / +0,40) | go-live |
+| Teste logado | Abrir o admin de DEV e percorrer: criar ciclo HSE → responder → analisar → gerar laudo | confiança antes de PROD |
+| Push | Autorizar `git push` da branch e o fast-forward `develop ← main` (publica o DEV para todos) | PR e deploy |
+| Escala | Definir rótulos únicos × dois conjuntos (depende de como a ICAO rotula os itens 24–35) | B1 |
+
+### 5.2 Técnicas (eu posso fazer)
+| Etapa | Pendência |
+|---|---|
+| S0 | Fast-forward `develop`; dataset formal de teste; **golden master** do BS 8800; PR de hardening do `build.js` |
+| S3 | **`migration_salvar_resposta_hse_prod.sql`** (arquivo próprio: `session_id` uuid, 2 overloads) e teste em PROD com link `is_teste` |
+| S1/S2 em PROD | Aplicar migration e RPC **antes** de promover o formulário (senão todo link com ciclo falha) |
+| S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
+| S5 | Testar formulário antigo em cache, fila offline legada e erro de boot da RPC |
+| S6 | Trocar a metodologia **pela interface** antes do 1º link (o banco já permite); selo no Dashboard e em Clientes |
+| S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
+| S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
+| Seed | Transcrever as **13 médias setoriais** do relatório HSE 2023 (hoje só as gerais) |
+| Dados | Limpar os dados de teste de DEV quando não servirem mais |
+
+### 5.3 Fase 1.1 (fora da v1)
+Ponte HSE→inventário PGR (§6), comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
+CNAE e grau de risco em `empresas`, vários responsáveis técnicos no laudo, reavaliação derivada do resultado, seções editáveis do laudo HSE, combo.
+
+### 5.4 Ordem sugerida para chegar a PROD
+1. B12 → 2. golden master + push/PR → 3. S1, S2, S3-prod aplicados em PROD (janela calma: PROD teve 0 respostas em 7 dias em 2026-10-08) →
+4. promover o app (S5–S8; sem o seed validado o HSE fica invisível em PROD) → 5. B1 + SST + n mínimo → 6. seed validado (publica) → 7. teste de aceite → 8. piloto.
+
+## 6. Como calcular **risco** a partir do HSE
+
+### 6.1 A resposta curta
+**O HSE não calcula risco.** Ele mede a condição percebida de cada dimensão e diz onde agir primeiro (as 4 faixas). Não existe fórmula oficial
+HSE → "nível de risco". Qualquer P×S derivado do HSE é um **critério adotado pela consultoria**: precisa ser declarado no laudo, versionado e validado
+por profissional de SST. Isso é possível, e o mercado o faz porque o inventário do PGR exige um nível de risco — mas deve ficar **separado** do resultado do HSE.
+
+### 6.2 O que o concorrente fez (e por que é frágil)
+- P (1–5) por faixas do índice 0–100: ≥90 → 1; 75–89 → 2; 60–74 → 3; 40–59 → 4; <40 → 5. S (1–5) por dimensão. Nível por matriz 5×5 (lookup por célula).
+- Fragilidades: faixas 90/60 inventadas; mistura "nível de condição" com "probabilidade de evento"; a severidade parece depender do resultado
+  (Controle e Apoio com S=1 quando saem bem), o que faria P e S deixarem de ser independentes; ignora a taxa de resposta (amostra "inadequada" ainda gera "Intolerável");
+  a manchete (média geral) contradisse o inventário.
+
+### 6.3 Opções para o PsicoMap
+
+| Opção | Como | Prós | Contras |
+|---|---|---|---|
+| **A. Não converter** (status quo) | HSE = diagnóstico; o consultor leva as dimensões em risco ao inventário com P×S **do BS 8800** | Sem criar critério novo; mais defensável | Trabalho manual; cliente que só contrata HSE fica sem nível de risco |
+| **B. Ponte do concorrente** | Índice 0–100 → P (5 faixas), S por dimensão, matriz 5×5 | Familiar ao mercado | Faixas arbitrárias; vocabulário novo (Trivial…Intolerável) |
+| **C. Ponte pelas faixas do próprio HSE (recomendada como candidata)** | As **4 faixas** (relativas ao benchmark) viram **P1–P4**; **S1–S4 fixa por dimensão** (catálogo validado por SST); nível pela **mesma matriz 4×4** do BS 8800 | 4 faixas ↔ 4 níveis de P, sem inventar cortes novos; reusa `MATRIZ_RISCO`, vocabulário e laudo do PGR | O nível parece comparável ao do BS 8800 (mitigar rotulando "derivado do HSE" e nunca no mesmo gráfico); S é julgamento |
+| **D. Prevalência de exposição** | P a partir do **% de respondentes em resposta desfavorável** (ex.: itens normalizados ≤ 2) em vez da média | Mais próximo de "probabilidade de a condição atingir pessoas"; sensível a bimodalidade (média esconde) | Corte de "desfavorável" é escolha; sem benchmark oficial para essa medida |
+
+**Recomendação:** tratar a **C** como candidata principal (e a **D** como complemento de leitura), entregue como **recurso opcional da fase 1.1**, não como parte do resultado HSE.
+
+### 6.4 Desenho proposto para C (para validação, não implementado)
+1. **Fonte do P:** a faixa da dimensão (já calculada): Ação urgente → P4 · Necessidade clara de melhoria → P3 · Bom, mas há o que melhorar → P2 · Muito bem → P1.
+2. **Fonte do S:** tabela `hse_riscos_config` (padrão de `riscos_config`), uma linha por dimensão, **fixa e independente do resultado**, editável só por `super_admin`,
+   com texto de "possíveis danos" por dimensão. Valores de S **dependem de SST/psicólogo** — não sugiro números aqui.
+3. **Nível:** `MATRIZ_RISCO[P_S]` (a mesma do BS 8800) → Irrelevante/Baixo/Médio/Alto/Crítico.
+4. **Travas:** só gera quando a taxa de resposta é adequada (≥ 50%) e o recorte atende ao n mínimo; abaixo disso a seção sai marcada como "indicativa" ou não sai.
+5. **Transparência no laudo:** seção "Critério adotado pela consultoria" com as tabelas de P e S e a frase de que **esta conversão não faz parte do instrumento HSE**.
+6. **Separação:** nunca no mesmo gráfico do BS 8800; no inventário do PGR cada linha indica a origem (HSE ou BS 8800).
+7. **Versionamento:** a versão do critério entra no `snapshot_json` do laudo (como já entram metodologia e texto dos itens).
+
+### 6.5 Exemplo com os dados de DEV (apenas ilustrativo — S fictício)
+Dimensão **Demandas**: score 3,05 contra referência 3,25 ⇒ faixa *Necessidade clara de melhoria* ⇒ **P3**. Se o catálogo de SST definisse S = 3 (Sério),
+a matriz daria P3×S3 = **Alto**. Já **Mudanças** (2,88 contra 3,30; faixa *Necessidade clara de melhoria*) também daria P3, e o nível dependeria só do S da dimensão.
+Isso mostra o ponto sensível: **com P vindo de apenas 4 faixas, a severidade passa a decidir quase todo o resultado** — por isso o catálogo de S precisa de validação técnica.
+
+### 6.6 Perguntas que bloqueiam a decisão
+- Um profissional de SST aceita "faixa relativa ao benchmark = probabilidade"? Se não, a opção D ou a A.
+- Quem define e assina o catálogo de severidade por dimensão?
+- O cliente que contrata só HSE precisa mesmo de nível de risco no PGR, ou o diagnóstico + grupos focais basta?
+- As citações normativas que o concorrente usa (NR-01, NR-17, AEP/AET) **não foram verificadas por nós**; antes de posicionar o laudo HSE assim, validar com SST/jurídico.
+
+## 7. Riscos conhecidos (resumo)
+Ver R1–R25 no plano. Os que estão mais vivos agora: promover o formulário antes da RPC em PROD (R2); texto `[RASCUNHO]` chegando a PROD (R4);
+resultado de grupo pequeno no BS 8800 (R5, ainda sem proteção); erro de sintaxe no JS inline sem CI (R6, mitigado por `_dev/check-inline-js.js`);
+primeira resposta HSE real torna o esquema irreversível (R3, mitigado por `publicado=false` como chave geral).
