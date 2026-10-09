@@ -112,7 +112,7 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; ~~tela para SST cadastrar severidade~~ (feita em 2026-10-09, ver §5.6) |
 | S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
 | S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
-| Seed | Transcrever as **13 médias setoriais** do relatório HSE 2023 (hoje só as gerais) |
+| Seed | ~~Transcrever as 13 médias setoriais~~ — feito em 2026-10-09, ver §5.9 |
 | Dados | Limpar os dados de teste de DEV quando não servirem mais |
 
 ### 5.5 Testes do formulário em cenários de borda (2026-10-09, DEV)
@@ -146,6 +146,14 @@ Risco R15 do plano: o formulário público tem as credenciais de PROD literais e
 - **Saída idêntica:** build real com o `.env` produz os 6 arquivos byte a byte iguais ao anterior.
 - **Teste:** `node _dev/check-build.js` (21 cenários). Provado contra o `build.js` antigo (`CHECK_BUILD_ROOT`): ele falha 16 deles — o teste não é vazio.
 - **Atenção no deploy:** (1) o aviso de Stripe vazio já aparece no `.env` local — se no Cloudflare as variáveis `STRIPE_*` também estão vazias, o build **grava `""` e descarta os links de teste do código**; confirmar no painel. (2) Se algum ambiente do Cloudflare usa `APP_ENV` apontando para o banco do outro lado de propósito, o build passa a falhar (é o objetivo, mas confira antes de promover). (3) `package.json` ganhou `check:build`.
+
+### 5.9 Benchmark HSE 2023 por setor (2026-10-09)
+`seed_hse_benchmark_2023_setores.sql`: **13 setores × 7 dimensões = 91 médias**, fonte *Stress Indicator Tool — Benchmarking report* (HSE, ago/2023, págs. 6–18).
+- **Sem digitação:** extraído do texto do PDF por script (`fitz`) e validado — em cada célula mín ≤ média ≤ máx e tudo em 1..5; o mapeamento página→setor foi conferido visualmente (p.7 = Business Process Outsourcing); soma das médias no banco = soma do parser (345,93). As médias gerais do relatório (3,25/3,72/3,80/4,01/4,11/4,16/3,30) batem com as já seedadas.
+- **Aplicado em DEV; PROD não.** É dado público de referência e idempotente (`ON CONFLICT DO NOTHING`), então pode ir a PROD a qualquer momento depois de `migration_metodologia_hse_icao35.sql` — não depende de B1 nem de SST. Rollback: `DELETE FROM hse_benchmark WHERE fonte='HSE_2023' AND setor <> 'GERAL'`.
+- **Sem efeito hoje:** o loader (`_hseCarregarBenchmark`) lê só `setor='GERAL'`; o app não tem seleção de setor (precisa de CNAE em `empresas`, fase 1.1). Chaves: `BLUE_LIGHT, BPO, CHARITY, CONSTRUCTION, EDUCATION, ENERGY, HEALTHCARE, HOUSING, LOCAL_AUTHORITY, MANUFACTURING, PUBLIC_SECTOR, RETAIL, WATER`. Só a média e o `n_amostra` (respondentes) ficam em colunas; mín/máx e nº de avaliações vão em `observacao`.
+- **Cautela ao usar:** são organizações **britânicas** que escolheram a ferramenta (o relatório diz que não se pode inferir bom/ruim desempenho) e vários grupos são pequenos (Healthcare 242, Energy 252, Retail 263 respondentes; BPO 297 em 3 organizações). **Nenhum setor é "Brasil"** — comparar empresa brasileira com setor britânico precisa ser declarado no laudo.
+- **Correção às notas antigas:** o relatório traz médias **por setor com Min/Mean/Max entre organizações**; não há percentis por setor, e o grupo "Public Sector" (26.261) pesa 66% do total geral de 39.484.
 
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
@@ -244,7 +252,7 @@ Commits: `a2eac7c` docs/S0 · `3e5bf24` S1 · `4917f5b` S2+S4 · `21f18de` S3 ·
 **Faltando para o go-live (todos dependem de pessoas):** B12 · B1 (texto ICAO + permissão dos autores) · severidade S1–S4 por dimensão assinada por SST + aceitar faixa como P · revisão de SST dos textos fixos do laudo e das faixas · valor definitivo do n mínimo (hoje 5, provisório, só HSE).
 
 **Pendências técnicas, em ordem de valor:** (1) ~~arquivo S3 de PROD~~ (feito, falta aplicar e testar em PROD); (2) `migration_revoke_anon.sql` + CLAUDE.md (seção Metodologias, superfície do anon: **a RPC `obter_instrumento_link` é anônima**), `RESTAURACAO_BACKUP.md`, skill `validar-formulario`; (3) ~~tela para SST cadastrar `hse_riscos_config`~~ (feita, §5.6);
-(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) 13 médias setoriais do benchmark; (8) ~~PR de hardening do `build.js`~~ (feito, §5.8).
+(4) `_nMinimo` também no BS 8800; (5) testes do formulário: versão antiga em cache, fila offline legada, falha da RPC no boot; (6) trocar metodologia pela UI antes do 1º link; selo no Dashboard/Clientes; (7) ~~13 médias setoriais do benchmark~~ (feito, §5.9); (8) ~~PR de hardening do `build.js`~~ (feito, §5.8).
 
 **Como validar sem login (o que foi feito):** harness no Browser pane — servir uma cópia do HTML com credenciais de DEV (`__SUPA_URL__`/`__SUPA_ANON__` entre aspas), substituir `sbAdmin` por um falso e chamar as funções no console.
 Isso prova lógica e DOM, **não** o carregamento real com RLS: o usuário precisa abrir o admin de DEV logado e percorrer ciclo HSE → responder → analisar → laudo.
