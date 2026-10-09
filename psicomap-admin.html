@@ -5261,6 +5261,238 @@ function exportarCSVHSE() {
 }
 // ==== HSE (S7) END ====
 
+// ==== HSE (S8) BEGIN — laudo HSE: UM gerador para preview e PDF, e checagem pré-geração ====
+// O laudo do BS 8800 tem dois geradores independentes (renderLaudo e _buildLaudoHTML) que já divergiram
+// várias vezes. Aqui há UMA função, _buildLaudoHSEHTML: o preview a renderiza num iframe (srcdoc) e a
+// janela de impressão recebe exatamente o mesmo HTML. Texto fixo = rascunho padrão para REVISÃO de SST.
+// Atribuição OGL v3.0 em TODA página; sem logo do HSE; sem sugerir endosso do HSE/governo britânico.
+let _laudoMetSnap = null;   // congelado ao abrir o documento; _registrarLaudo grava no snapshot_json
+const HSE_OGL = 'Contains public sector information published by the Health and Safety Executive and licensed under the Open Government Licence v3.0. © Crown copyright.';
+
+async function _laudoHSEContexto() {
+  const empId   = document.getElementById('ld-empresa')?.value || '';
+  const cicloId = document.getElementById('ld-ciclo')?.value || '';
+  const ciclo   = _ciclos.find(c => c.id === cicloId);
+  const [todas, bench] = await Promise.all([carregarRespostasHSE(empId, cicloId), _hseCarregarBenchmark()]);
+  const linhas = _filtroLaudo(_presetConfigAtual('laudo'), todas);
+  const { headcount, taxa } = await _hseTaxaResposta(empId, todas.length);
+  const gran = _granularidadeLaudo();
+  const campoResp = (document.getElementById('ld-responsavel')?.value || '').trim();
+  // Sem fallback literal tipo "Responsável Técnico": placeholder impresso em laudo é defeito (a checagem barra).
+  const responsavel = campoResp || _estPerfil?.responsavel_padrao || '';
+  const itensMeta = Object.values(_hseMetaCache);
+  return {
+    empId, cicloId, cicloNome: ciclo?.nome || '', nomeEmp: _empresas.find(e => e.id === empId)?.nome || '',
+    todas, linhas, bench, headcount, taxa, leitura: _hseLeituraTaxa(taxa), gran,
+    grupos: _gruposPorGranularidade(linhas, gran),
+    hoje: _laudoDataEmissao(), responsavel,
+    registro: (document.getElementById('ld-registro')?.value || '').trim(),
+    estPerfil: _estPerfil, itensMeta,
+    rascunho: itensMeta.some(i => /^\[RASCUNHO\]/.test(i.texto || '')),
+    questionarioId: linhas[0]?.questionario_id || todas[0]?.questionario_id || null,
+  };
+}
+
+// erros = barram a geração; avisos = pedem confirmação. Nada de placeholder: ausência de dado vira pendência
+// visível aqui, nunca texto de fallback no documento do cliente (defeito observado em relatório de terceiro).
+function _laudoHSEPreflight(c) {
+  const erros = [], avisos = [];
+  if (!c.cicloId) erros.push('Selecione um ciclo HSE.');
+  else if (!c.todas.length) erros.push('Este ciclo ainda não tem respostas HSE.');
+  else if (!c.linhas.length) erros.push('Nenhuma resposta para os filtros selecionados.');
+  else if (c.linhas.length < HSE_N_MIN_PROVISORIO) erros.push(`Há apenas ${c.linhas.length} respondente(s) no recorte; o mínimo para exibir resultado é ${HSE_N_MIN_PROVISORIO} (anonimato).`);
+  if (Object.keys(c.bench || {}).length < HSE_DIMS.length) erros.push('Benchmark HSE incompleto neste ambiente.');
+  if (!c.responsavel) erros.push('Informe o responsável técnico (campo "Responsável técnico" ou perfil da EST).');
+  if (!c.registro) avisos.push('Registro profissional do responsável não informado — a assinatura sairá sem ele.');
+  if (!c.estPerfil?.nome_empresa) avisos.push('Nome da consultoria não cadastrado no perfil da EST — o documento usará "PsicoMap".');
+  if (c.leitura.indicativo) avisos.push(`${c.leitura.txt}: o documento sairá com o selo "dados apenas indicativos".`);
+  const ocultos = (c.gran !== 'consolidado' && c.grupos.length > 1)
+    ? c.grupos.filter(g => _linhasDoGrupo(g, c.linhas).length < HSE_N_MIN_PROVISORIO) : [];
+  if (ocultos.length) avisos.push(`${ocultos.length} recorte(s) com menos de ${HSE_N_MIN_PROVISORIO} respondentes terão o resultado omitido.`);
+  if (c.rascunho) avisos.push('Os textos dos itens são PROVISÓRIOS ([RASCUNHO]). O documento sairá marcado como RASCUNHO e não pode ser entregue a cliente.');
+  return { erros, avisos };
+}
+
+const HSE_LAUDO_CSS = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f1f3f4;color:#1a1a1a;font-size:13px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:210mm;min-height:297mm;background:white;margin:0 auto 24px;padding:18mm 18mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12);display:flex;flex-direction:column}
+@page{size:A4 portrait;margin:0}
+@media print{html,body{background:white}.no-print{display:none!important}.page{margin:0;box-shadow:none;page-break-before:always;break-before:page;display:block}.page:first-of-type{page-break-before:auto;break-before:auto}tr,.nobreak{page-break-inside:avoid;break-inside:avoid}h2,.sec-title{page-break-after:avoid;break-after:avoid}}
+.toolbar{position:sticky;top:0;z-index:100;background:white;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;align-items:center;gap:10px}
+.toolbar .tt{margin-right:auto;font-size:12px;font-weight:700;color:#111}
+.btn-print{background:#1a5e2a;color:white;border:none;border-radius:5px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-outline{background:white;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif}
+.cover-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #1a5e2a}
+.cover-logo{width:56px;height:56px;background:#1a5e2a;border-radius:8px;display:flex;align-items:center;justify-content:center}.cover-logo svg{width:30px;height:30px;fill:white}
+.cover-company{text-align:right}.cover-company-name{font-size:14px;font-weight:700;color:#1a5e2a}.cover-company-sub{font-size:11px;color:#6b7280}
+.cover-body{padding:24px 0}.cover-tag{display:inline-block;background:#f0fdf4;color:#1a5e2a;border:1px solid #bbf7d0;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 10px;margin-bottom:16px}
+.cover-title{font-size:22px;font-weight:700;color:#111;line-height:1.3;margin-bottom:8px}.cover-subtitle{font-size:14px;color:#6b7280;margin-bottom:28px}
+.cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px}
+.cover-meta-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af}.cover-meta-value{font-size:13px;font-weight:600;color:#111;margin-top:2px}
+.sec-title{font-size:13px;font-weight:700;color:white;background:#1a5e2a;padding:7px 12px;border-radius:5px;margin:20px 0 12px}.sec-title.sub{font-size:12px;background:#374151;margin:16px 0 10px}
+p{margin-bottom:10px;font-size:12px;color:#374151;line-height:1.75;text-align:justify}p strong{color:#111}
+.box{background:#f0fdf4;border-left:3px solid #1a5e2a;border-radius:0 5px 5px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#374151;line-height:1.7}
+.box.warn{background:#fef2f2;border-left-color:#d32f2f}.box.draft{background:#fff7ed;border-left-color:#f9a825}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px}
+th{background:#1a5e2a;color:white;padding:7px 9px;text-align:left;font-size:10px;font-weight:600}td{padding:7px 9px;border-bottom:.5px solid #e5e7eb;color:#374151;vertical-align:top}
+tr:nth-child(even) td{background:#f9fafb}.num{text-align:right;white-space:nowrap}
+.badge{display:inline-block;color:white;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.bar{position:relative;height:10px;background:#eef0f3;border-radius:5px;min-width:90px}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}.bar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:#111}
+.indice-lista{list-style:none;padding:0;margin-top:8px}.indice-lista li{font-size:13px;font-weight:600;padding:9px 4px;border-bottom:1px solid #e5e7eb}
+.ref{font-size:11px;color:#4b5563;line-height:1.6;margin-bottom:6px}
+.page-footer{margin-top:auto;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9.5px;color:#9ca3af}.page-footer .l1{display:flex;justify-content:space-between}.page-footer .ogl{font-size:8px;margin-top:3px;color:#9ca3af}
+.assinatura{margin-top:34px;width:280px}.assinatura .linha{border-top:1px solid #1a1a1a;margin-bottom:6px}.assinatura .nome{font-size:12px;font-weight:700;color:#111}.assinatura .reg{font-size:11px;color:#4b5563}
+.draft-tag{color:#b45309;font-weight:700}`;
+
+function _hseTabelaDimensoes(res) {
+  const pct = v => Math.max(0, Math.min(100, (v - 1) / (HSE_ESCALA_MAX - 1) * 100));
+  const linhas = [...res.dims].sort((a, b) => (a.score ?? 99) - (b.score ?? 99));
+  return `<table><thead><tr><th>Dimensão</th><th class="num">Score</th><th>Posição (barra) · linha = referência</th><th class="num">Ref. 2023</th><th class="num">Dif.</th><th>Leitura</th></tr></thead><tbody>${linhas.map(d => `<tr>
+    <td><strong>${_hEsc(d.nome)}</strong>${d.invertida ? '<div style="font-size:9px;color:#b45309">resposta invertida no cálculo</div>' : ''}<div style="font-size:9px;color:#9ca3af">${d.nItensEf} de ${d.nItens} itens</div></td>
+    <td class="num"><strong>${d.score != null ? d.score.toFixed(2) : '—'}</strong></td>
+    <td><div class="bar">${d.score != null ? `<i style="width:${pct(d.score).toFixed(1)}%;background:${d.faixa ? HSE_COR[d.faixa] : '#9ca3af'}"></i>` : ''}${d.ref != null ? `<b style="left:${pct(d.ref).toFixed(1)}%"></b>` : ''}</div></td>
+    <td class="num">${d.ref != null ? d.ref.toFixed(2) : '—'}</td>
+    <td class="num">${d.gap != null ? (d.gap >= 0 ? '+' : '') + d.gap.toFixed(2) : '—'}</td>
+    <td>${d.faixa ? `<span class="badge" style="background:${HSE_COR[d.faixa]}">${HSE_FAIXA[d.faixa]}</span>` : '—'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// Documento COMPLETO. opts.preview=true → sem toolbar (vai para o iframe). Mesmo HTML nos dois destinos.
+function _buildLaudoHSEHTML(c, opts = {}) {
+  const e = _hEsc;
+  const estNome = c.estPerfil?.nome_empresa || 'PsicoMap';
+  const logo = c.estPerfil?.logo_base64
+    ? `<div class="cover-logo" style="background:white;padding:4px;border:1.5px solid #e5e7eb"><img src="${c.estPerfil.logo_base64}" style="width:100%;height:100%;object-fit:contain"></div>`
+    : `<div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>`;
+  const geral = calcDimensoesHSE(c.linhas, _hseMetaCache, c.bench);
+  const seloInd = c.leitura.indicativo
+    ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> ${e(c.leitura.txt)}. O HSE considera os resultados confiáveis a partir de 50% de resposta; interprete com cautela e priorize a confirmação com os trabalhadores.</div>` : '';
+  const seloRasc = c.rascunho
+    ? `<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Os enunciados dos itens são provisórios. Este documento é de teste e não deve ser entregue a cliente.</div>` : '';
+  let pg = 0;
+  const footer = (sec = '') => { pg++; return `<div class="page-footer"><div class="l1"><span>${e(estNome)}${c.rascunho ? ' · <span class="draft-tag">RASCUNHO</span>' : ''}</span><span>${sec ? e(sec) + ' · ' : ''}Página ${pg}</span></div><div class="ogl">${HSE_OGL}</div></div>`; };
+
+  // Recortes (granularidade escolhida). Recorte com n < mínimo NÃO exibe resultado.
+  const mostrarSeg = c.gran !== 'consolidado' && c.grupos.length > 1;
+  let segHTML = '';
+  if (mostrarSeg) {
+    c.grupos.forEach(g => {
+      const ls = _linhasDoGrupo(g, c.linhas);
+      if (!ls.length) return;
+      segHTML += `<div class="sec-title sub nobreak">${e(g.nome || 'Sem identificação')} · ${ls.length} respondente(s)</div>`;
+      segHTML += ls.length < HSE_N_MIN_PROVISORIO
+        ? `<p style="color:#6b7280">Resultado omitido: menos de ${HSE_N_MIN_PROVISORIO} respondentes, para preservar o anonimato.</p>`
+        : _hseTabelaDimensoes(calcDimensoesHSE(ls, _hseMetaCache, c.bench));
+    });
+  }
+  const itensHTML = geral.dims.map(d => `<div class="nobreak"><div class="sec-title sub">${e(d.nome)} — score ${d.score != null ? d.score.toFixed(2) : '—'}</div>
+    <p style="font-size:10px;color:#6b7280">${d.invertida ? 'Dimensão com resposta invertida: “Nunca” é a melhor resposta; a média abaixo já está normalizada (maior = melhor).' : 'Maior = melhor.'}</p>
+    <table><thead><tr><th>Item</th><th>Enunciado</th><th class="num">Média</th><th class="num">n</th></tr></thead><tbody>${d.itens.map(s => `<tr><td style="white-space:nowrap">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td><td>${e(s.texto)}</td><td class="num">${s.media != null ? s.media.toFixed(2) : '—'}</td><td class="num">${s.n}</td></tr>`).join('')}</tbody></table></div>`).join('');
+
+  const prioridades = geral.dims.filter(d => d.faixa === 'VERMELHO' || d.faixa === 'AMBAR').sort((a, b) => a.score - b.score);
+  const recom = prioridades.length
+    ? `<p>Dimensões que pedem atenção, da mais crítica para a menos crítica (posição em relação à média de referência): ${prioridades.map(d => `<strong>${e(d.nome)}</strong> (${HSE_FAIXA[d.faixa].toLowerCase()})`).join('; ')}.</p>`
+    : `<p>Nenhuma dimensão ficou abaixo da média de referência neste recorte.</p>`;
+
+  const itensIndice = ['Identificação e amostra', 'Metodologia', 'Resultados por dimensão', 'Detalhamento por item', 'Recomendações e próximos passos', 'Referências e atribuição'];
+  const toolbar = opts.preview ? '' : `<div class="toolbar no-print"><span class="tt">${e(estNome)} — Laudo Técnico (HSE)</span><span style="font-size:11px;color:#9ca3af">${e(c.nomeEmp)} · ${e(c.hoje)}</span>
+    <button class="btn-print" onclick="if (window.opener && window.opener._registrarLaudo) window.opener._registrarLaudo(); window.print()">Imprimir / PDF</button>
+    <button class="btn-outline" onclick="window.close()">Fechar</button></div>`;
+
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Laudo HSE — ${e(c.nomeEmp)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>${HSE_LAUDO_CSS}</style></head><body>${toolbar}
+<div class="page">
+  <div class="cover-header">${logo}<div class="cover-company"><div class="cover-company-name">${e(estNome)}</div><div class="cover-company-sub">${e(c.estPerfil?.endereco || '')}</div></div></div>
+  <div class="cover-body"><div class="cover-tag">Laudo técnico</div>
+    <div class="cover-title">Avaliação de fatores psicossociais do trabalho</div>
+    <div class="cover-subtitle">HSE Management Standards — escala ICAO-35</div>
+    ${seloRasc}
+    <div class="cover-meta">
+      ${[['Empresa avaliada', c.nomeEmp], ['Ciclo de avaliação', c.cicloNome], ['Respondentes no recorte', c.linhas.length + ' colaboradores'], ['Data de emissão', c.hoje], ['Responsável técnico', c.responsavel]]
+        .map(([k, v]) => `<div><div class="cover-meta-label">${e(k)}</div><div class="cover-meta-value">${e(v)}</div></div>`).join('')}
+    </div></div>
+  ${footer('Capa')}
+</div>
+<div class="page"><div class="sec-title">Índice</div><ul class="indice-lista">${itensIndice.map((t, i) => `<li>${i + 1}. ${e(t)}</li>`).join('')}</ul>${footer('Índice')}</div>
+<div class="page"><div class="sec-title">1. Identificação e amostra</div>
+  <table><tbody>
+    <tr><td><strong>Empresa</strong></td><td>${e(c.nomeEmp)}</td></tr>
+    <tr><td><strong>Ciclo</strong></td><td>${e(c.cicloNome)}</td></tr>
+    <tr><td><strong>Respostas no ciclo</strong></td><td>${c.todas.length}</td></tr>
+    <tr><td><strong>Respondentes neste recorte</strong></td><td>${c.linhas.length}</td></tr>
+    <tr><td><strong>Quadro de funcionários</strong></td><td>${c.headcount ? c.headcount : 'não cadastrado'}</td></tr>
+    <tr><td><strong>Taxa de resposta</strong></td><td>${c.taxa != null ? Math.round(c.taxa * 100) + '%' : 'não calculável'} — ${e(c.leitura.txt)}</td></tr>
+  </tbody></table>
+  ${seloInd}
+  <p>A taxa de resposta é um indicador de confiabilidade: o HSE considera adequada acima de 50%, desejável acima de 60%, boa acima de 70% e muito boa acima de 80%. Resultados com taxa menor devem ser tratados como indicativos.</p>
+  ${footer('Identificação e amostra')}</div>
+<div class="page"><div class="sec-title">2. Metodologia</div>
+  <p>O HSE Management Standards Indicator Tool é um questionário de 35 itens, desenvolvido pelo <em>Health and Safety Executive</em> (Reino Unido), que mede a percepção dos trabalhadores sobre sete dimensões do ambiente de trabalho: Demandas, Controle, Apoio da gestão, Suporte dos colegas, Relacionamentos, Clareza de papel e Mudanças. A coleta é anônima e refere-se aos últimos 6 meses de trabalho.</p>
+  <p>Cada item é respondido em escala de 1 a 5 (frequência nos itens 1 a 23; concordância nos itens 24 a 35). Os itens das dimensões <strong>Demandas</strong> e <strong>Relacionamentos</strong> são formulados em sentido negativo e têm a pontuação invertida no cálculo. O score de cada dimensão é a média simples das médias de seus itens, variando de 1,00 a 5,00, e <strong>quanto maior, melhor a condição percebida</strong> (direção oposta à da metodologia BS 8800). Não existe score global oficial.</p>
+  <p>Cada dimensão é comparada à média de referência do relatório de benchmarking do HSE (2023, ${e(String(39484))} respondentes): <strong>${HSE_FAIXA.VERMELHO}</strong> (mais de 0,50 abaixo da média), <strong>${HSE_FAIXA.AMBAR}</strong> (abaixo da média), <strong>${HSE_FAIXA.AZUL}</strong> (até 0,40 acima) e <strong>${HSE_FAIXA.VERDE}</strong> (acima disso). Essas faixas são relativas à referência adotada por esta consultoria — não são percentis oficiais do HSE. A base do HSE reúne organizações que escolheram usar a ferramenta e não é uma amostra nacional representativa.</p>
+  <p>Resultados de recortes com menos de ${HSE_N_MIN_PROVISORIO} respondentes não são exibidos, para preservar o anonimato. Este documento descreve a percepção dos trabalhadores em um momento; não constitui avaliação clínica nem substitui outras avaliações exigidas pela legislação aplicável.</p>
+  ${footer('Metodologia')}</div>
+<div class="page"><div class="sec-title">3. Resultados por dimensão</div>
+  <p>Score de 1 a 5 (maior = melhor). A linha preta na barra marca a média de referência; as dimensões estão ordenadas da menor para a maior pontuação.</p>
+  <div class="sec-title sub">Geral · ${c.linhas.length} respondente(s)</div>
+  ${_hseTabelaDimensoes(geral)}
+  ${segHTML}
+  ${footer('Resultados')}</div>
+<div class="page"><div class="sec-title">4. Detalhamento por item</div>
+  <p>Média de cada item após a normalização (maior = melhor). ↺ indica item cuja resposta foi invertida no cálculo.</p>
+  ${itensHTML}
+  ${footer('Itens')}</div>
+<div class="page"><div class="sec-title">5. Recomendações e próximos passos</div>
+  ${recom}
+  <p>O método do HSE não termina no questionário: os resultados devem ser confirmados com os trabalhadores (por exemplo, em <strong>grupos focais</strong>) antes de definir as ações. Recomenda-se priorizar, nessas conversas, as dimensões indicadas acima, comparar os achados com o que a organização já conhece de seus processos e acompanhar a evolução em avaliações periódicas, mantendo o mesmo instrumento para preservar a comparabilidade.</p>
+  <div class="assinatura nobreak"><div class="linha"></div><div class="nome">${e(c.responsavel)}</div>${c.registro ? `<div class="reg">${e(c.registro)}</div>` : ''}<div class="reg">${e(c.hoje)}</div></div>
+  ${footer('Recomendações')}</div>
+<div class="page"><div class="sec-title">6. Referências e atribuição</div>
+  <p class="ref"><strong>HSE — Health and Safety Executive.</strong> Management Standards Indicator Tool (questionário de 35 itens) e Analysis Tool. https://www.hse.gov.uk/stress/standards/downloads.htm</p>
+  <p class="ref"><strong>HSE.</strong> Stress Indicator Tool — Benchmarking Report, agosto/2023.</p>
+  <p class="ref"><strong>Escala ICAO</strong> — adaptação brasileira do HSE Management Standards Indicator Tool. Revista Psicologia: Organizações e Trabalho, 20(3), 1141-1149, 2020.</p>
+  <div class="box"><strong>Atribuição.</strong> ${HSE_OGL} Este documento não é endossado pelo Health and Safety Executive nem pelo governo do Reino Unido.</div>
+  ${footer('Referências')}</div>
+</body></html>`;
+}
+
+// Mostra a checagem acima do preview e o documento num iframe (mesmo HTML do PDF).
+async function _laudoHSEPreview(panel, seq) {
+  try {
+    panel.innerHTML = _loadingState('Montando laudo HSE…');
+    const c = await _laudoHSEContexto();
+    if (seq !== _laudoRenderSeq) return;
+    const pf = _laudoHSEPreflight(c);
+    const lista = (arr, cor, tit) => arr.length ? `<div style="margin-bottom:8px;padding:8px 10px;border-radius:8px;border:1px solid ${cor};font-size:12px"><strong style="color:${cor}">${tit}</strong><ul style="margin:4px 0 0 18px">${arr.map(x => `<li>${_hEsc(x)}</li>`).join('')}</ul></div>` : '';
+    let html = lista(pf.erros, HSE_COR.VERMELHO, 'Pendências que impedem gerar o laudo') + lista(pf.avisos, HSE_COR.AMBAR, 'Avisos');
+    if (pf.erros.length) { panel.innerHTML = html || ''; return; }
+    panel.innerHTML = html + '<iframe id="laudo-hse-iframe" title="Pré-visualização do laudo HSE" style="width:100%;height:78vh;border:1px solid #e5e7eb;border-radius:8px;background:#f1f3f4"></iframe>';
+    document.getElementById('laudo-hse-iframe').srcdoc = _buildLaudoHSEHTML(c, { preview: true });
+  } catch (e) {
+    console.warn('_laudoHSEPreview:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o laudo HSE: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+
+// Abre a janela de impressão com o MESMO HTML do preview. A janela já foi aberta pelo chamador (clique do usuário).
+async function gerarLaudoHSE(win) {
+  const c = await _laudoHSEContexto();
+  const pf = _laudoHSEPreflight(c);
+  if (pf.erros.length) { win.close(); toast('Não foi possível gerar: ' + pf.erros[0], 'w', 6000); return; }
+  if (pf.avisos.length && !confirm('Confira antes de gerar:\n\n• ' + pf.avisos.join('\n• ') + '\n\nGerar o laudo assim mesmo?')) { win.close(); return; }
+  // Congelado aqui: _registrarLaudo dispara do botão Imprimir DESTA janela, possivelmente minutos depois.
+  _laudoUltimoN = c.linhas.length;
+  _laudoEdicaoSnap = { blocos: {}, acoes: { listas: {} } };   // laudo HSE não tem texto editável: sem trilha herdada do BS
+  _laudoMetSnap = {
+    metodologia: METODOLOGIA_HSE, questionario_id: c.questionarioId, rascunho: c.rascunho,
+    itens: c.itensMeta.map(i => ({ codigo: i.codigo, texto: i.texto })),   // texto impresso é reproduzível depois
+    taxa_resposta: c.taxa, headcount: c.headcount, indicativo: c.leitura.indicativo,
+  };
+  win.document.open(); win.document.write(_buildLaudoHSEHTML(c, { preview: false })); win.document.close();
+  toast('Laudo HSE aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+}
+// ==== HSE (S8) END ====
+
 const BLOCOS_INFO = {
   A:{nome:'Bloco A — Demandas de Trabalho',    cor:'#4b5ea8',bg:'#f0f2fb'},
   B:{nome:'Bloco B — Relações Interpessoais',    cor:'#2d6e9e',bg:'#f0f6fb'},
@@ -10882,6 +11114,7 @@ function renderHistoricoLaudos() {
     // Sem isto a trilha de personalização existe no banco e ninguém vê.
     const ed = sn.edicao || null;
     const det = [
+      sn.metodologia === METODOLOGIA_HSE ? 'HSE' : null,
       gran ? SEG_LABEL[gran] || gran : null,
       ciclo,
       Number.isFinite(n) ? `${n} resposta${n !== 1 ? 's' : ''}` : null,
@@ -15004,7 +15237,10 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
-  if (_guardaTelaBS(cicloId, document.getElementById('laudo-preview-panel'), 'o laudo HSE está em desenvolvimento')) return;
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE: gerador único (preview = PDF)
+    await _laudoHSEPreview(document.getElementById('laudo-preview-panel'), seq);
+    return;
+  }
   _avisarHSEForaDaAnaliseBS(emp, cicloId);
   const niveisLd = [...comboState['combo-ld-nivel']];   // recorta os FATORES, não as linhas
   const dados   = await getLinhasParaAnalise(emp);
@@ -15373,6 +15609,8 @@ async function _registrarLaudo() {
         // documento de NR-01 e poder reproduzir o que foi entregue, e id so diz que houve
         // edicao, nao o que mudou. Chave nova, jsonb — nenhuma migration.
         edicao:      _laudoEdicaoTrilha(),
+        // Só laudo HSE: metodologia, questionário e o TEXTO IMPRESSO dos itens (reprodutível depois).
+        ...(_laudoMetSnap ? { metodologia: _laudoMetSnap.metodologia, hse: _laudoMetSnap } : {}),
       },
       tenant_id:     currentTenantId
     });
@@ -15955,11 +16193,8 @@ async function gerarLaudoPDF() {
     const empId     = document.getElementById('ld-empresa')?.value || '';
     const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
     const cicloId   = document.getElementById('ld-ciclo')?.value || '';
-    if (_metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE ainda não existe: não gerar documento BS errado
-      win.close();
-      toast('O laudo de ciclos HSE ainda está em desenvolvimento.', 'w');
-      return;
-    }
+    _laudoMetSnap = null;   // BS 8800: snapshot_json segue exatamente como era
+    if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await gerarLaudoHSE(win); return; }
     const setores   = [...(comboState['combo-ld-setor'] || new Set())];
     const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
     const escolaridadesLd = [...(comboState['combo-ld-escolaridade'] || new Set())];
