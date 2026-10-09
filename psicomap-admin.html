@@ -1068,6 +1068,23 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .ham-drop-item svg{flex-shrink:0;color:var(--tm)}
 .ham-drop-sep{height:1px;background:var(--border);margin:4px 0}
 
+/* ── PASSO A PASSO POR CLIENTE (cartão da tela Clientes + #modal-trilha) ── */
+.trl-chip{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left}
+.trl-chip:hover{border-color:var(--gm)}
+.trl-chip:not(.trl-chip-card){width:auto;margin:0;flex-shrink:0}
+.trl-anel{--p:0;position:relative;width:30px;height:30px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(var(--g) calc(var(--p)*1%),var(--border) 0)}
+.trl-anel::before{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--w)}
+.trl-anel span{position:relative;font-size:8.5px;font-weight:800;color:var(--tx)}
+.trl-prox{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trl-ver{font-size:10px;color:var(--tl);flex-shrink:0}
+.trl-passo{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bs)}
+.trl-passo:last-of-type{border-bottom:none}
+.trl-ic{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--bg);color:var(--tl);border:1px solid var(--border)}
+.trl-feito .trl-ic{background:var(--gl);color:var(--g);border-color:var(--gm)}
+.trl-bloqueado .trl-ic{background:var(--amberbg);border-color:transparent}
+.trl-rot{font-size:12px;font-weight:700;color:var(--tx)}
+.trl-mot{font-size:11px;color:var(--tm);line-height:1.5;margin-top:2px}
+.trl-feito .trl-rot{color:var(--tm)}
 /* ── GUIA "COMO USAR" (tela #sc-ajuda) ──
    Reaproveita os blocos .tut-* do tutorial antigo; o modal em si foi removido. */
 .tut-step{display:flex;gap:18px;padding:20px 0;border-bottom:1px solid var(--bs)}
@@ -4364,6 +4381,18 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Baixar
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PASSO A PASSO DO CLIENTE ══ -->
+<div class="modal-bg" id="modal-trilha" onclick="if(event.target===this)fecharTrilha()">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title" id="trilha-titulo">Passo a passo</div>
+    <div class="modal-sub">Onde este cliente parou no fluxo, do cadastro ao laudo.</div>
+    <div id="trilha-corpo"></div>
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="fecharTrilha()">Fechar</button>
     </div>
   </div>
 </div>
@@ -13110,6 +13139,26 @@ async function carregarHeadcountCarteira() {
     (data || []).forEach(r => { acc[r.empresa_id] = (acc[r.empresa_id] || 0) + (r.quantidade || 0); });
     _headcountPorEmpresa = acc;
   } catch(e) { console.warn('carregarHeadcountCarteira:', e); }
+  await carregarLaudosCarteira();
+}
+
+// Laudos já gerados por cliente — alimenta o último passo do "Passo a passo" do cliente.
+// null = não carregado OU falhou: nesse caso o passo é "desconhecido", nunca "pendente"
+// (não se cobra o que não se sabe). Uma consulta agregada para a carteira inteira.
+let _laudosPorEmpresa = null; // {empresaId: nº de laudos}
+async function carregarLaudosCarteira() {
+  if (isDemoMode || !sbAdmin) return;
+  if (currentUser?.id === 'local-admin' || currentUser?.id === 'demo') return;
+  try {
+    const ids = _empresas.map(e => e.id);
+    if (!ids.length) { _laudosPorEmpresa = {}; return; }
+    const { data, error } = await _fetchAllSupabase(() => sbAdmin
+      .from('laudos').select('empresa_id').in('empresa_id', ids));
+    if (error) { console.warn('carregarLaudosCarteira:', error.message); _laudosPorEmpresa = null; return; }
+    const acc = {};
+    (data || []).forEach(r => { acc[r.empresa_id] = (acc[r.empresa_id] || 0) + 1; });
+    _laudosPorEmpresa = acc;
+  } catch(e) { console.warn('carregarLaudosCarteira:', e); _laudosPorEmpresa = null; }
 }
 
 // true quando a ÚLTIMA carga de respostas falhou (rede/RLS). Sem isso, falha e "sem respostas"
@@ -16018,6 +16067,7 @@ function _limparEstadoTenant() {
   _cicloAtivo     = '';
   _invalidarHeadcountCache();
   _headcountPorEmpresa = null;
+  _laudosPorEmpresa    = null;
   // Resultado da ultima analise: sobrevivia ao logout e ao modo suporte, e
   // _sincronizarBotaoPacote() so checa `_podeBaixarTodos() && window._analiseData`
   // — o botao de exportar continuava ativo sobre dados do tenant anterior.
@@ -16429,6 +16479,7 @@ async function entrarComoEST(tenantId, nome) {
   // anterior não pode vazar para a visitada.
   _invalidarHeadcountCache();
   _headcountPorEmpresa = null;
+  _laudosPorEmpresa    = null;
   await carregarEmpresas();
   await carregarLinks();
   await carregarHeadcountCarteira();
@@ -16688,7 +16739,7 @@ function _iniciarAppAposTenant() {
   carregarRiscosDB();
   carregarEstPerfil(); // carrega branding EST em paralelo (não bloqueia boot)
   carregarEmpresas().then(() => {
-    carregarHeadcountCarteira().then(() => renderDashboard());
+    carregarHeadcountCarteira().then(() => { renderDashboard(); renderTelaEmpresas(); });  // o passo a passo do cliente depende do quadro e dos laudos
     carregarLinks().then(() => {
       iniciarRealtimeRespostas();
       renderDashboard();
@@ -18005,6 +18056,147 @@ function _urgenciaEmpresa(m) {
   return faltam * 10 + dias;
 }
 
+// ══════════════════════════════════════════════════════════════
+// PASSO A PASSO POR CLIENTE — onde cada cliente parou no fluxo
+// ══════════════════════════════════════════════════════════════
+// Eixo diferente de _statusEmpresa (que diz COMO ESTÁ a coleta): aqui é "o que falta fazer".
+// Tudo DERIVADO de dado em memória — nada é gravado. Fonte única: o cartão, a linha da lista e
+// o modal chamam _trilhaCliente(); recalcular em dois lugares foi como a adesão divergiu em 27/08.
+// estado: feito | pendente | bloqueado | desconhecido.
+function _trilhaCliente(emp) {
+  const m = _calcMetricasEmpresa(emp);
+  const passos = [];
+  const add = (id, rotulo, estado, motivo, extra) => passos.push({ id, rotulo, estado, motivo: motivo || '', ...(extra || {}) });
+
+  const temSetores = m.nSetores > 0;
+  const temCiclo   = m.ciclosEmp.length > 0;
+  const quadroNulo = _headcountPorEmpresa === null;
+
+  add('cliente', 'Cliente cadastrado', 'feito');
+
+  add('setores', 'Setores & Funções', temSetores ? 'feito' : 'pendente',
+    temSetores ? `${m.nSetores} setor(es) no catálogo.`
+      : 'Sem isto o funcionário não consegue se identificar no formulário e não consegue responder.');
+
+  add('quadro', 'Quadro de funcionários',
+    quadroNulo ? 'desconhecido' : (m.quadro > 0 ? 'feito' : 'pendente'),
+    quadroNulo ? 'Carregando…' : (m.quadro > 0 ? `${m.quadro} funcionário(s) no quadro.`
+      : 'É a base do cálculo de adesão. Importe junto com Setores & Funções.'));
+
+  add('campanha', 'Campanha criada', temCiclo ? 'feito' : 'pendente',
+    temCiclo ? `${m.ciclosEmp.length} campanha(s).` : 'Cada rodada de avaliação é uma campanha; os links ficam dentro dela.');
+
+  if (moduloOn('links')) {
+    const distribuiu = m.linksEmp.some(l => !l.is_teste);   // link de teste não conta como distribuído
+    const bloq = !temSetores ? 'setores' : (!temCiclo ? 'campanha' : '');
+    add('link', 'Link distribuído',
+      distribuiu ? 'feito' : (bloq ? 'bloqueado' : 'pendente'),
+      distribuiu ? `${m.linksEmp.filter(l => !l.is_teste).length} link(s) gerado(s).`
+        : (bloq === 'setores' ? 'Cadastre os setores antes: sem eles o funcionário não consegue se identificar.'
+          : bloq === 'campanha' ? 'Crie a campanha antes: todo link novo fica dentro de uma campanha.'
+          : 'Gere o link e envie aos funcionários.'),
+      bloq ? { depende: bloq === 'setores' ? 'setores' : 'campanha' } : {});
+    // Resposta de link de teste não é coleta real: não marca este passo.
+    const respReais = m.linksEmp.filter(l => !l.is_teste).reduce((t, l) => t + (l.respostas || 0), 0);
+    add('respostas', 'Respostas chegando', respReais > 0 ? 'feito' : 'pendente',
+      respReais > 0 ? `${respReais} resposta(s) recebida(s).` : 'Nenhuma resposta ainda.');
+  }
+
+  if (moduloOn('adesao')) {
+    const semBase = quadroNulo || m.quadro === 0;
+    add('adesao', `Meta de adesão (${AD_META_PCT}%)`,
+      quadroNulo ? 'desconhecido' : (semBase ? 'bloqueado' : (m.pctBruto >= AD_META_PCT ? 'feito' : 'pendente')),
+      quadroNulo ? 'Carregando…' : (semBase ? 'Sem quadro de funcionários não há base para medir a adesão.'
+        : `Adesão bruta: ${m.respTotal} ÷ ${m.quadro} = ${m.pctBruto}%.`),
+      semBase && !quadroNulo ? { depende: 'quadro' } : {});
+  }
+
+  if (moduloOn('laudo')) {
+    const n = _laudosPorEmpresa ? (_laudosPorEmpresa[emp.id] || 0) : null;
+    add('laudo', 'Laudo gerado', n === null ? 'desconhecido' : (n > 0 ? 'feito' : 'pendente'),
+      n === null ? 'Não foi possível conferir.' : (n > 0 ? `${n} laudo(s) gerado(s).`
+        : 'Antes de emitir, confira a cobertura dos agrupamentos (tela Agrupamentos). Depois, use "Anexos para o cliente" em Resultados.'));
+  }
+  return passos;
+}
+
+// Resumo para cartão/lista: feitos, total e o primeiro passo que ainda exige ação.
+function _trilhaResumo(emp) {
+  const passos = _trilhaCliente(emp);
+  const feitos = passos.filter(p => p.estado === 'feito').length;
+  const proximo = passos.find(p => p.estado === 'pendente' || p.estado === 'bloqueado') || null;
+  return { passos, feitos, total: passos.length, proximo };
+}
+
+function _trilhaChipHTML(emp, compacto) {
+  const r = _trilhaResumo(emp);
+  const pct = Math.round(r.feitos / r.total * 100);
+  const completo = !r.proximo && r.passos.every(p => p.estado !== 'desconhecido');
+  const prox = completo ? 'Passo a passo completo' : (r.proximo ? `Próximo: ${r.proximo.rotulo}` : 'Conferindo…');
+  const anel = `<span class="trl-anel" style="--p:${pct}"><span>${r.feitos}/${r.total}</span></span>`;
+  if (compacto) {
+    return `<button class="trl-chip" title="Passo a passo — ${prox}" onclick="abrirTrilha('${emp.id}')">${anel}<span class="trl-prox">${prox}</span></button>`;
+  }
+  return `<button class="trl-chip trl-chip-card" title="Ver o passo a passo deste cliente" onclick="abrirTrilha('${emp.id}')">${anel}<span class="trl-prox">${prox}</span><span class="trl-ver">Ver passos ›</span></button>`;
+}
+
+const _TRILHA_ICONE = { feito: '✓', pendente: '○', bloqueado: '🔒', desconhecido: '?' };
+function abrirTrilha(empId) {
+  if (!empId || empId === 'null') return;
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+  document.getElementById('trilha-titulo').textContent = 'Passo a passo — ' + emp.nome;
+  const r = _trilhaResumo(emp);
+  const rotulos = Object.fromEntries(r.passos.map(p => [p.id, p.rotulo]));
+  const rotuloAcao = { cliente:'Abrir ficha', setores:'Abrir Setores & Funções', quadro:'Abrir Setores & Funções',
+    campanha:'Criar campanha', link:'Abrir Campanhas', respostas:'Ver Campanhas', adesao:'Abrir Adesão', laudo:'Abrir Laudo' };
+  document.getElementById('trilha-corpo').innerHTML =
+    `<div style="font-size:12px;color:var(--tm);margin-bottom:12px">${r.feitos} de ${r.total} passos concluídos.
+      ${r.proximo ? `Próximo: <strong>${r.proximo.rotulo}</strong>.` : ''}</div>` +
+    r.passos.map((p, i) => {
+      const dest = p.estado === 'bloqueado' && p.depende ? p.depende : p.id;
+      const textoBtn = p.estado === 'bloqueado' && p.depende ? `Fazer antes: ${rotulos[p.depende] || ''} →` : (rotuloAcao[p.id] || 'Abrir') + ' →';
+      const mostrarBtn = p.estado !== 'feito' && p.estado !== 'desconhecido';
+      return `<div class="trl-passo trl-${p.estado}">
+        <div class="trl-ic">${_TRILHA_ICONE[p.estado]}</div>
+        <div style="flex:1;min-width:0">
+          <div class="trl-rot">${i + 1}. ${p.rotulo}</div>
+          ${p.motivo ? `<div class="trl-mot">${p.motivo}</div>` : ''}
+        </div>
+        ${mostrarBtn ? `<button class="btn ${p.estado === 'bloqueado' ? 'btn-ghost' : 'btn-g'}" style="font-size:11px;padding:5px 10px;flex-shrink:0" onclick="_trilhaIr('${dest}','${emp.id}')">${textoBtn}</button>` : ''}
+      </div>`;
+    }).join('') +
+    `<div style="font-size:10px;color:var(--tl);margin-top:12px;line-height:1.5">Calculado a partir do que já está cadastrado — nada é gravado aqui.
+      A adesão é a bruta (respostas ÷ quadro); a classificada fica na tela Adesão.</div>`;
+  document.getElementById('modal-trilha').classList.add('open');
+  if (_modulosOff.size) _esconderElementosModulos();
+}
+function fecharTrilha() { document.getElementById('modal-trilha')?.classList.remove('open'); }
+
+// Cada passo leva ao que o app já tem — nada de navegação nova. Tudo que muda de tela passa por goScreen (RBAC).
+function _trilhaIr(passo, empId) {
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+  fecharTrilha();
+  switch (passo) {
+    case 'cliente':   abrirModalClientePerfil(empId); break;
+    case 'setores':
+    case 'quadro':    abrirModalGHE(empId); break;
+    case 'campanha':  abrirModalCiclo(empId); break;
+    case 'link':
+    case 'respostas':
+      if (goScreen('links', document.getElementById('nb-links'))) {
+        setTimeout(() => { const el = document.getElementById('link-f-empresa'); if (el) { el.value = empId; renderLinks(); } }, 100);
+      }
+      break;
+    case 'adesao':    _abrirAdesao(empId, ''); break;
+    case 'laudo':
+      setEmpresaAtiva(empId, emp.nome);
+      goScreen('laudo', document.getElementById('nb-laudo'));
+      break;
+  }
+}
+
 let _empFiltroStatus = '';      // '' = todos; chave de _EMP_STATUS
 let _empOrdem        = 'nome';  // 'nome' | 'adesao' | 'respostas'
 
@@ -18132,6 +18324,7 @@ function renderTelaEmpresas() {
           </div>
         </div>
         ${_empBarraAdesao(emp)}
+        ${_trilhaChipHTML(emp, false)}
         ${nSetores ? `<div style="font-size:10px;color:#6b7280;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
       </div>
       <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
@@ -18145,7 +18338,7 @@ function renderTelaEmpresas() {
         </button>
         <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalCiclo('${emp.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Ciclos
+          Campanhas
         </button>
         <button class="btn btn-ghost" data-modulo="links" style="font-size:11px;padding:5px 10px" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -18221,6 +18414,7 @@ function _renderEmpresasLista(filtradas) {
         <div style="font-size:11px;color:var(--tl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.cnpj||'Sem CNPJ'}</div>
       </div>
       <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
+      ${_trilhaChipHTML(emp, true)}
       <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
         <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
         <span title="Respostas recebidas ÷ quadro de funcionários (adesão bruta). A adesão classificada fica na tela Adesão."><strong>${respTotal}</strong>${quadro ? ` / ${quadro}` : ''} resp.</span>
@@ -21680,6 +21874,7 @@ const GUIA_DUVIDAS = [
   { p:'O funcionário não encontra o setor dele no formulário', r:'Cadastre ou importe o setor em <strong>Setores &amp; Funções</strong>. O formulário lê o cadastro a cada abertura — não é preciso gerar um link novo.', roles:['admin','consultor','super_admin'] },
   { p:'O link não abre ou não aceita a resposta', r:'Em <strong>Campanhas</strong>, confira se o link está ativo (não pausado nem finalizado) e se não passou da validade.', roles:['admin','consultor','super_admin'] },
   { p:'A adesão está baixa', r:'Abra <strong>Adesão</strong>, veja quais setores têm mais pendências e reenvie o link a eles. A meta de referência é 70% do quadro.', roles:['admin','consultor','super_admin'] },
+  { p:'Onde cada cliente parou?', r:'Em <strong>Clientes</strong>, cada cartão mostra o progresso (por exemplo 5/8) e o <strong>próximo passo</strong>. Clique para ver o passo a passo completo, com um botão para cada etapa.', roles:['admin','consultor','super_admin'] },
   { p:'Os números não são os que eu esperava', r:'Confira os filtros no topo da tela, principalmente o <strong>ciclo</strong>: cada ciclo é analisado separadamente.' },
   { p:'As respostas são anônimas?', r:'Sim. O sistema registra setor, função e escolaridade — nunca nome ou CPF — e o relatório de adesão mostra apenas totais.' },
 ];

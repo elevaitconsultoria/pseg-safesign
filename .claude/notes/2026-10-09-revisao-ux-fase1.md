@@ -48,3 +48,9 @@ em 3 tabelas (apagar ciclo zerava o ciclo das respostas); `respostas` sem policy
 Testado por harness: agrupamento (todos/filtrado/vazio/sem campanha/viewer), finalizarCampanha, gerarLink
 sem e com campanha, filtros por ciclo com o sentinela, opções do select, menu (visibilidade idêntica) e guia.
 Não testado em navegador logado/DEV com o banco real.
+
+## Fase 3b — Passo a passo por cliente (mesma branch)
+Ver seção "Passo a passo por cliente" no CLAUDE.md. Harness: 8 perfis de cliente (vazio → laudo emitido)
+dão feitos/próximo esperados; teste não conta; `quadro`/`laudos` nulos viram "desconhecido" e nunca "próximo";
+módulos desligados removem passos; cartão (grade e lista) e modal renderizam; cada botão chama a função certa;
+`_statusEmpresa` inalterado; menu/RBAC idêntico. Não testado: RLS real de `laudos`; navegador logado em DEV.

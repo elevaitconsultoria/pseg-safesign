@@ -1679,3 +1679,23 @@ Menu "Links de Coleta" → **Campanhas** (id `nb-links`/`sc-links`/módulo `link
 - `gerarLink` agora devolve `ciclo_id` no `.select()` e no objeto `_links` (antes o agrupamento só acertava
   após recarregar). `modal-ciclo` ganha z-index acima do modal de link quando aberto por ele (vem antes
   no DOM e ficaria escondido).
+
+## Passo a passo por cliente (2026-10-09)
+
+Só `psicomap-admin.html`, **sem migration e sem nada persistido**: tudo derivado de dado em memória.
+Eixo diferente de `_statusEmpresa` (que diz COMO ESTÁ a coleta): aqui é "o que falta fazer" no fluxo.
+
+- **`_trilhaCliente(emp)` é a fonte única** (função pura): 8 passos — cliente, Setores & Funções, quadro de
+  funcionários, campanha, link distribuído, respostas, meta de adesão, laudo. Estado `feito | pendente |
+  bloqueado | desconhecido`. Cartão, linha da lista e `#modal-trilha` leem dela; **nunca recalcular em outro lugar**.
+- **Regras que não são óbvias:** link de **teste** não conta como distribuído nem suas respostas contam;
+  "Link distribuído" fica **bloqueado** sem setores (o formulário não tem "Outro" desde a PR #84) ou sem
+  campanha — é só orientação, `gerarLink` e o banco não mudam; sem quadro, "Meta de adesão" é bloqueada;
+  **`desconhecido` nunca vira "próximo passo"** (quadro ainda carregando, falha ao ler `laudos`).
+  Passos de módulo desligado (`links`, `adesao`, `laudo`) somem. Adesão é a BRUTA, como no resto da carteira.
+- **`_laudosPorEmpresa`** (nova consulta agregada em `laudos`, junto de `carregarHeadcountCarteira`): falha
+  abre como `null`. Está em `_limparEstadoTenant()` e é zerado ao entrar no Modo Suporte.
+- Os botões do modal usam a navegação que já existia (`abrirModalGHE`, `abrirModalCiclo`, `goScreen`,
+  `_abrirAdesao`) via `_trilhaIr`; passo bloqueado leva ao passo que o bloqueia.
+- **Não está na Home** (Dashboard): ficou fora para não tocar na ordenação por urgência.
+- Pendente de teste real: a consulta de `laudos` com RLS de cada perfil (só simulei o resultado).
