@@ -95,6 +95,7 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | B1 | Texto **validado** dos 35 itens + **permissão dos autores da ICAO** para uso comercial (Ferreira, Freitas, Devotto, Damásio); fallback: tradução profissional do HSE original | go-live |
 | S9 | **Valor definitivo do n mínimo** (com o jurídico). Hoje: 5, provisório, só no HSE (`HSE_N_MIN_PROVISORIO`) | S9; amplia a proteção ao BS 8800 |
 | SST | Revisar **textos fixos do laudo** e **definição das faixas** (±0,50 / +0,40) | go-live |
+| **SST** | **Definir e assinar a severidade (S1–S4) das 7 dimensões** e os "possíveis danos"; aceitar (ou não) faixa do HSE como P | **go-live do HSE** (sem isso o laudo não gera: erro na checagem) |
 | Teste logado | Abrir o admin de DEV e percorrer: criar ciclo HSE → responder → analisar → gerar laudo | confiança antes de PROD |
 | Push | Autorizar `git push` da branch e o fast-forward `develop ← main` (publica o DEV para todos) | PR e deploy |
 | Escala | Definir rótulos únicos × dois conjuntos (depende de como a ICAO rotula os itens 24–35) | B1 |
@@ -108,13 +109,14 @@ e nos casos extremos; admin com harness (lógica, guardas, fallback sem coluna, 
 | S10 | Atualizar `migration_revoke_anon.sql` (a RPC anônima nova) e o CLAUDE.md ("Superfície do anon", seção Metodologias, divergência de overloads DEV/PROD); `RESTAURACAO_BACKUP.md` (novas tabelas e colunas); skill `validar-formulario` (testes HSE, valor 5, `questoes LIMIT 3` pode devolver H, join `text = uuid`) |
 | S5 | Testar formulário antigo em cache, fila offline legada e erro de boot da RPC |
 | S6 | Trocar a metodologia **pela interface** antes do 1º link (o banco já permite); selo no Dashboard e em Clientes |
+| S8b | Aplicar `migration_hse_riscos_config.sql` em PROD (**vazia**); seed de PROD deve **abortar** se houver `validado=false`; tela para SST cadastrar severidade (hoje SQL) |
 | S9 | `_nMinimo` para o BS 8800 (segmentações, laudo, Auditoria com `session_id`/dispositivo), com o valor definido |
 | S11 | `seed_hse_icao35_validado.sql` (guarda `[RASCUNHO]`, publica por último); teste de aceite ponta a ponta; monitoramento (taxa de conclusão por proxy) |
 | Seed | Transcrever as **13 médias setoriais** do relatório HSE 2023 (hoje só as gerais) |
 | Dados | Limpar os dados de teste de DEV quando não servirem mais |
 
 ### 5.3 Fase 1.1 (fora da v1)
-Ponte HSE→inventário PGR (§6), comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
+Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
 CNAE e grau de risco em `empresas`, vários responsáveis técnicos no laudo, reavaliação derivada do resultado, seções editáveis do laudo HSE, combo.
 
 ### 5.4 Ordem sugerida para chegar a PROD
@@ -122,6 +124,11 @@ CNAE e grau de risco em `empresas`, vários responsáveis técnicos no laudo, re
 4. promover o app (S5–S8; sem o seed validado o HSE fica invisível em PROD) → 5. B1 + SST + n mínimo → 6. seed validado (publica) → 7. teste de aceite → 8. piloto.
 
 ## 6. Como calcular **risco** a partir do HSE
+
+> **DECISÃO (2026-10-09):** o usuário confirmou que o cliente que contrata **só o HSE precisa de nível de risco no PGR**
+> (NR-01 exige riscos psicossociais no inventário). A ponte deixa de ser "fase 1.1 opcional" e passa a ser **parte do que o laudo HSE entrega**.
+> Escolhido: **P a partir da faixa do HSE** (opção C) e **severidade definida por SST** (o sistema só traz o mecanismo).
+> Implementado como etapa **S8b** — ver §6.7. Os parágrafos abaixo preservam a análise que levou à decisão.
 
 ### 6.1 A resposta curta
 **O HSE não calcula risco.** Ele mede a condição percebida de cada dimensão e diz onde agir primeiro (as 4 faixas). Não existe fórmula oficial
@@ -165,6 +172,23 @@ Isso mostra o ponto sensível: **com P vindo de apenas 4 faixas, a severidade pa
 - Quem define e assina o catálogo de severidade por dimensão?
 - O cliente que contrata só HSE precisa mesmo de nível de risco no PGR, ou o diagnóstico + grupos focais basta?
 - As citações normativas que o concorrente usa (NR-01, NR-17, AEP/AET) **não foram verificadas por nós**; antes de posicionar o laudo HSE assim, validar com SST/jurídico.
+
+### 6.7 Implementação da opção C (S8b) — o que existe agora
+- **Banco:** `migration_hse_riscos_config.sql` — tabela `hse_riscos_config` (uma linha por dimensão: `severidade` 1–4, `danos`, `versao`, `validado`, `validado_por`, `validado_em`).
+  Trava de coerência: `validado = true` exige severidade, responsável e data. Leitura `authenticated`; escrita só `super_admin`; **nenhum acesso do `anon`**.
+  Aplicada em **DEV** com `seed_hse_riscos_config_dev_teste.sql` (valores arbitrários, `validado=false`, **nunca em PROD**).
+- **Cálculo (`calcRiscoHSE`):** `P = {Ação urgente:4, Necessidade clara de melhoria:3, Bom, mas há o que melhorar:2, Muito bem:1}`; `S` da tabela; nível = **`MATRIZ_RISCO[P_S]`** (a mesma do BS 8800).
+  Conferido contra a matriz nas 7 dimensões dos dados de DEV.
+- **Tela de análise:** bloco "Risco para o PGR · critério derivado do HSE" por recorte, com a declaração de que não faz parte do instrumento e não é comparável ao BS 8800.
+  Sem severidade cadastrada: **não calcula**, explica. Critério não validado: marca "CRITÉRIO NÃO VALIDADO". Taxa baixa: marca "dados apenas indicativos".
+- **Laudo:** nova **seção 4 "Risco psicossocial para o PGR"** (critério adotado, tabela por dimensão, por recorte ≥ mínimo, tabela de severidade e matriz 4×4 impressas, "validada por …").
+  Seções renumeradas (5 itens, 6 recomendações, 7 referências). **Checagem pré-geração:** sem severidade cadastrada = **erro** (o laudo não alimentaria o PGR);
+  cadastrada mas não validada = aviso + documento marcado "CRITÉRIO NÃO VALIDADO" (capa e rodapé).
+- **Histórico:** o `snapshot_json` guarda versão do critério, validação, severidades e as linhas P/S/nível do documento.
+- **O que NÃO foi feito:** tela para SST cadastrar a severidade (hoje é SQL por `super_admin`); a opção D (prevalência) como complemento; o catálogo de "possíveis danos"
+  (campo `danos` fica a cargo de SST); validação por SST de **qualquer** valor.
+- **Ponto sensível, de novo:** com P vindo de só 4 faixas, a severidade decide quase todo o nível. Nos dados de DEV, 5 das 7 dimensões caem em P4 e o nível sai quase todo "Alto".
+  A calibração (e se faixa relativa ao benchmark é aceita como probabilidade) é decisão de SST.
 
 ## 7. Riscos conhecidos (resumo)
 Ver R1–R25 no plano. Os que estão mais vivos agora: promover o formulário antes da RPC em PROD (R2); texto `[RASCUNHO]` chegando a PROD (R4);

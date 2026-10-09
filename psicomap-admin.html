@@ -5102,6 +5102,57 @@ function _hseFaixa(score, media) {
   return 'VERDE';
 }
 
+// ── Risco para o PGR derivado do HSE (S8b) ─────────────────────────────────────────────────────
+// O HSE NÃO calcula risco: ele classifica a condição de cada dimensão em 4 faixas. O NR-01 exige nível
+// de risco no inventário do PGR, então a consultoria adota um CRITÉRIO (declarado no laudo, fora do
+// instrumento): P (1–4) = faixa da dimensão; S (1–4) = fixa por dimensão, de hse_riscos_config, definida e
+// validada por SST; nível = MATRIZ_RISCO[P_S], a mesma matriz 4×4 do BS 8800. Os dois resultados NUNCA
+// vão para o mesmo gráfico. Sem severidade cadastrada, nada é calculado (não há valor "padrão").
+const HSE_P_POR_FAIXA = { VERMELHO: 4, AMBAR: 3, AZUL: 2, VERDE: 1 };
+
+async function _hseCarregarRiscosCfg() {   // sem cache: SST pode atualizar a qualquer momento
+  try {
+    const { data, error } = await sbAdmin.from('hse_riscos_config')
+      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em');
+    if (error) throw error;
+    return Object.fromEntries((data || []).map(r => [r.dimensao, r]));
+  } catch (e) {
+    console.info('hse_riscos_config indisponível neste ambiente:', e?.message || e);
+    return {};   // ambiente sem a migration = critério ausente
+  }
+}
+function _hseRiscoCompleto(cfg) { return HSE_DIMS.every(d => Number(cfg?.[d.id]?.severidade) >= 1); }
+function _hseRiscoValidado(cfg) { return _hseRiscoCompleto(cfg) && HSE_DIMS.every(d => cfg[d.id].validado === true); }
+
+function calcRiscoHSE(res, cfg) {
+  return res.dims.map(d => {
+    const p = d.faixa ? HSE_P_POR_FAIXA[d.faixa] : null;
+    const s = Number(cfg?.[d.id]?.severidade) >= 1 ? Number(cfg[d.id].severidade) : null;
+    return { id: d.id, nome: d.nome, score: d.score, faixa: d.faixa, p, s,
+             nivel: (p && s) ? MATRIZ_RISCO[`${p}_${s}`] : null, danos: cfg?.[d.id]?.danos || '' };
+  });
+}
+// modo 'laudo': usa as classes do CSS do documento; modo 'tela': estilos inline (a tela do app não tem essas classes).
+function _hseTabelaRiscoHTML(linhas, modo = 'tela') {
+  const ORD = ['CRÍTICO', 'ALTO', 'MÉDIO', 'BAIXO', 'IRRELEVANTE'];
+  const rows = [...linhas].sort((a, b) => ORD.indexOf(a.nivel) - ORD.indexOf(b.nivel));
+  const tela = modo === 'tela';
+  const tb  = tela ? ' style="width:100%;border-collapse:collapse;font-size:11px"' : '';
+  const th  = tela ? ' style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--tm)"' : '';
+  const td  = tela ? ' style="padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top"' : '';
+  const tdn = tela ? ' style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right"' : ' class="num"';
+  const bd  = (bg, extra = '') => tela
+    ? `display:inline-block;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;background:${bg};${extra}`
+    : `background:${bg};${extra}`;
+  const badge = tela ? '' : ' class="badge"';
+  return `<table${tb}><thead><tr><th${th}>Dimensão</th><th${th}>Faixa HSE</th><th${th}>P</th><th${th}>S</th><th${th}>Nível de risco</th><th${th}>Possíveis danos</th></tr></thead><tbody>${rows.map(r => `<tr>
+    <td${td}><strong>${_hEsc(r.nome)}</strong></td>
+    <td${td}>${r.faixa ? `<span${badge} style="${bd(HSE_COR[r.faixa], 'color:white')}">${HSE_FAIXA[r.faixa]}</span>` : '—'}</td>
+    <td${tdn}>${r.p ?? '—'}</td><td${tdn}>${r.s ?? '—'}</td>
+    <td${td}>${r.nivel ? `<span${badge} style="${bd(LAUDO_NIVEL_BG[r.nivel], `color:${LAUDO_NIVEL_TX[r.nivel]};border:1px solid rgba(0,0,0,.1)`)}">${r.nivel}</span>` : '—'}</td>
+    <td${td}><span style="font-size:10px">${_hEsc(r.danos)}</span></td></tr>`).join('')}</tbody></table>`;
+}
+
 // Score da dimensão = média das MÉDIAS dos itens (mesma escolha de calcFatores). 1,00–5,00; alto = melhor.
 function calcDimensoesHSE(linhas, metaPorId, bench) {
   const itens = Object.values(metaPorId);
@@ -5173,7 +5224,22 @@ function _hseItensHTML(d) {
     }).join('')}</details>`;
 }
 
-function _hseBlocoHTML(label, linhas, metaPorId, bench) {
+// Bloco "Risco para o PGR" (critério derivado do HSE). Só calcula com severidade cadastrada.
+function _hseRiscoBlocoTela(res, riscoCfg, indicativo) {
+  if (!_hseRiscoCompleto(riscoCfg)) {
+    return `<div style="margin-top:12px;padding:8px 10px;border-radius:8px;border:1px solid #f9a825;font-size:11px;color:var(--tx)"><strong>Risco para o PGR:</strong> a severidade por dimensão ainda não foi cadastrada neste ambiente (definição de SST). Sem ela o sistema não calcula nível de risco.</div>`;
+  }
+  const naoVal = !_hseRiscoValidado(riscoCfg);
+  return `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px">Risco para o PGR <span style="font-weight:400;color:var(--tm)">· critério derivado do HSE</span></div>
+    ${naoVal ? `<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:#b45309">CRITÉRIO NÃO VALIDADO por SST — valores de teste; não usar em documento entregue.</div>` : ''}
+    ${indicativo ? `<div style="margin-bottom:6px;font-size:11px;color:#991b1b"><strong>Dados apenas indicativos</strong> (taxa de resposta baixa): confirme os níveis com os trabalhadores antes de levar ao inventário.</div>` : ''}
+    ${_hseTabelaRiscoHTML(calcRiscoHSE(res, riscoCfg), 'tela')}
+    <div style="font-size:10px;color:#6b7280;line-height:1.5">P (1–4) vem da faixa do HSE (Ação urgente = 4 … Muito bem = 1); S (1–4) é fixa por dimensão (definida por SST); nível pela matriz 4×4 do PsicoMap. <strong>Este critério não faz parte do instrumento HSE</strong> e não é comparável ao nível do BS 8800.</div>
+  </div>`;
+}
+
+function _hseBlocoHTML(label, linhas, metaPorId, bench, risco) {
   const n = linhas.length;
   const cab = label ? `<div style="font-size:13px;font-weight:700;color:var(--tx);margin:4px 0 8px">${_hEsc(label)} <span style="font-weight:500;color:var(--tm)">· ${n} respondente(s)</span></div>` : '';
   if (n < HSE_N_MIN_PROVISORIO) {
@@ -5192,7 +5258,8 @@ function _hseBlocoHTML(label, linhas, metaPorId, bench) {
       ${_hseBarraDim(d)}
       <div style="font-size:9px;color:#6b7280">${d.nItensEf} de ${d.nItens} itens com resposta · escala 1–5 · maior = melhor</div>
       ${_hseItensHTML(d)}
-    </div>`).join('')}</div>`;
+    </div>`).join('')}
+    ${risco ? _hseRiscoBlocoTela(res, risco.cfg, risco.indicativo) : ''}</div>`;
 }
 
 async function rodarAnaliseHSE(panel, empresaId, cicloId) {
@@ -5236,8 +5303,9 @@ async function rodarAnaliseHSE(panel, empresaId, cicloId) {
       </div>
       <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior score = melhor condição (direção oposta ao BS 8800). A linha preta na barra é a média de referência do benchmark HSE 2023 (base de organizações que escolheram usar a ferramenta; não é amostra nacional representativa). Cores: relativas a essa média.</div>
     </div>`;
+    const risco = { cfg: await _hseCarregarRiscosCfg(), indicativo: leitura.indicativo };
     panel.innerHTML = cabecalho + segmentos.filter(s => s.linhas.length)
-      .map(s => _hseBlocoHTML(s.label, s.linhas, _hseMetaCache, bench)).join('');
+      .map(s => _hseBlocoHTML(s.label, s.linhas, _hseMetaCache, bench, risco)).join('');
   } catch (e) {
     console.warn('rodarAnaliseHSE:', e);
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao carregar a análise HSE: ${_hEsc(e?.message || e)}</div></div>`;
@@ -5273,7 +5341,7 @@ async function _laudoHSEContexto() {
   const empId   = document.getElementById('ld-empresa')?.value || '';
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
   const ciclo   = _ciclos.find(c => c.id === cicloId);
-  const [todas, bench] = await Promise.all([carregarRespostasHSE(empId, cicloId), _hseCarregarBenchmark()]);
+  const [todas, bench, riscoCfg] = await Promise.all([carregarRespostasHSE(empId, cicloId), _hseCarregarBenchmark(), _hseCarregarRiscosCfg()]);
   const linhas = _filtroLaudo(_presetConfigAtual('laudo'), todas);
   const { headcount, taxa } = await _hseTaxaResposta(empId, todas.length);
   const gran = _granularidadeLaudo();
@@ -5283,7 +5351,7 @@ async function _laudoHSEContexto() {
   const itensMeta = Object.values(_hseMetaCache);
   return {
     empId, cicloId, cicloNome: ciclo?.nome || '', nomeEmp: _empresas.find(e => e.id === empId)?.nome || '',
-    todas, linhas, bench, headcount, taxa, leitura: _hseLeituraTaxa(taxa), gran,
+    todas, linhas, bench, riscoCfg, headcount, taxa, leitura: _hseLeituraTaxa(taxa), gran,
     grupos: _gruposPorGranularidade(linhas, gran),
     hoje: _laudoDataEmissao(), responsavel,
     registro: (document.getElementById('ld-registro')?.value || '').trim(),
@@ -5303,6 +5371,10 @@ function _laudoHSEPreflight(c) {
   else if (c.linhas.length < HSE_N_MIN_PROVISORIO) erros.push(`Há apenas ${c.linhas.length} respondente(s) no recorte; o mínimo para exibir resultado é ${HSE_N_MIN_PROVISORIO} (anonimato).`);
   if (Object.keys(c.bench || {}).length < HSE_DIMS.length) erros.push('Benchmark HSE incompleto neste ambiente.');
   if (!c.responsavel) erros.push('Informe o responsável técnico (campo "Responsável técnico" ou perfil da EST).');
+  // O NR-01 exige nível de risco no inventário do PGR e o HSE não o fornece: sem a severidade por dimensão
+  // (definida por SST) o laudo não alimentaria o inventário — por isso é erro, não aviso.
+  if (!_hseRiscoCompleto(c.riscoCfg)) erros.push('Severidade por dimensão (critério de risco para o PGR) não cadastrada neste ambiente — peça a SST para definir e cadastrar.');
+  else if (!_hseRiscoValidado(c.riscoCfg)) avisos.push('Critério de severidade NÃO validado por SST: o documento sairá marcado "CRITÉRIO NÃO VALIDADO" e não pode ser entregue a cliente.');
   if (!c.registro) avisos.push('Registro profissional do responsável não informado — a assinatura sairá sem ele.');
   if (!c.estPerfil?.nome_empresa) avisos.push('Nome da consultoria não cadastrado no perfil da EST — o documento usará "PsicoMap".');
   if (c.leitura.indicativo) avisos.push(`${c.leitura.txt}: o documento sairá com o selo "dados apenas indicativos".`);
@@ -5368,22 +5440,36 @@ function _buildLaudoHSEHTML(c, opts = {}) {
     ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> ${e(c.leitura.txt)}. O HSE considera os resultados confiáveis a partir de 50% de resposta; interprete com cautela e priorize a confirmação com os trabalhadores.</div>` : '';
   const seloRasc = c.rascunho
     ? `<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Os enunciados dos itens são provisórios. Este documento é de teste e não deve ser entregue a cliente.</div>` : '';
+  const critNaoValidado = !_hseRiscoValidado(c.riscoCfg);
+  const seloCrit = critNaoValidado
+    ? `<div class="box draft"><span class="draft-tag">CRITÉRIO NÃO VALIDADO.</span> A severidade por dimensão usada na seção 4 ainda não foi validada por profissional de SST. Documento de teste; não deve ser entregue a cliente.</div>` : '';
   let pg = 0;
-  const footer = (sec = '') => { pg++; return `<div class="page-footer"><div class="l1"><span>${e(estNome)}${c.rascunho ? ' · <span class="draft-tag">RASCUNHO</span>' : ''}</span><span>${sec ? e(sec) + ' · ' : ''}Página ${pg}</span></div><div class="ogl">${HSE_OGL}</div></div>`; };
+  const footer = (sec = '') => { pg++; return `<div class="page-footer"><div class="l1"><span>${e(estNome)}${(c.rascunho || critNaoValidado) ? ' · <span class="draft-tag">RASCUNHO</span>' : ''}</span><span>${sec ? e(sec) + ' · ' : ''}Página ${pg}</span></div><div class="ogl">${HSE_OGL}</div></div>`; };
 
   // Recortes (granularidade escolhida). Recorte com n < mínimo NÃO exibe resultado.
   const mostrarSeg = c.gran !== 'consolidado' && c.grupos.length > 1;
-  let segHTML = '';
+  let segHTML = '', segRiscoHTML = '';
   if (mostrarSeg) {
     c.grupos.forEach(g => {
       const ls = _linhasDoGrupo(g, c.linhas);
       if (!ls.length) return;
-      segHTML += `<div class="sec-title sub nobreak">${e(g.nome || 'Sem identificação')} · ${ls.length} respondente(s)</div>`;
-      segHTML += ls.length < HSE_N_MIN_PROVISORIO
-        ? `<p style="color:#6b7280">Resultado omitido: menos de ${HSE_N_MIN_PROVISORIO} respondentes, para preservar o anonimato.</p>`
-        : _hseTabelaDimensoes(calcDimensoesHSE(ls, _hseMetaCache, c.bench));
+      const tit = `<div class="sec-title sub nobreak">${e(g.nome || 'Sem identificação')} · ${ls.length} respondente(s)</div>`;
+      segHTML += tit; segRiscoHTML += tit;
+      if (ls.length < HSE_N_MIN_PROVISORIO) {
+        const omit = `<p style="color:#6b7280">Resultado omitido: menos de ${HSE_N_MIN_PROVISORIO} respondentes, para preservar o anonimato.</p>`;
+        segHTML += omit; segRiscoHTML += omit;
+      } else {
+        const rs = calcDimensoesHSE(ls, _hseMetaCache, c.bench);
+        segHTML += _hseTabelaDimensoes(rs);
+        segRiscoHTML += _hseTabelaRiscoHTML(calcRiscoHSE(rs, c.riscoCfg), 'laudo');
+      }
     });
   }
+  const riscoGeral = calcRiscoHSE(geral, c.riscoCfg);
+  // Matriz 4×4 impressa (a mesma MATRIZ_RISCO do cálculo) — o leitor confere o critério sem abrir o sistema.
+  const matrizHTML = `<table style="width:auto"><thead><tr><th></th>${[1, 2, 3, 4].map(s => `<th class="num">S${s} ${e(S_LABELS[s])}</th>`).join('')}</tr></thead><tbody>${[4, 3, 2, 1].map(p => `<tr><td><strong>P${p}</strong></td>${[1, 2, 3, 4].map(s => { const n = MATRIZ_RISCO[`${p}_${s}`]; return `<td class="num" style="background:${LAUDO_NIVEL_BG[n]};color:${LAUDO_NIVEL_TX[n]};font-weight:700">${n}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
+  const sevHTML = `<table><thead><tr><th>Dimensão</th><th class="num">S</th><th>Severidade</th><th>Possíveis danos</th></tr></thead><tbody>${HSE_DIMS.map(d => { const r = c.riscoCfg?.[d.id]; return `<tr><td>${e(d.nome)}</td><td class="num">${r?.severidade ?? '—'}</td><td>${e(S_LABELS[r?.severidade] || '')}</td><td style="font-size:10px">${e(r?.danos || '')}</td></tr>`; }).join('')}</tbody></table>`;
+  const validadoPor = (() => { const v = HSE_DIMS.map(d => c.riscoCfg?.[d.id]).filter(r => r?.validado && r.validado_por); return v.length ? [...new Set(v.map(r => r.validado_por))].join('; ') : ''; })();
   const itensHTML = geral.dims.map(d => `<div class="nobreak"><div class="sec-title sub">${e(d.nome)} — score ${d.score != null ? d.score.toFixed(2) : '—'}</div>
     <p style="font-size:10px;color:#6b7280">${d.invertida ? 'Dimensão com resposta invertida: “Nunca” é a melhor resposta; a média abaixo já está normalizada (maior = melhor).' : 'Maior = melhor.'}</p>
     <table><thead><tr><th>Item</th><th>Enunciado</th><th class="num">Média</th><th class="num">n</th></tr></thead><tbody>${d.itens.map(s => `<tr><td style="white-space:nowrap">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td><td>${e(s.texto)}</td><td class="num">${s.media != null ? s.media.toFixed(2) : '—'}</td><td class="num">${s.n}</td></tr>`).join('')}</tbody></table></div>`).join('');
@@ -5393,7 +5479,7 @@ function _buildLaudoHSEHTML(c, opts = {}) {
     ? `<p>Dimensões que pedem atenção, da mais crítica para a menos crítica (posição em relação à média de referência): ${prioridades.map(d => `<strong>${e(d.nome)}</strong> (${HSE_FAIXA[d.faixa].toLowerCase()})`).join('; ')}.</p>`
     : `<p>Nenhuma dimensão ficou abaixo da média de referência neste recorte.</p>`;
 
-  const itensIndice = ['Identificação e amostra', 'Metodologia', 'Resultados por dimensão', 'Detalhamento por item', 'Recomendações e próximos passos', 'Referências e atribuição'];
+  const itensIndice = ['Identificação e amostra', 'Metodologia', 'Resultados por dimensão', 'Risco psicossocial para o PGR', 'Detalhamento por item', 'Recomendações e próximos passos', 'Referências e atribuição'];
   const toolbar = opts.preview ? '' : `<div class="toolbar no-print"><span class="tt">${e(estNome)} — Laudo Técnico (HSE)</span><span style="font-size:11px;color:#9ca3af">${e(c.nomeEmp)} · ${e(c.hoje)}</span>
     <button class="btn-print" onclick="if (window.opener && window.opener._registrarLaudo) window.opener._registrarLaudo(); window.print()">Imprimir / PDF</button>
     <button class="btn-outline" onclick="window.close()">Fechar</button></div>`;
@@ -5406,7 +5492,7 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   <div class="cover-body"><div class="cover-tag">Laudo técnico</div>
     <div class="cover-title">Avaliação de fatores psicossociais do trabalho</div>
     <div class="cover-subtitle">HSE Management Standards — escala ICAO-35</div>
-    ${seloRasc}
+    ${seloRasc}${seloCrit}
     <div class="cover-meta">
       ${[['Empresa avaliada', c.nomeEmp], ['Ciclo de avaliação', c.cicloNome], ['Respondentes no recorte', c.linhas.length + ' colaboradores'], ['Data de emissão', c.hoje], ['Responsável técnico', c.responsavel]]
         .map(([k, v]) => `<div><div class="cover-meta-label">${e(k)}</div><div class="cover-meta-value">${e(v)}</div></div>`).join('')}
@@ -5438,16 +5524,26 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   ${_hseTabelaDimensoes(geral)}
   ${segHTML}
   ${footer('Resultados')}</div>
-<div class="page"><div class="sec-title">4. Detalhamento por item</div>
+<div class="page"><div class="sec-title">4. Risco psicossocial para o PGR</div>
+  <p>O inventário de riscos do PGR exige um nível de risco para cada fator. O HSE, por si só, não o fornece: ele classifica a condição percebida de cada dimensão. Para essa finalidade esta consultoria adota o critério descrito abaixo. <strong>Este critério não faz parte do instrumento HSE</strong> e não é comparável ao nível de risco calculado pela metodologia BS 8800.</p>
+  <div class="box"><strong>Critério adotado.</strong> <strong>P</strong> (1 a 4) é dado pela faixa da dimensão no HSE: ${e(HSE_FAIXA.VERMELHO)} = P4; ${e(HSE_FAIXA.AMBAR)} = P3; ${e(HSE_FAIXA.AZUL)} = P2; ${e(HSE_FAIXA.VERDE)} = P1. <strong>S</strong> (1 a 4) é fixa por dimensão, definida por profissional de SST (tabela abaixo)${validadoPor ? ` — validada por ${e(validadoPor)}` : ''}. O <strong>nível</strong> resulta da matriz P × S.</div>
+  ${c.leitura.indicativo ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> Com a taxa de resposta atual os níveis abaixo devem ser confirmados com os trabalhadores antes de integrar o inventário.</div>` : ''}
+  <div class="sec-title sub">Geral · ${c.linhas.length} respondente(s)</div>
+  ${_hseTabelaRiscoHTML(riscoGeral, 'laudo')}
+  ${segRiscoHTML}
+  <div class="sec-title sub nobreak">Severidade por dimensão e matriz</div>
+  ${sevHTML}${matrizHTML}
+  ${footer('Risco para o PGR')}</div>
+<div class="page"><div class="sec-title">5. Detalhamento por item</div>
   <p>Média de cada item após a normalização (maior = melhor). ↺ indica item cuja resposta foi invertida no cálculo.</p>
   ${itensHTML}
   ${footer('Itens')}</div>
-<div class="page"><div class="sec-title">5. Recomendações e próximos passos</div>
+<div class="page"><div class="sec-title">6. Recomendações e próximos passos</div>
   ${recom}
   <p>O método do HSE não termina no questionário: os resultados devem ser confirmados com os trabalhadores (por exemplo, em <strong>grupos focais</strong>) antes de definir as ações. Recomenda-se priorizar, nessas conversas, as dimensões indicadas acima, comparar os achados com o que a organização já conhece de seus processos e acompanhar a evolução em avaliações periódicas, mantendo o mesmo instrumento para preservar a comparabilidade.</p>
   <div class="assinatura nobreak"><div class="linha"></div><div class="nome">${e(c.responsavel)}</div>${c.registro ? `<div class="reg">${e(c.registro)}</div>` : ''}<div class="reg">${e(c.hoje)}</div></div>
   ${footer('Recomendações')}</div>
-<div class="page"><div class="sec-title">6. Referências e atribuição</div>
+<div class="page"><div class="sec-title">7. Referências e atribuição</div>
   <p class="ref"><strong>HSE — Health and Safety Executive.</strong> Management Standards Indicator Tool (questionário de 35 itens) e Analysis Tool. https://www.hse.gov.uk/stress/standards/downloads.htm</p>
   <p class="ref"><strong>HSE.</strong> Stress Indicator Tool — Benchmarking Report, agosto/2023.</p>
   <p class="ref"><strong>Escala ICAO</strong> — adaptação brasileira do HSE Management Standards Indicator Tool. Revista Psicologia: Organizações e Trabalho, 20(3), 1141-1149, 2020.</p>
@@ -5487,6 +5583,12 @@ async function gerarLaudoHSE(win) {
     metodologia: METODOLOGIA_HSE, questionario_id: c.questionarioId, rascunho: c.rascunho,
     itens: c.itensMeta.map(i => ({ codigo: i.codigo, texto: i.texto })),   // texto impresso é reproduzível depois
     taxa_resposta: c.taxa, headcount: c.headcount, indicativo: c.leitura.indicativo,
+    // Critério de risco usado neste documento: com a versão e a validação, para poder reproduzi-lo depois.
+    risco: {
+      versao: Math.max(...HSE_DIMS.map(d => c.riscoCfg?.[d.id]?.versao || 1)), validado: _hseRiscoValidado(c.riscoCfg),
+      severidades: Object.fromEntries(HSE_DIMS.map(d => [d.id, c.riscoCfg?.[d.id]?.severidade ?? null])),
+      linhas: calcRiscoHSE(calcDimensoesHSE(c.linhas, _hseMetaCache, c.bench), c.riscoCfg).map(r => ({ dimensao: r.id, faixa: r.faixa, p: r.p, s: r.s, nivel: r.nivel })),
+    },
   };
   win.document.open(); win.document.write(_buildLaudoHSEHTML(c, { preview: false })); win.document.close();
   toast('Laudo HSE aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
