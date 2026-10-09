@@ -3003,12 +3003,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <div class="filter-card">
         <div class="filter-label">Segmentação do relatório</div>
-        <select id="laudo-granularidade" class="filter-select" onchange="renderLaudo()">
+        <select id="laudo-granularidade" class="filter-select" onchange="_onLaudoGranChange()">
           <option value="ghe">Por GHE (setor × função)</option>
           <option value="agrupado">Por Agrupamento de Setores</option>
           <option value="segregado">Por Setor</option>
           <option value="consolidado">Geral</option>
+          <option value="preset" hidden>Por preset de filtro</option>
         </select>
+        <div id="ld-gran-preset-dica" style="display:none;font-size:10px;color:var(--tl);margin-top:4px">
+          Um bloco por preset marcado em "Presets de filtro". O que nenhum preset pega fica fora do relatório; quem cai em mais de um aparece em cada um (declarado no bloco).
+        </div>
       </div>
 
       <div class="filter-card">
@@ -7925,11 +7929,16 @@ const SEG_PADRAO = 'consolidado';   // Geral
 // A ordem do array é a ordem das duas telas — do recorte mais fino ao mais grosso.
 // Os valores de `tag` são exatamente os de antes, DE PROPÓSITO: eles saem em documento já
 // entregue a cliente, e trocar texto de PDF homologado não é melhoria de usabilidade.
+// `soLaudo`: o modo só existe na tela de Relatório. Os presets que o alimentam são por tela, e
+// a tela Resultados não tem como dividir a análise por eles.
+// 'preset' fica por ÚLTIMO: nasce escondido, e o navegador escolhe a primeira <option> como
+// valor inicial do select — se ela fosse a primeira, o Relatório abriria num modo invisível.
 const GRAN_OPCOES = [
   { v: 'ghe',         opcao: 'Por GHE (setor × função)',   tag: 'Por GHE' },
   { v: 'segregado',   opcao: 'Por Setor',                  tag: 'Por setor' },
   { v: 'agrupado',    opcao: 'Por Agrupamento de Setores', tag: 'Por agrupamento' },
   { v: 'consolidado', opcao: 'Geral',                      tag: 'Geral' },
+  { v: 'preset',      opcao: 'Por preset de filtro',       tag: 'Por preset', soLaudo: true },
 ];
 
 const SEG_LABEL = Object.fromEntries(GRAN_OPCOES.map(o => [o.v, o.tag]));
@@ -7943,8 +7952,11 @@ function _montarSelectsGranularidade() {
     const sel = document.getElementById(id);
     if (!sel) return;
     const antes = sel.value;
-    sel.innerHTML = GRAN_OPCOES.map(o => `<option value="${o.v}">${o.opcao}</option>`).join('');
-    if (antes && GRAN_OPCOES.some(o => o.v === antes)) sel.value = antes;
+    const opcoes = GRAN_OPCOES.filter(o => id === 'laudo-granularidade' || !o.soLaudo);
+    // 'preset' nasce escondido: só aparece quando a empresa tem presets de Relatório salvos
+    // (_atualizarOpcaoPresetLaudo, chamada por renderPresets).
+    sel.innerHTML = opcoes.map(o => `<option value="${o.v}"${o.soLaudo ? ' hidden' : ''}>${o.opcao}</option>`).join('');
+    if (antes && opcoes.some(o => o.v === antes)) sel.value = antes;
   });
 }
 
@@ -8641,8 +8653,90 @@ function agruparPorPares(linhas, ghes) {
 // (pares reivindicados); os dos modos antigos continuam casando por nome de setor, byte a byte
 // como antes. Único ponto onde essa decisão é tomada — os call sites não sabem a diferença.
 function _linhasDoGrupo(grupo, linhas) {
+  // Grupo de preset: membership por IDENTIDADE DE LINHA. Um preset pode recortar por
+  // escolaridade, e isso não se reduz a um par setor × função. Exige que `linhas` seja o mesmo
+  // array de objetos que gerou o grupo (_linhasDoLaudo → _gruposPorGranularidade).
+  if (grupo && grupo._rows) return linhas.filter(r => grupo._rows.has(r));
   if (grupo && grupo._chaves) return linhas.filter(r => grupo._chaves.has(_chavePar(r.setor, r.funcao)));
   return linhas.filter(r => grupo.setores.includes(r.setor));
+}
+
+// ── Segmentação do Relatório por PRESET de filtro ─────────────────────────────
+// Cada preset de Relatório marcado vira um bloco do laudo. Decisões (acordadas com o usuário):
+// - O que nenhum preset pega fica FORA do documento. A capa conta só a união dos presets.
+// - Respondente em mais de um preset aparece em CADA bloco (o bloco mostra o que o preset
+//   mostra sozinho) e a sobreposição é declarada no bloco. n da capa = união sem duplicar,
+//   então a soma dos blocos pode passar do total.
+// - Ciclos não se misturam: presets de ciclos diferentes bloqueiam a geração.
+const _LD_ROTULOS_FILTRO = {
+  'combo-ld-setor': 'Setores', 'combo-ld-escolaridade': 'Escolaridade',
+  'combo-ld-ghe': 'Agrupamento de Setores', 'combo-ld-fun-ghe': 'Agrupamento de Função',
+  'combo-ld-ghe-par': 'GHE',
+};
+
+function _presetsLaudoMarcados() {
+  return [...(_presetSel.laudo || [])]
+    .map(id => (_presets.laudo || []).find(p => p.id === id))
+    .filter(Boolean)
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+// Contexto único: presets marcados, erro que barra a geração e a configuração EFETIVA de cada
+// um. O ciclo efetivo é sempre o do relatório (ld-ciclo) — um bloco jamais usa outro ciclo.
+function _presetsLaudoContexto() {
+  const presets = _presetsLaudoMarcados();
+  if (!presets.length) return { presets, erro: 'Marque ao menos um preset de filtro para gerar o relatório por preset.' };
+  const ciclos = [...new Set(presets.map(p => p.config?.ciclo_id).filter(Boolean))];
+  if (ciclos.length > 1) {
+    const nomes = ciclos.map(id => (id === CICLO_SEM ? 'Sem campanha' : (_ciclos.find(c => c.id === id)?.nome || 'ciclo removido'))).join(', ');
+    return { presets, erro: `Os presets marcados são de ciclos diferentes (${nomes}). Ciclos não se misturam na análise — marque presets de um mesmo ciclo.` };
+  }
+  const cicloSel = document.getElementById('ld-ciclo')?.value || '';
+  return { presets, erro: null, cfgDe: p => ({ ...(p.config || {}), ciclo_id: cicloSel }) };
+}
+
+// Linhas do laudo: a única decisão de "quais respostas entram". Em modo preset é a UNIÃO dos
+// recortes (por linha, sem duplicar, na ordem original) — não a mescla eixo a eixo dos combos,
+// que pode trazer combinações que nenhum preset pediu.
+function _linhasDoLaudo(todos) {
+  if (_granularidadeLaudo() !== 'preset') return _filtroLaudo(_presetConfigAtual('laudo'), todos);
+  const ctx = _presetsLaudoContexto();
+  if (ctx.erro) return [];
+  const uniao = new Set();
+  ctx.presets.forEach(p => _filtroLaudo(ctx.cfgDe(p), todos).forEach(r => uniao.add(r)));
+  return todos.filter(r => uniao.has(r));
+}
+
+// Resumo textual do recorte de um preset: só os eixos que de fato restringem.
+function _resumoRecortePreset(cfg, esc) {
+  const partes = [];
+  Object.keys(_LD_ROTULOS_FILTRO).forEach(cid => {
+    const sel = cfg?.filtros?.[cid];
+    const universo = comboItems[cid]?.() || [];
+    if (!Array.isArray(sel) || !sel.length || (universo.length && sel.length >= universo.length)) return;
+    const mostra = sel.slice(0, 8).map(esc).join(', ') + (sel.length > 8 ? ` +${sel.length - 8}` : '');
+    partes.push(`${_LD_ROTULOS_FILTRO[cid]}: ${mostra}`);
+  });
+  return partes.join('; ');
+}
+
+function _gruposDePreset(linhas) {
+  const ctx = _presetsLaudoContexto();
+  if (ctx.erro) return [];
+  const grupos = ctx.presets.map(p => {
+    const cfg  = ctx.cfgDe(p);
+    const rows = _filtroLaudo(cfg, linhas);
+    return { nome: p.nome, setores: [...new Set(rows.map(r => r.setor))], _rows: new Set(rows), _cfgPreset: cfg, n: rows.length };
+  });
+  grupos.forEach(g => {
+    g._sobrepoe = grupos
+      .filter(o => o !== g)
+      .map(o => ({ nome: o.nome, n: [...g._rows].filter(r => o._rows.has(r)).length }))
+      .filter(x => x.n > 0);
+  });
+  const vazios = grupos.filter(g => !g.n);
+  if (vazios.length) console.warn('[laudo/preset] preset(s) sem nenhuma resposta, omitido(s):', vazios.map(g => g.nome));
+  return grupos.filter(g => g.n > 0);
 }
 
 // Fonte ÚNICA dos grupos do laudo, para preview e export. Antes cada seção remontava a lista
@@ -8656,6 +8750,7 @@ function _gruposPorGranularidade(linhas, gran, { ordenar = false } = {}) {
     const lista = ordenar ? [...setoresAtivos].sort() : setoresAtivos;
     return lista.map(s => ({ nome: s, setores: [s] }));
   }
+  if (gran === 'preset') return _gruposDePreset(linhas);
   if (gran === 'ghe') {
     const { grupos, fora, total, conflitos } = agruparPorPares(linhas, gruposGhe);
     const soma = grupos.reduce((a, g) => a + g.n, 0);
@@ -8673,6 +8768,9 @@ function _gruposPorGranularidade(linhas, gran, { ordenar = false } = {}) {
 // (ex.: 'ghe' selecionado e depois todos os GHE removidos).
 function _granularidadeLaudo() {
   const v = document.getElementById('laudo-granularidade')?.value;
+  if (v === 'preset' && !(_presets.laudo || []).length) {   // empresa sem presets de Relatório
+    return gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
+  }
   if (v === 'ghe' && !gruposGhe.length)        return gruposSetor.length ? 'agrupado' : 'segregado';
   if (v === 'agrupado' && !gruposSetor.length) return 'segregado';
   return v || (gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado');
@@ -8684,6 +8782,7 @@ function _granularidadeLaudo() {
 // homologado sem nenhuma relação com GHE. Verificado que, sem essa exceção, o PDF de uma
 // empresa sem GHE sai byte a byte idêntico ao da versão anterior nas três granularidades.
 function _rotuloGranularidade(gran) {
+  if (gran === 'preset') return 'Presets avaliados';
   return gran === 'ghe' ? 'GHE avaliados' : 'Setores avaliados';
 }
 
@@ -8693,6 +8792,17 @@ function _rotuloGranularidade(gran) {
 function _descricaoGrupo(grupo, escapar) {
   const esc = escapar || (x => x);
   if (grupo._residual) return '';
+  if (grupo._rows) {
+    // Bloco de preset: declara o recorte e a sobreposição. Sem isto o leitor não sabe o que o
+    // bloco cobre, nem que a soma dos blocos pode passar do total da capa.
+    const rec = _resumoRecortePreset(grupo._cfgPreset, esc);
+    const partes = [rec ? 'Recorte: ' + rec + '.' : 'Recorte sem restrição de setor, GHE ou escolaridade.'];
+    if (grupo._sobrepoe?.length) {
+      partes.push('Sobreposição: ' + grupo._sobrepoe
+        .map(o => `${o.n} respondente${o.n !== 1 ? 's' : ''} também ${o.n !== 1 ? 'constam' : 'consta'} em “${esc(o.nome)}”`).join('; ') + '.');
+    }
+    return partes.join(' ');
+  }
   if (grupo._pares) {
     if (!grupo._pares.length) return '';
     // A cobertura vem ANTES dos pares: é a informação que muda a leitura do bloco inteiro.
@@ -8715,6 +8825,7 @@ function _setoresCatalogados(setoresAtivos, gruposLaudo, granularidade, empId) {
   const catalogNorm = new Set((_empresas.find(e=>e.id===empId)?.setores || []).map(_gheNormStrong));
   const gruposNomes = new Set(gruposSetor.map(g=>g.nome));
   if (granularidade === 'consolidado') return ['Todos os setores'];
+  if (granularidade === 'preset') return gruposLaudo.map(g => g.nome);   // nomes de preset, não de setor
   if (granularidade === 'segregado') {
     const filtrado = setoresAtivos.filter(s => catalogNorm.has(_gheNormStrong(s)));
     return filtrado.length ? filtrado : setoresAtivos;
@@ -10678,6 +10789,12 @@ function _snapshotConfigLaudo() {
     // um é a data do documento entregue, o outro é a trilha de auditoria, e eles podem diferir.
     data_emissao: (document.getElementById('ld-data-emissao')?.value || '') || null,
     filtros,
+    // Modo preset: o documento foi gerado pela UNIÃO dos presets, não pelos combos acima. Guarda
+    // id (para reaplicar) E nome + recorte (para provar depois, mesmo se o preset for editado
+    // ou excluído).
+    ...(_granularidadeLaudo() === 'preset' ? {
+      presets: _presetsLaudoMarcados().map(p => ({ id: p.id, nome: p.nome, config: p.config || {} })),
+    } : {}),
   };
 }
 
@@ -10810,7 +10927,12 @@ const PRESET_TELAS = {
     empresaSel: 'ld-empresa',
     filtrar: (cfg, todos) => _filtroLaudo(cfg, todos),
     render: () => renderLaudo(),
-    capturar: () => ({ granularidade: _granularidadeLaudo(), secoes: [...laudoSecoesAtivas] }),
+    // Modo preset NÃO é gravado: um preset que carrega "Por preset" se aplicaria como bloco de si
+    // mesmo, e os combos que ele guarda não são o recorte efetivo naquele modo.
+    capturar: () => {
+      const g = _granularidadeLaudo();
+      return { ...(g !== 'preset' ? { granularidade: g } : {}), secoes: [...laudoSecoesAtivas] };
+    },
     aplicar: (x, perdidos) => _aplicarGranSecoes(x, perdidos),
     mesclar: (cfgs, avisos) => {
       const out = {};
@@ -10933,6 +11055,16 @@ async function aplicarPresets(tela) {
     .filter(Boolean);
   // Desmarcar tudo não limpa a tela: o recorte que está lá continua sendo o que o usuário vê,
   // e zerá-lo descartaria ajustes manuais feitos depois de aplicar o preset.
+  // Relatório em modo "Por preset": os marcados viram BLOCOS, não são somados nos combos. Aplicar
+  // aqui sobrescreveria os filtros da tela e (via _aplicarGranSecoes) a própria granularidade.
+  // Vem ANTES do "nada marcado": neste modo, desmarcar o último muda o documento (some o recorte)
+  // e a prévia precisa dizer isso, em vez de ficar parada num estado que não vale mais.
+  if (tela === 'laudo' && document.getElementById('laudo-granularidade')?.value === 'preset') {
+    _sincronizarCicloPresetsLaudo();
+    await PRESET_TELAS.laudo.render();
+    if (escolhidos.length) toast(`${escolhidos.length} preset${escolhidos.length !== 1 ? 's' : ''} no relatório: ${escolhidos.map(p => p.nome).join(' · ')}.`, 'g', 5000);
+    return;
+  }
   if (!escolhidos.length) return;
 
   if (escolhidos.length === 1) {
@@ -11035,7 +11167,18 @@ function _aplicarGranSecoes(cfg, perdidos) {
   }
   // Por último: depende de gruposGhe/gruposSetor já carregados.
   const granEl = document.getElementById('laudo-granularidade');
-  if (granEl && cfg.granularidade) {
+  if (granEl && cfg.granularidade === 'preset') {
+    // Reaplicar de um laudo gerado por preset: remarca os que ainda existem e NOMEIA os que não.
+    const vivos = (cfg.presets || []).filter(p => (_presets.laudo || []).some(x => x.id === p.id));
+    const mortos = (cfg.presets || []).filter(p => !vivos.includes(p));
+    if (mortos.length) perdidos.push(`o(s) preset(s) ${mortos.map(p => `"${p.nome}"`).join(', ')} (não existe(m) mais)`);
+    if (vivos.length) {
+      _presetSel.laudo = new Set(vivos.map(p => p.id));
+      renderPresets('laudo');
+      _atualizarOpcaoPresetLaudo();
+      granEl.value = 'preset';
+    } else perdidos.push('a segmentação por preset (nenhum dos presets existe mais)');
+  } else if (granEl && cfg.granularidade) {
     const opt = granEl.querySelector(`option[value="${cfg.granularidade}"]`);
     if (opt && !opt.hidden) granEl.value = cfg.granularidade;
     else perdidos.push(`a granularidade "${SEG_LABEL[cfg.granularidade] || cfg.granularidade}" (sem base nesta empresa hoje)`);
@@ -11064,6 +11207,42 @@ async function carregarPresets(empresaId) {
 function renderPresets(tela) {
   const box = document.getElementById(`preset-list-${tela}`);
   if (box) _renderPresetsMulti(tela, box);
+  if (tela === 'laudo') _atualizarOpcaoPresetLaudo();
+}
+
+// "Por preset" só existe com presets de Relatório salvos — mesma regra de "Por GHE" sem matriz.
+// Guard SIMÉTRICO (mostra e esconde): os presets chegam depois do primeiro render, e um guard
+// que só esconde trava a UI no estado restritivo.
+function _atualizarOpcaoPresetLaudo() {
+  const sel = document.getElementById('laudo-granularidade');
+  if (!sel) return;
+  const tem = (_presets.laudo || []).length > 0;
+  const opt = sel.querySelector('option[value="preset"]');
+  if (opt) opt.hidden = !tem;
+  // Empresa sem presets não pode herdar o modo da anterior.
+  if (!tem && sel.value === 'preset') {
+    sel.value = gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
+  }
+  const dica = document.getElementById('ld-gran-preset-dica');
+  if (dica) dica.style.display = sel.value === 'preset' ? '' : 'none';
+}
+
+// O ciclo do preset é o ciclo do relatório: ao entrar no modo preset (ou marcar presets nele)
+// alinha ld-ciclo ao ciclo declarado pelos presets, como aplicar um preset comum já fazia.
+// Divergência entre presets não é resolvida aqui — _presetsLaudoContexto bloqueia a geração.
+function _sincronizarCicloPresetsLaudo() {
+  const ciclos = [...new Set(_presetsLaudoMarcados().map(p => p.config?.ciclo_id).filter(Boolean))];
+  const el = document.getElementById('ld-ciclo');
+  if (ciclos.length === 1 && el && el.value !== ciclos[0] && [...el.options].some(o => o.value === ciclos[0])) {
+    el.value = ciclos[0];
+    if (typeof setCicloAtivo === 'function') setCicloAtivo(ciclos[0]);
+  }
+}
+
+function _onLaudoGranChange() {
+  if (document.getElementById('laudo-granularidade')?.value === 'preset') _sincronizarCicloPresetsLaudo();
+  _atualizarOpcaoPresetLaudo();
+  renderLaudo();
 }
 
 // Lista de marcação (tela Resultados). O id é UUID do banco, não texto de terceiro — por isso
@@ -14998,11 +15177,15 @@ async function renderLaudo() {
   const dados   = await getLinhasParaAnalise(emp);
   if (seq !== _laudoRenderSeq) return; // descarta render obsoleto
   // Mesma função que a conferência do acumulado de presets usa para medir cada preset.
-  const linhas  = _filtroLaudo(_presetConfigAtual('laudo'), dados);
+  const linhas  = _linhasDoLaudo(dados);
   const panel   = document.getElementById('laudo-preview-panel');
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
   const hoje    = _laudoDataEmissao();
 
+  if (_granularidadeLaudo() === 'preset') {
+    const ctx = _presetsLaudoContexto();
+    if (ctx.erro) { panel.innerHTML = `<div class="card"><div class="alert alert-y">${_esc(ctx.erro)}</div></div>`; return; }
+  }
   if (!linhas.length) {
     panel.innerHTML = _respostasErro
       ? _errorState('Não foi possível carregar as respostas deste cliente.', 'renderLaudo()')
@@ -15021,6 +15204,17 @@ async function renderLaudo() {
   const NivelTxt     = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
 
   let html = `<div class="laudo-preview" id="laudo-doc">` + _laudoBannerEdicaoHTML();
+
+  // Só na prévia (não sai no documento): quanto do ciclo o recorte por preset deixou de fora.
+  if (_granLd === 'preset') {
+    const base = _linhasDoCiclo(dados, cicloId).length;
+    const fora = Math.max(0, base - linhas.length);
+    const soma = grupos.reduce((a, g) => a + _linhasDoGrupo(g, linhas).length, 0);
+    html += `<div class="alert alert-y" style="margin-bottom:12px">Por preset: ${linhas.length} de ${base} respostas entram no relatório`
+      + (fora ? ` (${fora} não pertencem a nenhum preset marcado e ficam de fora)` : '')
+      + (soma > linhas.length ? `. A soma dos blocos é ${soma}: ${soma - linhas.length} contagem(ns) repetida(s) por sobreposição entre presets` : '')
+      + `.</div>`;
+  }
 
   // ── CAPA ──
   // Monta pela FONTE ÚNICA _laudoCapaHTML: antes o preview tinha uma capa própria (um
@@ -15357,7 +15551,9 @@ async function _registrarLaudo() {
         secoes: [...laudoSecoesAtivas],
         empresa: _empresaAtiva?.nome,
         granularidade: _gran,
-        grupos: _gran === 'ghe' ? gruposGhe.map(g => g.nome) : gruposSetor.map(g => g.nome),
+        grupos: _gran === 'ghe' ? gruposGhe.map(g => g.nome)
+              : _gran === 'preset' ? _cfg.presets.map(p => p.nome)
+              : gruposSetor.map(g => g.nome),
         // `config` é o que permite REAPLICAR o recorte depois. As chaves acima ficam como
         // estavam: já existem registros gravados com elas, e o histórico lê as duas formas.
         config:      _cfg,
@@ -15964,7 +16160,11 @@ async function gerarLaudoPDF() {
     // seleção de Agrupamento GHE / Ciclo feita na tela, mostrando sempre todos os
     // setores/funções/ciclos.
     const gheParesF = _filtroPorGhe('combo-ld-ghe-par', todos);
-    const linhas    = todos.filter(r =>
+    if (_granularidadeLaudo() === 'preset') {
+      const ctxP = _presetsLaudoContexto();
+      if (ctxP.erro) { win.close(); toast(ctxP.erro, 'w', 6500); return; }
+    }
+    const linhas    = _granularidadeLaudo() === 'preset' ? _linhasDoLaudo(todos) : todos.filter(r =>
       _cicloCasa(r.ciclo_id, cicloId) &&
       (setores.length === 0 || setores.includes(r.setor)) &&
       (gheSetores === null  || gheSetores.has(_gheNormStrong(r.setor))) &&
