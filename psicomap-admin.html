@@ -1819,7 +1819,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="page-sub">Identidade visual e dados da empresa responsável técnica — aparecem nos laudos e relatórios</div>
     </div>
     <div class="page-hdr-actions">
-      <button class="btn btn-g" onclick="salvarEstPerfil()">
+      <button class="btn btn-g" onclick="_comFeedback(this,'Salvando…',salvarEstPerfil)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Salvar
       </button>
@@ -4310,7 +4310,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModalCiclo()">Fechar</button>
-      <button class="btn btn-g" onclick="salvarCiclo()">
+      <button class="btn btn-g" onclick="_comFeedback(this,'Salvando…',salvarCiclo)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Adicionar ciclo
       </button>
@@ -4371,7 +4371,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </label>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalLink()">Cancelar</button>
-      <button class="btn btn-g" style="flex:2" onclick="gerarLink()">
+      <button class="btn btn-g" style="flex:2" onclick="_comFeedback(this,'Gerando…',gerarLink)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         Gerar link
       </button>
@@ -4437,7 +4437,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="fecharModalGheBatch()">Cancelar</button>
-      <button class="btn btn-g" style="flex:2" id="gb-btn-gerar" onclick="gerarLinksBatch()">
+      <button class="btn btn-g" style="flex:2" id="gb-btn-gerar" onclick="_comFeedback(this,'Gerando…',gerarLinksBatch)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Gerar links
       </button>
@@ -4643,7 +4643,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         Limpar tudo
       </button>
       <div style="flex:1"></div>
-      <button class="btn btn-g" onclick="salvarGHE()">
+      <button class="btn btn-g" onclick="_comFeedback(this,'Salvando…',salvarGHE)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
         Salvar estrutura
       </button>
@@ -6893,7 +6893,9 @@ async function rodarAnalise() {
   const filtrado = _filtroResultados(_presetConfigAtual('resultados'), todosDosBancos);
 
   if (!filtrado.length) {
-    document.getElementById('resultado-panel').innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
+    document.getElementById('resultado-panel').innerHTML = _respostasErro
+      ? _errorState('Não foi possível carregar as respostas deste cliente.', 'rodarAnalise()')
+      : `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
     return;
   }
   if (!niveis.length) {
@@ -8717,9 +8719,13 @@ async function removerGrupo(tipo, id) {
   if (tipo === 'ghe') {
     const g = gruposGhe.find(x => x.id === id);
     if (!confirm(`Remover o GHE "${g?.nome || ''}" e seus ${g?.pares?.length || 0} par(es)?\n\nOs setores e cargos da empresa não são afetados.`)) return;
+  } else {
+    const g = (tipo === 'funcao' ? gruposFuncao : gruposSetor).find(x => x.id === id);
+    if (!confirm(`Remover o agrupamento "${g?.nome || ''}"?\n\nOs setores e funções do cliente não são afetados; só deixam de ser analisados em conjunto.`)) return;
   }
   const ok = await _excluirGrupoNoBanco(id);
   if (!ok) return;
+  toast('Agrupamento removido.', 'g');
   await carregarGruposSetor(_empresaAtiva?.id);
   renderTabelaAgrupamentos();
 }
@@ -9791,7 +9797,11 @@ async function exportarParesGhe() {
   const emp = _empresas.find(e => e.id === empresaId);
 
   const linhas = await getLinhasParaAnalise(empresaId);
-  if (!linhas.length) { toast('Esta empresa ainda não tem respostas.', 'w'); return; }
+  if (!linhas.length) {
+    if (_respostasErro) toast('Falha ao carregar as respostas — o arquivo não foi gerado. Tente novamente.', 'r', 6000);
+    else toast('Esta empresa ainda não tem respostas.', 'w');
+    return;
+  }
 
   // A qual GHE cada par pertence hoje — mesma função da segmentação, para o arquivo refletir
   // exatamente o que o laudo faria.
@@ -10959,6 +10969,22 @@ function _sincronizarBotoesPreset() {
 // TOAST
 // ══════════════════════════════════════════
 let _tt;
+// Botão de gravação: desabilita enquanto roda, restaura no finally e ignora duplo clique.
+// Uso no HTML: onclick="_comFeedback(this,'Salvando…',salvarGHE)". Quem é chamado continua
+// responsável pelos próprios toasts de sucesso e erro.
+const _emVoo = new Set();
+async function _comFeedback(btn, rotulo, fn) {
+  if (_emVoo.has(fn)) return;
+  _emVoo.add(fn);
+  const orig = btn ? btn.innerHTML : null;
+  if (btn) { btn.disabled = true; btn.textContent = rotulo; }
+  try { return await fn(); }
+  finally {
+    _emVoo.delete(fn);
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
 function toast(msg, type, ms = 3400){
   clearTimeout(_tt);
   const el=document.getElementById('toast');
@@ -12394,6 +12420,7 @@ async function toggleLink(id) {
   const l = _links.find(x=>x.id===id);
   if (!l) return;
   const novoAtivo = !l.ativo;
+  if (!novoAtivo && !confirm('Desativar este link? Quem abrir o endereço deixa de conseguir responder até você reativar. As respostas já coletadas são mantidas.')) return;
   // Reativar um link sempre limpa a marca de "finalizado" — não existe
   // estado "ativo e finalizado" ao mesmo tempo.
   const update = novoAtivo ? { ativo: true, encerrado_em: null } : { ativo: false };
@@ -12826,6 +12853,9 @@ async function carregarHeadcountCarteira() {
   } catch(e) { console.warn('carregarHeadcountCarteira:', e); }
 }
 
+// true quando a ÚLTIMA carga de respostas falhou (rede/RLS). Sem isso, falha e "sem respostas"
+// produziam a mesma tela. Segue o padrão de _empresasErro: quem renderiza decide o que mostrar.
+let _respostasErro = false;
 // Retorna as linhas para análise: real se conectado, demo se não
 async function getLinhasParaAnalise(empresaId) {
   // Modo demo: usar dados simulados
@@ -12833,9 +12863,10 @@ async function getLinhasParaAnalise(empresaId) {
     return empresaId ? (RESPOSTAS_DEMO[empresaId]||[]) : Object.values(RESPOSTAS_DEMO).flat();
   }
   // Modo real: nunca usar dados demo — retornar array vazio se sem empresa ou erro
-  if (!empresaId) return [];
+  if (!empresaId) { _respostasErro = false; return []; }
   const real = await loadRespostasParaEmpresa(empresaId);
-  return real ?? []; // null/undefined → [] (sem fallback para demo)
+  _respostasErro = (real == null);
+  return real ?? []; // null/undefined → [] (sem fallback para demo); _respostasErro distingue falha de vazio
 }
 
 // Limpar cache ao trocar empresa
@@ -12968,7 +12999,9 @@ async function renderGraficos() {
   const panel = document.getElementById('graficos-panel');
 
   if (!linhas.length) {
-    panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
+    panel.innerHTML = _respostasErro
+      ? _errorState('Não foi possível carregar as respostas deste cliente.', 'renderGraficos()')
+      : `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
     return;
   }
   if (!grafBlocosVisiveis.size) {
@@ -14661,7 +14694,12 @@ async function renderLaudo() {
   const nomeEmp = _empresas.find(e => e.id === emp)?.nome || 'Todos os clientes';
   const hoje    = _laudoDataEmissao();
 
-  if (!linhas.length) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
+  if (!linhas.length) {
+    panel.innerHTML = _respostasErro
+      ? _errorState('Não foi possível carregar as respostas deste cliente.', 'renderLaudo()')
+      : `<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>`;
+    return;
+  }
 
   const fatores  = calcFatores(linhas);
   // Fonte única: antes esta linha era sempre agruparPorGrupos, e as seções de análise de risco
@@ -14997,7 +15035,7 @@ async function _registrarLaudo() {
     if (!empresaId) return;
     const _gran = _granularidadeLaudo();
     const _cfg  = _snapshotConfigLaudo();
-    await sbAdmin.from('laudos').insert({
+    const { error: errLaudo } = await sbAdmin.from('laudos').insert({
       empresa_id:    empresaId,
       // A coluna existe desde o schema v3 e NUNCA era preenchida: todo laudo ficava sem ciclo,
       // e o historico nao tinha como dizer a que rodada de avaliacao cada um se referia.
@@ -15022,12 +15060,18 @@ async function _registrarLaudo() {
       },
       tenant_id:     currentTenantId
     });
+    if (errLaudo) throw errLaudo;
     console.log('[PsicoMap] Laudo registrado no banco.');
     // A janela do laudo chama isto via window.opener: a tela de Relatório continua aberta
     // atrás dela, e sem o refresh o registro só apareceria na próxima troca de empresa.
     await carregarLaudos(empresaId);
     renderHistoricoLaudos();
-  } catch(e) { console.warn('[PsicoMap] _registrarLaudo:', e.message); }
+  } catch(e) {
+    // O PDF já saiu; o que falhou foi o REGISTRO no histórico. Avisar, porque sem ele o laudo
+    // entregue não aparece em "Laudos gerados" nem pode ser reaplicado.
+    console.warn('[PsicoMap] _registrarLaudo:', e.message);
+    toast('O laudo foi gerado, mas não foi registrado no histórico: ' + e.message, 'w', 7000);
+  }
 }
 
 // ── Helper HTML-escape ──────────────────────────────────────────
@@ -15620,7 +15664,12 @@ async function gerarLaudoPDF() {
       (escolaridadesLd.length === 0 || escolaridadesLd.includes(r.escolaridade || 'Não informado'))
     );
 
-    if (!linhas.length) { win.close(); toast('Nenhuma resposta para os filtros selecionados.', 'w'); return; }
+    if (!linhas.length) {
+      win.close();
+      if (_respostasErro) toast('Falha ao carregar as respostas — o laudo não foi gerado. Tente novamente.', 'r', 6000);
+      else toast('Nenhuma resposta para os filtros selecionados.', 'w');
+      return;
+    }
 
     // Laudo "Por GHE" com muita resposta fora de GHE sai incompleto: elas viram blocos por setor
     // sem GHE. Não bloqueia (pode ser intencional), mas ninguém deve descobrir só no PDF.
@@ -17187,8 +17236,10 @@ async function toggleAtivoUsuario(id, ativo) {
   const { data: alvo } = await sbAdmin.from('perfis').select('role').eq('id', id).single();
   if (alvo?.role === 'super_admin') { toast('Acesso negado.', 'r'); return; }
 
+  if (ativo && !confirm('Desativar este usuário? Ele perde o acesso ao painel até você reativar.')) return;
   const { error } = await sbAdmin.from('perfis').update({ ativo: !ativo }).eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'r'); return; }
+  toast(ativo ? 'Usuário desativado.' : 'Usuário reativado.', 'g');
   carregarUsuarios();
 }
 
@@ -18859,7 +18910,8 @@ function limparGHELocal() {
 async function limparHeadcount() {
   if (!_gheEmpresaId || !sbAdmin) return;
   if (!confirm('Remover o quadro de funcionários desta empresa?')) return;
-  await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+  const { error: errHc } = await sbAdmin.from('empresa_headcount').delete().eq('empresa_id', _gheEmpresaId);
+  if (errHc) { toast('Erro ao remover o quadro de funcionários: ' + errHc.message, 'r'); return; }
   _invalidarHeadcountCache(_gheEmpresaId);
   _gheImportHeadcount = [];
   _renderHeadcountGHE([]);
@@ -19945,6 +19997,29 @@ async function salvarGHE() {
             `Deseja realmente substituir e deixar tudo universal?`
           );
           if (!ok) { toast('Save cancelado — catálogo de setores preservado.', 'w'); return; }
+        }
+      }
+
+      // Salvaguarda 3: estrutura NOVA menor que a gravada. As duas acima só pegam o caso
+      // extremo (tudo vazio / sem setor); 40 setores virando 3 passava sem pergunta, e este
+      // save apaga e regrava o catálogo inteiro.
+      if (setorNomes.length > 0 || todosCargos.length > 0) {
+        const { count: setoresDB } = await sbAdmin
+          .from('empresa_setores').select('id', { count: 'exact', head: true }).eq('empresa_id', empId);
+        const { count: funcoesDB } = await sbAdmin
+          .from('empresa_funcoes').select('id', { count: 'exact', head: true }).eq('empresa_id', empId);
+        const sDB = setoresDB || 0, fDB = funcoesDB || 0;
+        // Tirar um cargo ou dois na edição normal não pergunta; perder setor ou uma fatia relevante dos cargos, sim.
+        const perdeSetor = setorNomes.length < sDB, perdeCargo = (fDB - todosCargos.length) >= Math.max(3, Math.ceil(fDB * 0.1));
+        if ((perdeSetor || perdeCargo) && sDB > 0 && setorNomes.length > 0) {
+          const ok = confirm(
+            `Atenção: a estrutura a salvar é MENOR que a cadastrada.\n\n` +
+            `Setores: ${sDB} cadastrados → ${setorNomes.length} a salvar\n` +
+            `Cargos: ${fDB} cadastrados → ${todosCargos.length} a salvar\n\n` +
+            `O catálogo atual será substituído. Setor ou cargo que sair da lista deixa de aparecer no formulário dos funcionários.\n\n` +
+            `Confirma a substituição?`
+          );
+          if (!ok) { toast('Save cancelado — catálogo preservado.', 'w'); return; }
         }
       }
 
