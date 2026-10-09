@@ -1699,3 +1699,11 @@ Eixo diferente de `_statusEmpresa` (que diz COMO ESTÁ a coleta): aqui é "o que
   `_abrirAdesao`) via `_trilhaIr`; passo bloqueado leva ao passo que o bloqueia.
 - **Não está na Home** (Dashboard): ficou fora para não tocar na ordenação por urgência.
 - Pendente de teste real: a consulta de `laudos` com RLS de cada perfil (só simulei o resultado).
+
+## Revisão de UX — Fase 4: lote por setor e código morto (2026-10-09)
+
+Só `psicomap-admin.html`, sem migration.
+- **"Links por setor"** (cabeçalho de Campanhas, ao lado de "Novo link") finalmente abre `abrirModalGheBatch()`, que existia completo e sem nenhum chamador. Fica dentro de `#links-action-btns`, portanto some para `cliente_viewer`.
+- **Campanha obrigatória também no lote** (`gb-ciclo`, "Selecione a campanha…"; `gerarLinksBatch` recusa sem ela), igual a `gerarLink`. O objeto em `_links` agora leva `ciclo_id` — sem isso o agrupamento por campanha só acertava após recarregar.
+- O label preso em "Gerando…" já era restaurado por `_comFeedback`; a atribuição manual redundante saiu.
+- `applyCombo` removida (0 chamadas). **`#onboarding-overlay` NÃO é código morto**: é o fluxo de criação de tenant — não remover.

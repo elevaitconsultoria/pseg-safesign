@@ -54,3 +54,6 @@ Ver seção "Passo a passo por cliente" no CLAUDE.md. Harness: 8 perfis de clien
 dão feitos/próximo esperados; teste não conta; `quadro`/`laudos` nulos viram "desconhecido" e nunca "próximo";
 módulos desligados removem passos; cartão (grade e lista) e modal renderizam; cada botão chama a função certa;
 `_statusEmpresa` inalterado; menu/RBAC idêntico. Não testado: RLS real de `laudos`; navegador logado em DEV.
+
+## Fase 4 (2026-10-09)
+Botão "Links por setor" em Campanhas; campanha obrigatória no lote; `ciclo_id` no objeto de `_links`; `applyCombo` removida. `onboarding-overlay` mantido (é o overlay de criação de tenant). Testado: lote recusa sem campanha, cria 2 links com `ciclo_id` com campanha; RBAC do menu idêntico ao baseline.
