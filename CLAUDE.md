@@ -308,9 +308,10 @@ elimina toda a categoria de bugs de link quebrado.
 | Tela | super_admin | admin | consultor | cliente_viewer |
 |------|-------------|-------|-----------|----------------|
 | dashboard | ✅ | ✅ | ✅ | ✅ |
+| ajuda (Como usar) | ✅ | ✅ | ✅ | ✅ |
 | empresas (Clientes) | ✅ | ✅ | ✅ | ❌ |
 | ghe (Setores/Funções) | ✅ | ✅ | ✅ | ❌ |
-| links de coleta | ✅ | ✅ | ✅ | ✅ leitura |
+| campanhas (links de coleta, `links`) | ✅ | ✅ | ✅ | ✅ leitura |
 | questionário | ✅ | ✅ | ✅ | ❌ |
 | analise / graficos | ✅ | ✅ | ✅ | ✅ |
 | comparativo | ✅ | ✅ | ✅ | ❌ |
@@ -714,9 +715,10 @@ empresa que terminou a coleta com sucesso aparecia igual a uma que nunca recebeu
   badge "Inativo" cinza) / Finalizado (`ativo=false, encerrado_em` preenchido, badge roxo `.tp`).
   **Reativar sempre limpa `encerrado_em`** — não existe "ativo e finalizado" ao mesmo tempo
   (`toggleLink()`, `psicomap-admin.html`).
-- **Ação é por link individual, não em lote por empresa/ciclo** — decisão de escopo tomada com
-  o usuário: uma empresa pode ter vários links simultâneos (um por setor via "Gerar em lote"),
-  e cada um se finaliza separadamente. Botão "🏁 Finalizar campanha" → `finalizarLink(id)`.
+- **Ação por link (`finalizarLink`, botão "🏁 Finalizar link") E por campanha inteira**
+  (`finalizarCampanha(empresaId, cicloId)`, botão "🏁 Finalizar campanha" no cabeçalho do grupo). **A decisão
+  original (só por link) foi invertida em 2026-10-09** quando a tela passou a agrupar por campanha — ver
+  "Campanhas" ao final.
 - **Desativar um link nunca escondeu respostas já coletadas** de nenhuma análise/laudo/adesão —
   `loadRespostasParaEmpresa()` sempre filtrou só por `is_teste`, nunca por `link.ativo`. Isso
   continua valendo para links finalizados: o dado coletado segue entrando normalmente em tudo.
@@ -1257,8 +1259,8 @@ onde os universais não aparecem. Normalização idêntica à de `loadRespostasP
 **`COMBO_CASCATA`** (novo, ao lado de `COMBO_RENDER`): mapa `id → função`, chamado no topo de
 `_renderParaCombo` de forma **síncrona**. Cobre `toggleComboItem`/`selectAllCombo`/`clearCombo`/
 `applyCombo` de uma vez. Ao criar um combo que reconfigura outro, registrar aqui — não
-espalhar a chamada nas quatro funções. Hoje só `combo-setor` (Resultados); Gráficos e Laudo
-não têm cascata.
+espalhar a chamada nas quatro funções. Hoje `combo-setor` (Resultados) e `combo-gf-setor` (Gráficos) — ver
+"Filtros — Fase 1b" ao final; Laudo não tem combo de Função.
 
 **Botão "Baixar todas as análises"** (`btn-export-all`, `baixarTodasAnalises()`) — restrito a
 `admin`/`super_admin` via `_podeBaixarTodos()`, nas três camadas de sempre (`rodarAnalise` +
@@ -1574,3 +1576,134 @@ funções e empresas; `super_admin_tenant_details()` com guard; **zero** tabelas
 **Divergência DEV↔PROD ainda aberta:** `webhook-billing` tem `verify_jwt = false` em PROD e
 **`true` em DEV**. Com `true`, nenhum provedor de pagamento consegue chamar o webhook em DEV — ele
 exigiria um JWT que Stripe/Asaas não enviam. Alinhar para `false` quando o billing sair do papel.
+
+## Revisão de UX — Fase 1 (2026-10-09): menu, vocabulário e feedback
+
+Só `psicomap-admin.html`, sem migration, sem escrita nova em dado. Plano completo (fases 2–4:
+campanha = promover `ciclos`, onboarding por cliente, defeitos estruturais) em
+`.claude/notes/2026-10-09-revisao-ux-fase1.md`.
+
+- **Menu reagrupado**: Início · Cadastro (Clientes, Setores & Funções, Agrupamentos, Questionário) ·
+  Coleta (Links de Coleta, Adesão) · Análise (Resultados, Distribuição, Comparativo, Auditoria) ·
+  Entrega (Laudo, Plano de Ação) · Conta (Perfil, Equipe, Assinatura, Configurar Riscos,
+  Metodologia) · Administração. **Nenhum id/rota mudou**; a matriz RBAC acima continua valendo
+  item a item (provado comparando visibilidade por role antes/depois).
+- **`_sincronizarSecoesSidebar()`** esconde o rótulo de seção quando nenhum item dela está
+  visível, e roda dentro de `aplicarRestricoesPorRole()` e `aplicarModulos()`. Antes os rótulos
+  eram escondidos por comparação de texto literal — renomear um separador quebrava o RBAC.
+- **Vocabulário**: "Cliente" (não "empresa") na UI, "Laudo" (menu, tela, módulo), "Distribuição"
+  (módulo `graficos`). Título de tela = rótulo do menu. "EST" continua na UI (renomear para
+  "Consultoria" são ~47 ocorrências — decisão pendente do usuário).
+- **Severidade de toast**: `'r'` erro de operação, `'w'` aviso/validação, `'g'` sucesso. Erro de
+  banco nunca em `'w'`.
+- **`_respostasErro`**: `getLinhasParaAnalise` marca falha de carga. Resultados/Gráficos/Laudo
+  mostram `_errorState` com "Tentar novamente"; PDF do laudo e `exportarParesGhe` recusam gerar
+  em vez de produzir documento vazio. **Falha ≠ "sem respostas".**
+- **`_comFeedback(this,'Salvando…',fn)`** desabilita o botão, restaura no `finally` e ignora duplo
+  clique. Aplicado em `salvarGHE`, `salvarCiclo`, `gerarLink`, `gerarLinksBatch`, `salvarEstPerfil`
+  — **5 das ~26 escritas**; as demais seguem sem estado de carregando.
+- **Salvaguarda 3 de `salvarGHE`**: confirma quando a estrutura a salvar perde setor ou ≥10% (mín. 3)
+  dos cargos gravados. `salvarGHE` continua apagando e regravando (não atômico): se o insert
+  falhar depois do delete, o catálogo se perde — risco pré-existente, não tratado.
+- Riscos: salvar/criar/excluir só dizem "salvo" depois que o banco responde.
+  **Bug aberto em `riscos_config`**: o upsert usa `empresa_id` NULL, e NULLs não colidem na
+  constraint `(tenant_id, empresa_id, cd_risco)` — em DEV cada salvamento DUPLICA as linhas
+  (provado com rollback); em PROD o índice parcial `riscos_config_global_cd_unique` faria o
+  segundo salvamento falhar. Tabela vazia nos dois bancos hoje. Corrigir à parte (DB + JS).
+
+## Guia "Como usar" (2026-10-09)
+
+Tela `#sc-ajuda` (`nb-ajuda`, seção Início, **liberada a todos os roles** — inclusive `cliente_viewer`
+e `super_admin` fora do modo suporte, onde só aparece o passo "Entrar em uma consultoria"). Substitui
+o modal `#tutorial-overlay` (removido, estava desatualizado). Só `psicomap-admin.html`, sem migration.
+
+- **Fonte única do conteúdo**: `GUIA_PASSOS` (passos na ordem do trabalho), `GUIA_TELAS` (uma linha por
+  item do menu), `GUIA_DUVIDAS`. **Ao criar/renomear tela, acrescentar a linha em `GUIA_TELAS`** — o
+  rótulo vem do próprio sidebar, mas a descrição não.
+- **Nada de regra de acesso própria**: um passo/botão só aparece se o item do menu (`#nb-<tela>`) está
+  visível (`_guiaTelaVisivel`), o que já reflete role **e** módulo desligado. Itens de `como` podem ser
+  `['tela','texto']` para sumirem junto com a tela. O guia nunca navega por fora de `goScreen`.
+- **Convite no primeiro acesso** (`_guiaOferecer`, chamado no fim do boot em `_iniciarAppAposTenant`):
+  card discreto com Ver o guia / Agora não / Não mostrar de novo. **Nunca bloqueia.** "Já vi" fica em
+  `localStorage['psicomap_guia_v1_<userId>']` (por usuário, por navegador — sem coluna em `perfis`).
+  Falha de leitura do storage = **não convida**. Só convida com role CRU já resolvido (`admin|consultor|
+  cliente_viewer`), nunca em modo suporte nem para `super_admin`. Subir `v1` reexibe após mudança grande.
+
+## Filtros — Fase 1b (2026-10-09)
+
+Só `psicomap-admin.html`, sem migration; **nenhum id de combo foi renomeado** (presets guardam ids).
+
+- **Cascata Setor→Função em Gráficos** (`combo-gf-setor` → `combo-gf-funcao`). A lógica virou uma só:
+  `CASCATA_TELAS` (cada tela declara combos, select de ciclo e base de pares) +
+  `_funcoesDisponiveisDe` / `_sincronizarComboFuncoesDe`; `_sincronizarComboFuncoes()` (Resultados) é
+  wrapper, comportamento idêntico ao anterior (testado contra `main`). Ao criar cascata em tela nova:
+  entrada em `CASCATA_TELAS` + `COMBO_CASCATA` + base de pares carregada com `ciclo_id`.
+- **Auditoria**: Função agora só lista funções dos setores marcados; ganhou os 3 filtros de
+  agrupamento que as outras telas têm (`combo-audit-ghe`, `combo-audit-fun-ghe`, `combo-audit-ghe-par`,
+  mesmos helpers `_grupoValoresFiltro`/`_filtroPorGhe`) e estado de erro com "Tentar novamente".
+- **`_onCicloChange(el, sincronizar, render)`** é o handler único do select de ciclo (Resultados,
+  Gráficos, Auditoria, Laudo, Plano). Só Gráficos/Resultados passam `sincronizar`.
+- **Presets**: `_aplicarConfigFiltros` recalcula a cascata antes de validar e depois de aplicar cada
+  combo. Sem isso, preset com funções de outro setor perdia essas funções (a lista ainda era a da seleção
+  anterior) e o toast dizia "N itens de filtro".
+- **Laudo continua SEM combo de Função, por decisão**: o laudo é por setor/GHE/agrupamento (o filtro
+  "Agrupamento de Função" existe); um combo novo mexeria nas 4 cadeias de filtro, nos presets e no
+  histórico de um documento entregue a cliente, sem pedido concreto.
+
+## Campanhas — o ciclo vira a campanha (2026-10-09)
+
+Só `psicomap-admin.html`. **Nenhuma mudança de schema, nenhuma migration** (decisão do usuário; ver abaixo).
+Menu "Links de Coleta" → **Campanhas** (id `nb-links`/`sc-links`/módulo `links` intactos).
+
+- **Campanha = ciclo.** A tela agrupa os links por (cliente, ciclo): cabeçalho com estado (Em coleta /
+  Pausada / Finalizada), nº de links e respostas, "+ Novo link" e "Finalizar campanha". Com um cliente
+  filtrado, campanhas ainda sem link aparecem vazias. "Nova campanha" no topo abre o modal de ciclos.
+- **Link NOVO exige campanha** (`gerarLink`); atalho "Criar campanha" no modal de link. Os links antigos
+  sem ciclo **continuam válidos e coletando** — regra de formulário, não de banco. Ficam no grupo
+  **"Sem campanha"**. `gerarLinksBatch` (modal sem botão, ver Fase 4) NÃO foi alterado.
+- **`CICLO_SEM = '__sem__'` + `_linhasDoCiclo` / `_cicloCasa`**: um helper para os 8 filtros por ciclo
+  (Resultados, Gráficos, Laudo + PDF, Auditoria, Plano, Adesão, cascata). Sem ele, respostas sem ciclo só
+  apareciam em "Todos os ciclos". A opção "Sem campanha" do select só existe para clientes com link sem ciclo.
+  **`laudos.ciclo_id` é uuid: nunca gravar o sentinela** (`_cicloIdReal`) — daria 22P02 e o laudo não
+  seria registrado. Ao criar novo filtro por ciclo, usar o helper, não `r.ciclo_id === cicloId`.
+- **`removerCiclo()` recusa ciclo com links ou respostas.** `respostas.ciclo_id`, `links_coleta.ciclo_id`
+  e `laudos.ciclo_id` são `ON DELETE SET NULL` (DEV e PROD): apagar o ciclo zerava, em silêncio, o ciclo de
+  todas as respostas coletadas. A proteção é **só no painel** — o banco continua permitindo. Tentei
+  `NO ACTION` nas FKs; o teste de apagar uma empresa por cascata estourou o timeout (60s) duas vezes em DEV,
+  então a mudança de FK **não foi aplicada** e a lentidão virou tarefa separada.
+- **Não existe "associar link antigo a uma campanha" pela tela, de propósito.** `respostas` **não tem policy
+  de UPDATE** para admin/consultor (só `super_admin`); associar só o link deixaria a campanha com links e
+  **zero respostas**. Os 3 links sem campanha em PROD (8 respostas) são das contas internas (Eleva IT e
+  TREINAMENTO). Se um dia precisarem entrar numa campanha: SQL revisado, em transação, link + respostas
+  NULL daquele `link_token`, com o OK do usuário.
+- `gerarLink` agora devolve `ciclo_id` no `.select()` e no objeto `_links` (antes o agrupamento só acertava
+  após recarregar). `modal-ciclo` ganha z-index acima do modal de link quando aberto por ele (vem antes
+  no DOM e ficaria escondido).
+
+## Passo a passo por cliente (2026-10-09)
+
+Só `psicomap-admin.html`, **sem migration e sem nada persistido**: tudo derivado de dado em memória.
+Eixo diferente de `_statusEmpresa` (que diz COMO ESTÁ a coleta): aqui é "o que falta fazer" no fluxo.
+
+- **`_trilhaCliente(emp)` é a fonte única** (função pura): 8 passos — cliente, Setores & Funções, quadro de
+  funcionários, campanha, link distribuído, respostas, meta de adesão, laudo. Estado `feito | pendente |
+  bloqueado | desconhecido`. Cartão, linha da lista e `#modal-trilha` leem dela; **nunca recalcular em outro lugar**.
+- **Regras que não são óbvias:** link de **teste** não conta como distribuído nem suas respostas contam;
+  "Link distribuído" fica **bloqueado** sem setores (o formulário não tem "Outro" desde a PR #84) ou sem
+  campanha — é só orientação, `gerarLink` e o banco não mudam; sem quadro, "Meta de adesão" é bloqueada;
+  **`desconhecido` nunca vira "próximo passo"** (quadro ainda carregando, falha ao ler `laudos`).
+  Passos de módulo desligado (`links`, `adesao`, `laudo`) somem. Adesão é a BRUTA, como no resto da carteira.
+- **`_laudosPorEmpresa`** (nova consulta agregada em `laudos`, junto de `carregarHeadcountCarteira`): falha
+  abre como `null`. Está em `_limparEstadoTenant()` e é zerado ao entrar no Modo Suporte.
+- Os botões do modal usam a navegação que já existia (`abrirModalGHE`, `abrirModalCiclo`, `goScreen`,
+  `_abrirAdesao`) via `_trilhaIr`; passo bloqueado leva ao passo que o bloqueia.
+- **Não está na Home** (Dashboard): ficou fora para não tocar na ordenação por urgência.
+- Pendente de teste real: a consulta de `laudos` com RLS de cada perfil (só simulei o resultado).
+
+## Revisão de UX — Fase 4: lote por setor e código morto (2026-10-09)
+
+Só `psicomap-admin.html`, sem migration.
+- **"Links por setor"** (cabeçalho de Campanhas, ao lado de "Novo link") finalmente abre `abrirModalGheBatch()`, que existia completo e sem nenhum chamador. Fica dentro de `#links-action-btns`, portanto some para `cliente_viewer`.
+- **Campanha obrigatória também no lote** (`gb-ciclo`, "Selecione a campanha…"; `gerarLinksBatch` recusa sem ela), igual a `gerarLink`. O objeto em `_links` agora leva `ciclo_id` — sem isso o agrupamento por campanha só acertava após recarregar.
+- O label preso em "Gerando…" já era restaurado por `_comFeedback`; a atribuição manual redundante saiu.
+- `applyCombo` removida (0 chamadas). **`#onboarding-overlay` NÃO é código morto**: é o fluxo de criação de tenant — não remover.
