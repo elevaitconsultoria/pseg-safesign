@@ -1574,3 +1574,37 @@ funções e empresas; `super_admin_tenant_details()` com guard; **zero** tabelas
 **Divergência DEV↔PROD ainda aberta:** `webhook-billing` tem `verify_jwt = false` em PROD e
 **`true` em DEV**. Com `true`, nenhum provedor de pagamento consegue chamar o webhook em DEV — ele
 exigiria um JWT que Stripe/Asaas não enviam. Alinhar para `false` quando o billing sair do papel.
+
+## Revisão de UX — Fase 1 (2026-10-09): menu, vocabulário e feedback
+
+Só `psicomap-admin.html`, sem migration, sem escrita nova em dado. Plano completo (fases 2–4:
+campanha = promover `ciclos`, onboarding por cliente, defeitos estruturais) em
+`.claude/notes/2026-10-09-revisao-ux-fase1.md`.
+
+- **Menu reagrupado**: Início · Cadastro (Clientes, Setores & Funções, Agrupamentos, Questionário) ·
+  Coleta (Links de Coleta, Adesão) · Análise (Resultados, Distribuição, Comparativo, Auditoria) ·
+  Entrega (Laudo, Plano de Ação) · Conta (Perfil, Equipe, Assinatura, Configurar Riscos,
+  Metodologia) · Administração. **Nenhum id/rota mudou**; a matriz RBAC acima continua valendo
+  item a item (provado comparando visibilidade por role antes/depois).
+- **`_sincronizarSecoesSidebar()`** esconde o rótulo de seção quando nenhum item dela está
+  visível, e roda dentro de `aplicarRestricoesPorRole()` e `aplicarModulos()`. Antes os rótulos
+  eram escondidos por comparação de texto literal — renomear um separador quebrava o RBAC.
+- **Vocabulário**: "Cliente" (não "empresa") na UI, "Laudo" (menu, tela, módulo), "Distribuição"
+  (módulo `graficos`). Título de tela = rótulo do menu. "EST" continua na UI (renomear para
+  "Consultoria" são ~47 ocorrências — decisão pendente do usuário).
+- **Severidade de toast**: `'r'` erro de operação, `'w'` aviso/validação, `'g'` sucesso. Erro de
+  banco nunca em `'w'`.
+- **`_respostasErro`**: `getLinhasParaAnalise` marca falha de carga. Resultados/Gráficos/Laudo
+  mostram `_errorState` com "Tentar novamente"; PDF do laudo e `exportarParesGhe` recusam gerar
+  em vez de produzir documento vazio. **Falha ≠ "sem respostas".**
+- **`_comFeedback(this,'Salvando…',fn)`** desabilita o botão, restaura no `finally` e ignora duplo
+  clique. Aplicado em `salvarGHE`, `salvarCiclo`, `gerarLink`, `gerarLinksBatch`, `salvarEstPerfil`
+  — **5 das ~26 escritas**; as demais seguem sem estado de carregando.
+- **Salvaguarda 3 de `salvarGHE`**: confirma quando a estrutura a salvar perde setor ou ≥10% (mín. 3)
+  dos cargos gravados. `salvarGHE` continua apagando e regravando (não atômico): se o insert
+  falhar depois do delete, o catálogo se perde — risco pré-existente, não tratado.
+- Riscos: salvar/criar/excluir só dizem "salvo" depois que o banco responde.
+  **Bug aberto em `riscos_config`**: o upsert usa `empresa_id` NULL, e NULLs não colidem na
+  constraint `(tenant_id, empresa_id, cd_risco)` — em DEV cada salvamento DUPLICA as linhas
+  (provado com rollback); em PROD o índice parcial `riscos_config_global_cd_unique` faria o
+  segundo salvamento falhar. Tabela vazia nos dois bancos hoje. Corrigir à parte (DB + JS).
