@@ -165,6 +165,13 @@ Risco R15 do plano: o formulário público tem as credenciais de PROD literais e
 - Testes (harness, dados sintéticos A=3 / B=8): 3 views × segregado/consolidado, limite exato (5 aparece, 4 oculta), PDF com 4 omissões do grupo pequeno e nenhuma frase de tranquilidade, preview, Gráficos, Plano, Comparativo, `gerarLaudoPDF` (confirm + bloqueio).
 - **NÃO coberto — decisão sua:** (a) **Auditoria** mostra `session_id`/dispositivo por respondente a consultores e admins (conflita com a promessa de anonimato do modal LGPD) — a política de acesso é decisão de produto; (b) **`exportarCSV`** exporta uma linha por respondente (setor/função/escolaridade + respostas); (c) **k-anonimato do cruzamento** setor × função × escolaridade (filtros combinados podem fatiar um recorte até n=1 sem passar pelos agrupadores — o mínimo vale sobre o recorte final, mas um recorte de 5 com filtro por função raro ainda identifica); (d) Adesão só conta (não revela respostas).
 
+### 5.11 Texto PT-BR (v2), simulação e comparação com o player (2026-10-10)
+Nota completa: `2026-10-10-simulacao-hse-e-comparacao-player.md`. Branch **`feat/hse-icao35-sim`** (worktree `../pseg-safesign-hse`), sem push.
+- **Questionário v2** com os 35 enunciados do formulário do outro player (verbatim, escala única de frequência) — `seed_hse_icao35_ptbr_v2_dev.sql`, só DEV. Versão nova (itens congelam), v1 preservada. **H22/H08/H26 têm defeito de tradução**, mantidos por instrução; redação de terceiro: permissão não verificada.
+- **Simulador** `_dev/simular-hse.js` (RPC real, recusa PROD) + empresa fictícia `seed_hse_simulacao_dev.sql`; 66 respostas simuladas em DEV. O exemplo do relatório F2 foi **reproduzido exatamente** (7 dimensões, índice, zona, média 55,9%).
+- Tela e laudo HSE ganharam **índice 0–100 e zona fixa** (referência rotulada; a classificação oficial segue sendo a faixa do benchmark).
+- **Correção:** o selo RASCUNHO do laudo agora vem de `questionarios.config.rascunho` (falha segura). O seed validado de PROD precisa abortar também por `config->>'rascunho'`.
+
 ### 5.3 Fase 1.1 (fora da v1)
 Opção D (prevalência) como complemento ao risco, comparativo/plano de ação/auditoria/gráficos para HSE, catálogo de ações por dimensão, coleta em papel,
 CNAE e grau de risco em `empresas`, vários responsáveis técnicos no laudo, reavaliação derivada do resultado, seções editáveis do laudo HSE, combo.

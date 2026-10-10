@@ -442,6 +442,9 @@ uma ideia de "combo" de metodologias, em
 >   Não cobertos: Auditoria por respondente, `exportarCSV` e k-anonimato de filtros combinados (ver `.claude/notes/2026-10-09-hse-andamento-pendencias-e-risco.md` §5.10).
 > - Backup/restauração: `RESTAURACAO_BACKUP.md` tem passos próprios para HSE (3-HSE/4-HSE); os passos BS filtram por metodologia.
 > - Texto dos itens é `[RASCUNHO]` até B1 (texto validado + permissão dos autores da ICAO); a chave geral é `questionarios.publicado`.
+> - **Simulação (DEV):** `_dev/simular-hse.js` envia respostas pela RPC real (recusa PROD) para a empresa fictícia de `seed_hse_simulacao_dev.sql`;
+>   questionário **v2** (texto PT-BR do formulário de um terceiro, **não validado**, `config.rascunho=true`). O selo RASCUNHO do laudo lê essa flag.
+>   Detalhes e comparação com o relatório do outro player: `.claude/notes/2026-10-10-simulacao-hse-e-comparacao-player.md`.
 
 Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
 antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:

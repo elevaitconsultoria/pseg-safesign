@@ -5140,6 +5140,26 @@ const HSE_DIMS = [
 // Paleta própria — nunca reaproveitar NIVEIS_CORES (os significados são opostos).
 const HSE_COR   = { VERMELHO:'#d32f2f', AMBAR:'#f9a825', AZUL:'#1976d2', VERDE:'#2e7d32' };
 const HSE_FAIXA = { VERMELHO:'Ação urgente', AMBAR:'Necessidade clara de melhoria', AZUL:'Bom, mas há o que melhorar', VERDE:'Muito bem' };
+
+// Leitura SECUNDÁRIA, no estilo dos relatórios de mercado (AEP): "índice de favorabilidade" 0–100 e zonas FIXAS
+// (≥75 verde · 40–74,99 amarela · <40 vermelha, as mesmas para item e dimensão). NÃO é o método do HSE — o HSE
+// compara com uma população de referência (a faixa acima). Fica ao lado, rotulada, para o consultor comparar com
+// relatórios de terceiros. É um ÍNDICE, não uma proporção: "3,1%" não quer dizer "3% dos trabalhadores".
+// Arredonda a 2 casas ANTES de comparar: 2,60 → 40,00% tem de cair em amarela (limite), sem ruído de float.
+const HSE_ZONA_FIXA = { VERMELHA: { txt: 'Vermelha', cor: HSE_COR.VERMELHO }, AMARELA: { txt: 'Amarela', cor: HSE_COR.AMBAR }, VERDE: { txt: 'Verde', cor: HSE_COR.VERDE } };
+function _hseIndice(media) { return media == null ? null : Math.round((media - 1) / (HSE_ESCALA_MAX - 1) * 10000) / 100; }
+function _hseZonaFixa(pct) { return pct == null ? null : (pct >= 75 ? 'VERDE' : pct >= 40 ? 'AMARELA' : 'VERMELHA'); }
+function _hseIndiceHTML(media) {
+  const pct = _hseIndice(media);
+  if (pct == null) return '—';
+  const z = HSE_ZONA_FIXA[_hseZonaFixa(pct)];
+  return `${pct.toFixed(1).replace('.', ',')}% <span style="color:${z.cor};font-weight:700;white-space:nowrap">● ${z.txt}</span>`;
+}
+// Média simples das 7 dimensões: o HSE NÃO define score global. Só referência interna, nunca manchete.
+function _hseMediaSimples(res) {
+  const v = res.dims.map(d => d.score).filter(x => x != null);
+  return v.length === res.dims.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
 let _hseMetaCache = {};     // item_id → item (texto, dimensão, inversa…)
 let _hseBenchCache = null;  // {DIMENSAO: media} do benchmark GERAL vigente
 let _hseUltimo = null;      // último resultado renderizado (para o CSV)
@@ -5155,6 +5175,23 @@ async function _hseCarregarMeta(questionarioIds) {
     (data || []).forEach(i => { _hseMetaCache[i.id] = i; });
   }
   return _hseMetaCache;
+}
+// O texto dos itens só vale como VALIDADO quando o questionário não está marcado como rascunho. Antes isto era
+// inferido do prefixo "[RASCUNHO]" no texto — mas um texto real ainda não validado (ex.: a tradução de um
+// terceiro, usada em simulação) não tem o prefixo e sairia no laudo sem a marca. A fonte é questionarios.config.
+// FALHA SEGURA: se a flag não puder ser lida, assume rascunho (a marca aparece, nunca some por erro).
+async function _hseQuestionarioEhRascunho(questionarioIds) {
+  const ids = [...new Set((questionarioIds || []).filter(Boolean))];
+  if (!ids.length) return false;
+  try {
+    const { data, error } = await sbAdmin.from('questionarios').select('id,config').in('id', ids);
+    if (error) throw error;
+    if (!data || data.length < ids.length) return true;   // questionário não encontrado = não dá para afirmar que é validado
+    return data.some(q => q.config?.rascunho === true);
+  } catch (e) {
+    console.info('Não foi possível ler a flag de rascunho do questionário; assumindo rascunho:', e?.message || e);
+    return true;
+  }
 }
 async function _hseCarregarBenchmark() {
   if (_hseBenchCache) return _hseBenchCache;
@@ -5314,6 +5351,7 @@ function _hseItensHTML(d) {
         <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
           <div style="flex:1;height:8px;background:#eef0f3;border-radius:4px"><div style="width:${w}%;height:100%;background:#64748b;border-radius:4px"></div></div>
           <div style="font-size:11px;font-weight:700;width:34px;text-align:right">${s.media != null ? s.media.toFixed(2) : '—'}</div>
+          <div style="font-size:10px;width:96px;text-align:right">${_hseIndiceHTML(s.media)}</div>
         </div>
         <div style="font-size:9px;color:#6b7280;margin-top:2px">respostas brutas — ${distTxt}</div>
       </div>`;
@@ -5352,9 +5390,10 @@ function _hseBlocoHTML(label, linhas, metaPorId, bench, risco) {
           ${d.faixa ? `<span style="margin-left:6px;font-size:10px;font-weight:700;color:white;background:${HSE_COR[d.faixa]};border-radius:4px;padding:1px 6px">${HSE_FAIXA[d.faixa]}</span>` : ''}</div>
       </div>
       ${_hseBarraDim(d)}
-      <div style="font-size:9px;color:#6b7280">${d.nItensEf} de ${d.nItens} itens com resposta · escala 1–5 · maior = melhor</div>
+      <div style="font-size:9px;color:#6b7280">${d.nItensEf} de ${d.nItens} itens com resposta · escala 1–5 · maior = melhor · índice de favorabilidade ${_hseIndiceHTML(d.score)} <span title="Leitura de referência (zonas fixas ≥75 / 40–74,99 / <40). A classificação do PsicoMap é a faixa relativa ao benchmark.">ⓘ</span></div>
       ${_hseItensHTML(d)}
     </div>`).join('')}
+    ${(() => { const m = _hseMediaSimples(res); return m == null ? '' : `<div style="margin-top:10px;font-size:10px;color:#6b7280;border-top:1px dashed var(--border);padding-top:6px">Média simples das 7 dimensões: <strong>${m.toFixed(2)}</strong> · ${_hseIndiceHTML(m)} — referência interna; o HSE não define score global, e este número não substitui a leitura por dimensão.</div>`; })()}
     ${risco ? _hseRiscoBlocoTela(res, risco.cfg, risco.indicativo) : ''}</div>`;
 }
 
@@ -5397,7 +5436,7 @@ async function rodarAnaliseHSE(panel, empresaId, cicloId) {
         <strong style="color:${leitura.cor}">${leitura.txt}.</strong>
         ${leitura.indicativo ? ' <strong>Dados apenas indicativos</strong> — o HSE considera confiável a partir de 50% de resposta.' : ''}
       </div>
-      <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior score = melhor condição (direção oposta ao BS 8800). A linha preta na barra é a média de referência do benchmark HSE 2023 (base de organizações que escolheram usar a ferramenta; não é amostra nacional representativa). Cores: relativas a essa média.</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior score = melhor condição (direção oposta ao BS 8800). O <strong>índice de favorabilidade</strong> é (média − 1) ÷ 4, de 0 a 100; as <strong>zonas fixas</strong> (verde ≥75 · amarela 40–74,99 · vermelha &lt;40) são a leitura de relatórios de mercado, mostrada só como referência. A linha preta na barra é a média de referência do benchmark HSE 2023 (base de organizações que escolheram usar a ferramenta; não é amostra nacional representativa). Cores: relativas a essa média.</div>
     </div>`;
     const risco = { cfg: await _hseCarregarRiscosCfg(), indicativo: leitura.indicativo };
     panel.innerHTML = cabecalho + segmentos.filter(s => s.linhas.length)
@@ -5549,6 +5588,7 @@ async function _laudoHSEContexto() {
   // Sem fallback literal tipo "Responsável Técnico": placeholder impresso em laudo é defeito (a checagem barra).
   const responsavel = campoResp || _estPerfil?.responsavel_padrao || '';
   const itensMeta = Object.values(_hseMetaCache);
+  const rascunhoQ = await _hseQuestionarioEhRascunho([...new Set(linhas.map(l => l.questionario_id))]);
   return {
     empId, cicloId, cicloNome: ciclo?.nome || '', nomeEmp: _empresas.find(e => e.id === empId)?.nome || '',
     todas, linhas, bench, riscoCfg, headcount, taxa, leitura: _hseLeituraTaxa(taxa), gran,
@@ -5556,7 +5596,7 @@ async function _laudoHSEContexto() {
     hoje: _laudoDataEmissao(), responsavel,
     registro: (document.getElementById('ld-registro')?.value || '').trim(),
     estPerfil: _estPerfil, itensMeta,
-    rascunho: itensMeta.some(i => /^\[RASCUNHO\]/.test(i.texto || '')),
+    rascunho: rascunhoQ || itensMeta.some(i => /^\[RASCUNHO\]/.test(i.texto || '')),
     questionarioId: linhas[0]?.questionario_id || todas[0]?.questionario_id || null,
   };
 }
@@ -5581,7 +5621,7 @@ function _laudoHSEPreflight(c) {
   const ocultos = (c.gran !== 'consolidado' && c.grupos.length > 1)
     ? c.grupos.filter(g => _linhasDoGrupo(g, c.linhas).length < HSE_N_MIN_PROVISORIO) : [];
   if (ocultos.length) avisos.push(`${ocultos.length} recorte(s) com menos de ${HSE_N_MIN_PROVISORIO} respondentes terão o resultado omitido.`);
-  if (c.rascunho) avisos.push('Os textos dos itens são PROVISÓRIOS ([RASCUNHO]). O documento sairá marcado como RASCUNHO e não pode ser entregue a cliente.');
+  if (c.rascunho) avisos.push('Os textos dos itens ainda NÃO foram validados (questionário marcado como rascunho). O documento sairá marcado como RASCUNHO e não pode ser entregue a cliente.');
   return { erros, avisos };
 }
 
@@ -5619,13 +5659,15 @@ tr:nth-child(even) td{background:#f9fafb}.num{text-align:right;white-space:nowra
 function _hseTabelaDimensoes(res) {
   const pct = v => Math.max(0, Math.min(100, (v - 1) / (HSE_ESCALA_MAX - 1) * 100));
   const linhas = [...res.dims].sort((a, b) => (a.score ?? 99) - (b.score ?? 99));
-  return `<table><thead><tr><th>Dimensão</th><th class="num">Score</th><th>Posição (barra) · linha = referência</th><th class="num">Ref. 2023</th><th class="num">Dif.</th><th>Leitura</th></tr></thead><tbody>${linhas.map(d => `<tr>
+  return `<table><thead><tr><th>Dimensão</th><th class="num">Score</th><th>Posição (barra) · linha = referência</th><th class="num">Ref. 2023</th><th class="num">Dif.</th><th>Leitura</th><th class="num">Índice · zona fixa</th></tr></thead><tbody>${linhas.map(d => `<tr>
     <td><strong>${_hEsc(d.nome)}</strong>${d.invertida ? '<div style="font-size:9px;color:#b45309">resposta invertida no cálculo</div>' : ''}<div style="font-size:9px;color:#9ca3af">${d.nItensEf} de ${d.nItens} itens</div></td>
     <td class="num"><strong>${d.score != null ? d.score.toFixed(2) : '—'}</strong></td>
     <td><div class="bar">${d.score != null ? `<i style="width:${pct(d.score).toFixed(1)}%;background:${d.faixa ? HSE_COR[d.faixa] : '#9ca3af'}"></i>` : ''}${d.ref != null ? `<b style="left:${pct(d.ref).toFixed(1)}%"></b>` : ''}</div></td>
     <td class="num">${d.ref != null ? d.ref.toFixed(2) : '—'}</td>
     <td class="num">${d.gap != null ? (d.gap >= 0 ? '+' : '') + d.gap.toFixed(2) : '—'}</td>
-    <td>${d.faixa ? `<span class="badge" style="background:${HSE_COR[d.faixa]}">${HSE_FAIXA[d.faixa]}</span>` : '—'}</td></tr>`).join('')}</tbody></table>`;
+    <td>${d.faixa ? `<span class="badge" style="background:${HSE_COR[d.faixa]}">${HSE_FAIXA[d.faixa]}</span>` : '—'}</td>
+    <td class="num">${_hseIndiceHTML(d.score)}</td></tr>`).join('')}</tbody></table>
+  <p style="font-size:10px;color:#6b7280">Índice de favorabilidade = (média − 1) ÷ 4, de 0 a 100 (um índice, não uma proporção de trabalhadores). As zonas fixas — verde ≥ 75 · amarela 40 a 74,99 · vermelha &lt; 40 — são uma leitura de referência usada por outros relatórios de mercado; a <strong>classificação deste documento é a coluna “Leitura”</strong>, relativa à média de referência do HSE 2023.</p>`;
 }
 
 // Documento COMPLETO. opts.preview=true → sem toolbar (vai para o iframe). Mesmo HTML nos dois destinos.
@@ -5639,7 +5681,7 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   const seloInd = c.leitura.indicativo
     ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> ${e(c.leitura.txt)}. O HSE considera os resultados confiáveis a partir de 50% de resposta; interprete com cautela e priorize a confirmação com os trabalhadores.</div>` : '';
   const seloRasc = c.rascunho
-    ? `<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Os enunciados dos itens são provisórios. Este documento é de teste e não deve ser entregue a cliente.</div>` : '';
+    ? `<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Os enunciados dos itens ainda não foram validados por profissional de SST nem têm uso autorizado. Este documento é de teste e não deve ser entregue a cliente.</div>` : '';
   const critNaoValidado = !_hseRiscoValidado(c.riscoCfg);
   const seloCrit = critNaoValidado
     ? `<div class="box draft"><span class="draft-tag">CRITÉRIO NÃO VALIDADO.</span> A severidade por dimensão usada na seção 4 ainda não foi validada por profissional de SST. Documento de teste; não deve ser entregue a cliente.</div>` : '';
@@ -5672,7 +5714,7 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   const validadoPor = (() => { const v = HSE_DIMS.map(d => c.riscoCfg?.[d.id]).filter(r => r?.validado && r.validado_por); return v.length ? [...new Set(v.map(r => r.validado_por))].join('; ') : ''; })();
   const itensHTML = geral.dims.map(d => `<div class="nobreak"><div class="sec-title sub">${e(d.nome)} — score ${d.score != null ? d.score.toFixed(2) : '—'}</div>
     <p style="font-size:10px;color:#6b7280">${d.invertida ? 'Dimensão com resposta invertida: “Nunca” é a melhor resposta; a média abaixo já está normalizada (maior = melhor).' : 'Maior = melhor.'}</p>
-    <table><thead><tr><th>Item</th><th>Enunciado</th><th class="num">Média</th><th class="num">n</th></tr></thead><tbody>${d.itens.map(s => `<tr><td style="white-space:nowrap">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td><td>${e(s.texto)}</td><td class="num">${s.media != null ? s.media.toFixed(2) : '—'}</td><td class="num">${s.n}</td></tr>`).join('')}</tbody></table></div>`).join('');
+    <table><thead><tr><th>Item</th><th>Enunciado</th><th class="num">Média</th><th class="num">Índice · zona fixa</th><th class="num">n</th></tr></thead><tbody>${d.itens.map(s => `<tr><td style="white-space:nowrap">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td><td>${e(s.texto)}</td><td class="num">${s.media != null ? s.media.toFixed(2) : '—'}</td><td class="num">${_hseIndiceHTML(s.media)}</td><td class="num">${s.n}</td></tr>`).join('')}</tbody></table></div>`).join('');
 
   const prioridades = geral.dims.filter(d => d.faixa === 'VERMELHO' || d.faixa === 'AMBAR').sort((a, b) => a.score - b.score);
   const recom = prioridades.length

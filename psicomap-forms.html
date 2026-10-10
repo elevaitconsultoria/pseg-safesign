@@ -809,10 +809,12 @@ function buildQuestoesHSE() {
   const cab = { 1: cfg.cabecalho_parte1 || '', 2: cfg.cabecalho_parte2 || '' };
   const nomes = { 1: 'Parte 1', 2: 'Parte 2' };
   let html = '';
+  // Versões com escala única (todos os itens na parte 1) não mostram o título "Parte 1" — sozinho, confunde.
+  const _partesUsadas = [1, 2].filter(pt => _instr.itens.some(i => i.parte === pt)).length;
   [1, 2].forEach(parte => {
     const itens = _instr.itens.filter(i => i.parte === parte).sort((a, b) => a.ordem - b.ordem);
     if (!itens.length) return;
-    html += `<div class="card"><div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">${nomes[parte]}</div>`;
+    html += `<div class="card">${_partesUsadas > 1 ? `<div class="bloco-header" style="background:#f7f9f8;color:var(--tm)">${nomes[parte]}</div>` : ''}`;
     if (cab[parte]) html += `<div class="h-parte-sub">${_escHtml(cab[parte])}</div>`;
     itens.forEach(it => {
       const rot = it.escala_labels === 'concord' ? rotConc : rotFreq;
