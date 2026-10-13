@@ -17385,7 +17385,7 @@ function _p2CapLocal(ctx) {
 
 function _p2CapGes(ctx) {
   const comRes = ctx.grs;
-  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.n}</span>`, 'class="c"')]));
+  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? '&lt;' + P2_N_MIN : x.n}</span>`, 'class="c"')]));
   let nota = '';
   if (ctx.pct != null) {
     nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pct}%</span>. A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
@@ -17490,7 +17490,7 @@ function _p2CapResult(ctx) {
   const grupos = ctx.grs.map(x => {
     const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)}</h2>`;
     if (x.omit) {
-      return `<div class="p2grp">${cab}<p class="p2omit"><b>Resultados omitidos:</b> este grupo tem ${x.n} respondente${x.n !== 1 ? 's' : ''}, menos que o mínimo de ${P2_N_MIN} necessário para preservar o anonimato das respostas. A ausência de resultado não indica ausência de risco.</p></div>`;
+      return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
     return `<div class="p2grp">${cab}${_p2TabelaFatores(x.fatores)}
       <h3>Análise dos resultados do grupo</h3>
