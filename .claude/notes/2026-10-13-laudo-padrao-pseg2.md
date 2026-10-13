@@ -43,7 +43,7 @@ variável/revisão e **não é exaustivo** (o *Objetivo* cita empresa e cidade s
 - O filtro de **nível de risco** é ignorado no v2.0 (o modelo apresenta todos os fatores).
 - Salvar: SELECT → UPDATE/INSERT (não upsert), porque a unicidade é um índice por expressão (`COALESCE`).
 
-## Divergências modelo × sistema encontradas (decisão do usuário pendente)
+## Divergências modelo × sistema encontradas (decisão do usuário pendente — ver Próximos passos)
 1. **Q8** ("tratado de forma justa e respeitosa"): modelo → fator 3 (constrangimento); sistema → `cd 9`
    (conflitos interpessoais, fator 6 do modelo). **Q13**: modelo → "3 e 5"; sistema só `cd 4`. O Quadro 1 do
    v2.0 imprime o que o sistema calcula, não o que o modelo diz.
@@ -91,3 +91,26 @@ variável/revisão e **não é exaustivo** (o *Objetivo* cita empresa e cidade s
 `.tbl-*`, `.highlight-box`, `.cover-*`, `.assinatura-bloco`…). Legendas de barras ficam de fora. Rodapé nativo "EST · Página X de Y".
 - **HSE** (`_buildLaudoHSEHTML`) não existe nesta branch (base = develop). Ao juntar, passe o HTML dele pelo mesmo conversor
   (perfil `default` serve de ponto de partida) e valide no Word via COM.
+
+## Próximos passos (atualizado em 2026-10-13, ao abrir o PR #95)
+
+**Antes de levar para `main`**
+1. Mergear o PR #95 em `develop` com **merge commit** (não squash) e conferir o DEV com um usuário real.
+2. **Teste com login em DEV**: salvar/carregar `laudo_dados` nos três escopos (o ambiente do agente não permite login). Conferir:
+   Perfil da EST (cabeçalho, rodapé, elaboradores) → "Dados do laudo" → revisões/textos → seções ocultas/páginas extras → PDF e .docx.
+3. Conferir o **.docx no Google Docs** (cabeçalho, matriz P×S, rodapé "Página X de Y") — só foi validado no Word.
+4. Aplicar `migration_laudo_dados.sql` em **PROD** (só com autorização). O código falha aberto sem ela.
+5. Rodar `/validar-formulario` **não** é necessário (não toca submissão), mas conferir `has_table_privilege('anon','laudo_dados','SELECT')` = false em PROD.
+
+**Backlog da semana** (detalhe no `ROADMAP.md`): pacote 1 (herdar do ciclo anterior + padrões da consultoria) → pacote 2 (dados da
+empresa) → pacote 3 (preenchimento automático) → pacote 4 (painel de prontidão + lote).
+
+**Decisões pendentes do usuário**
+- Divergências modelo × sistema: **Q8** (modelo → fator 3; sistema → fator 6 do modelo) e **Q13** ("3 e 5" no modelo; só 3 no sistema). Hoje o
+  Quadro 1 imprime o que o sistema calcula.
+- Campos da empresa também na tela de **Clientes**, ou só em "Dados do laudo"?
+- `P2_N_MIN` definitivo (hoje 5) e se vira configurável por EST (pacote 1).
+- Sumário com número de página (hoje sem; Chrome não tem `target-counter`) — aceitar ou calcular medindo a paginação.
+
+**Integração com a branch HSE** (`feat/hse-icao35`, ainda não em `develop`): `renderLaudo`/`gerarLaudoPDF` serão tocados pelas duas. Manter o ramo
+HSE antes do `_p2Ativo()`; passar o HTML do laudo HSE (`_buildLaudoHSEHTML`) pelo `_p2DocxConverter` (perfil `default` é o ponto de partida) e validar no Word.
