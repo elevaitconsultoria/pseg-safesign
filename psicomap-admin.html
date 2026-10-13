@@ -1931,6 +1931,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="field" style="grid-column:1/-1"><label>Título do cabeçalho</label><input type="text" id="ep-p2-titulo" placeholder="AVALIAÇÃO DOS RISCOS PSICOSSOCIAIS" oninput="_p2Sujo.est=true"/></div>
       <div class="field"><label>Rodapé — telefone</label><input type="text" id="ep-p2-tel" placeholder="(11) 00000-0000" oninput="_p2Sujo.est=true"/></div>
       <div class="field"><label>Rodapé — e-mail</label><input type="text" id="ep-p2-email" placeholder="contato@empresa.com.br" oninput="_p2Sujo.est=true"/></div>
+      <div class="field"><label>Cabeçalho — 2ª linha (padrão: razão social da empresa)</label><input type="text" id="ep-p2-linha2" placeholder="{{razao_social}}" oninput="_p2Sujo.est=true"/></div>
+      <div class="field"><label>Cabeçalho — canto direito (padrão: Revisão {{rev}})</label><input type="text" id="ep-p2-cabdir" placeholder="Revisão {{rev}}" oninput="_p2Sujo.est=true"/></div>
+      <div class="field" style="grid-column:1/-1"><label>Rodapé — texto livre (se preenchido, substitui telefone/e-mail/site)</label><input type="text" id="ep-p2-livre" placeholder="Opcional. Aceita {{razao_social}}, {{ciclo}}, {{rev}}" oninput="_p2Sujo.est=true"/></div>
       <div class="field" style="grid-column:1/-1"><label>Rodapé — site</label><input type="text" id="ep-p2-site" placeholder="www.empresa.com.br" oninput="_p2Sujo.est=true"/></div>
     </div>
     <div style="font-size:12px;font-weight:700;margin:16px 0 8px">Elaboradores</div>
@@ -3027,7 +3030,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
         <div id="laudo-p2-card" style="display:none;margin-top:8px">
           <button id="p2-btn-dados" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="abrirDadosLaudo()">Dados do laudo (campos editáveis)</button>
-          <div style="font-size:10px;color:var(--tl);margin-top:6px;line-height:1.5">Estrutura fixa do modelo PSEG: capítulos, textos padrão e variáveis da empresa. Campos vazios aparecem em vermelho. Cabeçalho, rodapé e elaboradores ficam em <b>Perfil da EST</b>. Este modelo ignora o filtro de nível de risco.</div>
+          <div style="font-size:10px;color:var(--tl);margin-top:6px;line-height:1.5">Estrutura fixa do modelo PSEG: capítulos, textos padrão e variáveis da empresa. Campos vazios aparecem em vermelho. Cabeçalho, rodapé e elaboradores ficam em <b>Perfil da EST</b>. O filtro de nível de risco recorta as tabelas de resultado.</div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:8px;cursor:pointer"><input type="checkbox" id="p2-edicao" onchange="_p2ToggleEdicao(this.checked)"> Modo edição de textos</label>
+          <div style="font-size:10px;color:var(--tl);margin-top:3px">Mostra "✎ Editar texto" em cada bloco de texto padrão do documento.</div>
         </div>
       </div>
 
@@ -3241,6 +3246,19 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   </div>
 </div>
 
+<div class="modal-bg" id="modal-p2-texto">
+  <div class="modal" style="max-width:720px;width:94vw">
+    <div class="modal-title" id="p2t-titulo">Editar texto</div>
+    <div class="modal-sub">Parágrafos separados por linha em branco. Use {{razao_social}}, {{local}}, {{est_nome}} e {{elaboradores_lista}} para manter as variáveis do documento.</div>
+    <div id="p2t-aviso" class="alert alert-y" style="display:none;margin-bottom:8px">Selecione um ciclo para gravar a edição; sem ciclo ela vale só nesta sessão.</div>
+    <textarea id="p2t-area" rows="14" style="width:100%;font-size:12px"></textarea>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharEditarTexto()">Cancelar</button>
+      <button class="btn btn-ghost" onclick="_p2SalvarTexto(true)">Restaurar padrão</button>
+      <button class="btn btn-g" style="flex:1" onclick="_p2SalvarTexto(false)">Salvar</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL: Dados do laudo (modelo padrao_pseg2.0) — campos que não têm cadastro no sistema -->
 <style>.p2d-h{font-size:12px;font-weight:700;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border);color:var(--tx)}</style>
 <div class="modal-bg" id="modal-p2-dados">
@@ -16246,7 +16264,12 @@ const P2_BLOCOS = [
   { id: 'ressalvas',     t: 'Conclusão — ressalvas técnicas',            def: () => P2_TEXTOS.ressalvas[1] },
   { id: 'encerramento',  t: 'Encerramento',                              def: () => P2_TEXTOS.encerramento },
   { id: 'resp_fim',      t: 'Responsável pela elaboração — texto',       def: () => P2_RESP_TEXTOS },
+  { id: 'res_geral',     t: 'Resultados — visão geral (frase da tabela)', def: () => [P2_TEXTOS.res_geral_p] },
+  { id: 'res_ges',       t: 'Resultados — fecho de cada grupo',          def: () => [P2_TEXTOS.res_ges_cons, P2_TEXTOS.res_ges_rec] },
+  { id: 'plano_efic',    t: 'Plano de ação — eficácia das medidas',      def: () => [P2_TEXTOS.plano_eficacia] },
 ];
+let _p2Edicao = false;       // modo edição de textos (só no preview)
+let _p2NivelFiltro = null;   // níveis do filtro "Nível de risco" quando ele restringe; senão null
 
 // Estado carregado de `laudo_dados` para a empresa + ciclo em foco.
 let _p2 = { est: {}, empresa: {}, ciclo: {}, ids: {}, chave: '', disponivel: true };
@@ -16378,7 +16401,11 @@ function _p2sub(ctx, texto) {
 function _p2paras(ctx, id, def) {
   const ov = _p2t((ctx.dCiclo.textos || {})[id]);
   const paras = ov ? ov.split(/\n{2,}/).map(s => s.trim()).filter(Boolean) : def;
-  return paras.map(p => `<p>${_p2sub(ctx, p)}</p>`).join('');
+  const corpo = paras.map(p => `<p>${_p2sub(ctx, p)}</p>`).join('');
+  // Modo edição (só no preview): o botão pede ao painel o texto CRU — com {{variáveis}} —,
+  // porque editar o texto já renderizado gravaria o valor no lugar da variável.
+  if (!ctx.edicao) return corpo;
+  return `<div class="p2blk${ov ? ' p2edited' : ''}"><button type="button" class="p2ed" onclick="parent.postMessage({p2edit:'${id}'},'*')">✎ Editar texto${ov ? ' (editado)' : ''}</button>${corpo}</div>`;
 }
 // Lista em prosa: "A, B e C".
 function _p2lista(arr) {
@@ -17175,6 +17202,8 @@ async function _p2Contexto() {
     if (cp.erro) return { erro: cp.erro };
   }
   const linhas = _linhasDoLaudo(todos);
+  const nv = [...(comboState['combo-ld-nivel'] || [])];
+  _p2NivelFiltro = (nv.length > 0 && nv.length < 5) ? nv : null;
   if (!linhas.length) {
     return { erro: _respostasErro ? 'Falha ao carregar as respostas — tente novamente.' : 'Nenhuma resposta para os filtros selecionados.' };
   }
@@ -17280,7 +17309,10 @@ function _p2FiguraFatores() {
 
 // Tabela de resultados de um conjunto de fatores (visão geral e por grupo).
 function _p2TabelaFatores(fatores) {
-  const ord = [...fatores].sort((a, b) =>
+  // Filtro "Nível de risco" da tela recorta os FATORES (não as linhas) — mesmo critério do `default`.
+  const vis = _p2NivelFiltro ? fatores.filter(f => _p2NivelFiltro.includes(f.nivel)) : fatores;
+  if (!vis.length) return '<p class="p2leg">Nenhum fator nos níveis de risco selecionados.</p>';
+  const ord = [...vis].sort((a, b) =>
     (P2_RANK_NIVEL[b.nivel] - P2_RANK_NIVEL[a.nivel]) || ((P2_N_DE_CD[a.cd] || 99) - (P2_N_DE_CD[b.cd] || 99)));
   const rows = ord.map(f => _p2tr([
     _p2td('Psicossocial'), _p2td(`<b>${_p2e(f.nome)}</b>`), _p2td(_p2e(f.cons)),
@@ -17495,11 +17527,11 @@ function _p2CapResult(ctx) {
     return `<div class="p2grp">${cab}${_p2TabelaFatores(x.fatores)}
       <h3>Análise dos resultados do grupo</h3>
       <p>${_p2e(_p2AnaliseGrupo(x.fatores))}</p>
-      <p>${_p2e(T.res_ges_cons)}</p><p>${_p2e(T.res_ges_rec)}</p></div>`;
+      ${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}</div>`;
   }).join('');
   return `${_p2paras(ctx, 'res_intro', T.res_intro)}
   <h2>Visão geral consolidada da unidade</h2>
-  <p>${part}</p><p>${_p2e(T.res_geral_p)}</p>${visao}
+  <p>${part}</p>${_p2paras(ctx, 'res_geral', [T.res_geral_p])}${_p2NivelFiltro ? `<p class="p2leg">Filtro de nível de risco aplicado às tabelas: ${_p2e(_p2NivelFiltro.join(', '))}. A análise textual de cada grupo considera todos os fatores.</p>` : ''}${visao}
   ${T.res_ges_intro.map(p => `<p>${_p2e(p)}</p>`).join('')}${grupos}`;
 }
 
@@ -17512,7 +17544,7 @@ function _p2CapPlano(ctx) {
       p.m.map(m => `<li><b>${_p2e(m.t)}</b>${m.c ? ' <em class="p2comp">[Ação Complementar]</em>' : ''}: ${_p2e(m.d)}</li>`).join('') + '</ul>';
   }).join('');
   return `${_p2paras(ctx, 'plano_intro', T.plano_intro)}${itens}
-  <h2>${_p2e(T.plano_eficacia_h)}</h2><p>${_p2e(T.plano_eficacia)}</p>`;
+  <h2>${_p2e(T.plano_eficacia_h)}</h2>${_p2paras(ctx, 'plano_efic', [T.plano_eficacia])}`;
 }
 
 function _p2CapContinuo(ctx) {
@@ -17558,7 +17590,10 @@ function _p2CapAnexos(ctx) {
 
 // ── Capa ─────────────────────────────────────────────────────────────────────
 function _p2Capa(ctx) {
-  const logo = _estPerfil?.logo_base64 ? `<img class="p2cl" src="${_estPerfil.logo_base64}" alt="">` : `<div class="p2cn">${_p2e(_estPerfil?.nome_empresa || '')}</div>`;
+  // Duas marcas: consultoria (esq.) e empresa avaliada (dir.). Sem logo, entra o nome.
+  const marca = (src, nome) => src ? `<img class="p2cl" src="${src}" alt="${_p2e(nome)}">` : `<div class="p2cn">${_p2e(nome)}</div>`;
+  const logo = marca(_estPerfil?.logo_base64, _estPerfil?.nome_empresa || '')
+             + `<div class="p2cr">${marca(ctx.emp.logo_base64, ctx.emp.nome || ctx.emp.razao_social || '')}</div>`;
   return `<section class="p2capa">
     <div class="p2cb">${logo}</div>
     <div class="p2cm">
@@ -17640,7 +17675,13 @@ tr.p2dim{page-break-after:avoid}
 .p2pend{color:#b91c1c;font-weight:700}
 .p2-hl .p2v{background:#FFFF00}
 .p2capa{page:capa;page-break-after:always;position:relative;z-index:50;background:#fff;width:210mm;height:297mm;margin:0;padding:22mm 20mm}
-.p2cb{height:40mm}
+.p2cb{height:40mm;display:flex;justify-content:space-between;align-items:flex-start;gap:12mm}
+.p2cr{text-align:right;max-width:75mm}
+.p2cr .p2cn{font-size:15pt}
+.p2blk{position:relative;border-radius:4px}
+.p2blk:hover{outline:1.5px dashed #1F7A3D;outline-offset:3px}
+.p2ed{position:absolute;top:-10px;right:0;z-index:20;font:600 10px Arial;background:#1F7A3D;color:#fff;border:0;border-radius:4px;padding:3px 8px;cursor:pointer;opacity:.85}
+.p2edited{background:#f0fdf4}
 .p2cl{max-height:34mm;max-width:80mm}
 .p2cn{font-size:18pt;font-weight:700;color:#1F7A3D}
 .p2cm{margin-top:42mm;text-align:center}
@@ -17683,17 +17724,35 @@ tr.p2dim{page-break-after:avoid}
 // no pé da página. A capa usa a página nomeada `capa` (margem 0) e por isso não os recebe.
 // Texto vai em string CSS: escapar barra, aspas e quebra de linha.
 const _p2CssStr = s => '"' + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\A ') + '"';
-function _p2PageCss(ctx) {
-  const rod = ctx.dEst.rodape || {};
-  const rodTxt = [rod.tel, rod.email, rod.site].map(_p2t).filter(Boolean).join('   |   ');
-  const titulo = _p2t(ctx.dEst.titulo_cab) || P2_TITULO_CAB;
+// Cabeçalho e rodapé — FONTE ÚNICA (CSS de impressão e bloco de tela leem daqui). Editáveis em
+// Perfil da EST. Aceitam {{razao_social}}, {{nome_fantasia}}, {{rev}}, {{ciclo}}.
+function _p2Cab(ctx) {
+  const d = ctx.dEst || {}, rod = d.rodape || {};
+  const tpl = s => String(s).replace(/\{\{(\w+)\}\}/g, (m, k) => ({
+    razao_social: ctx.emp.razao_social || ctx.emp.nome || '', nome_fantasia: ctx.emp.nome || '',
+    rev: ctx.ultimaRev, ciclo: ctx.ciclo?.nome || '',
+  }[k] ?? m));
   const razao = _p2t(ctx.emp.razao_social || ctx.emp.nome);
+  const livre = _p2t(rod.livre);
+  return {
+    titulo: tpl(_p2t(d.titulo_cab) || P2_TITULO_CAB),
+    linha2: tpl(_p2t(d.cab_linha2) || razao),
+    dir:    tpl(_p2t(d.cab_dir) || 'Revisão {{rev}}'),
+    rodape: livre ? tpl(livre) : [rod.tel, rod.email, rod.site].map(_p2t).filter(Boolean).join('   |   '),
+    marca:  ctx.logoCli ? { img: ctx.logoCli } : { nome: _p2t(ctx.emp.nome || ctx.emp.razao_social) },
+  };
+}
+
+function _p2PageCss(ctx) {
+  const cab = _p2Cab(ctx);
+  const rodTxt = cab.rodape, titulo = cab.titulo, razao = cab.linha2;
   const lin = '1pt solid #1F7A3D';
-  const logo = ctx.logoCli ? `content:url("${ctx.logoCli}");` : 'content:"";';
+  // Sem logo do cliente, o nome ocupa o lugar dela.
+  const logo = cab.marca.img ? `content:url("${cab.marca.img}");` : `content:${_p2CssStr(cab.marca.nome)};font:bold 9pt Arial,sans-serif;white-space:pre-wrap;`;
   return `@page{size:A4;margin:34mm 17mm 22mm 20mm;
   @top-left{${logo}width:38mm;vertical-align:middle;border-bottom:${lin};padding-bottom:2mm}
   @top-center{content:${_p2CssStr(titulo + '\n' + razao)};white-space:pre;font:bold 9pt Arial,sans-serif;text-align:center;vertical-align:middle;border-bottom:${lin};padding-bottom:2mm}
-  @top-right{content:${_p2CssStr('Revisão ' + ctx.ultimaRev)};width:38mm;font:9pt Arial,sans-serif;text-align:right;vertical-align:middle;border-bottom:${lin};padding-bottom:2mm}
+  @top-right{content:${_p2CssStr(cab.dir)};width:38mm;font:9pt Arial,sans-serif;text-align:right;vertical-align:middle;border-bottom:${lin};padding-bottom:2mm}
   @bottom-left{content:${_p2CssStr(rodTxt)};width:120mm;font:9pt Arial,sans-serif;text-align:left;vertical-align:top;border-top:${lin};padding-top:2mm}
   @bottom-right{content:"Página " counter(page) " de " counter(pages);font:9pt Arial,sans-serif;text-align:right;vertical-align:top;border-top:${lin};padding-top:2mm}}
 @page capa{margin:0;@top-left{content:none;border:0}@top-center{content:none;border:0}@top-right{content:none;border:0}@bottom-left{content:none;border:0}@bottom-right{content:none;border:0}}`;
@@ -17720,6 +17779,7 @@ function _p2ReduzirLogo(dataUrl, alturaPx) {
 }
 
 function _p2Build(ctx, { preview }) {
+  ctx.edicao = !!(preview && _p2Edicao);
   const fn = {
     rev: _p2CapRev, resp: _p2CapResp, cv: _p2CapCV, sumario: _p2CapSumario, ident: _p2CapIdent,
     local: _p2CapLocal, ges: _p2CapGes, funcoes: _p2CapFuncoes, defs: _p2CapDefs, intro: _p2CapIntro,
@@ -17733,14 +17793,13 @@ function _p2Build(ctx, { preview }) {
   const capa = _p2Capa(ctx);
   const corpo = P2_CAPS.map(c => `<section class="p2cap">${_p2H1(ctx, c.k)}${fn[c.k](ctx)}</section>`).join('');
 
-  const rod = ctx.dEst.rodape || {};
-  const rodTxt = [rod.tel, rod.email, rod.site].map(_p2t).filter(Boolean);
-  if (!rodTxt.length) ctx.pend.add('Rodapé: telefone, e-mail e site (Perfil da EST → Laudo PSEG 2.0)');
-  const logoCli = ctx.emp.logo_base64 ? `<img src="${ctx.emp.logo_base64}" alt="">` : '';
+  const cab = _p2Cab(ctx);
+  if (!cab.rodape) ctx.pend.add('Rodapé: telefone, e-mail e site (Perfil da EST → Laudo PSEG 2.0)');
+  const logoCli = cab.marca.img ? `<img src="${cab.marca.img}" alt="">` : `<b>${_p2e(cab.marca.nome)}</b>`;
   const header = `<div class="p2hd"><div class="l">${logoCli}</div>
-    <div class="m"><b>${_p2e(ctx.dEst.titulo_cab || P2_TITULO_CAB)}</b><br>${_p2e(ctx.emp.razao_social || ctx.emp.nome || '')}</div>
-    <div class="r">Revisão <b>${_p2e(ctx.ultimaRev)}</b></div></div>`;
-  const footer = `<div class="p2ft">${rodTxt.length ? rodTxt.map(_p2e).join(' &nbsp;|&nbsp; ') : '<span class="p2pend">[a preencher: rodapé]</span>'}</div>`;
+    <div class="m"><b>${_p2e(cab.titulo)}</b><br>${_p2e(cab.linha2)}</div>
+    <div class="r">${_p2e(cab.dir)}</div></div>`;
+  const footer = `<div class="p2ft">${cab.rodape ? _p2e(cab.rodape) : '<span class="p2pend">[a preencher: rodapé]</span>'}</div>`;
 
   const tool = preview
     ? `<div class="p2tool"><b>Pré-visualização — Modelo PSEG 2.0</b><span class="sp"></span>
@@ -17841,6 +17900,36 @@ function _p2SyncUI() {
 }
 
 function _p2ToggleDestacar(v) { _p2Destacar = !!v; }
+
+// ── Edição de texto por bloco (botão "✎ Editar texto" dentro do preview) ─────
+function _p2ToggleEdicao(v) { _p2Edicao = !!v; renderLaudo(); }
+let _p2EditId = null;
+window.addEventListener('message', ev => {
+  const fr = document.getElementById('p2-frame');
+  if (!fr || ev.source !== fr.contentWindow || !ev.data || !ev.data.p2edit) return;
+  _p2EditarTexto(String(ev.data.p2edit));
+});
+function _p2EditarTexto(id) {
+  const b = P2_BLOCOS.find(x => x.id === id); if (!b) return;
+  _p2EditId = id;
+  const ov = _p2t(((_p2.ciclo || {}).textos || {})[id]);
+  document.getElementById('p2t-titulo').textContent = b.t;
+  document.getElementById('p2t-area').value = ov || b.def().join('\n\n');
+  document.getElementById('p2t-aviso').style.display = document.getElementById('ld-ciclo')?.value ? 'none' : '';
+  document.getElementById('modal-p2-texto').classList.add('open');
+}
+function fecharEditarTexto() { document.getElementById('modal-p2-texto').classList.remove('open'); _p2EditId = null; }
+async function _p2SalvarTexto(restaurar) {
+  const b = P2_BLOCOS.find(x => x.id === _p2EditId); if (!b) return;
+  const v = document.getElementById('p2t-area').value.trim();
+  const ciclo = { ...(_p2.ciclo || {}) }; const textos = { ...(ciclo.textos || {}) };
+  if (restaurar || !v || v === b.def().join('\n\n')) delete textos[b.id]; else textos[b.id] = v;
+  ciclo.textos = textos; _p2.ciclo = ciclo; _p2Sujo.ciclo = true;
+  fecharEditarTexto();
+  try { if (document.getElementById('ld-ciclo')?.value) await _p2SalvarSujos(); else toast('Sem ciclo selecionado: o texto vale só nesta sessão.', 'w', 5000); }
+  catch (e) { toast(e.message, 'r', 6000); }
+  renderLaudo();
+}
 
 // ── Modal "Dados do laudo" (empresa + ciclo + textos + imagens temporárias) ──
 function _p2Campo(id, rot, val, dica, tipo) {
@@ -17999,6 +18088,7 @@ async function p2EstPreencherForm() {
   const d = _p2.est || {}, rod = d.rodape || {};
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
   set('ep-p2-titulo', d.titulo_cab); set('ep-p2-tel', rod.tel); set('ep-p2-email', rod.email); set('ep-p2-site', rod.site);
+  set('ep-p2-linha2', d.cab_linha2); set('ep-p2-cabdir', d.cab_dir); set('ep-p2-livre', rod.livre);
   if (!Array.isArray(d.elaboradores)) _p2.est.elaboradores = [];
   _p2EstRenderElab();
   const av = document.getElementById('ep-p2-aviso');
@@ -18030,7 +18120,7 @@ function _p2EstDel(i) { _p2.est.elaboradores.splice(i, 1); _p2Sujo.est = true; _
 async function salvarLaudoParametros() {
   if (!['admin', 'super_admin'].includes(_roleAtual())) { toast('Apenas administradores editam os parâmetros do laudo.', 'r'); return; }
   const g = id => (document.getElementById(id)?.value || '').trim();
-  _p2.est = { ..._p2.est, titulo_cab: g('ep-p2-titulo'), rodape: { tel: g('ep-p2-tel'), email: g('ep-p2-email'), site: g('ep-p2-site') } };
+  _p2.est = { ..._p2.est, titulo_cab: g('ep-p2-titulo'), cab_linha2: g('ep-p2-linha2'), cab_dir: g('ep-p2-cabdir'), rodape: { tel: g('ep-p2-tel'), email: g('ep-p2-email'), site: g('ep-p2-site'), livre: g('ep-p2-livre') } };
   try {
     await salvarLaudoDados('est');
     _p2Sujo.est = false;
