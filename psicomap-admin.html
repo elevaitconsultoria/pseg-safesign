@@ -5219,7 +5219,7 @@ async function carregarRespostasHSE(empresaId, cicloId) {
   if (error) throw error;
   const linhas = (data || []).map(r => ({
     id: r.id, setor: r.setor || 'Geral', funcao: r.funcao || '—', escolaridade: r.escolaridade || 'Não informado',
-    ciclo_id: r.ciclo_id || null, questionario_id: r.questionario_id || null,
+    ciclo_id: r.ciclo_id || null, questionario_id: r.questionario_id || null, data: r.respondido_em || null,
     h: Object.fromEntries((r.resposta_itens_hse || []).map(i => [i.item_id, i.valor])),
   })).filter(r => Object.keys(r.h).length > 0);
   await _hseCarregarMeta([...new Set(linhas.map(l => l.questionario_id))]);
@@ -12479,10 +12479,32 @@ async function calcRepresentatividade(empId, cicloId) {
   // exclusão de links de teste, mesmo requisito de ter pelo menos 1 item respondido
   // (achado real 2026-08-27: Dashboard/Clientes/Links de Coleta mostravam um número e
   // Adesão/Auditoria mostravam outro para a mesma empresa).
-  const todasLinhas = await getLinhasParaAnalise(empId);
   // `data` preserva respondido_em: sem ela não há curva de adesão nem "parada há N dias".
-  const respList = (cicloId ? todasLinhas.filter(r => r.ciclo_id === cicloId) : todasLinhas)
-    .map(r => ({ setor: r.setor, funcao: r.funcao, data: r.data_registro || null }));
+  // Adesão é por INSTRUMENTO: o loader do BS descarta respostas sem itens BS, então um ciclo HSE
+  // apareceria com 0%. Ciclo HSE lê as respostas HSE; "todos os ciclos" usa o instrumento com mais
+  // respostas (mesma regra de _calcMetricasEmpresa — a mesma pessoa não conta duas vezes).
+  const _doBS  = async () => {
+    const todas = await getLinhasParaAnalise(empId);
+    return (cicloId ? todas.filter(r => r.ciclo_id === cicloId) : todas)
+      .map(r => ({ setor: r.setor, funcao: r.funcao, data: r.data_registro || null }));
+  };
+  const _doHSE = async () => {
+    const ids = cicloId ? [cicloId]
+      : (_ciclos || []).filter(c => c.empresa_id === empId && _cicloEhHSE(c)).map(c => c.id);
+    const out = [];
+    for (const id of ids) {
+      const rows = await carregarRespostasHSE(empId, id);
+      rows.forEach(r => out.push({ setor: r.setor, funcao: r.funcao, data: r.data || null }));
+    }
+    return out;
+  };
+  let respList;
+  if (cicloId) respList = _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE ? await _doHSE() : await _doBS();
+  else {
+    const bs = await _doBS();
+    const hse = _empresaTemCicloHSE(empId) ? await _doHSE() : [];
+    respList = hse.length > bs.length ? hse : bs;
+  }
 
   // Índices de contagem de respostas: por (setor×funcao) e por setor.
   // Chave normalizada com _gheNormStrong (sem acento) — mesma usada por agruparPorGrupos()
