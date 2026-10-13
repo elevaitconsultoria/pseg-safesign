@@ -4,7 +4,9 @@
 > `2026-10-08-plano-implantacao-hse.md` (plano, com quadro de andamento por etapa),
 > `2026-10-08-referencia-hse-player-avalia-nr01.md` (aprendizados do concorrente) e
 > `2026-08-03-metodologia-hse-icao35-planejamento.md` (plano original, parcialmente substituído).
-> Branch: **`feat/hse-icao35`**, 8 commits, **nenhum push**. **PROD não foi tocado.**
+> **⚠ Para retomar, leia primeiro `2026-10-13-hse-handoff-proxima-sessao.md`** (estado atual, pendências, caminho até PROD). Este arquivo é o histórico detalhado por etapa;
+> o §8 abaixo está **desatualizado** (escrito em 09/10: dizia "nenhum push" e "10 commits"; hoje há `feat/hse-icao35` no GitHub @ `cb6a244` e `feat/hse-icao35-sim` local @ `a24f2dd`).
+> **PROD não foi tocado.**
 
 ## 1. Estado em uma página
 
@@ -252,7 +254,9 @@ Ver R1–R25 no plano. Os que estão mais vivos agora: promover o formulário an
 resultado de grupo pequeno no BS 8800 (R5, ainda sem proteção); erro de sintaxe no JS inline sem CI (R6, mitigado por `_dev/check-inline-js.js`);
 primeira resposta HSE real torna o esquema irreversível (R3, mitigado por `publicado=false` como chave geral).
 
-## 8. COMO RETOMAR (leia isto primeiro numa sessão nova)
+## 8. COMO RETOMAR — **DESATUALIZADO: usar `2026-10-13-hse-handoff-proxima-sessao.md`**
+
+> Conteúdo abaixo mantido como registro do fim da sessão de 09/10.
 
 **Estado do repositório (2026-10-09, fim da sessão):** branch `feat/hse-icao35`, **10 commits à frente de `origin/develop`, nenhum push**, working tree limpo
 (só `deno.lock` e `supabase/.temp/` sem versionamento, que não são nossos). Nenhum servidor local ficou rodando.

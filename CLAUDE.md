@@ -423,8 +423,8 @@ Plano completo, incluindo análise antecipada de um terceiro instrumento candida
 uma ideia de "combo" de metodologias, em
 `.claude/notes/2026-08-03-metodologia-hse-icao35-planejamento.md`.
 
-> **Estado (2026-10-09):** v1 implementada na branch `feat/hse-icao35`, **aplicada só em DEV; PROD intocado e
-> sem push**. Guia de retomada e ordem para PROD: `.claude/notes/2026-10-09-hse-andamento-pendencias-e-risco.md` §8.
+> **Estado (2026-10-13):** v1 implementada, **aplicada só em DEV; PROD intocado; nada em `develop`**. Branches `feat/hse-icao35` (GitHub) e
+> `feat/hse-icao35-sim` (local, worktree `../pseg-safesign-hse`). **Retomar por `.claude/notes/2026-10-13-hse-handoff-proxima-sessao.md`** (estado, pendências, caminho até PROD).
 > O parágrafo acima descreve o planejamento original; o que vale hoje:
 > - `ciclos.metodologia` (fonte da verdade, **imutável** depois que há link ou resposta) e `respostas.metodologia`
 >   (snapshot). Link sem ciclo = BS 8800. Uma metodologia por ciclo.
