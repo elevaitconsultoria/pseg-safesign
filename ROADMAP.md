@@ -49,6 +49,43 @@ Dois ajustes em `psicomap-forms.html`, independentes entre si:
 
 ---
 
+### Laudo `padrao_pseg2.0` — cadastrar uma vez, gerar em lote
+**Prioridade: Alta (implementar durante a semana de 2026-10-13)** · Contexto: PR #95; nota `.claude/notes/2026-10-13-laudo-padrao-pseg2.md`.
+
+Objetivo: o que a consultoria configura uma vez não pode ser redigitado a cada laudo ou a cada ciclo. Hoje a hierarquia é
+**EST** (Perfil da EST) → **empresa** (Dados do laudo) → **ciclo** (revisões, período, textos editados, seções ocultas, páginas extras);
+o nível **ciclo não herda nada** — todo ciclo novo recomeça do zero. Tudo cabe em `laudo_dados` (jsonb), sem migration nova, salvo indicação.
+
+**Pacote 1 — recomendado primeiro (maior ganho em todo laudo)**
+1. **Herdar do ciclo anterior**: botão "Copiar do ciclo anterior" e abertura já preenchida (textos editados, seções ocultas, páginas extras,
+   período), com a **próxima revisão numerada** automaticamente (01, 02…).
+2. **Padrões da consultoria** (nova seção no Perfil da EST, escopo `est`), aplicados a todo laudo:
+   - textos padrão editados como padrão da EST (hoje a correção vale só para o ciclo);
+   - seções ocultas padrão (ex.: sempre sem "Anexos") e páginas extras padrão (termo, política);
+   - segmentação padrão (GES / setor / geral);
+   - **mínimo de respondentes** (hoje `P2_N_MIN = 5`) e **participação mínima** (`P2_PART_MIN = 30`) configuráveis;
+   - frase de assinatura digital e descrição padrão da revisão 00;
+   - **quais elaboradores assinam por padrão** (hoje todos os cadastrados saem em todo laudo);
+   - usar a **cor da marca** do Perfil da EST no laudo (campo `cor_primaria` existe e não é lido).
+
+**Pacote 2 — dados da empresa que se repetem entre ciclos**
+- Unidade avaliada (nome/endereço quando difere da sede); referência do **PGR vigente** (nº de trabalhadores e data) que alimenta a nota do efetivo;
+  contato do RH com e-mail; elaboradores responsáveis por aquele cliente.
+- Decidir se os campos da empresa também aparecem na **tela de Clientes** (hoje só em "Dados do laudo", no Relatório).
+
+**Pacote 3 — preenchimento automático**
+- Município/UF/CEP extraídos de `empresas.endereco`; grau de risco sugerido pela tabela da NR-04 a partir do CNAE;
+  descrição do CNAE por CNPJ **exige Edge Function** (o CSP bloqueia consulta externa no navegador).
+
+**Pacote 4 — lote**
+- **Painel de prontidão por empresa** (lista o que sairia como "[a preencher]": CNAE, rodapé, elaborador…) e **"Gerar em lote"**
+  (.zip de PDF/.docx de várias empresas e ciclos). O painel vem antes: é o que torna o lote seguro.
+
+**Pendências do PR #95 (não são backlog de feature)**: aplicar `migration_laudo_dados.sql` em PROD (só com autorização); testar salvar/carregar
+`laudo_dados` com login em DEV; botão .docx para o laudo HSE quando ele chegar em `develop` (passar o HTML pelo `_p2DocxConverter`).
+
+---
+
 ## 📋 Planejado (versão futura)
 
 ### Portal do Cliente (Dashboard de Resultados)

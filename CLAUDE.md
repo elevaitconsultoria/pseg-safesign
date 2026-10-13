@@ -1707,3 +1707,25 @@ Só `psicomap-admin.html`, sem migration.
 - **Campanha obrigatória também no lote** (`gb-ciclo`, "Selecione a campanha…"; `gerarLinksBatch` recusa sem ela), igual a `gerarLink`. O objeto em `_links` agora leva `ciclo_id` — sem isso o agrupamento por campanha só acertava após recarregar.
 - O label preso em "Gerando…" já era restaurado por `_comFeedback`; a atribuição manual redundante saiu.
 - `applyCombo` removida (0 chamadas). **`#onboarding-overlay` NÃO é código morto**: é o fluxo de criação de tenant — não remover.
+
+## Laudo `padrao_pseg2.0` e `.docx` — segundo modelo de laudo (2026-10-13, branch `feat/laudo-padrao-pseg2`, PR #95)
+
+Modelo da PSEG (18 capítulos, controle de revisões, elaboradores, plano de ação por fator) ao lado do `default`, que não mudou. Seletor `#laudo-versao` no Relatório; vale só para BS 8800. Nota completa, decisões e divergências modelo × sistema em `.claude/notes/2026-10-13-laudo-padrao-pseg2.md`. Backlog (herança de ciclo, padrões da consultoria, lote) no `ROADMAP.md`.
+
+**Arquitetura**
+- **Estrutura geral = texto padrão + variáveis.** `P2_TEXTOS` foi extraído do .docx por script. Variável vazia vira `[a preencher: X]` e entra em `ctx.pend` (confirm ao gerar) — nunca fica em branco.
+- **Gerador único** `_p2Build`: o preview (iframe), o PDF (visualizador em tela cheia) e o `.docx` partem do MESMO HTML. Ao acrescentar capítulo, mexer só ali (e em `P2_CAPS`).
+- **`ctx.caps`** é a lista final de capítulos (base − ocultos + páginas extras); numeração e sumário seguem ela (`_p2Num(ctx,k)`).
+- **`.docx` para QUALQUER modelo**: `baixarLaudoDocx()` → `_p2DocxConverter(D, ctx, html, destacar, perfil, meta)`. Não é segundo gerador: converte o HTML por classes/tags (perfil `p2` e perfil `default`). No `default`, `window._laudoDocxMode` troca cartões/barras por tabelas. docx.js 8.5.0 vem do jsdelivr (já no CSP).
+- **`laudo_dados`** (`migration_laudo_dados.sql`; escopos `est`/`empresa`/`ciclo`, jsonb): aplicada em DEV; **PROD pendente (só com autorização)**. Não são colunas de `empresas` porque `empresas` é legível por `anon`. O nível `ciclo` NÃO herda nada do anterior (backlog pacote 1).
+- **Imagens anexadas** (ART etc.) ficam só em memória (`_p2Anexos`) — nunca em banco, snapshot ou localStorage.
+- `P2_N_MIN = 5` (provisório): grupo menor sai como "<5 func.". Unificar com `N_MIN_ANONIMATO` quando o HSE chegar em `develop`.
+- Numeração dos fatores no v2.0 (1–11) é só de apresentação (`P2_FATORES_ORDEM`); o `cd` interno não muda.
+
+**Regras que custaram tempo (não "limpar")**
+- **Cabeçalho/rodapé usam caixas de margem do `@page` (Chrome/Edge ≥ 131), nunca `position:fixed`** — no Chrome a impressão ignora o offset negativo e o cabeçalho cai no pé da página.
+- **PDF sem pop-up**: `window.open` + `document.write` falhava em silêncio e o `catch` fechava a janela. O visualizador é um iframe no app; **erro tem que aparecer na tela**, não só em toast.
+- **Anexos do modelo só LISTAM** ART e relatórios (vão por fora do sistema); o cartão de barras no anexo quebrava com dado real e pesava ~500 KB.
+- **Validação**: PDF → Chrome headless `--print-to-pdf` + PyMuPDF para olhar as páginas; `.docx` → abrir no Word via COM (`Word.Application`, `ExportAsFixedFormat`) e olhar o PDF. Reproduzir o CSP de produção com um servidor local que aplique o `_headers`.
+- Edição por scripts: `node -e` com heredoc e aspas quebra no bash; gravar o script em arquivo e rodar. O `psicomap-admin.html` é LF no índice — se um script reescrever com CRLF, o diff vira o arquivo inteiro.
+- `gh` pode não estar autenticado no shell do agente; a credencial do Git (`git credential fill`) chama a API do GitHub.
