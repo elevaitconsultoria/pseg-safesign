@@ -3103,6 +3103,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Pré-visualizar
       </button>
+      <button id="ld-btn-docx" class="btn btn-ghost" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="baixarLaudoDocx()" title="Baixa o mesmo laudo em .docx, editável no Word ou Google Docs">Baixar .docx (editável)</button>
     </div>
 
     <!-- PREVIEW -->
@@ -15711,7 +15712,16 @@ function _esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 const LAUDO_NIVEL_BG = {IRRELEVANTE:'#f1f5f9',BAIXO:'#dcfce7',MÉDIO:'#fef9c3',ALTO:'#ffedd5',CRÍTICO:'#fee2e2'};
 const LAUDO_NIVEL_TX = {IRRELEVANTE:'#475569',BAIXO:'#166534',MÉDIO:'#854d0e',ALTO:'#9a3412',CRÍTICO:'#991b1b'};
 
+// Modo .docx (window._laudoDocxMode): sem barras CSS; o mesmo dado sai em tabela (% de respostas por questão).
+function _laudoCardDocxHTML(f) {
+  const rows = (f.distQuestoes || []).map(q => _p2tr([_p2td(_p2e(q.codigo) + (q.inv ? ' ↺' : ''), 'class="c"'), _p2td(_p2e(q.texto)),
+    ...[1, 2, 3, 4].map(k => _p2td(q.pcts[k] + '%', 'class="c"')), _p2td(['', 'Nunca', 'Às vezes', 'Frequentemente', 'Sempre'][q.moda] || '', 'class="c"')]));
+  return `<h3>${_p2e(f.nome)} — S${f.s} ${_p2e(f.sLabel)} · ${_p2e(f.nivel)}</h3>
+    <p class="p2leg">P${f.p} (${_p2e(f.pLabel)}) × S${f.s} (${_p2e(f.sLabel)}) → ${_p2e(f.nivel)} · n=${f.n}. Distribuição média do fator (escala ajustada, 1 = condição ideal): P1 ${f.avgDist[1]}% · P2 ${f.avgDist[2]}% · P3 ${f.avgDist[3]}% · P4 ${f.avgDist[4]}%. ↺ = questão inversa.</p>
+    ${_p2tbl(['Cód.', 'Questão', 'Nunca', 'Às vezes', 'Freq.', 'Sempre', 'Predominante'], rows, 'p2dstat')}`;
+}
 function _laudoCardRiscoHTML(f) {
+  if (window._laudoDocxMode) return _laudoCardDocxHTML(f);
   const e  = _esc;
   const nc = LAUDO_NIVEL_BG[f.nivel] || '#e5e7eb';
   const nt = LAUDO_NIVEL_TX[f.nivel] || '#374151';
@@ -15924,6 +15934,14 @@ tr:last-child td{border-bottom:none}
     graficosHTML = `<div style="display:flex;flex-wrap:wrap;margin-bottom:12px">${legenda}</div>`;
     const _normalizeLinhasGraficos = lns => lns.map(r=>({...r, q:Object.fromEntries(Object.entries(r.q).map(([k,v])=>[parseInt(k),v]))}));
     const _renderDistGrupo = dist => {
+      if (window._laudoDocxMode) {
+        return CATS.map(({ cat, bloco }) => {
+          const qs = dist.filter(d => d.q.b === bloco); if (!qs.length) return '';
+          const rows = qs.map(d => _p2tr([_p2td(_p2e(d.q.c) + (d.q.inv ? ' ↺' : ''), 'class="c"'), _p2td(_p2e(d.q.t)),
+            ...[1, 2, 3, 4].map(k => _p2td(d.pcts[k] + '%', 'class="c"')), _p2td(['', 'Nunca', 'Às vezes', 'Frequentemente', 'Sempre'][d.moda] || '', 'class="c"')]));
+          return `<h3>${_p2e(cat)}</h3>${_p2tbl(['Cód.', 'Questão', 'Nunca', 'Às vezes', 'Freq.', 'Sempre', 'Predominante'], rows, 'p2dstat')}`;
+        }).join('');
+      }
       let html = '';
       CATS.forEach(({cat,bloco,cor,bg})=>{
         const qs=dist.filter(d=>d.q.b===bloco);
@@ -16093,6 +16111,7 @@ tr:last-child td{border-bottom:none}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     Imprimir / PDF
   </button>
+  <button class="btn-outline" onclick="if (window.opener && window.opener.baixarLaudoDocx) window.opener.baixarLaudoDocx()">Baixar .docx</button>
   <button class="btn-outline" onclick="window.close()">Fechar</button>
 </div>
 
@@ -18045,6 +18064,7 @@ function _p2SyncUI() {
   const on = _p2Ativo();
   const show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v ? '' : 'none'; };
   show('laudo-p2-card', on);
+  show('ld-btn-docx', !on);
   show('laudo-secoes-card', !on);
   show('laudo-textos-card', !on);
   const btn = document.getElementById('p2-btn-dados');
@@ -18334,18 +18354,22 @@ function _p2RasterizarImg(src, maxDim) {
   });
 }
 
-async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
+async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta = {}) {
+  const DEF = perfil === 'default';
+  const { Document, Packer, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
     BorderStyle, AlignmentType, ImageRun, Header, Footer, PageNumber, TabStopType, VerticalAlign, TextDirection,
-    LevelFormat, TableLayoutType } = D;
+    LevelFormat, TableLayoutType, PageBreak } = D;
   const doc = new DOMParser().parseFromString(htmlStr, 'text/html');
-  const TXT_W = 9808;                       // largura útil da página em twips (A4, 20mm/17mm)
-  const VERDE = '1F7A3D';
+  const TXT_W = DEF ? 9866 : 9808;          // largura útil em twips (A4; default 18mm/18mm, PSEG 20mm/17mm)
+  const VERDE = DEF ? '1A5E2A' : '1F7A3D';
+  // Quebra de página: o próximo parágrafo "de topo" sai com pageBreakBefore (sem parágrafo vazio sobrando).
+  let brk = false;
+  const Paragraph = function (o) { const x = { ...o }; if (brk) { x.pageBreakBefore = true; brk = false; } return new D.Paragraph(x); };
 
   // ── pré-passo assíncrono: toda imagem/SVG vira PNG ──
   const imgs = new Map();
   const jobs = [];
-  doc.querySelectorAll('.p2doc img, .p2doc svg').forEach(el => {
+  doc.querySelectorAll(DEF ? 'body img' : '.p2doc img, .p2doc svg').forEach(el => {
     if (el.closest('.p2hd')) return;
     let src = null, max = 1400;
     if (el.tagName.toLowerCase() === 'svg') {
@@ -18357,11 +18381,20 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     } else src = el.getAttribute('src');
     if (src) jobs.push(_p2RasterizarImg(src, max).then(r => imgs.set(el, r)));
   });
-  const cab = _p2Cab(ctx);
+  const cab = DEF ? null : _p2Cab(ctx);
   let logoHdr = null;
-  if (cab.marca.img) jobs.push(_p2RasterizarImg(cab.marca.img, 500).then(r => { logoHdr = r; }));
+  if (cab && cab.marca.img) jobs.push(_p2RasterizarImg(cab.marca.img, 500).then(r => { logoHdr = r; }));
   await Promise.all(jobs);
 
+  const NB_DEF = { 'nb-irr': { bg: 'F1F5F9', fg: '334155' }, 'nb-bax': { bg: 'DCFCE7', fg: '14532D' }, 'nb-med': { bg: 'FEF3C7', fg: '78350F' }, 'nb-alt': { bg: 'FFEDD5', fg: '7C2D12' }, 'nb-cri': { bg: 'FEE2E2', fg: '7F1D1D' } };
+  const NC_DEF = { 'nc-irr': ['E2E8F0', '334155'], 'nc-bax': ['BBF7D0', '14532D'], 'nc-med': ['FDE68A', '78350F'], 'nc-alt': ['FED7AA', '7C2D12'], 'nc-cri': ['FECACA', '7F1D1D'] };
+  const defFill = c => {
+    const k = [...c.classList]; const nc = k.find(x => NC_DEF[x]); if (nc) return NC_DEF[nc][0];
+    if (k.includes('axis-label')) return '2D3748'; if (k.includes('p-label')) return '1E3A5F'; if (k.includes('s-label')) return '1A5E2A';
+    if (c.tagName.toLowerCase() === 'td' && c.parentNode.children[0] === c && c.closest('table')?.classList.contains('tbl-p')) return 'F0FDF4';
+    return null;
+  };
+  const defColor = c => { const k = [...c.classList]; const nc = k.find(x => NC_DEF[x]); if (nc) return NC_DEF[nc][1]; if (k.some(x => /^(axis-label|p-label|s-label)$/.test(x))) return 'FFFFFF'; return undefined; };
   const hex = c => {
     if (!c) return null; c = c.trim();
     let m = c.match(/^#([0-9a-f]{3})$/i); if (m) return m[1].split('').map(x => x + x).join('').toUpperCase();
@@ -18392,6 +18425,8 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
       if (cl.contains('p2v') && destacar) f.highlight = 'yellow';
       if (cl.contains('p2pend')) { f.color = 'B91C1C'; f.bold = true; if (destacar) f.highlight = 'yellow'; }
       if (cl.contains('p2comp')) { f.bold = true; f.color = VERDE; }
+      if (cl.contains('nivel-badge')) { const nb = NB_DEF[[...cl].find(x => /^nb-/.test(x))] || {}; f.bold = true; f.size = 16; if (nb.bg) f.shading = { type: ShadingType.CLEAR, fill: nb.bg, color: 'auto' }; if (nb.fg) f.color = nb.fg; }
+      if (cl.contains('ref-tag')) { out.push(new TextRun({ text: n.textContent.trim() + '  ', bold: true, color: VERDE, size: 16 })); return; }
       if (cl.contains('p2nv')) { const bg = hex(stl(n, 'background')); f.bold = true; f.size = 17; if (bg) f.shading = { type: ShadingType.CLEAR, fill: bg, color: 'auto' }; }
       const c = hex(stl(n, 'color')); if (c) f.color = c;
       out.push(...runs(n, f));
@@ -18409,7 +18444,8 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
   const tabela = tbl => {
     const cls = tbl.classList;
     const mx = cls.contains('p2mx');
-    const brd = mx || cls.contains('p2plain') ? { c: '000000', sz: 6 } : { c: '9BB5A3', sz: 4 };
+    const mxd = cls.contains('tbl-matriz');
+    const brd = mx || cls.contains('p2plain') ? { c: '000000', sz: 6 } : DEF ? { c: 'D1D5DB', sz: 4 } : { c: '9BB5A3', sz: 4 };
     const side = { style: BorderStyle.SINGLE, size: brd.sz, color: brd.c };
     const trs = [...tbl.querySelectorAll(':scope > thead > tr, :scope > tbody > tr, :scope > tr')];
     const nCols = Math.max(...trs.map(tr => [...tr.children].reduce((s, c) => s + (parseInt(c.getAttribute('colspan') || '1', 10)), 0)), 1);
@@ -18420,6 +18456,12 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     else if (mx) w = [4, 15, 20.25, 20.25, 20.25, 20.25];
     else if (cls.contains('p2res') && nCols === 5) w = [14.5, 21, 29, 20, 15.5];
     else if (cls.contains('p2stat') && nCols === 7) w = [8, 44, 9, 9, 9, 9, 12];
+    else if (cls.contains('tbl-resultados') && nCols === 5) w = [12, 21, 28, 24, 15];
+    else if (cls.contains('tbl-matriz') && nCols === 5) w = [21, 19.75, 19.75, 19.75, 19.75];
+    else if (cls.contains('tbl-p') && nCols === 2) w = [30, 70];
+    else if (cls.contains('tbl-s') && nCols === 2) w = [22, 78];
+    else if (cls.contains('tbl-conduta') && nCols === 3) w = [30, 17, 53];
+    else if (cls.contains('p2dstat') && nCols === 7) w = [7, 41, 12, 10, 10, 10, 10];
     else {
       const sum = Array(nCols).fill(0), cnt = Array(nCols).fill(0);
       trs.forEach(tr => { if (tr.classList.contains('p2dim')) return; let ci = 0; [...tr.children].forEach(c => { const sp = parseInt(c.getAttribute('colspan') || '1', 10); if (sp === 1 && ci < nCols) { sum[ci] += Math.min(c.textContent.trim().length, 180); cnt[ci]++; } ci += sp; }); });
@@ -18437,19 +18479,19 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
         const sp = parseInt(c.getAttribute('colspan') || '1', 10), rs = parseInt(c.getAttribute('rowspan') || '1', 10);
         const isTh = c.tagName.toLowerCase() === 'th';
         const width = colW.slice(ci, ci + sp).reduce((a, b) => a + b, 0); ci += sp;
-        let fill = hex(stl(c, 'background')) || (isTh ? VERDE : dim ? (q2 ? 'E8EEE9' : 'CCFFCC') : c.classList.contains('p2mx-ax') ? 'A6A6A6' : null);
-        let color = hex(stl(c, 'color')) || (isTh ? 'FFFFFF' : undefined);
-        const bold = isTh || dim || c.classList.contains('k') || c.classList.contains('p2mx-c') || c.classList.contains('p2mx-ax');
-        const center = c.classList.contains('c') || mx;
+        let fill = hex(stl(c, 'background')) || (DEF ? defFill(c) : null) || (isTh ? VERDE : dim ? (q2 ? 'E8EEE9' : 'CCFFCC') : c.classList.contains('p2mx-ax') ? 'A6A6A6' : null);
+        let color = hex(stl(c, 'color')) || (DEF ? defColor(c) : null) || (isTh ? 'FFFFFF' : undefined);
+        const bold = isTh || dim || (DEF && /nivel-cell|axis-label|p-label|s-label/.test(c.className)) || c.classList.contains('k') || c.classList.contains('p2mx-c') || c.classList.contains('p2mx-ax');
+        const center = c.classList.contains('c') || mx || (DEF && /nivel-cell|axis-label|s-label/.test(c.className)) || (DEF && c.getAttribute('style') && /text-align:\s*center/.test(c.getAttribute('style')));
         const vert = c.classList.contains('p2mx-vert');
-        const f = { size: mx ? 15 : 19, bold, color };
+        const f = { size: (mx || mxd) ? 15 : DEF ? 17 : 19, bold, color };
         // várias linhas dentro da célula (br) ficam num único parágrafo
         const para = new Paragraph({ children: runs(c, f), alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT, spacing: { before: 30, after: 30 } });
         return new TableCell({
           children: [para], columnSpan: sp > 1 ? sp : undefined, rowSpan: rs > 1 ? rs : undefined,
           width: { size: width, type: WidthType.DXA },
           shading: fill ? { type: ShadingType.CLEAR, fill, color: 'auto' } : undefined,
-          verticalAlign: mx ? VerticalAlign.CENTER : VerticalAlign.TOP,
+          verticalAlign: (mx || mxd) ? VerticalAlign.CENTER : VerticalAlign.TOP,
           textDirection: vert ? TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT : undefined,
           margins: { top: 40, bottom: 40, left: 90, right: 90 },
         });
@@ -18473,7 +18515,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
   const lista = (el, nivel) => {
     const out = [];
     const ord = el.tagName.toLowerCase() === 'ol';
-    const semMarca = el.classList.contains('p2defs');
+    const semMarca = el.classList.contains('p2defs') || el.classList.contains('indice-lista');
     let i = 0;
     [...el.children].forEach(li => {
       if (li.tagName.toLowerCase() !== 'li') return;
@@ -18498,6 +18540,31 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     const out = [];
     [...root.children].forEach(el => {
       const tag = el.tagName.toLowerCase(), cl = el.classList;
+      if (DEF) {
+        if (cl.contains('toolbar') || cl.contains('page-footer') || cl.contains('no-print') || tag === 'style' || tag === 'script') return;
+        { const sa = el.getAttribute('style') || ''; if (el.hasAttribute('data-legenda-indicadores') || /inline-flex/.test(sa) || /flex-wrap:s*wrap/.test(sa)) return; }  // legendas de barras: não existem no Word
+        if (cl.contains('page')) { brk = true; out.push(...blocos(el)); return; }
+        if (cl.contains('sec-title')) {
+          const sub = cl.contains('sub'), setor = cl.contains('setor');
+          out.push(new Paragraph({ heading: (sub || setor) ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1, children: [new TextRun({ text: el.textContent.replace(/\s+/g, ' ').trim() })],
+            shading: setor ? { type: ShadingType.CLEAR, fill: '374151', color: 'auto' } : undefined }));
+          return;
+        }
+        if (cl.contains('highlight-box')) { out.push(new Paragraph({ children: runs(el, { size: 19 }), spacing: { before: 120, after: 160, line: 276 }, alignment: AlignmentType.JUSTIFIED,
+          shading: { type: ShadingType.CLEAR, fill: 'F0FDF4', color: 'auto' }, border: { left: { style: BorderStyle.SINGLE, size: 18, color: VERDE, space: 6 } } })); return; }
+        if (cl.contains('fonte-nota')) { out.push(new Paragraph({ children: runs(el, { italics: true, size: 16, color: '6B7280' }), alignment: AlignmentType.RIGHT, spacing: { after: 160 } })); return; }
+        if (cl.contains('tbl-wrap')) { out.push(...blocos(el)); return; }
+        if (cl.contains('acoes-risco-title')) { out.push(new Paragraph({ children: runs(el, { bold: true, size: 21 }), spacing: { before: 200, after: 80 }, keepNext: true,
+          border: { left: { style: BorderStyle.SINGLE, size: 18, color: VERDE, space: 6 } } })); return; }
+        if (cl.contains('assinatura-bloco')) {
+          [...el.children].forEach(c => {
+            if (c.classList.contains('assinatura-linha')) out.push(new Paragraph({ children: [], spacing: { before: 1000, after: 60 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 2 } } }));
+            else out.push(new Paragraph({ children: runs(c, { size: c.classList.contains('assinatura-nome') ? 22 : 19, bold: c.classList.contains('assinatura-nome') }), spacing: { after: 20 } }));
+          }); return;
+        }
+        if (cl.contains('ref-item')) { out.push(new Paragraph({ children: runs(el, { size: 18, color: '4B5563' }), spacing: { after: 80 } })); return; }
+        if (cl.contains('p2docx-skip')) return;
+      }
       if (tag === 'h1') out.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: el.parentNode.classList.contains('p2cap'), children: [new TextRun({ text: el.textContent.replace(/\s+/g, ' ').trim() })] }));
       else if (tag === 'h2') {
         const barra = el.parentNode && el.parentNode.classList.contains('p2grp');
@@ -18526,10 +18593,11 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
         else if (cl.contains('p2ph')) { ex.alignment = AlignmentType.CENTER; f = { color: '6B7280' }; }
         else if (cl.contains('p2sub')) ex.spacing = { after: 40 };
         if (!cl.contains('p2leg') && !ex.spacing) ex.spacing = { after: 120, line: 276 };
+        if (DEF && !f.size) f = { ...f, size: 20 };
         out.push(new Paragraph({ children: runs(el, f), ...ex }));
       }
       else if (tag === 'ul' || tag === 'ol') out.push(...lista(el, 0));
-      else if (tag === 'table') { out.push(tabela(el)); out.push(new Paragraph({ children: [], spacing: { after: 100 } })); }
+      else if (tag === 'table') { if (brk) { brk = false; out.push(new D.Paragraph({ children: [new PageBreak()] })); } out.push(tabela(el)); out.push(new Paragraph({ children: [], spacing: { after: 100 } })); }
       else if (tag === 'svg') { const p = imgPara(el, 520, 330); if (p) out.push(p); }
       else if (tag === 'figure') {
         const im = el.querySelector('img'); const p = im && imgPara(im, 600, 820, { keepNext: true }); if (p) out.push(p);
@@ -18538,7 +18606,12 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
       else if (tag === 'img') { const p = imgPara(el, 600, 820); if (p) out.push(p); }
       else if (cl.contains('p2assin')) out.push(...assinaturas(el));
       else if (cl.contains('p2gap')) out.push(new Paragraph({ children: [], spacing: { after: 100 } }));
-      else if (tag === 'div' || tag === 'section') out.push(...blocos(el));
+      else if (tag === 'div' || tag === 'section') {
+        const BL = /^(p|div|table|ul|ol|h[1-6]|section|figure|svg)$/i;
+        const temBloco = [...el.children].some(c => BL.test(c.tagName));
+        if (DEF && !temBloco) { if (el.textContent.trim()) out.push(new Paragraph({ children: runs(el, { size: 19 }), spacing: { after: 100, line: 264 }, alignment: AlignmentType.LEFT })); }
+        else out.push(...blocos(el));
+      }
     });
     return out;
   };
@@ -18592,15 +18665,49 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     ];
   };
 
+  const capaDef = (pg) => {
+    const q = s => pg.querySelector(s);
+    const none0 = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+    const logo = pg.querySelector('.cover-logo img');
+    const kids = [];
+    const lr = logo && imgs.get(logo);
+    const cel = (ps, w) => new TableCell({ children: ps, width: { size: w, type: WidthType.DXA }, borders: { top: none0, bottom: none0, left: none0, right: none0 }, verticalAlign: VerticalAlign.CENTER });
+    const marca = lr ? [new Paragraph({ children: [new ImageRun({ data: lr.data, type: 'png', transformation: { width: Math.round(lr.w * Math.min(1, 140 / lr.w, 140 / lr.h)), height: Math.round(lr.h * Math.min(1, 140 / lr.w, 140 / lr.h)) } })] })] : [new Paragraph({ children: [] })];
+    const nome = [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: q('.cover-company-name')?.textContent.trim() || '', bold: true, size: 28, color: VERDE })] }),
+                  new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: q('.cover-company-sub')?.textContent.trim() || '', size: 20, color: '6B7280' })] })];
+    kids.push(new Table({ rows: [new TableRow({ children: [cel(marca, TXT_W / 3), cel(nome, TXT_W * 2 / 3)] })], width: { size: TXT_W, type: WidthType.DXA }, columnWidths: [Math.round(TXT_W / 3), Math.round(TXT_W * 2 / 3)], layout: TableLayoutType.FIXED,
+      borders: { top: none0, bottom: { style: BorderStyle.SINGLE, size: 12, color: VERDE }, left: none0, right: none0, insideHorizontal: none0, insideVertical: none0 } }));
+    kids.push(new Paragraph({ children: [], spacing: { before: 700 } }));
+    const tag = q('.cover-tag')?.textContent.trim(); if (tag) kids.push(new Paragraph({ children: [new TextRun({ text: tag.toUpperCase(), bold: true, size: 18, color: VERDE })], spacing: { after: 160 } }));
+    kids.push(new Paragraph({ children: runs(q('.cover-title') || pg, { bold: true, size: 48, color: '111111' }), spacing: { after: 160 } }));
+    const sub = q('.cover-subtitle'); if (sub) kids.push(new Paragraph({ children: runs(sub, { size: 28, color: '6B7280' }), spacing: { after: 500 } }));
+    const itens = [...pg.querySelectorAll('.cover-meta-item')];
+    if (itens.length) {
+      const side = { style: BorderStyle.SINGLE, size: 4, color: 'E5E7EB' };
+      kids.push(new Table({ rows: itens.map(it => new TableRow({ cantSplit: true, children: [
+        new TableCell({ width: { size: 3000, type: WidthType.DXA }, shading: { type: ShadingType.CLEAR, fill: 'F9FAFB', color: 'auto' }, margins: { top: 70, bottom: 70, left: 120, right: 120 },
+          children: [new Paragraph({ children: [new TextRun({ text: it.querySelector('.cover-meta-label')?.textContent.trim().toUpperCase() || '', bold: true, size: 16, color: '6B7280' })] })] }),
+        new TableCell({ width: { size: TXT_W - 3000, type: WidthType.DXA }, margins: { top: 70, bottom: 70, left: 120, right: 120 },
+          children: [new Paragraph({ children: [new TextRun({ text: it.querySelector('.cover-meta-value')?.textContent.trim() || '', bold: true, size: 22 })] })] }),
+      ] })), width: { size: TXT_W, type: WidthType.DXA }, columnWidths: [3000, TXT_W - 3000], layout: TableLayoutType.FIXED,
+      borders: { top: side, bottom: side, left: side, right: side, insideHorizontal: side, insideVertical: side } }));
+    }
+    const pills = [...pg.querySelectorAll('.norm-pill')].map(p => p.textContent.trim()).filter(Boolean);
+    if (pills.length) kids.push(new Paragraph({ spacing: { before: 300 }, children: [new TextRun({ text: pills.join('   ·   '), bold: true, size: 18, color: VERDE })] }));
+    const conf = q('.cover-footer span'); if (conf) kids.push(new Paragraph({ spacing: { before: 900 }, border: { top: { style: BorderStyle.SINGLE, size: 4, color: 'E5E7EB', space: 8 } }, children: [new TextRun({ text: conf.textContent.trim(), size: 16, color: '9CA3AF' })] }));
+    return kids;
+  };
+
   // ── cabeçalho / rodapé nativos (mesma fonte do PDF: _p2Cab) ──
   const none = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const verdeBorda = { style: BorderStyle.SINGLE, size: 8, color: VERDE };
   const hdrCell = (children, w, align) => new TableCell({ children, width: { size: w, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER,
     borders: { top: none, left: none, right: none, bottom: verdeBorda }, margins: { bottom: 60 } });
   let esq;
-  if (logoHdr) { const k = Math.min(1, 150 / logoHdr.w, 58 / logoHdr.h); esq = [new Paragraph({ children: [new ImageRun({ data: logoHdr.data, type: 'png', transformation: { width: Math.round(logoHdr.w * k), height: Math.round(logoHdr.h * k) } })] })]; }
+  if (DEF) { esq = []; }
+  else if (logoHdr) { const k = Math.min(1, 150 / logoHdr.w, 58 / logoHdr.h); esq = [new Paragraph({ children: [new ImageRun({ data: logoHdr.data, type: 'png', transformation: { width: Math.round(logoHdr.w * k), height: Math.round(logoHdr.h * k) } })] })]; }
   else esq = [new Paragraph({ children: [new TextRun({ text: cab.marca.nome || '', bold: true, size: 18 })] })];
-  const header = new Header({ children: [new Table({
+  const header = DEF ? null : new Header({ children: [new Table({
     rows: [new TableRow({ children: [
       hdrCell(esq, 2200),
       hdrCell([new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: cab.titulo, bold: true, size: 18 })] }), new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: cab.linha2, size: 18 })] })], TXT_W - 4400),
@@ -18610,29 +18717,42 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
   const footer = new Footer({ children: [new Paragraph({
     border: { top: { style: BorderStyle.SINGLE, size: 8, color: VERDE, space: 4 } },
     tabStops: [{ type: TabStopType.RIGHT, position: TXT_W }],
-    children: [new TextRun({ text: cab.rodape || '', size: 18 }), new TextRun({ text: '\tPágina ', size: 18 }),
+    children: [new TextRun({ text: DEF ? (meta.estNome || '') : (cab.rodape || ''), size: 18 }), new TextRun({ text: '\tPágina ', size: 18 }),
       new TextRun({ children: [PageNumber.CURRENT], size: 18 }), new TextRun({ text: ' de ', size: 18 }), new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18 })] })] });
 
   // ── corpo ──
   const corpo = [];
-  doc.querySelectorAll('.p2doc > section.p2cap').forEach(sec => corpo.push(...blocos(sec)));
+  let capaBlocos = [];
+  if (DEF) {
+    const pgs = [...doc.querySelectorAll('body > .page')];
+    pgs.forEach(pg => { if (pg.querySelector('.cover-header')) capaBlocos = capaDef(pg); else corpo.push(...blocos(pg)); });
+  } else {
+    doc.querySelectorAll('.p2doc > section.p2cap').forEach(sec => corpo.push(...blocos(sec)));
+  }
+  brk = false;
   // blocos() só pagina antes de h1 dentro de .p2cap — o sumário e os demais já vêm marcados.
 
   const H = (id, name, size, extra = {}) => ({ id, name, basedOn: 'Normal', next: 'Normal', quickFormat: true, ...extra, run: { font: 'Arial', size, bold: true, color: '000000', ...(extra.run || {}) } });
   const documento = new Document({
-    creator: _estPerfil?.nome_empresa || 'PsicoMap', title: `Avaliação dos riscos psicossociais — ${ctx.emp.razao_social || ctx.emp.nome || ''}`,
+    creator: _estPerfil?.nome_empresa || 'PsicoMap', title: DEF ? (meta.titulo || 'Laudo') : `Avaliação dos riscos psicossociais — ${ctx.emp.razao_social || ctx.emp.nome || ''}`,
     styles: {
-      default: { document: { run: { font: 'Arial', size: 22 }, paragraph: { spacing: { after: 120 } } } },
+      default: { document: { run: { font: 'Arial', size: DEF ? 20 : 22 }, paragraph: { spacing: { after: 120 } } } },
       paragraphStyles: [
-        H('Heading1', 'Heading 1', 28, { paragraph: { spacing: { before: 240, after: 160 }, keepNext: true, outlineLevel: 0 }, run: { underline: {} } }),
-        H('Heading2', 'Heading 2', 24, { paragraph: { spacing: { before: 260, after: 120 }, keepNext: true, outlineLevel: 1 } }),
+        DEF ? H('Heading1', 'Heading 1', 26, { paragraph: { spacing: { before: 300, after: 160 }, keepNext: true, outlineLevel: 0, shading: { type: ShadingType.CLEAR, fill: '1A5E2A', color: 'auto' } }, run: { color: 'FFFFFF' } })
+            : H('Heading1', 'Heading 1', 28, { paragraph: { spacing: { before: 240, after: 160 }, keepNext: true, outlineLevel: 0 }, run: { underline: {} } }),
+        DEF ? H('Heading2', 'Heading 2', 24, { paragraph: { spacing: { before: 260, after: 120 }, keepNext: true, outlineLevel: 1, shading: { type: ShadingType.CLEAR, fill: '2D7A41', color: 'auto' } }, run: { color: 'FFFFFF' } })
+            : H('Heading2', 'Heading 2', 24, { paragraph: { spacing: { before: 260, after: 120 }, keepNext: true, outlineLevel: 1 } }),
         H('Heading3', 'Heading 3', 22, { paragraph: { spacing: { before: 220, after: 100 }, keepNext: true, outlineLevel: 2 }, run: { italics: true } }),
       ],
     },
     numbering: { config: [{ reference: 'p2bul', levels: [
       { level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 270 } } } },
       { level: 1, format: LevelFormat.BULLET, text: '–', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 1080, hanging: 270 } } } } ] }] },
-    sections: [
+    sections: DEF ? [
+      ...(capaBlocos.length ? [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1020, bottom: 800, left: 1020, right: 1020 } } }, children: capaBlocos }] : []),
+      { properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1020, bottom: 1100, left: 1020, right: 1020, footer: 450 } } },
+        footers: { default: footer }, children: corpo.length ? corpo : [new D.Paragraph({ children: [] })] },
+    ] : [
       { properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1247, bottom: 1134, left: 1134, right: 964 } } }, children: capa() },
       { properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1928, bottom: 1247, left: 1134, right: 964, header: 567, footer: 454 } } },
         headers: { default: header }, footers: { default: footer }, children: corpo },
@@ -18641,9 +18761,21 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
   return Packer.toBlob(documento);
 }
 
-// ── Botão "Baixar .docx" ─────────────────────────────────────────────────────
+// ── Botão "Baixar .docx" — qualquer modelo ──────────────────────────────────
+function _p2BaixarBlob(blob, base) {
+  const nome = String(base || 'laudo').replace(/[^\w\-]+/g, '_').replace(/_+/g, '_').slice(0, 90) + '.docx';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
 async function baixarLaudoDocx() {
-  if (!_p2Ativo()) { toast('Escolha o modelo padrao_pseg2.0 para gerar o .docx.', 'w'); return; }
+  if (!_p2Ativo()) {
+    const b = document.getElementById('ld-btn-docx'); const rot = b ? b.textContent : '';
+    if (b) { b.disabled = true; b.textContent = 'Gerando .docx…'; }
+    try { await gerarLaudoPDF({ docx: true }); }
+    catch (e) { console.error('[laudo] docx:', e); toast('Erro ao gerar o .docx: ' + e.message, 'r', 7000); }
+    finally { if (b) { b.disabled = false; b.textContent = rot; } }
+    return;
+  }
   const btn = document.getElementById('p2-btn-docx');
   const rot = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Gerando .docx…'; }
@@ -18764,7 +18896,7 @@ function abrirLaudoJanela() {
   gerarLaudoPDF();
 }
 
-async function gerarLaudoPDF() {
+async function gerarLaudoPDF(opts = {}) {
   // _registrarLaudo() NÃO é chamado aqui — "Pré-visualizar" e "Exportar/Imprimir" abrem a
   // mesma janela de revisão, e registrar a cada abertura inflava a auditoria de "laudo
   // gerado" com cliques de tentativa-e-erro. O registro real acontece só quando o usuário
@@ -18775,9 +18907,10 @@ async function gerarLaudoPDF() {
   // mais a chamada como resposta direta ao clique do usuário e bloqueia o pop-up em
   // silêncio (era a causa real do botão "parecer" não fazer nada mesmo clicando várias vezes).
   if (_p2Ativo()) { _p2UltimoSnap = null; return _p2GerarPDF(); }
-  const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
+  // opts.docx: gera o .docx — sem pop-up (win = stub), o resultado vai para o conversor.
+  const win = opts.docx ? { close() {}, document: { open() {}, write() {}, close() {} } } : window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
-  win.document.write('<!doctype html><title>Gerando laudo…</title><body style="font-family:sans-serif;padding:60px;color:#888;text-align:center">Gerando laudo…</body>');
+  if (!opts.docx) win.document.write('<!doctype html><title>Gerando laudo…</title><body style="font-family:sans-serif;padding:60px;color:#888;text-align:center">Gerando laudo…</body>');
 
   _p2UltimoSnap = null;
 
@@ -18841,8 +18974,19 @@ async function gerarLaudoPDF() {
     const registro    = (document.getElementById('ld-registro')?.value||'').trim();
     const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
 
-    const html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro, estPerfil: _estPerfil, niveisLd, empId });
+    let html;
+    if (opts.docx) window._laudoDocxMode = true;
+    try { html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro, estPerfil: _estPerfil, niveisLd, empId }); }
+    finally { window._laudoDocxMode = false; }
 
+    if (opts.docx) {
+      const D = await _p2CarregarDocx();
+      const blob = await _p2DocxConverter(D, null, html, false, 'default', { estNome: _estPerfil?.nome_empresa || 'PsicoMap', titulo: 'Laudo — ' + nomeEmp });
+      _p2BaixarBlob(blob, ('Laudo_' + nomeEmp + (cicloNome ? '_' + cicloNome : '')));
+      _p2UltimoSnap = null;
+      toast('.docx gerado — abra no Word ou importe no Google Docs.', 'g');
+      return;
+    }
     win.document.open();
     win.document.write(html);
     win.document.close();

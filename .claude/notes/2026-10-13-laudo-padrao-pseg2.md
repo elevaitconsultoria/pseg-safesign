@@ -83,3 +83,11 @@ variável/revisão e **não é exaustivo** (o *Objetivo* cita empresa e cidade s
   Baixar .docx. Motivo: o pop-up (window.open + document.write) falhava em silêncio e o catch fechava a janela. Erros agora
   aparecem NA tela. "Abrir em nova aba" cobre navegador que ignore `@page` ao imprimir iframe.
 - Assinatura: campo de 24 mm acima da linha (placeholder "espaço para assinatura" só na tela); CPF e papel opcionais.
+
+## .docx para qualquer modelo (2026-10-13)
+`baixarLaudoDocx()` agora atende o `default` também: `gerarLaudoPDF({docx:true})` monta o MESMO HTML do PDF (sem pop-up) com
+`window._laudoDocxMode = true` — os cartões de risco e as barras de distribuição viram TABELAS (`_laudoCardDocxHTML`, ramo em
+`_renderDistGrupo`) — e `_p2DocxConverter(..., 'default', meta)` converte por classes (`.sec-title`→Título 1/2 com fundo verde,
+`.tbl-*`, `.highlight-box`, `.cover-*`, `.assinatura-bloco`…). Legendas de barras ficam de fora. Rodapé nativo "EST · Página X de Y".
+- **HSE** (`_buildLaudoHSEHTML`) não existe nesta branch (base = develop). Ao juntar, passe o HTML dele pelo mesmo conversor
+  (perfil `default` serve de ponto de partida) e valide no Word via COM.
