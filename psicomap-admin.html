@@ -17310,18 +17310,32 @@ function _p2FiguraFatores() {
 }
 
 // Tabela de resultados de um conjunto de fatores (visão geral e por grupo).
+// Mesma regra da tela Resultados › Por risco › Tabela (renderViewRisco): sem IRRELEVANTE, do nível mais
+// alto para o mais baixo (empate: ordem de calcFatores = dimensão e depois cd), 5 colunas, mesma paleta
+// de nível (NIVEIS_CORES). O filtro "Nível de risco" recorta os FATORES, como no laudo default.
 function _p2TabelaFatores(fatores) {
-  // Filtro "Nível de risco" da tela recorta os FATORES (não as linhas) — mesmo critério do `default`.
-  const vis = _p2NivelFiltro ? fatores.filter(f => _p2NivelFiltro.includes(f.nivel)) : fatores;
-  if (!vis.length) return '<p class="p2leg">Nenhum fator nos níveis de risco selecionados.</p>';
-  const ord = [...vis].sort((a, b) =>
-    (P2_RANK_NIVEL[b.nivel] - P2_RANK_NIVEL[a.nivel]) || ((P2_N_DE_CD[a.cd] || 99) - (P2_N_DE_CD[b.cd] || 99)));
-  const rows = ord.map(f => _p2tr([
-    _p2td('Psicossocial'), _p2td(`<b>${_p2e(f.nome)}</b>`), _p2td(_p2e(f.cons)),
-    _p2td(`<i>${_p2e(f.classifErg)}</i>`), _p2td(`P${f.p}`, 'class="c"'), _p2td(`S${f.s}`, 'class="c"'),
-    _p2td(_p2NivelTag(f.nivel), 'class="c"'),
-  ]));
-  return _p2tbl(['Risco', 'Fator ergonômico observado', 'Consequência', 'Classificação ergonômica', 'P', 'S', 'Nível de risco'], rows, 'p2res');
+  const vis = fatores
+    .filter(f => f.nivel !== 'IRRELEVANTE' && (!_p2NivelFiltro || _p2NivelFiltro.includes(f.nivel)))
+    .sort((a, b) => P2_RANK_NIVEL[b.nivel] - P2_RANK_NIVEL[a.nivel]);   // sort estável: preserva a ordem de calcFatores
+  if (!vis.length) return '<p class="p2leg">Nenhum fator acima de irrelevante' + (_p2NivelFiltro ? ' nos níveis de risco selecionados' : '') + '.</p>';
+  const rows = vis.map(f => {
+    const nc = NIVEIS_CORES[f.nivel] || NIVEIS_CORES.BAIXO;
+    return _p2tr([
+      _p2td('Psicossocial'), _p2td(`<b>${_p2e(f.nome)}</b>`), _p2td(_p2e(f.cons)),
+      _p2td(`<i>${_p2e(CLASSIF_ERGONOMICA[f.nivel] || '')}</i>`),
+      _p2td(`<span class="p2nv" style="background:${nc.bg};color:${nc.cor}">${_p2e(f.nivel)}</span>`, 'class="c"'),
+    ]);
+  });
+  return _p2tbl(['Risco', 'Fator Ergonômico observado', 'Consequência', 'Classificação Ergonômica', 'Nível de Risco'], rows, 'p2res');
+}
+
+// Quadro "SETORES / FUNÇÕES" do recorte — igual ao da tela Resultados, mas calculado sobre as
+// respostas do bloco (não sobre o estado dos combos da outra tela).
+function _p2FiltroBox(ls) {
+  const ord = arr => [...new Set(arr.map(x => _p2t(x)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const lista = arr => arr.length > 14 ? arr.slice(0, 14).join(' · ') + ` · … e mais ${arr.length - 14} (${arr.length} no total)` : (arr.join(' · ') || '—');
+  const s = ord(ls.map(r => r.setor)), f = ord(ls.map(r => r.funcao));
+  return `<div class="p2fl"><div><b>SETORES</b> <span>${_p2e(lista(s))}</span></div><div><b>FUNÇÕES</b> <span>${_p2e(lista(f))}</span></div></div>`;
 }
 
 // Parágrafo "Neste grupo de exposição foram identificados N fatores…" — gerado dos dados.
@@ -17514,27 +17528,34 @@ function _p2CapResult(ctx) {
   const T = P2_TEXTOS;
   const total = ctx.linhas.length;
   const omitTotal = P2_N_MIN > 0 && total < P2_N_MIN;
+  const geralFatores = omitTotal ? null : calcFatores(ctx.linhas);
+  const consolidado = ctx.gran === 'consolidado';
+  const part = ctx.pct != null
+    ? `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} ${consolidado ? 'grupo de exposição' : 'grupos de exposição'}</span>, sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a <span class="p2v">uma participação de ${ctx.pct}%</span>.`
+    : `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} grupos de exposição</span>. ${_p2v(ctx, '', 'Efetivo da empresa (Dados do laudo → Empresa)')}`;
+  const analise = fatores => `<h3>Análise dos resultados do grupo</h3><p>${_p2e(_p2AnaliseGrupo(fatores))}</p>${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}`;
+  const nResp = n => `<span class="p2gn">(${n} respondente${n !== 1 ? 's' : ''})</span>`;
+
+  // Visão geral: um bloco com todo o recorte (equivale ao "Todos os setores filtrados" da tela).
   const visao = omitTotal
     ? '<p><i>Visão geral omitida: o recorte tem menos respondentes que o mínimo para preservar o anonimato.</i></p>'
-    : _p2TabelaFatores(calcFatores(ctx.linhas));
-  const gruposOk = ctx.grs.filter(x => !x.omit).length;
-  const part = ctx.pct != null
-    ? `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} grupos de exposição</span>, sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a <span class="p2v">uma participação de ${ctx.pct}%</span>.`
-    : `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} grupos de exposição</span>. ${_p2v(ctx, '', 'Efetivo da empresa (Dados do laudo → Empresa)')}`;
-  const grupos = ctx.grs.map(x => {
-    const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)}</h2>`;
+    : `<div class="p2grp"><h2>Todos os setores filtrados ${nResp(total)}</h2>${_p2FiltroBox(ctx.linhas)}${_p2TabelaFatores(geralFatores)}${consolidado ? analise(geralFatores) : ''}</div>`;
+
+  // Por grupo (setor / GHE / agrupamento / preset): mesmo bloco, um por grupo. No modo Geral não há
+  // o que repetir — a visão geral já é o único bloco.
+  const grupos = consolidado ? '' : ctx.grs.map(x => {
+    const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)} ${nResp(x.n)}</h2>`;
     if (x.omit) {
       return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
-    return `<div class="p2grp">${cab}${_p2TabelaFatores(x.fatores)}
-      <h3>Análise dos resultados do grupo</h3>
-      <p>${_p2e(_p2AnaliseGrupo(x.fatores))}</p>
-      ${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}</div>`;
+    return `<div class="p2grp">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}${analise(x.fatores)}</div>`;
   }).join('');
+
+  const rotulo = { ghe: 'por GES (setor × função)', segregado: 'por setor', agrupado: 'por agrupamento de setores', preset: 'por preset de filtro', consolidado: 'geral (todos os setores)' }[ctx.gran] || '';
   return `${_p2paras(ctx, 'res_intro', T.res_intro)}
   <h2>Visão geral consolidada da unidade</h2>
-  <p>${part}</p>${_p2paras(ctx, 'res_geral', [T.res_geral_p])}${_p2NivelFiltro ? `<p class="p2leg">Filtro de nível de risco aplicado às tabelas: ${_p2e(_p2NivelFiltro.join(', '))}. A análise textual de cada grupo considera todos os fatores.</p>` : ''}${visao}
-  ${T.res_ges_intro.map(p => `<p>${_p2e(p)}</p>`).join('')}${grupos}`;
+  <p>${part}</p>${_p2paras(ctx, 'res_geral', [T.res_geral_p])}${_p2NivelFiltro ? `<p class="p2leg">Filtro de nível de risco aplicado às tabelas: ${_p2e(_p2NivelFiltro.join(', '))}. A análise textual considera todos os fatores.</p>` : ''}${visao}
+  ${consolidado ? '' : `<h2>Resultados ${_p2e(rotulo)}</h2>${T.res_ges_intro.map(p => `<p>${_p2e(p)}</p>`).join('')}`}${grupos}`;
 }
 
 function _p2CapPlano(ctx) {
@@ -17647,6 +17668,10 @@ h3{font-size:11pt;font-weight:700;font-style:italic;margin:11pt 0 5pt;page-break
 .p2q2 .p2dim td{background:#E8EEE9}
 .p2q1 td:nth-child(2){width:56%}
 .p2res td{font-size:9pt}
+.p2grp>h2{background:#f1f5f9;border-left:3pt solid #111827;padding:5pt 9pt;margin:14pt 0 7pt;font-size:11.5pt}
+.p2gn{font-weight:400;font-size:9.5pt;color:#6b7280}
+.p2fl{border:.5pt solid #d1d5db;border-left:3pt solid #1F7A3D;background:#f8fafc;padding:4pt 8pt;margin:0 0 7pt;font-size:9pt;line-height:1.45}
+.p2fl b{font-size:7.5pt;letter-spacing:.5pt;color:#6b7280;display:inline-block;min-width:46pt}
 .p2stat td{font-size:8.5pt}
 .p2nv{display:inline-block;padding:1pt 6pt;font-weight:700;border-radius:3pt;font-size:8.5pt;white-space:nowrap}
 .p2leg{font-size:9pt;font-style:italic;color:#333;margin:2pt 0 9pt}
@@ -18276,7 +18301,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     const cols = [...tbl.querySelectorAll(':scope > colgroup > col')].map(c => parseFloat((c.getAttribute('style') || '').match(/width:\s*([\d.]+)%/)?.[1]));
     if (cols.length === nCols && cols.every(x => x > 0)) w = cols;
     else if (mx) w = [4, 15, 20.25, 20.25, 20.25, 20.25];
-    else if (cls.contains('p2res') && nCols === 7) w = [12, 16, 26, 17, 5.5, 5.5, 18];
+    else if (cls.contains('p2res') && nCols === 5) w = [14.5, 21, 29, 20, 15.5];
     else if (cls.contains('p2stat') && nCols === 7) w = [8, 44, 9, 9, 9, 9, 12];
     else {
       const sum = Array(nCols).fill(0), cnt = Array(nCols).fill(0);
@@ -18357,7 +18382,21 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     [...root.children].forEach(el => {
       const tag = el.tagName.toLowerCase(), cl = el.classList;
       if (tag === 'h1') out.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: el.parentNode.classList.contains('p2cap'), children: [new TextRun({ text: el.textContent.replace(/\s+/g, ' ').trim() })] }));
-      else if (tag === 'h2') out.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: runs(el) }));
+      else if (tag === 'h2') {
+        const barra = el.parentNode && el.parentNode.classList.contains('p2grp');
+        out.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: runs(el, barra ? { size: 23 } : {}).concat([]),
+          shading: barra ? { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' } : undefined,
+          border: barra ? { left: { style: BorderStyle.SINGLE, size: 18, color: '111827', space: 6 } } : undefined }));
+      }
+      else if (cl.contains('p2fl')) {
+        const lin = [...el.children];
+        const kids = [];
+        lin.forEach((d, i) => { if (i) kids.push(new TextRun({ break: 1 })); d.childNodes.forEach(n => {
+          if (n.nodeType === 1 && n.tagName.toLowerCase() === 'b') kids.push(new TextRun({ text: n.textContent + '   ', bold: true, size: 15, color: '6B7280' }));
+          else kids.push(new TextRun({ text: n.textContent.trim(), size: 18 })); }); });
+        out.push(new Paragraph({ children: kids, spacing: { after: 140 }, shading: { type: ShadingType.CLEAR, fill: 'F8FAFC', color: 'auto' },
+          border: { left: { style: BorderStyle.SINGLE, size: 18, color: VERDE, space: 6 } } }));
+      }
       else if (tag === 'h3') out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(el) }));
       else if (tag === 'p') {
         const ex = { alignment: AlignmentType.JUSTIFIED };
