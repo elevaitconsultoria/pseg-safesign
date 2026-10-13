@@ -16334,7 +16334,9 @@ const _p2e = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const _p2t = v => (v == null ? '' : String(v)).trim();
 
+function _p2Permitido() { const r = _roleAtual(); return r === 'admin' || r === 'super_admin'; }
 function _p2Versao() {
+  if (!_p2Permitido()) return 'default';
   return document.getElementById('laudo-versao')?.value === P2_ID ? P2_ID : 'default';
 }
 function _p2Ativo() { return _p2Versao() === P2_ID; }
@@ -16390,12 +16392,10 @@ async function carregarLaudoDados(empId, cicloId, forcar) {
 // Grava um escopo. SELECT→UPDATE/INSERT em vez de upsert: a unicidade é um índice por
 // EXPRESSÃO (COALESCE), que o onConflict do PostgREST não consegue apontar.
 async function salvarLaudoDados(escopo, empId, cicloId) {
+  if (!_p2Permitido()) throw new Error('Apenas o administrador da EST usa o modelo de laudo padrao_pseg2.0.');
   if (!sbAdmin || isDemoMode) throw new Error('Sem conexão com o banco.');
   if (!currentTenantId) throw new Error('Selecione a EST (modo suporte) antes de salvar.');
   if (!_p2.disponivel) throw new Error('Dados do laudo ainda não estão disponíveis neste ambiente (migration pendente).');
-  const role = _roleAtual();
-  if (escopo === 'est' && !['admin', 'super_admin'].includes(role)) throw new Error('Apenas administradores editam os parâmetros da EST.');
-  if (!['admin', 'consultor', 'super_admin'].includes(role)) throw new Error('Seu perfil não pode editar os dados do laudo.');
   const dados = _p2[escopo] || {};
   const quem  = currentUser?.email || currentUser?.id || null;
   const agora = new Date().toISOString();
@@ -18044,14 +18044,19 @@ function _onLaudoVersaoChange() {
 }
 
 function _p2SyncUI() {
+  const perm = _p2Permitido();
+  // Quem não tem permissão nunca fica com o seletor apontando para o modelo novo.
+  const sel = document.getElementById('laudo-versao');
+  if (sel && !perm && sel.value !== 'default') sel.value = 'default';
   const on = _p2Ativo();
   const show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v ? '' : 'none'; };
+  show('laudo-versao-card', perm);   // simétrico: volta a aparecer se o perfil chegar depois
   show('laudo-p2-card', on);
   show('ld-btn-docx', !on);
   show('laudo-secoes-card', !on);
   show('laudo-textos-card', !on);
   const btn = document.getElementById('p2-btn-dados');
-  if (btn) btn.style.display = ['admin', 'consultor', 'super_admin'].includes(_roleAtual()) ? '' : 'none';
+  if (btn) btn.style.display = perm ? '' : 'none';
 }
 
 function _p2ToggleDestacar(v) { _p2Destacar = !!v; }
@@ -18101,6 +18106,7 @@ function _p2Campo(id, rot, val, dica, tipo) {
 }
 
 async function abrirDadosLaudo() {
+  if (!_p2Permitido()) { toast('Recurso restrito ao administrador da EST.', 'r'); return; }
   const empId = document.getElementById('ld-empresa')?.value || '';
   if (!empId) { toast('Selecione um cliente primeiro.', 'w'); return; }
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
@@ -18279,7 +18285,7 @@ function _p2EstAdd() { (_p2.est.elaboradores = _p2.est.elaboradores || []).push(
 function _p2EstDel(i) { _p2.est.elaboradores.splice(i, 1); _p2Sujo.est = true; _p2EstRenderElab(); }
 
 async function salvarLaudoParametros() {
-  if (!['admin', 'super_admin'].includes(_roleAtual())) { toast('Apenas administradores editam os parâmetros do laudo.', 'r'); return; }
+  if (!_p2Permitido()) { toast('Apenas administradores editam os parâmetros do laudo.', 'r'); return; }
   const g = id => (document.getElementById(id)?.value || '').trim();
   _p2.est = { ..._p2.est, titulo_cab: g('ep-p2-titulo'), cab_linha2: g('ep-p2-linha2'), cab_dir: g('ep-p2-cabdir'), rodape: { tel: g('ep-p2-tel'), email: g('ep-p2-email'), site: g('ep-p2-site'), livre: g('ep-p2-livre') } };
   try {
@@ -18794,6 +18800,7 @@ let _p2Tmp = null;     // cópia de trabalho do modal
 let _p2ExtraId = null;
 function _p2CicloAviso(id) { const el = document.getElementById(id); if (el) el.style.display = document.getElementById('ld-ciclo')?.value ? 'none' : ''; }
 async function abrirSecoesLaudo() {
+  if (!_p2Permitido()) { toast('Recurso restrito ao administrador da EST.', 'r'); return; }
   const empId = document.getElementById('ld-empresa')?.value || '';
   if (!empId) { toast('Selecione um cliente primeiro.', 'w'); return; }
   await carregarLaudoDados(empId, document.getElementById('ld-ciclo')?.value || '');
@@ -19826,6 +19833,7 @@ function _sincronizarSecoesSidebar() {
 // vários `return` antecipados por role; o wrapper garante que os rótulos sejam
 // sincronizados em todos eles sem espalhar a chamada.
 function aplicarRestricoesPorRole() {
+  try { _p2SyncUI(); } catch (_e) {}   // card "Modelo do laudo": só admin da EST
   _aplicarRestricoesPorRoleCore();
   _sincronizarSecoesSidebar();
 }
