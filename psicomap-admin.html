@@ -3031,6 +3031,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div id="laudo-p2-card" style="display:none;margin-top:8px">
           <button id="p2-btn-dados" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="abrirDadosLaudo()">Dados do laudo (campos editáveis)</button>
           <div style="font-size:10px;color:var(--tl);margin-top:6px;line-height:1.5">Estrutura fixa do modelo PSEG: capítulos, textos padrão e variáveis da empresa. Campos vazios aparecem em vermelho. Cabeçalho, rodapé e elaboradores ficam em <b>Perfil da EST</b>. O filtro de nível de risco recorta as tabelas de resultado.</div>
+          <button id="p2-btn-secoes" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="abrirSecoesLaudo()" title="Excluir seções do documento ou acrescentar páginas com texto e imagens">Seções e páginas extras</button>
           <button id="p2-btn-docx" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="baixarLaudoDocx()" title="Documento editável no Word ou Google Docs, com o mesmo conteúdo do PDF">Baixar .docx (editável)</button>
           <label style="display:flex;align-items:center;gap:7px;font-size:11px;margin-top:5px;cursor:pointer;color:var(--tm)"><input type="checkbox" id="p2-docx-destacar"> Destacar campos variáveis em amarelo no .docx</label>
           <label style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:8px;cursor:pointer"><input type="checkbox" id="p2-edicao" onchange="_p2ToggleEdicao(this.checked)"> Modo edição de textos</label>
@@ -3258,6 +3259,51 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <button class="btn btn-ghost" onclick="fecharEditarTexto()">Cancelar</button>
       <button class="btn btn-ghost" onclick="_p2SalvarTexto(true)">Restaurar padrão</button>
       <button class="btn btn-g" style="flex:1" onclick="_p2SalvarTexto(false)">Salvar</button>
+    </div>
+  </div>
+</div>
+<div id="p2-viewer" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(15,23,42,.72);align-items:center;justify-content:center">
+  <div style="background:#fff;width:min(1100px,96vw);height:96vh;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+    <iframe id="p2-viewer-frame" style="flex:1;border:0;width:100%;background:#d1d5db"></iframe>
+  </div>
+</div>
+<div class="modal-bg" id="modal-p2-secoes">
+  <div class="modal" style="max-width:760px;width:94vw;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">Seções e páginas extras</div>
+    <div class="modal-sub">Desmarque o que não deve entrar no documento (a numeração e o sumário se ajustam) e acrescente páginas com texto formatado ou imagens. Vale para o PDF e para o .docx deste ciclo.</div>
+    <div id="p2s-aviso" class="alert alert-y" style="display:none;margin-bottom:8px">Selecione um ciclo para gravar estas escolhas; sem ciclo elas valem só nesta sessão.</div>
+    <div class="p2d-h" style="margin-top:4px">Seções do documento</div>
+    <div id="p2s-lista" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px"></div>
+    <div class="p2d-h">Páginas extras</div>
+    <div id="p2s-extras"></div>
+    <button class="btn btn-ghost btn-sm" type="button" onclick="_p2ExtraAbrir('')">+ Nova página</button>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-p2-secoes').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="_p2SecoesSalvar()">Salvar e atualizar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="modal-p2-extra">
+  <div class="modal" style="max-width:760px;width:94vw;max-height:92vh;overflow-y:auto">
+    <div class="modal-title">Página extra</div>
+    <div class="field"><label>Título</label><input type="text" id="p2x-titulo" placeholder="Ex.: Anexo — Cronograma sugerido"/></div>
+    <div class="field"><label>Inserir depois de</label><select id="p2x-apos" class="filter-select"></select></div>
+    <div style="font-size:12px;font-weight:600;margin:10px 0 4px">Texto</div>
+    <div style="display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('bold')"><b>N</b></button>
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('italic')"><i>I</i></button>
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('underline')"><u>S</u></button>
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('insertUnorderedList')">• Lista</button>
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('insertOrderedList')">1. Lista</button>
+      <button type="button" class="btn btn-ghost btn-sm" onmousedown="event.preventDefault()" onclick="_p2Fmt('removeFormat')">Limpar formato</button>
+    </div>
+    <div id="p2x-ed" contenteditable="true" style="min-height:200px;max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:13px;line-height:1.5;background:#fff"></div>
+    <div style="font-size:12px;font-weight:600;margin:12px 0 4px">Imagens <span style="font-weight:400;color:var(--tl)">(anexadas só nesta sessão — não são gravadas)</span></div>
+    <input type="file" accept="image/*" multiple onchange="_p2AddAnexos(this); setTimeout(_p2ExtraImgs, 400)"/>
+    <div id="p2x-imgs" style="margin-top:6px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-p2-extra').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-g" style="flex:2" onclick="_p2ExtraSalvar()">Aplicar</button>
     </div>
   </div>
 </div>
@@ -17234,6 +17280,17 @@ async function _p2Contexto() {
     : [{ rev: '00', data: _p2DataEmissao(), descricao: 'Elaboração inicial do documento' }];
   const ultimaRev = _p2t(revisoes[revisoes.length - 1].rev) || '00';
 
+  // Capítulos que entram: base (menos os ocultos) + páginas extras, cada uma depois do capítulo escolhido.
+  const ocultos = new Set(Array.isArray(dCiclo.ocultos) ? dCiclo.ocultos : []);
+  const extras = Array.isArray(dCiclo.extras) ? dCiclo.extras : [];
+  const caps = [], usados = new Set();
+  const ex2cap = e => ({ k: 'x_' + e.id, t: _p2t(e.titulo) || 'Página extra', extra: e });
+  P2_CAPS.forEach(c => {
+    if (!ocultos.has(c.k)) caps.push(c);
+    extras.filter(e => e.apos === c.k).forEach(e => { caps.push(ex2cap(e)); usados.add(e.id); });
+  });
+  extras.filter(e => !usados.has(e.id)).forEach(e => caps.push(ex2cap(e)));   // sem posição válida → no fim
+
   const grs = grupos.map(g => {
     const ls = _linhasDoGrupo(g, linhas);
     const n = ls.length;
@@ -17262,7 +17319,7 @@ async function _p2Contexto() {
   };
 
   return {
-    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, logoCli,
+    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, logoCli, caps,
     dEst, dEmp, dCiclo, elaboradores, regTxt, revisoes, ultimaRev, residuais, semResp, vars,
     emissao: _p2DataEmissao(),
     ano: (_p2DataEmissao().split('/')[2]) || String(new Date().getFullYear()),
@@ -17351,12 +17408,22 @@ function _p2AnaliseGrupo(fatores) {
   return `Neste grupo de exposição ${n === 1 ? 'foi identificado 1 fator' : `foram identificados ${n} fatores`} de risco que ${n === 1 ? 'demanda' : 'demandam'} adoção de medidas de controle com responsáveis e prazos definidos, a saber: ${lista}. Os demais fatores foram classificados como risco baixo, situação em que nenhum controle adicional é necessário, cabendo a manutenção dos controles existentes e o monitoramento no próximo ciclo.`;
 }
 
+// Numeração corrida SOBRE O QUE ENTRA no documento: ocultar um capítulo renumera os seguintes e o
+// sumário acompanha. Sumário e páginas extras não recebem número.
+const _p2Num = (ctx, k) => { let n = 0; for (const c of ctx.caps) { if (!c.sn && !c.extra) n++; if (c.k === k) return (c.sn || c.extra) ? '' : String(n); } return ''; };
 const _p2H1 = (ctx, k) => {
-  let n = 0;
-  for (const c of P2_CAPS) { if (!c.sn) n++; if (c.k === k) { const cap = c; return `<h1 id="p2-${k}">${cap.sn ? '' : n + '.&nbsp;'}${_p2e(cap.t)}</h1>`; } }
-  return '';
+  const c = ctx.caps.find(x => x.k === k); if (!c) return '';
+  const n = _p2Num(ctx, k);
+  return `<h1 id="p2-${_p2e(k)}">${n ? n + '.&nbsp;' : ''}${_p2e(c.t)}</h1>`;
 };
-const _p2Num = k => { let n = 0; for (const c of P2_CAPS) { if (!c.sn) n++; if (c.k === k) return c.sn ? '' : String(n); } return ''; };
+// Página extra: título + texto com formatação básica (negrito, itálico, sublinhado, listas — o mesmo
+// whitelist do modo edição do laudo) + imagens anexadas nesta sessão.
+function _p2ExtraHTML(ctx, e) {
+  const corpo = _laudoSanitize(e.html || '');
+  const figs = (e.imgs || []).map(id => _p2Anexos.find(a => a.id === id)).filter(Boolean)
+    .map(a => `<figure class="p2anx"><img src="${a.dataUrl}" alt=""><figcaption>${_p2e(a.legenda || a.nome)}</figcaption></figure>`).join('');
+  return `<div class="p2xt">${corpo || (figs ? '' : '<p class="p2ph">Página sem conteúdo.</p>')}</div>${figs}`;
+}
 
 // ── Capítulos ────────────────────────────────────────────────────────────────
 function _p2CapRev(ctx) {
@@ -17395,8 +17462,8 @@ function _p2CapCV(ctx) {
 }
 
 function _p2CapSumario(ctx) {
-  const itens = P2_CAPS.map(c => {
-    const n = _p2Num(c.k);
+  const itens = ctx.caps.map(c => {
+    const n = _p2Num(ctx, c.k);
     return `<li><a href="#p2-${c.k}"><span class="n">${n ? n + '.' : ''}</span><span class="t">${_p2e(c.t)}</span></a></li>`;
   }).join('');
   return `<ol class="p2toc">${itens}</ol>`;
@@ -17595,7 +17662,7 @@ function _p2CapConcl(ctx) {
 
 function _p2Assinaturas(ctx) {
   if (!ctx.elaboradores.length) return '';
-  return '<div class="p2assin">' + ctx.elaboradores.map(x => `<div class="p2ass"><div class="lin"></div>
+  return '<div class="p2assin">' + ctx.elaboradores.map(x => `<div class="p2ass"><div class="lin"><span class="p2sigph">espaço para assinatura</span></div>
     <b>${_p2e(x.nome)}</b><br>${_p2e(_p2t(x.funcao))}${_p2t(x.funcao) ? '<br>' : ''}${_p2e(ctx.regTxt(x))}${_p2t(x.cpf) ? '<br>CPF: ' + _p2e(_p2t(x.cpf)) : ''}<br><span class="p2fr">${_p2e(_p2t(x.papel) || 'Elaborador(a)')}</span></div>`).join('') + '</div>';
 }
 
@@ -17604,7 +17671,8 @@ function _p2Assinaturas(ctx) {
 // logo abaixo — só na sessão, nunca no banco.
 function _p2CapAnexos(ctx) {
   const T = P2_TEXTOS;
-  const imgs = _p2Anexos.map(a => `<figure class="p2anx"><img src="${a.dataUrl}" alt=""><figcaption>${_p2e(a.legenda || a.nome)}</figcaption></figure>`).join('');
+  const usadas = new Set((ctx.dCiclo.extras || []).flatMap(e => e.imgs || []));
+  const imgs = _p2Anexos.filter(a => !usadas.has(a.id)).map(a => `<figure class="p2anx"><img src="${a.dataUrl}" alt=""><figcaption>${_p2e(a.legenda || a.nome)}</figcaption></figure>`).join('');
   return `<ul class="p2anl">${T.anexos.map(t => `<li>${_p2e(t)}</li>`).join('')}</ul>${imgs}`;
 }
 
@@ -17690,7 +17758,9 @@ tr.p2dim{page-break-after:avoid}
 .p2omit{background:#f3f4f6;border:.5pt solid #9ca3af;padding:6pt 8pt}
 .p2assin{display:flex;gap:30pt;margin-top:34pt;flex-wrap:wrap}
 .p2ass{flex:1;min-width:150pt;text-align:center;font-size:10pt;page-break-inside:avoid}
-.p2ass .lin{border-top:.75pt solid #000;margin-bottom:4pt}
+.p2ass .lin{height:24mm;border-bottom:.75pt solid #000;margin-bottom:4pt;position:relative}
+.p2sigph{position:absolute;left:0;right:0;bottom:3pt;font-size:8pt;color:#9ca3af}
+@media print{.p2sigph{display:none}}
 .p2fr{color:#555}
 .p2anl{margin-top:4pt}
 .p2anx{margin:8pt 0;text-align:center;page-break-inside:avoid}
@@ -17704,6 +17774,10 @@ tr.p2dim{page-break-after:avoid}
 .p2cb{height:40mm;display:flex;justify-content:space-between;align-items:flex-start;gap:12mm}
 .p2cr{text-align:right;max-width:75mm}
 .p2cr .p2cn{font-size:15pt}
+.p2cap{position:relative}
+.p2sec-tools{position:absolute;top:2px;right:0;display:flex;gap:4px;z-index:30}
+.p2sec-tools .p2ed{position:static;background:#6b7280}
+.p2xt{margin-bottom:8pt}
 .p2blk{position:relative;border-radius:4px}
 .p2blk:hover{outline:1.5px dashed #1F7A3D;outline-offset:3px}
 .p2ed{position:absolute;top:-10px;right:0;z-index:20;font:600 10px Arial;background:#1F7A3D;color:#fff;border:0;border-radius:4px;padding:3px 8px;cursor:pointer;opacity:.85}
@@ -17818,15 +17892,20 @@ function _p2Build(ctx, { preview, docx }) {
     anexos: _p2CapAnexos,
   };
   const capa = _p2Capa(ctx);
-  const corpo = P2_CAPS.map(c => {
+  const corpo = ctx.caps.map(c => {
     let miolo;
-    try { miolo = fn[c.k](ctx); }
+    try { miolo = c.extra ? _p2ExtraHTML(ctx, c.extra) : fn[c.k](ctx); }
     catch (e) {
       console.error('[laudo p2] capítulo', c.k, e);
       ctx.avisos.push(`O capítulo "${c.t}" não pôde ser montado: ${e.message}`);
       miolo = `<p class="p2omit"><b>Não foi possível montar este capítulo:</b> ${_p2e(e.message)}</p>`;
     }
-    return `<section class="p2cap">${_p2H1(ctx, c.k)}${miolo}</section>`;
+    // Modo edição (só no preview): ocultar a seção / editar ou excluir a página extra.
+    const tools = ctx.edicao
+      ? `<div class="p2sec-tools">${c.extra
+          ? `<button type="button" class="p2ed" onclick="parent.postMessage({p2xedit:'${c.extra.id}'},'*')">✎ Editar página</button><button type="button" class="p2ed" onclick="parent.postMessage({p2xdel:'${c.extra.id}'},'*')">✕ Excluir</button>`
+          : `<button type="button" class="p2ed" onclick="parent.postMessage({p2hide:'${c.k}'},'*')">✕ Ocultar seção</button>`}</div>` : '';
+    return `<section class="p2cap">${tools}${_p2H1(ctx, c.k)}${miolo}</section>`;
   }).join('');
 
   const cab = _p2Cab(ctx);
@@ -17840,11 +17919,14 @@ function _p2Build(ctx, { preview, docx }) {
   const tool = preview
     ? `<div class="p2tool"><b>Pré-visualização — Modelo PSEG 2.0</b><span class="sp"></span>
          <label><input type="checkbox" checked onchange="document.body.classList.toggle('p2-hl',this.checked)"> Destacar campos variáveis</label>
-         <button onclick="parent.postMessage({p2docx:1},'*')">Baixar .docx</button></div>`
+         <button onclick="parent.postMessage({p2docx:1},'*')">Baixar .docx</button>
+         <button onclick="parent.postMessage({p2pdf:1},'*')">Gerar PDF</button></div>`
     : `<div class="p2tool"><b>${_p2e(_estPerfil?.nome_empresa || 'PsicoMap')} — Laudo (Modelo PSEG 2.0)</b><span class="sp"></span>
          <label><input type="checkbox" onchange="document.body.classList.toggle('p2-hl',this.checked)"> Destacar campos variáveis (rascunho de revisão)</label>
-         <button onclick="if (window.opener &amp;&amp; window.opener._registrarLaudo) window.opener._registrarLaudo(); window.print()">Imprimir / PDF</button>
-         <button onclick="window.close()">Fechar</button></div>`;
+         <button onclick="parent._p2ImprimirViewer()">Imprimir / PDF</button>
+         <button onclick="parent._p2AbrirNovaAba()">Abrir em nova aba</button>
+         <button onclick="parent.baixarLaudoDocx()">Baixar .docx</button>
+         <button onclick="parent._p2FecharViewer()">Fechar</button></div>`;
   const titulo = `Laudo ${ctx.emp.razao_social || ctx.emp.nome || ''}${ctx.ciclo ? ' - ' + ctx.ciclo.nome : ''}`.trim();
   const nota = preview ? '<div class="p2note">Cabeçalho e rodapé aparecem em todas as páginas do PDF; a numeração de páginas é aplicada na impressão.</div>' : '';
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${_p2e(titulo)}</title>
@@ -17880,29 +17962,62 @@ async function _p2RenderPreview(seqExterno) {
   document.getElementById('p2-frame').srcdoc = html;
 }
 
-// ── Geração do PDF (janela já aberta pelo clique — ver gerarLaudoPDF) ────────
-async function _p2GerarPDF(win) {
+// ── Geração do PDF ──────────────────────────────────────────────────────────
+// Visualizador DENTRO do app (iframe em tela cheia) em vez de pop-up: pop-up bloqueado, janela
+// fechada pelo catch e erro some com o toast eram a causa de "o PDF não abre". Aqui qualquer erro
+// fica na tela. Imprimir/PDF usa o iframe; "Abrir em nova aba" cobre navegadores que ignoram as
+// regras de @page ao imprimir um iframe.
+let _p2ViewerHtml = '';
+async function _p2GerarPDF() {
+  const bar = document.getElementById('p2-viewer-msg');
   try {
+    toast('Montando o laudo…', 'g', 1500);
     await _p2SalvarSujos();
     const ctx = await _p2Contexto();
-    if (ctx.erro) { win.close(); toast(ctx.erro, 'w', 6000); return; }
+    if (ctx.erro) { toast(ctx.erro, 'w', 6000); return; }
     const html = _p2Build(ctx, { preview: false });
     const pend = [...ctx.pend];
-    if (pend.length && !confirm(`Há ${pend.length} campo(s) sem preenchimento que sairão como "[a preencher]" no documento:\n\n• ${pend.slice(0, 10).join('\n• ')}${pend.length > 10 ? `\n• … e mais ${pend.length - 10}` : ''}\n\nGerar o laudo assim mesmo?`)) { win.close(); return; }
-    // Congelado aqui: _registrarLaudo dispara do botão Imprimir DESTA janela, minutos depois.
+    if (pend.length && !confirm(`Há ${pend.length} campo(s) sem preenchimento que sairão como "[a preencher]" no documento:\n\n• ${pend.slice(0, 10).join('\n• ')}${pend.length > 10 ? `\n• … e mais ${pend.length - 10}` : ''}\n\nGerar o laudo assim mesmo?`)) return;
     _laudoUltimoN = ctx.linhas.length;
     _p2UltimoSnap = {
       template: P2_ID, n_anexos_temporarios: _p2Anexos.length,
       pendencias: pend, textos_editados: Object.keys(ctx.dCiclo.textos || {}).filter(k => _p2t(ctx.dCiclo.textos[k])),
+      secoes_ocultas: ctx.dCiclo.ocultos || [], paginas_extras: (ctx.dCiclo.extras || []).map(e => e.titulo || ''),
       ultima_revisao: ctx.ultimaRev,
     };
-    win.document.open(); win.document.write(html); win.document.close();
-    toast('Laudo aberto — use "Imprimir / PDF" na janela para salvar.', 'g');
+    _p2ViewerHtml = html;
+    document.getElementById('p2-viewer-frame').srcdoc = html;
+    document.getElementById('p2-viewer').style.display = 'flex';
+    document.addEventListener('keydown', _p2ViewerEsc);
+    if (ctx.avisos.length) toast(ctx.avisos[0], 'w', 8000);
   } catch (e) {
-    try { win.close(); } catch (_e) {}
     console.error('[laudo p2] gerar:', e);
-    toast('Erro ao gerar laudo: ' + e.message, 'r');
+    // Erro NA TELA (não só toast): é o que permite diagnosticar sem abrir o console.
+    const el = document.getElementById('laudo-preview-panel');
+    if (el) el.insertAdjacentHTML('afterbegin', `<div class="alert alert-r" style="margin-bottom:8px"><b>Erro ao gerar o laudo:</b> ${_p2e(e.message)}<pre style="white-space:pre-wrap;font-size:10px;margin:6px 0 0">${_p2e((e.stack || '').split('\n').slice(0, 4).join('\n'))}</pre></div>`);
+    toast('Erro ao gerar laudo: ' + e.message, 'r', 8000);
   }
+}
+function _p2ViewerEsc(ev) { if (ev.key === 'Escape') _p2FecharViewer(); }
+function _p2FecharViewer() {
+  document.getElementById('p2-viewer').style.display = 'none';
+  document.getElementById('p2-viewer-frame').srcdoc = '';
+  document.removeEventListener('keydown', _p2ViewerEsc);
+}
+async function _p2ImprimirViewer() {
+  const fr = document.getElementById('p2-viewer-frame');
+  try { await _registrarLaudo(); } catch (_e) {}
+  fr.contentWindow.focus();
+  fr.contentWindow.print();
+}
+function _p2AbrirNovaAba() {
+  if (!_p2ViewerHtml) return;
+  // Dentro do clique (síncrono) para o navegador não bloquear. O documento da aba não tem a barra de
+  // botões do visualizador — só o laudo; use Ctrl+P.
+  const url = URL.createObjectURL(new Blob([_p2ViewerHtml], { type: 'text/html;charset=utf-8' }));
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+  _registrarLaudo().catch(() => {});
 }
 
 // ── Estado sujo: o que o usuário mudou na memória e ainda não foi ao banco ──
@@ -17945,6 +18060,10 @@ window.addEventListener('message', ev => {
   const fr = document.getElementById('p2-frame');
   if (!fr || ev.source !== fr.contentWindow || !ev.data) return;
   if (ev.data.p2docx) { baixarLaudoDocx(); return; }
+  if (ev.data.p2pdf) { gerarLaudoPDF(); return; }
+  if (ev.data.p2hide) { _p2OcultarSecao(String(ev.data.p2hide)); return; }
+  if (ev.data.p2xedit) { _p2ExtraAbrir(String(ev.data.p2xedit)); return; }
+  if (ev.data.p2xdel) { _p2ExtraExcluir(String(ev.data.p2xdel)); return; }
   if (ev.data.p2edit) _p2EditarTexto(String(ev.data.p2edit));
 });
 function _p2EditarTexto(id) {
@@ -18431,7 +18550,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar) {
     const w = Math.floor(TXT_W / itens.length);
     const linha = { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 4 };
     const cel = it => {
-      const ps = [new Paragraph({ children: [], spacing: { before: 700 }, border: { bottom: linha } })];
+      const ps = [new Paragraph({ children: [], spacing: { before: 1300 }, border: { bottom: linha } })];
       const linhas = []; it.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) linhas.push({ t: n.textContent.trim() }); else if (n.nodeType === 1 && !n.classList.contains('lin') && n.tagName.toLowerCase() !== 'br') linhas.push({ t: n.textContent.trim(), b: n.tagName.toLowerCase() === 'b', g: n.classList.contains('p2fr') }); });
       linhas.filter(l => l.t).forEach(l => ps.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 20 }, children: [new TextRun({ text: l.t, bold: !!l.b, size: 19, color: l.g ? '555555' : undefined })] })));
       return new TableCell({ children: ps, width: { size: w, type: WidthType.DXA }, borders: { top: none, bottom: none, left: none, right: none }, margins: { left: 200, right: 200 } });
@@ -18554,6 +18673,93 @@ async function baixarLaudoDocx() {
   }
 }
 
+
+// ── Seções ocultas e páginas extras (por ciclo) ─────────────────────────────
+let _p2Tmp = null;     // cópia de trabalho do modal
+let _p2ExtraId = null;
+function _p2CicloAviso(id) { const el = document.getElementById(id); if (el) el.style.display = document.getElementById('ld-ciclo')?.value ? 'none' : ''; }
+async function abrirSecoesLaudo() {
+  const empId = document.getElementById('ld-empresa')?.value || '';
+  if (!empId) { toast('Selecione um cliente primeiro.', 'w'); return; }
+  await carregarLaudoDados(empId, document.getElementById('ld-ciclo')?.value || '');
+  const c = _p2.ciclo || {};
+  _p2Tmp = { ocultos: new Set(c.ocultos || []), extras: JSON.parse(JSON.stringify(c.extras || [])) };
+  _p2SecoesRender();
+  _p2CicloAviso('p2s-aviso');
+  document.getElementById('modal-p2-secoes').classList.add('open');
+}
+function _p2SecoesRender() {
+  if (!_p2Tmp) return;
+  let n = 0;
+  document.getElementById('p2s-lista').innerHTML = P2_CAPS.map(c => {
+    if (!c.sn) n++;
+    return `<label style="display:flex;gap:7px;align-items:flex-start;font-size:12px;cursor:pointer;padding:2px 0"><input type="checkbox" data-cap="${c.k}" ${_p2Tmp.ocultos.has(c.k) ? '' : 'checked'}/> <span>${c.sn ? '' : n + '. '}${_p2e(c.t)}</span></label>`;
+  }).join('');
+  document.getElementById('p2s-extras').innerHTML = _p2Tmp.extras.length ? _p2Tmp.extras.map(e => {
+    const ap = P2_CAPS.find(c => c.k === e.apos);
+    return `<div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:6px">
+      <div style="flex:1;font-size:12px"><b>${_p2e(e.titulo || 'Página extra')}</b><div style="color:var(--tl);font-size:10px">depois de: ${ap ? _p2e(ap.t) : 'o final do documento'}</div></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="_p2ExtraAbrir('${e.id}')">Editar</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="_p2ExtraRemTmp('${e.id}')">Excluir</button></div>`;
+  }).join('') : '<div style="font-size:11px;color:var(--tl);margin-bottom:8px">Nenhuma página extra.</div>';
+}
+function _p2ExtraRemTmp(id) { _p2Tmp.extras = _p2Tmp.extras.filter(e => e.id !== id); _p2SecoesRender(); }
+async function _p2SecoesSalvar() {
+  document.querySelectorAll('#p2s-lista input[data-cap]').forEach(i => { if (i.checked) _p2Tmp.ocultos.delete(i.dataset.cap); else _p2Tmp.ocultos.add(i.dataset.cap); });
+  await _p2AplicarSecoes(_p2Tmp.ocultos, _p2Tmp.extras);
+  document.getElementById('modal-p2-secoes').classList.remove('open');
+}
+async function _p2AplicarSecoes(ocultosSet, extras) {
+  _p2.ciclo = { ...(_p2.ciclo || {}), ocultos: [...ocultosSet], extras };
+  _p2Sujo.ciclo = true;
+  try { if (document.getElementById('ld-ciclo')?.value) await _p2SalvarSujos(); else toast('Sem ciclo selecionado: vale só nesta sessão.', 'w', 5000); }
+  catch (e) { toast(e.message, 'r', 6000); }
+  renderLaudo();
+}
+// atalhos do modo edição do preview
+async function _p2OcultarSecao(k) {
+  if (!confirm('Ocultar esta seção do documento? Você pode reativá-la em "Seções e páginas extras".')) return;
+  const c = _p2.ciclo || {};
+  await _p2AplicarSecoes(new Set([...(c.ocultos || []), k]), c.extras || []);
+}
+async function _p2ExtraExcluir(id) {
+  if (!confirm('Excluir esta página extra?')) return;
+  const c = _p2.ciclo || {};
+  await _p2AplicarSecoes(new Set(c.ocultos || []), (c.extras || []).filter(e => e.id !== id));
+}
+function _p2ExtraAbrir(id) {
+  if (!document.getElementById('modal-p2-secoes').classList.contains('open')) { const c = _p2.ciclo || {}; _p2Tmp = { ocultos: new Set(c.ocultos || []), extras: JSON.parse(JSON.stringify(c.extras || [])) }; }
+  _p2ExtraId = id || null;
+  const e = id ? (_p2Tmp.extras.find(x => x.id === id) || {}) : {};
+  document.getElementById('p2x-titulo').value = e.titulo || '';
+  document.getElementById('p2x-apos').innerHTML = P2_CAPS.map(c => `<option value="${c.k}" ${e.apos === c.k ? 'selected' : ''}>${_p2e(c.t)}</option>`).join('') + `<option value="" ${id && !e.apos ? 'selected' : (!id ? 'selected' : '')}>— no final do documento —</option>`;
+  const ed = document.getElementById('p2x-ed');
+  ed.innerHTML = _laudoSanitize(e.html || '');
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_e) {}
+  window.__p2xImgs = new Set(e.imgs || []);
+  _p2ExtraImgs();
+  document.getElementById('modal-p2-extra').classList.add('open');
+}
+function _p2ExtraImgs() {
+  const el = document.getElementById('p2x-imgs'); if (!el) return;
+  el.innerHTML = _p2Anexos.length ? _p2Anexos.map(a => `<label style="display:flex;gap:8px;align-items:center;font-size:12px;margin:4px 0;cursor:pointer"><input type="checkbox" ${window.__p2xImgs.has(a.id) ? 'checked' : ''} onchange="this.checked ? window.__p2xImgs.add(${a.id}) : window.__p2xImgs.delete(${a.id})"/><img src="${a.dataUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border)"> ${_p2e(a.legenda || a.nome)}</label>`).join('')
+    : '<div style="font-size:11px;color:var(--tl)">Nenhuma imagem anexada.</div>';
+}
+function _p2Fmt(cmd) { document.getElementById('p2x-ed').focus(); try { document.execCommand(cmd, false, null); } catch (_e) {} }
+async function _p2ExtraSalvar() {
+  const titulo = document.getElementById('p2x-titulo').value.trim();
+  const html = _laudoSanitize(document.getElementById('p2x-ed').innerHTML);
+  if (!titulo && !html.replace(/<[^>]*>/g, '').trim() && !window.__p2xImgs.size) { toast('Informe um título, um texto ou uma imagem.', 'w'); return; }
+  const reg = { id: _p2ExtraId || ('x' + Date.now().toString(36)), titulo, apos: document.getElementById('p2x-apos').value, html, imgs: [...window.__p2xImgs] };
+  const i = _p2Tmp.extras.findIndex(x => x.id === reg.id);
+  if (i >= 0) _p2Tmp.extras[i] = reg; else _p2Tmp.extras.push(reg);
+  document.getElementById('modal-p2-extra').classList.remove('open');
+  if (document.getElementById('modal-p2-secoes').classList.contains('open')) { _p2SecoesRender(); return; }
+  // aberto pelo preview (✎ Editar página): aplica direto
+  const tmp = _p2Tmp; _p2Tmp = null;
+  await _p2AplicarSecoes(tmp.ocultos, tmp.extras);
+}
+
 function abrirLaudoJanela() {
   gerarLaudoPDF();
 }
@@ -18568,12 +18774,12 @@ async function gerarLaudoPDF() {
   // Abrir a janela ANTES de qualquer await — depois de um await o navegador não reconhece
   // mais a chamada como resposta direta ao clique do usuário e bloqueia o pop-up em
   // silêncio (era a causa real do botão "parecer" não fazer nada mesmo clicando várias vezes).
+  if (_p2Ativo()) { _p2UltimoSnap = null; return _p2GerarPDF(); }
   const win = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!win) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
   win.document.write('<!doctype html><title>Gerando laudo…</title><body style="font-family:sans-serif;padding:60px;color:#888;text-align:center">Gerando laudo…</body>');
 
   _p2UltimoSnap = null;
-  if (_p2Ativo()) return _p2GerarPDF(win);
 
   try {
     const empId     = document.getElementById('ld-empresa')?.value || '';

@@ -73,3 +73,13 @@ variável/revisão e **não é exaustivo** (o *Objetivo* cita empresa e cidade s
 - No Anexo B o cartão com barras vira **tabela** (% por questão) — só no .docx (`ctx.docx`).
 - Opção "Destacar campos variáveis em amarelo" vale só para o .docx. Registra em `laudos` com `formato:'docx'`.
 - Validação: abrir o .docx no Word via COM (`Word.Application`) e `ExportAsFixedFormat` → PDF → PyMuPDF.
+
+## Seções ocultas, páginas extras e visualizador de PDF (2026-10-13)
+- **Seções e páginas extras** (card do modelo + modo edição do preview): `laudo_dados` escopo `ciclo` guarda `ocultos` (chaves de
+  `P2_CAPS`) e `extras` (`{id,titulo,apos,html,imgs}`). `ctx.caps` é a lista final; numeração e sumário seguem ELA
+  (`_p2Num(ctx,k)`). Extras não têm número. Texto das extras passa por `_laudoSanitize` (B/I/U/listas/P); imagens só
+  em memória (`_p2Anexos`, ids efêmeros).
+- **PDF sem pop-up**: `_p2GerarPDF()` abre um visualizador em tela cheia (iframe) com Imprimir / Abrir em nova aba /
+  Baixar .docx. Motivo: o pop-up (window.open + document.write) falhava em silêncio e o catch fechava a janela. Erros agora
+  aparecem NA tela. "Abrir em nova aba" cobre navegador que ignore `@page` ao imprimir iframe.
+- Assinatura: campo de 24 mm acima da linha (placeholder "espaço para assinatura" só na tela); CPF e papel opcionais.
