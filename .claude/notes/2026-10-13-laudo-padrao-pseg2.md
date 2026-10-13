@@ -61,3 +61,15 @@ variável/revisão e **não é exaustivo** (o *Objetivo* cita empresa e cidade s
 - **HSE**: esta branch parte de `develop`, que ainda não tem o HSE. Ao juntar, desviar o v2.0 só para o
   ramo BS 8800 (ciclo HSE continua no gerador próprio e ignora o seletor).
 - Migration em **PROD** e `git push origin develop` não foram feitos.
+
+## .docx editável (2026-10-13)
+`baixarLaudoDocx()` — botão "Baixar .docx (editável)" no card do modelo e na barra do preview.
+- **Não é um segundo gerador de conteúdo**: `_p2DocxConverter` converte o MESMO HTML do PDF (`_p2Build(ctx,{docx:true})`)
+  para docx.js (vocabulário restrito: h1–h3, p, ul/ol, table, img, svg, `.p2assin`). Texto, ordem e dados não divergem.
+- docx.js 8.5.0 carregado sob demanda do jsdelivr (já no CSP). Imagens e o SVG viram PNG por canvas.
+- Cabeçalho/rodapé nativos (`_p2Cab`, mesma fonte do PDF), "Página X de Y" em campo, estilos Heading 1–3 reais, tabelas
+  reais, capa em seção própria (sem cabeçalho). **Sumário é lista estática, sem nº de página** (campo TOC não popula
+  no Google Docs).
+- No Anexo B o cartão com barras vira **tabela** (% por questão) — só no .docx (`ctx.docx`).
+- Opção "Destacar campos variáveis em amarelo" vale só para o .docx. Registra em `laudos` com `formato:'docx'`.
+- Validação: abrir o .docx no Word via COM (`Word.Application`) e `ExportAsFixedFormat` → PDF → PyMuPDF.
