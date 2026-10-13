@@ -2334,7 +2334,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <select id="f-segmentacao" class="filter-select" onchange="_setSegMode(this.value)">
           <option value="ghe">Por GHE (setor × função)</option>
           <option value="segregado">Por Setor</option>
-          <option value="agrupado">Por Agrupamento</option>
           <option value="consolidado" selected>Geral</option>
         </select>
       </div>
@@ -3005,9 +3004,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div class="filter-label">Segmentação do relatório</div>
         <select id="laudo-granularidade" class="filter-select" onchange="_onLaudoGranChange()">
           <option value="ghe">Por GHE (setor × função)</option>
-          <option value="agrupado">Por Agrupamento de Setores</option>
           <option value="segregado">Por Setor</option>
-          <option value="consolidado">Geral</option>
+          <option value="consolidado" selected>Geral</option>
           <option value="preset" hidden>Por preset de filtro</option>
         </select>
         <div id="ld-gran-preset-dica" style="display:none;font-size:10px;color:var(--tl);margin-top:4px">
@@ -7936,7 +7934,9 @@ const SEG_PADRAO = 'consolidado';   // Geral
 const GRAN_OPCOES = [
   { v: 'ghe',         opcao: 'Por GHE (setor × função)',   tag: 'Por GHE' },
   { v: 'segregado',   opcao: 'Por Setor',                  tag: 'Por setor' },
-  { v: 'agrupado',    opcao: 'Por Agrupamento de Setores', tag: 'Por agrupamento' },
+  // `fora`: não é mais oferecido nos selects (decisão do usuário: não é usado). O item continua
+  // aqui só para SEG_LABEL ler laudos antigos do histórico; o motor de 'agrupado' segue intacto.
+  { v: 'agrupado',    opcao: 'Por Agrupamento de Setores', tag: 'Por agrupamento', fora: true },
   { v: 'consolidado', opcao: 'Geral',                      tag: 'Geral' },
   { v: 'preset',      opcao: 'Por preset de filtro',       tag: 'Por preset', soLaudo: true },
 ];
@@ -7952,7 +7952,7 @@ function _montarSelectsGranularidade() {
     const sel = document.getElementById(id);
     if (!sel) return;
     const antes = sel.value;
-    const opcoes = GRAN_OPCOES.filter(o => id === 'laudo-granularidade' || !o.soLaudo);
+    const opcoes = GRAN_OPCOES.filter(o => !o.fora && (id === 'laudo-granularidade' || !o.soLaudo));
     // 'preset' nasce escondido: só aparece quando a empresa tem presets de Relatório salvos
     // (_atualizarOpcaoPresetLaudo, chamada por renderPresets).
     sel.innerHTML = opcoes.map(o => `<option value="${o.v}"${o.soLaudo ? ' hidden' : ''}>${o.opcao}</option>`).join('');
@@ -7968,28 +7968,13 @@ function _montarSelectsGranularidade() {
 // #laudo-granularidade, para que as duas telas nao ofereçam modos diferentes.
 function _atualizarSegSelect() {
   const sel = document.getElementById('f-segmentacao');
-  const temGrupos = gruposSetor.length > 0 || gruposFuncao.length > 0;
   const temGhe    = gruposGhe.length > 0;
-  // Empresa sem grupos nao pode herdar o modo da empresa anterior
-  if (!temGrupos && window._segMode === 'agrupado') window._segMode = SEG_PADRAO;
-  if (!temGhe    && window._segMode === 'ghe')      window._segMode = SEG_PADRAO;
+  // 'agrupado' não existe mais no select: um modo herdado dele (preset/histórico antigo) cairia
+  // num select sem valor. Empresa sem GHE também não pode herdar o modo da empresa anterior.
+  if (window._segMode === 'agrupado') window._segMode = SEG_PADRAO;
+  if (!temGhe && window._segMode === 'ghe') window._segMode = SEG_PADRAO;
   window._segMode = window._segMode || SEG_PADRAO;
   if (!sel) return;
-  const optGrup = sel.querySelector('option[value="agrupado"]');
-  if (optGrup) {
-    optGrup.disabled    = !temGrupos;
-    // Sem Grupos de Setores/Funções a opção só confunde (quem usa só a matriz GHE a lia como
-    // "o agrupamento que eu configurei" e a via travada) — some, como o "Por GHE" faz.
-    optGrup.hidden      = !temGrupos;
-    // O rótulo vem de GRAN_OPCOES, não de um literal: escrever 'Por Agrupamento' aqui
-    // Sem Grupos de Setores/Funções a opção só confunde (quem usa só a matriz GHE a lia como
-    // "o agrupamento que eu configurei" e a via travada) — some, como o "Por GHE" faz.
-    optGrup.hidden      = !temGrupos;
-    // reescrevia, em tempo de execução, o texto que o select recebeu no boot — a divergência
-    // entre Resultados e Relatório voltava sozinha depois da primeira troca de empresa.
-    const rotuloAgrup = GRAN_OPCOES.find(o => o.v === 'agrupado')?.opcao || 'Por Agrupamento';
-    optGrup.textContent = temGrupos ? rotuloAgrup : `${rotuloAgrup} (sem grupos de setores/funções)`;
-  }
   // GHE some da lista quando a empresa nao tem matriz importada — nao ha o que oferecer,
   // e um "(sem GHE)" desabilitado so ocuparia espaco no filtro.
   const optGhe = sel.querySelector('option[value="ghe"]');
@@ -8768,12 +8753,12 @@ function _gruposPorGranularidade(linhas, gran, { ordenar = false } = {}) {
 // (ex.: 'ghe' selecionado e depois todos os GHE removidos).
 function _granularidadeLaudo() {
   const v = document.getElementById('laudo-granularidade')?.value;
-  if (v === 'preset' && !(_presets.laudo || []).length) {   // empresa sem presets de Relatório
-    return gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
-  }
-  if (v === 'ghe' && !gruposGhe.length)        return gruposSetor.length ? 'agrupado' : 'segregado';
-  if (v === 'agrupado' && !gruposSetor.length) return 'segregado';
-  return v || (gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado');
+  // Qualquer modo que ficou sem base cai em "Geral", o padrão — que sempre tem dados. 'agrupado'
+  // não é mais oferecido, mas pode chegar de um select antigo ou de config restaurada.
+  if (v === 'preset' && !(_presets.laudo || []).length) return 'consolidado';
+  if (v === 'ghe' && !gruposGhe.length)                 return 'consolidado';
+  if (v === 'agrupado')                                 return 'consolidado';
+  return v || 'consolidado';
 }
 
 // Rótulo da unidade de análise — vira título na capa do documento entregue.
@@ -11221,7 +11206,7 @@ function _atualizarOpcaoPresetLaudo() {
   if (opt) opt.hidden = !tem;
   // Empresa sem presets não pode herdar o modo da anterior.
   if (!tem && sel.value === 'preset') {
-    sel.value = gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
+    sel.value = 'consolidado';
   }
   const dica = document.getElementById('ld-gran-preset-dica');
   if (dica) dica.style.display = sel.value === 'preset' ? '' : 'none';
@@ -15150,13 +15135,11 @@ async function onLaudoFiltro() {
   _populateGheCombo('combo-ld-ghe', 'fc-ld-ghe');
   _populateGheCombo('combo-ld-fun-ghe', 'fc-ld-fun-ghe', 'funcao');
   _populateGheCombo('combo-ld-ghe-par', 'fc-ld-ghe-par', 'ghe');
-  // Default de granularidade: GHE por par > agrupamento de setores > por setor.
-  // Só reescreve os modos auto-gerenciados — 'consolidado' é escolha explícita do usuário e
-  // nunca é sobrescrito.
+  // Padrão do Relatório: SEMPRE "Geral", a cada cliente carregado. Antes era GHE > agrupamento >
+  // setor conforme o que a empresa tinha; "Geral" é o recorte que sempre existe, e quem quer
+  // dividir escolhe a divisão (GHE, setor ou preset) de propósito.
   const granEl = document.getElementById('laudo-granularidade');
-  if (granEl && ['ghe','agrupado','segregado'].includes(granEl.value)) {
-    granEl.value = gruposGhe.length ? 'ghe' : gruposSetor.length ? 'agrupado' : 'segregado';
-  }
+  if (granEl) granEl.value = 'consolidado';
   // Esconde a opção quando a empresa não tem GHE importado, para não oferecer um modo vazio.
   const optGhe = granEl?.querySelector('option[value="ghe"]');
   if (optGhe) optGhe.hidden = !gruposGhe.length;
