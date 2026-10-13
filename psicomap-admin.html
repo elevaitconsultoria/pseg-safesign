@@ -16250,6 +16250,7 @@ const P2_CAPS = [
 const P2_RESP_TEXTOS = [
   'O presente documento foi elaborado por {{elaboradores_lista}}. A responsabilidade técnica pela elaboração deste documento restringe-se exclusivamente às avaliações e recomendações realizadas pelos elaboradores, ficando sob inteira responsabilidade da empresa a implantação, a implementação e o acompanhamento das avaliações e medidas aqui propostas, bem como a constante atualização do documento. Em caso de discordância, a empresa deve comunicar imediatamente os elaboradores para verificar as adequações necessárias. A caracterização é válida enquanto as condições de trabalho permanecerem como aquelas observadas e/ou informadas durante os levantamentos de campo.',
   'É de responsabilidade da empresa contratante atualizar o plano de ação com as ações, prazos e responsáveis pela execução e acompanhamento da implementação das melhorias, a partir de cronograma sugerido à empresa, bem como evidenciá-las. É proibida a reprodução, total ou parcial, deste documento sem autorização da {{est_nome}}.',
+  'O documento foi assinado eletronicamente através de Certificado Digital válido, inclusive a assinatura está certificada nos moldes da Infraestrutura de Chaves Públicas Brasileira ICP Brasil, podendo ser consultada sua autenticidade em https://validar.iti.gov.br/, bem como verificar os dados do responsável.',
 ];
 
 // Blocos de texto padrão que o consultor pode reescrever (por empresa + ciclo).
@@ -17595,30 +17596,16 @@ function _p2CapConcl(ctx) {
 function _p2Assinaturas(ctx) {
   if (!ctx.elaboradores.length) return '';
   return '<div class="p2assin">' + ctx.elaboradores.map(x => `<div class="p2ass"><div class="lin"></div>
-    <b>${_p2e(x.nome)}</b><br>${_p2e(_p2t(x.funcao))}${_p2t(x.funcao) ? '<br>' : ''}${_p2e(ctx.regTxt(x))}<br><span class="p2fr">Elaborador(a)</span></div>`).join('') + '</div>';
+    <b>${_p2e(x.nome)}</b><br>${_p2e(_p2t(x.funcao))}${_p2t(x.funcao) ? '<br>' : ''}${_p2e(ctx.regTxt(x))}${_p2t(x.cpf) ? '<br>CPF: ' + _p2e(_p2t(x.cpf)) : ''}<br><span class="p2fr">${_p2e(_p2t(x.papel) || 'Elaborador(a)')}</span></div>`).join('') + '</div>';
 }
 
+// Igual ao documento-modelo: o capítulo só LISTA os anexos. ART e relatórios estatísticos seguem por fora
+// do sistema (podem virar parte do documento no futuro). Imagens anexadas pelo usuário, se houver, entram
+// logo abaixo — só na sessão, nunca no banco.
 function _p2CapAnexos(ctx) {
   const T = P2_TEXTOS;
   const imgs = _p2Anexos.map(a => `<figure class="p2anx"><img src="${a.dataUrl}" alt=""><figcaption>${_p2e(a.legenda || a.nome)}</figcaption></figure>`).join('');
-  // No Word não há cartão com barras: o mesmo dado sai em tabela (por questão, em % de respostas).
-  const statTab = f => {
-    const rows = f.distQuestoes.map(q => _p2tr([_p2td(_p2e(q.codigo) + (q.inv ? ' ↺' : ''), 'class="c"'), _p2td(_p2e(q.texto)),
-      ...[1, 2, 3, 4].map(k => _p2td(q.pcts[k] + '%', 'class="c"')), _p2td(['', 'Nunca', 'Às vezes', 'Frequentemente', 'Sempre'][q.moda] || '', 'class="c"')]));
-    return `<h3>${_p2e(f.nome)} — S${f.s} ${_p2e(f.sLabel)} · ${_p2e(f.nivel)}</h3>
-      <p class="p2leg">P${f.p} (${_p2e(f.pLabel)}) × S${f.s} (${_p2e(f.sLabel)}) → ${_p2e(f.nivel)} · n=${f.n}. Distribuição consolidada (escala ajustada, 1 = condição ideal): P1 ${f.avgDist[1]}% · P2 ${f.avgDist[2]}% · P3 ${f.avgDist[3]}% · P4 ${f.avgDist[4]}%. ↺ = questão de sentido protetivo (escore invertido).</p>
-      ${_p2tbl(['Cód.', 'Questão', 'Nunca', 'Às vezes', 'Freq.', 'Sempre', 'Predominante'], rows, 'p2stat')}`;
-  };
-  const stat = (titulo, fatores) => ctx.docx
-    ? `<h2>${_p2e(titulo)}</h2>${fatores.map(statTab).join('')}`
-    : `<h3>${_p2e(titulo)}</h3>${fatores.map(f => _laudoCardRiscoHTML(f)).join('')}`;
-  const total = ctx.linhas.length;
-  const geral = (P2_N_MIN > 0 && total < P2_N_MIN) ? '' : stat('Estatística geral da empresa', calcFatores(ctx.linhas));
-  const porGes = ctx.grs.filter(x => !x.omit).map(x => stat(`Estatística — ${x.titulo}`, x.fatores)).join('');
-  return `<h2>Anexo A — ${_p2e(T.anexos[0])}</h2>
-  ${imgs || '<p class="p2ph">Anexar a ART emitida (documento externo ao sistema).</p>'}
-  <h2>Anexo B — Relatórios estatísticos dos riscos psicossociais</h2>
-  <p>${_p2e(T.anexos[1])}</p>${geral}${porGes}`;
+  return `<ul class="p2anl">${T.anexos.map(t => `<li>${_p2e(t)}</li>`).join('')}</ul>${imgs}`;
 }
 
 // ── Capa ─────────────────────────────────────────────────────────────────────
@@ -17705,6 +17692,7 @@ tr.p2dim{page-break-after:avoid}
 .p2ass{flex:1;min-width:150pt;text-align:center;font-size:10pt;page-break-inside:avoid}
 .p2ass .lin{border-top:.75pt solid #000;margin-bottom:4pt}
 .p2fr{color:#555}
+.p2anl{margin-top:4pt}
 .p2anx{margin:8pt 0;text-align:center;page-break-inside:avoid}
 .p2anx img{max-width:100%;max-height:230mm}
 .p2anx figcaption{font-size:9pt;font-style:italic}
@@ -17830,7 +17818,16 @@ function _p2Build(ctx, { preview, docx }) {
     anexos: _p2CapAnexos,
   };
   const capa = _p2Capa(ctx);
-  const corpo = P2_CAPS.map(c => `<section class="p2cap">${_p2H1(ctx, c.k)}${fn[c.k](ctx)}</section>`).join('');
+  const corpo = P2_CAPS.map(c => {
+    let miolo;
+    try { miolo = fn[c.k](ctx); }
+    catch (e) {
+      console.error('[laudo p2] capítulo', c.k, e);
+      ctx.avisos.push(`O capítulo "${c.t}" não pôde ser montado: ${e.message}`);
+      miolo = `<p class="p2omit"><b>Não foi possível montar este capítulo:</b> ${_p2e(e.message)}</p>`;
+    }
+    return `<section class="p2cap">${_p2H1(ctx, c.k)}${miolo}</section>`;
+  }).join('');
 
   const cab = _p2Cab(ctx);
   if (!cab.rodape) ctx.pend.add('Rodapé: telefone, e-mail e site (Perfil da EST → Laudo PSEG 2.0)');
@@ -18149,6 +18146,7 @@ function _p2EstRenderElab() {
       ${f(i, 'nome', 'Nome completo')}${f(i, 'funcao', 'Função', 'Engenheiro de Segurança do Trabalho')}
       ${f(i, 'conselho', 'Conselho', 'CREA, CRP…')}${f(i, 'registro', 'Registro', 'SP 5070297781')}
       ${f(i, 'tel', 'Telefone')}${f(i, 'email', 'E-mail')}
+      ${f(i, 'cpf', 'CPF (aparece na assinatura; opcional)')}${f(i, 'papel', 'Papel na assinatura', 'Elaborador e Responsável técnico')}
       ${f(i, 'curriculo', 'Mini currículo (parágrafos separados por linha em branco)', '', true)}
       ${f(i, 'formacao', 'Formação (um item por linha)', '', true)}
       ${f(i, 'atualmente', 'Atualmente (um item por linha)', '', true)}
