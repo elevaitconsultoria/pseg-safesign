@@ -56,7 +56,8 @@ Objetivo: o que a consultoria configura uma vez não pode ser redigitado a cada 
 **EST** (Perfil da EST) → **empresa** (Dados do laudo) → **ciclo** (revisões, período, textos editados, seções ocultas, páginas extras);
 o nível **ciclo não herda nada** — todo ciclo novo recomeça do zero. Tudo cabe em `laudo_dados` (jsonb), sem migration nova, salvo indicação.
 
-**Pacote 1 — recomendado primeiro (maior ganho em todo laudo)**
+**Pacote 1 — ✅ IMPLEMENTADO em 2026-10-14 (PR em revisão; ver CLAUDE.md "Padrões da consultoria e herança")**
+*Fora do pacote 1 e ainda aberto:* usar `cor_primaria`/`tenants.cor_primaria` do Perfil (o laudo usa a cor própria `padroes.cor`); escolher elaboradores POR CLIENTE (pacote 2).
 1. **Herdar do ciclo anterior**: botão "Copiar do ciclo anterior" e abertura já preenchida (textos editados, seções ocultas, páginas extras,
    período), com a **próxima revisão numerada** automaticamente (01, 02…).
 2. **Padrões da consultoria** (nova seção no Perfil da EST, escopo `est`), aplicados a todo laudo:

@@ -1720,7 +1720,13 @@ Modelo da PSEG (18 capítulos, controle de revisões, elaboradores, plano de aç
 - **Só o Admin da EST (e super_admin em Modo Suporte) usa o modelo `padrao_pseg2.0`** — fonte única `_p2Permitido()`. Consultor e cliente_viewer não veem o card "Modelo do laudo", e `_p2Versao()` devolve `default` para eles mesmo se um "Reaplicar"/valor residual pedir o novo modelo. Três camadas: card (`_p2SyncUI`, simétrico, chamado também por `aplicarRestricoesPorRole`) + guardas nas funções (`abrirDadosLaudo`, `abrirSecoesLaudo`, `salvarLaudoDados`) + RLS (`migration_laudo_dados_admin_only.sql`: leitura E escrita só admin/super_admin). O botão ".docx" do laudo `default` continua para todos os perfis que geram laudo.
 - **`laudo_dados`** (`migration_laudo_dados.sql`; escopos `est`/`empresa`/`ciclo`, jsonb): aplicada em DEV e PROD. Não são colunas de `empresas` porque `empresas` é legível por `anon`. O nível `ciclo` NÃO herda nada do anterior (backlog pacote 1).
 - **Imagens anexadas** (ART etc.) ficam só em memória (`_p2Anexos`) — nunca em banco, snapshot ou localStorage.
-- `P2_N_MIN = 5` (provisório): grupo menor sai como "<5 func.". Unificar com `N_MIN_ANONIMATO` quando o HSE chegar em `develop`.
+- **Padrões da consultoria e herança (pacote 1, 2026-10-14)** — o laudo deixa de recomeçar do zero:
+  - `est.padroes` (Perfil da EST → "Padrões para todos os laudos"): cor da marca, segmentação padrão (só ao LIGAR o modelo), **mínimo de respondentes** e **participação mínima** (`_p2NMin()` / `_p2PartMin()`; os defaults 5 e 30 ficam em `P2_N_MIN_PADRAO`/`P2_PART_MIN_PADRAO` — `P2_N_MIN` deixou de existir), descrição da revisão 00, textos padrão, seções ocultas e páginas extras padrão.
+  - **Precedência**: ciclo > padrão da EST > fábrica. `_p2DadosCicloEfetivo()` é a fonte única — textos mesclam por id; `ocultos`/`extras` só caem no padrão quando o ciclo NUNCA definiu a chave. Os modais leem o EFETIVO (não `_p2.ciclo`).
+  - **Herança de ciclo**: ciclo sem registro herda do ciclo anterior da mesma empresa (`_p2BuscarCicloAnterior`, por `data_inicio`/`criado_em`) — textos, ocultos, extras e revisões com a **próxima revisão numerada**; NÃO copia período nem imagens. Fica em memória (`_p2Sujo.ciclo`), com aviso no preview, e grava ao salvar ou gerar. Chaves que começam com `_` (ex.: `_herdado`) nunca vão ao banco.
+  - `x.assina === false` tira o elaborador do documento; "Salvar como padrão da EST" existe no editor de texto e no modal de seções.
+  - Sem migration: tudo cabe em `laudo_dados` (escopo `est`, `dados.padroes`).
+- `P2_N_MIN_PADRAO = 5` (provisório; configurável por EST): grupo menor sai como "<5 func.". Unificar com `N_MIN_ANONIMATO` quando o HSE chegar em `develop`.
 - Numeração dos fatores no v2.0 (1–11) é só de apresentação (`P2_FATORES_ORDEM`); o `cd` interno não muda.
 
 **Regras que custaram tempo (não "limpar")**
