@@ -445,6 +445,18 @@ uma ideia de "combo" de metodologias, em
 > - **Simulação (DEV):** `_dev/simular-hse.js` envia respostas pela RPC real (recusa PROD) para a empresa fictícia de `seed_hse_simulacao_dev.sql`;
 >   questionário **v2** (texto PT-BR do formulário de um terceiro, **não validado**, `config.rascunho=true`). O selo RASCUNHO do laudo lê essa flag.
 >   Detalhes e comparação com o relatório do outro player: `.claude/notes/2026-10-10-simulacao-hse-e-comparacao-player.md`.
+> - **Revisão completa (2026-10-13)** — `.claude/notes/2026-10-13-hse-revisao-completa.md`. O que vale para qualquer mudança no HSE:
+>   - **Motor:** `npm run test:hse` (`_dev/test-hse-motor.js`, 99 casos, sem rede) extrai o bloco `HSE (S7)` do admin e confere contra
+>     oráculo próprio (exemplo F2 do player, limites de faixa, inversão, versões, simulação de DEV conferida por SQL). Rodar antes de commitar.
+>   - **`calcDimensoesHSE` só usa os itens do questionário das linhas** (`_hseMetaDasLinhas`): `_hseMetaCache` é global e acumula versões e
+>     empresas da sessão. Itens casam por **código** (H01..H35 estáveis entre versões). Nunca passar o cache cru a outra função.
+>   - Faixa decidida sobre o valor **exibido** (centésimos inteiros) — sem isso 2,7499999 aparecia "2,75" com outra cor que um 2,75 exato.
+>   - Números do HSE passam por `_hseNum` (vírgula decimal); CSS (larguras de barra) continua com `toFixed(1)` e ponto.
+>   - `HSE_DIM_INFO` é a fonte única de "o que avalia / estado esperado / ações" por dimensão (tela, laudo, plano, aba Metodologia). Não
+>     misturar com `CATALOGO_ACOES` (BS 8800). Texto-base para revisão de SST.
+>   - Cartões de filtro só-BS levam `data-so-bs`; o explicativo HSE, `data-so-hse`; `_sincronizarFiltrosMetodologia(tela, ciclo)` roda nos
+>     dois ramos de `rodarAnalise`/`renderLaudo` (mostra **e** esconde). Selects de ciclo com as duas metodologias saem agrupados (`optgroup`).
+>   - Harness sem login: `node _dev/harness-hse.js <saida.html>` (fixture de `simular-hse.js --fixture`); servir por HTTP, nunca `file://`.
 
 Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
 antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:

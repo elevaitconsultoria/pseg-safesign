@@ -194,6 +194,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
    Aplicada por _esconderElementosModulos() em elementos com data-modulo.
    !important para vencer .screen.on{display:block} e displays inline. */
 .modulo-off{display:none!important}
+.met-off{display:none!important}   /* cartão que não vale para a metodologia do ciclo escolhido (_sincronizarFiltrosMetodologia) */
 
 /* ══════════════════════════════════════════
    LOGIN — Neutro escuro + acento verde
@@ -2163,6 +2164,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
+      <!-- Só aparece em ciclo HSE (_sincronizarFiltrosMetodologia) -->
+      <div class="filter-card met-off" data-so-hse style="border-color:#c4b5fd;background:#faf5ff">
+        <div class="filter-label" style="color:#6d28d9">Metodologia HSE (ICAO-35)</div>
+        <div style="font-size:10.5px;color:var(--tm);line-height:1.5">7 dimensões, escala 1–5, <strong>maior = melhor</strong>. Os filtros de setor, função, GHE e segmentação valem; o de nível de risco é do BS 8800 e fica oculto.</div>
+      </div>
+
       <!-- Filtro Setores — combo -->
       <div class="filter-card">
         <div class="filter-label">Setores</div>
@@ -2301,8 +2308,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
-      <!-- Filtro Nível de Risco — combo -->
-      <div class="filter-card">
+      <!-- Filtro Nível de Risco — combo (só BS 8800) -->
+      <div class="filter-card" data-so-bs>
         <div class="filter-label">Nível de risco</div>
         <div class="combo" id="combo-nivel">
           <div class="combo-trigger" onclick="toggleCombo('combo-nivel')">
@@ -2327,7 +2334,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <!-- Data de emissão nos arquivos exportados. O PDF e a imagem saem da consultoria
            para a empresa e nem sempre são entregues no dia em que foram gerados —
            antes a data de geração era obrigatória e não havia como tirá-la. -->
-      <div class="filter-card">
+      <div class="filter-card" data-so-bs>
         <div class="filter-label">Exportação</div>
         <div id="chk-data-emissao"></div>
         <div style="font-size:10px;color:var(--tl);margin-top:4px">Vale para o PDF e para a imagem exportados desta tela.</div>
@@ -2747,6 +2754,11 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
+      <div class="filter-card met-off" data-so-hse style="border-color:#c4b5fd;background:#faf5ff">
+        <div class="filter-label" style="color:#6d28d9">Laudo HSE (ICAO-35)</div>
+        <div style="font-size:10.5px;color:var(--tm);line-height:1.5">Estrutura própria: resumo, uma página por dimensão, comparação entre recortes, risco para o PGR e plano de ação sugerido. Seções, textos editáveis e filtro de nível são do BS 8800 e ficam ocultos.</div>
+      </div>
+
       <div class="filter-card">
         <div class="filter-label">Setores</div>
         <div class="combo" id="combo-ld-setor">
@@ -2771,8 +2783,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </div>
       </div>
 
-      <!-- Filtro Nível de Risco — Laudo -->
-      <div class="filter-card">
+      <!-- Filtro Nível de Risco — Laudo (só BS 8800) -->
+      <div class="filter-card" data-so-bs>
         <div class="filter-label">Nível de risco</div>
         <div class="combo" id="combo-ld-nivel">
           <div class="combo-trigger" onclick="toggleCombo('combo-ld-nivel')">
@@ -2921,7 +2933,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 
       <!-- Edição de textos: os blocos de prosa do laudo vêm prontos, mas o consultor
            pode reescrevê-los. Vale só para esta sessão (sessionStorage por empresa). -->
-      <div class="filter-card" id="laudo-textos-card">
+      <div class="filter-card" id="laudo-textos-card" data-so-bs>
         <div class="filter-label">Textos do laudo</div>
         <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer">
           <input type="checkbox" id="laudo-edicao-modo" onchange="toggleLaudoEdicaoModo(this.checked)"/>
@@ -2934,7 +2946,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
                 onclick="restaurarTextosLaudo()">Restaurar todos os textos padrão</button>
       </div>
 
-      <div class="filter-card">
+      <div class="filter-card" data-so-bs>
         <div class="filter-label">Seções do laudo</div>
         <div style="display:flex;flex-direction:column;gap:6px" id="laudo-secoes-checks"></div>
       </div>
@@ -3292,6 +3304,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <button class="met-tab" onclick="setMetTab('calculo',this)">Cálculo P×S</button>
     <button class="met-tab" onclick="setMetTab('interpretacao',this)">Interpretação</button>
     <button class="met-tab" onclick="setMetTab('referencias',this)">Referências</button>
+    <button class="met-tab" id="met-tab-hse" style="display:none" onclick="setMetTab('hse',this)">HSE × BS 8800</button>
   </div>
 
   <!-- TAB: Fundamentos -->
@@ -3682,6 +3695,35 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   </div>
 
   <!-- TAB: Referências -->
+  <!-- TAB: HSE × BS 8800 (só com o instrumento HSE publicado neste ambiente — ver carregarDisponibilidadeHSE) -->
+  <div class="met-panel" id="mtp-hse" style="display:none">
+    <div class="met-card"><div class="met-card-body" style="width:100%">
+      <div class="met-card-title">Qual metodologia usar em cada ciclo?</div>
+      <div class="met-card-text">
+        A metodologia é escolhida ao criar o ciclo e fica fixa depois que ele recebe o primeiro link. As duas nunca são somadas
+        nem colocadas no mesmo gráfico: cada uma tem escala, direção e leitura próprias. Para aplicar as duas na mesma empresa,
+        crie dois ciclos (o modal "Novo ciclo" faz isso de uma vez) e distribua links separados.
+        <div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg2)"><th style="text-align:left;padding:7px 9px"></th><th style="text-align:left;padding:7px 9px">BS 8800 (PsicoMap)</th><th style="text-align:left;padding:7px 9px">HSE (ICAO-35)</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">Questionário</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">27 questões, escala 1–4, personalizável</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">35 itens, escala 1–5, instrumento fechado (não se edita)</td></tr>
+            <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">O que entrega</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Nível de risco P×S por fator, de irrelevante a crítico</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Score de 7 dimensões comparado à referência internacional do HSE (4 faixas)</td></tr>
+            <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">Direção</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Maior = pior</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)"><strong>Maior = melhor</strong></td></tr>
+            <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">PGR</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Nível de risco direto do cálculo</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Nível por critério da consultoria (P pela faixa, S por dimensão definida por SST)</td></tr>
+            <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">Quando preferir</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Continuidade com ciclos anteriores; inventário de riscos por fator; questionário curto</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Diagnóstico organizacional comparável internacionalmente; leitura por dimensão do trabalho; cliente que já usa o HSE</td></tr>
+            <tr><td style="padding:7px 9px;font-weight:700">Telas</td><td style="padding:7px 9px">Todas</td><td style="padding:7px 9px">Resultados, Relatório, Plano de Ação e Adesão. Distribuição, Auditoria e Comparativo ainda são só BS 8800</td></tr>
+          </tbody></table></div>
+        <div class="met-card-title" style="margin-top:18px">As 7 dimensões do HSE</div>
+        <div id="mtp-hse-dims" style="margin-top:8px;overflow-x:auto"></div>
+        <div style="font-size:11px;color:var(--tl);margin-top:12px;line-height:1.6">
+          Leitura das faixas em relação à média de referência do HSE (2023): <strong>Ação urgente</strong> (mais de 0,50 abaixo) ·
+          <strong>Necessidade clara de melhoria</strong> (abaixo, até 0,50) · <strong>Bom, mas há o que melhorar</strong> (até 0,40 acima) ·
+          <strong>Muito bem</strong> (0,40 ou mais acima). Recortes com menos respondentes que o mínimo de anonimato não exibem resultado.
+        </div>
+      </div>
+    </div></div>
+  </div>
+
   <div class="met-panel" id="mtp-referencias" style="display:none">
     <div class="met-card">
       <div class="met-card-icon">
@@ -4312,14 +4354,14 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <div id="nc-card-BS8800" onclick="_ncSelecionarMet('BS8800')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
             <div style="font-size:12px;font-weight:700;color:var(--tx)">BS 8800 (PsicoMap)</div>
-            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">27 questões. Classifica cada fator em níveis de risco, de irrelevante a crítico. Alimenta o inventário do PGR.</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">27 questões, escala 1–4. Classifica cada fator de risco por P×S, de irrelevante a crítico, e alimenta o inventário do PGR. Comparável com os ciclos anteriores da empresa.</div>
           </div>
           <div id="nc-card-HSE_ICAO35" onclick="_ncSelecionarMet('HSE_ICAO35')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
             <div style="font-size:12px;font-weight:700;color:var(--tx)">HSE (ICAO-35)</div>
-            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">35 questões. Mede 7 dimensões das condições de trabalho e compara com a base internacional. Sem nível P×S.</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">35 questões, 7 dimensões (Demandas, Controle, Apoio, Colegas, Relacionamentos, Papel, Mudanças), escala 1–5. Compara com a referência internacional do HSE; o nível para o PGR vem de critério definido por SST.</div>
           </div>
         </div>
-        <div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">🔒 A metodologia não muda depois que o ciclo tem link ou resposta. Para trocar, crie um novo ciclo.</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">🔒 A metodologia não muda depois que o ciclo tem link ou resposta. Para trocar, crie um novo ciclo. Resultados de metodologias diferentes nunca são somados nem comparados entre si. <a href="#" onclick="event.preventDefault();fecharModalCiclo();_abrirMetodologiaHSE()" style="color:var(--g)">Qual escolher?</a></div>
         <label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--tx);cursor:pointer">
           <input type="checkbox" id="nc-ambas"> <span id="nc-ambas-txt">Criar também um ciclo com HSE (links separados)</span>
         </label>
@@ -4359,9 +4401,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </div>
       <div class="field">
         <label>Ciclo de avaliação</label>
-        <select id="nl-ciclo">
+        <select id="nl-ciclo" onchange="_nlMostrarInstrumento()">
           <option value="">Sem ciclo específico</option>
         </select>
+        <div id="nl-ciclo-met" style="font-size:10.5px;color:var(--tm);margin-top:5px;line-height:1.5"></div>
       </div>
     </div>
     <div class="field" style="margin-bottom:12px">
@@ -4984,6 +5027,8 @@ async function carregarDisponibilidadeHSE() {
   }
   const sub = document.getElementById('q-sub-hse');
   if (sub) sub.textContent = _hseAtivo() ? ' Vale para ciclos BS 8800; o instrumento HSE é fechado e não pode ser personalizado.' : '';
+  const tabHse = document.getElementById('met-tab-hse');
+  if (tabHse) tabHse.style.display = _hseAtivo() ? '' : 'none';
 }
 // Avaliado no uso (e não gravado): o módulo 'hse' pode ser desligado depois da carga.
 function _hseAtivo() { return _hseDisponivel && moduloOn('hse'); }
@@ -5084,7 +5129,12 @@ function _guardaTelaBS(cicloId, panel, situacao) {
   if (!cicloId || _metodologiaDoCiclo(cicloId) !== METODOLOGIA_HSE || !panel) return false;
   const c = _ciclos.find(x => x.id === cicloId);
   const nome = String(c?.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  panel.innerHTML = `<div class="card"><div class="alert alert-y"><strong>Ciclo HSE.</strong> O ciclo “${nome}” usa a metodologia HSE (ICAO-35). Esta tela ainda não lê resultados HSE — ${situacao}.</div></div>`;
+  panel.innerHTML = `<div class="card"><div class="alert alert-y"><strong>Ciclo HSE.</strong> O ciclo “${nome}” usa a metodologia HSE (ICAO-35). ${situacao}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn btn-g" style="font-size:12px" onclick="goScreen('analise')">Ver resultados HSE</button>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="goScreen('laudo')">Abrir relatório HSE</button>
+      ${moduloOn('plano') && !['consultor', 'cliente_viewer'].includes(_roleAtual()) ? `<button class="btn btn-ghost" style="font-size:12px" onclick="goScreen('plano')">Plano de ação HSE</button>` : ''}
+    </div></div>`;
   window._analiseData = null;
   if (typeof _sincronizarBotaoPacote === 'function') _sincronizarBotaoPacote();
   return true;
@@ -5104,6 +5154,7 @@ function _ncSelecionarMet(m) {
     const on = k === _ncMet;
     el.style.borderColor = on ? 'var(--g)' : 'var(--border)';
     el.style.background  = on ? '#f0faf4' : 'transparent';
+    el.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
   const t = document.getElementById('nc-ambas-txt');
   if (t) t.textContent = _ncMet === METODOLOGIA_HSE
@@ -5116,6 +5167,89 @@ function _ncInicializarMetodologia() {
   wrap.style.display = _hseAtivo() ? 'block' : 'none';
   const amb = document.getElementById('nc-ambas'); if (amb) amb.checked = false;
   _ncSelecionarMet(METODOLOGIA_BS);
+}
+
+// ── UX de metodologia (2026-10-13) ───────────────────────────────────────────────────────────────────────
+// Rótulos curtos de instrumento, para selects e avisos. Fonte única — não repetir os literais nas telas.
+const MET_ROTULO = { BS8800: 'BS 8800', HSE_ICAO35: 'HSE (ICAO-35)' };
+
+// Preenche um <select> de ciclos AGRUPADO por metodologia quando a empresa tem as duas (optgroup), para o usuário
+// ver de relance qual instrumento cada ciclo usa. Com uma metodologia só, lista simples (comportamento histórico).
+// `opcaoVazia` é o texto da primeira opção (value=""); devolve a lista de ciclos usada.
+function _preencherCiclosAgrupados(sel, ciclos, opcaoVazia) {
+  sel.innerHTML = '';
+  if (opcaoVazia != null) { const o = document.createElement('option'); o.value = ''; o.textContent = opcaoVazia; sel.appendChild(o); }
+  const temHSE = _hseAtivo() && ciclos.some(_cicloEhHSE), temBS = ciclos.some(c => !_cicloEhHSE(c));
+  const add = (pai, c) => { const o = document.createElement('option'); o.value = c.id; o.textContent = (temHSE && temBS) ? (c.nome || '—') : _cicloLabel(c); pai.appendChild(o); };
+  if (temHSE && temBS) {
+    [[METODOLOGIA_BS, ciclos.filter(c => !_cicloEhHSE(c))], [METODOLOGIA_HSE, ciclos.filter(_cicloEhHSE)]].forEach(([k, lista]) => {
+      const g = document.createElement('optgroup'); g.label = MET_ROTULO[k]; lista.forEach(c => add(g, c)); sel.appendChild(g);
+    });
+  } else ciclos.forEach(c => add(sel, c));
+  return ciclos;
+}
+
+// Cartões da sidebar que só valem para o BS 8800 (marcados com data-so-bs) somem num ciclo HSE, e o cartão
+// data-so-hse explica o que muda. Chamado por rodarAnalise e renderLaudo nos dois ramos (BS e HSE) — capaz de
+// MOSTRAR de volta, não só de esconder (lição do _sincronizarBotaoPacote).
+function _sincronizarFiltrosMetodologia(screenId, cicloId) {
+  const tela = document.getElementById(screenId);
+  if (!tela) return;
+  const hse = !!cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE;
+  tela.querySelectorAll('[data-so-bs]').forEach(el => el.classList.toggle('met-off', hse));
+  tela.querySelectorAll('[data-so-hse]').forEach(el => el.classList.toggle('met-off', !hse));
+}
+
+// Mostra, abaixo do select de ciclo do modal de link, qual instrumento o funcionário vai responder.
+function _nlMostrarInstrumento() {
+  const box = document.getElementById('nl-ciclo-met');
+  if (!box) return;
+  if (!_hseAtivo()) { box.textContent = ''; return; }
+  const id = document.getElementById('nl-ciclo')?.value || '';
+  const hse = id && _metodologiaDoCiclo(id) === METODOLOGIA_HSE;
+  box.innerHTML = hse
+    ? '<span class="tag tp" style="font-size:9px">HSE</span> O funcionário responderá ao questionário <strong>HSE (35 itens, escala 1–5)</strong>.'
+    : '<span class="tag tgr" style="font-size:9px">BS 8800</span> O funcionário responderá ao questionário <strong>BS 8800 (27 questões)</strong>.';
+}
+
+// ── Plano de Ação para ciclo HSE ─────────────────────────────────────────────────────────────────────────
+// Mesma fonte do laudo (_hsePrioridades + HSE_DIM_INFO): a tela e o documento não podem sugerir coisas diferentes.
+// "Onde" = setores com resultado próprio (n ≥ mínimo) nos quais a dimensão também pede ação. Quem/Quando/Quanto
+// não são inventados: o método do HSE manda definir com os trabalhadores e a empresa.
+async function renderPlanoAcaoHSE(panel, empId, cicloId) {
+  panel.innerHTML = _loadingState('Montando plano de ação HSE…');
+  try {
+    const [todas, bench] = await Promise.all([carregarRespostasHSE(empId, cicloId), _hseCarregarBenchmark()]);
+    if (!todas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta HSE neste ciclo ainda.</div></div>'; return; }
+    if (todas.length < HSE_N_MIN_PROVISORIO) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Resultado oculto: ${_textoOculto(todas.length)}.</div></div>`; return; }
+    const geral = calcDimensoesHSE(todas, _hseMetaDasLinhas(todas), bench);
+    const setores = _hseRecortes([...new Set(todas.map(r => r.setor))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(s => ({ nome: s, setores: [s] })), todas, _hseMetaCache, bench);
+    const pr = _hsePrioridades(geral);
+    const ciclo = _ciclos.find(c => c.id === cicloId);
+    const cab = `<div class="card" style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Plano de ação sugerido — HSE (ICAO-35)</div>
+      <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${todas.length} respondente(s) · ${pr.length} de ${HSE_DIMS.length} dimensões pedem ação</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.5">Prioridade: primeiro “${HSE_FAIXA.VERMELHO}”, depois “${HSE_FAIXA.AMBAR}”; dentro da faixa, o menor score. As ações são pontos de partida — confirme o diagnóstico com os trabalhadores (grupos focais) e defina com a empresa <strong>quem</strong>, <strong>quando</strong> e <strong>quanto</strong>.</div></div>`;
+    if (!pr.length) { panel.innerHTML = cab + '<div class="card"><div class="alert alert-g">Nenhuma dimensão ficou abaixo da média de referência. Mantenha as práticas atuais e acompanhe no próximo ciclo.</div></div>'; return; }
+    const ocultos = setores.filter(s => !s.res).length;
+    panel.innerHTML = cab + pr.map((d, i) => {
+      const info = HSE_DIM_INFO[d.id];
+      const onde = _hseOndeDimensao(setores, d.id, (n, v) => `<strong>${_hEsc(n)}</strong> (${_hseNum(v)})`);
+      return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${HSE_COR[d.faixa]}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline">
+          <div style="font-size:13px;font-weight:700;color:var(--tx)">${i + 1}. ${_hEsc(d.nome)}</div>
+          <div style="font-size:12px"><strong>${_hseNum(d.score)}</strong> <span style="color:var(--tm)">· ref. ${_hseNum(d.ref)}</span>
+            <span style="margin-left:6px;font-size:10px;font-weight:700;color:white;background:${HSE_COR[d.faixa]};border-radius:4px;padding:1px 6px">${HSE_FAIXA[d.faixa]}</span></div></div>
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px">
+          <tr><td style="padding:5px 8px;width:110px;color:var(--tm);font-weight:700;vertical-align:top">Por quê</td><td style="padding:5px 8px">${_hEsc(info.avalia)} ${_pct0(d.desfavoravel)} das respostas foram desfavoráveis.<div style="font-size:10px;color:#6b7280;margin-top:3px">Estado esperado: ${_hEsc(info.padrao)}</div></td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Onde</td><td style="padding:5px 8px">${onde.urgente.length ? `Ação urgente em ${onde.urgente.join(', ')}.` : 'Sem setor em “Ação urgente” nesta dimensão.'}${onde.abaixo.length ? `<div style="font-size:10.5px;color:var(--tm);margin-top:2px">Também abaixo da referência: ${onde.abaixo.join(', ')}.</div>` : ''}${ocultos ? `<div style="font-size:10px;color:#6b7280">${ocultos} setor(es) com menos de ${HSE_N_MIN_PROVISORIO} respondentes não entram nesta leitura (anonimato).</div>` : ''}</td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">O quê</td><td style="padding:5px 8px"><ul style="margin:0 0 0 16px;line-height:1.6">${info.acoes.map(a => `<li>${_hEsc(a)}</li>`).join('')}</ul></td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Quem · Quando · Quanto</td><td style="padding:5px 8px;color:#6b7280">A definir com a empresa depois da confirmação com os trabalhadores.</td></tr>
+        </table></div>`;
+    }).join('');
+  } catch (e) {
+    console.warn('renderPlanoAcaoHSE:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o plano HSE: ${_hEsc(e?.message || e)}</div></div>`;
+  }
 }
 // ==== HSE END ====
 
@@ -5147,6 +5281,8 @@ const HSE_FAIXA = { VERMELHO:'Ação urgente', AMBAR:'Necessidade clara de melho
 // relatórios de terceiros. É um ÍNDICE, não uma proporção: "3,1%" não quer dizer "3% dos trabalhadores".
 // Arredonda a 2 casas ANTES de comparar: 2,60 → 40,00% tem de cair em amarela (limite), sem ruído de float.
 const HSE_ZONA_FIXA = { VERMELHA: { txt: 'Vermelha', cor: HSE_COR.VERMELHO }, AMARELA: { txt: 'Amarela', cor: HSE_COR.AMBAR }, VERDE: { txt: 'Verde', cor: HSE_COR.VERDE } };
+// Número com vírgula decimal (pt-BR) — tudo o que o HSE mostra em tela e no laudo passa por aqui.
+function _hseNum(v, casas = 2) { return v == null ? '—' : v.toFixed(casas).replace('.', ','); }
 function _hseIndice(media) { return media == null ? null : Math.round((media - 1) / (HSE_ESCALA_MAX - 1) * 10000) / 100; }
 function _hseZonaFixa(pct) { return pct == null ? null : (pct >= 75 ? 'VERDE' : pct >= 40 ? 'AMARELA' : 'VERMELHA'); }
 function _hseIndiceHTML(media) {
@@ -5228,10 +5364,13 @@ async function carregarRespostasHSE(empresaId, cicloId) {
 
 // Bandas relativas à média de referência (HSE 2023). Os percentis oficiais NÃO existem na fonte
 // (analysistool.xls é auto-comparação ano a ano), então este é o método definitivo, não um fallback.
+// Classifica sobre o valor EXIBIDO (2 casas) e a diferença em centésimos inteiros: sem isso 2,7499999 aparece
+// como "2,75" e cai noutra faixa que um 2,75 exato — o leitor veria dois números iguais com cores diferentes.
 function _hseFaixa(score, media) {
-  if (score < media - 0.50) return 'VERMELHO';
-  if (score < media)        return 'AMBAR';
-  if (score < media + 0.40) return 'AZUL';
+  const dif = Math.round(score * 100) - Math.round(media * 100);   // centésimos
+  if (dif < -50) return 'VERMELHO';
+  if (dif < 0)   return 'AMBAR';
+  if (dif < 40)  return 'AZUL';
   return 'VERDE';
 }
 
@@ -5286,28 +5425,61 @@ function _hseTabelaRiscoHTML(linhas, modo = 'tela') {
     <td${td}><span style="font-size:10px">${_hEsc(r.danos)}</span></td></tr>`).join('')}</tbody></table>`;
 }
 
+// Itens que valem para ESTAS linhas. O cache (_hseMetaCache) é global e acumula todos os questionários HSE
+// carregados na sessão — outra empresa, outra versão. Sem este recorte, abrir uma empresa na v1 e depois outra na
+// v2 fazia a segunda mostrar "5 de 10 itens" e itens vazios da v1.
+function _hseMetaDasLinhas(linhas, metaPorId = _hseMetaCache) {
+  const qs = new Set((linhas || []).map(l => l.questionario_id).filter(Boolean));
+  if (!qs.size) return { ...metaPorId };
+  return Object.fromEntries(Object.entries(metaPorId).filter(([, i]) => qs.has(i.questionario_id)));
+}
+// Versões do instrumento presentes nas linhas (um ciclo só mistura versões se uma nova foi publicada no meio da coleta).
+function _hseVersoesNasLinhas(linhas) { return new Set((linhas || []).map(l => l.questionario_id).filter(Boolean)).size; }
+
 // Score da dimensão = média das MÉDIAS dos itens (mesma escolha de calcFatores). 1,00–5,00; alto = melhor.
+// Com os 35 itens obrigatórios (a RPC rejeita resposta incompleta) é idêntico à média dos escores por respondente,
+// que é como o Analysis Tool do HSE calcula. Itens são casados por CÓDIGO (H01..H35 = numeração do HSE original,
+// estável entre versões): se um ciclo tiver respostas de duas versões, cada item é um só, e o texto exibido é o da
+// versão da resposta mais recente. "favoravel"/"desfavoravel" = % das respostas, já normalizadas, em 4–5 / 1–2.
 function calcDimensoesHSE(linhas, metaPorId, bench) {
-  const itens = Object.values(metaPorId);
+  const meta = _hseMetaDasLinhas(linhas, metaPorId);
+  const qRecente = (linhas || []).find(l => l.questionario_id)?.questionario_id || null;
+  const porCod = new Map();
+  Object.values(meta).forEach(i => {
+    const g = porCod.get(i.codigo);
+    if (!g) porCod.set(i.codigo, { ...i, ids: [i.id] });
+    else { g.ids.push(i.id); if (i.questionario_id === qRecente) Object.assign(g, { texto: i.texto, ordem: i.ordem, escala_labels: i.escala_labels }); }
+  });
+  const itens = [...porCod.values()];
   const dims = HSE_DIMS.map(d => {
     const its = itens.filter(i => i.dimensao === d.id).sort((a, b) => a.ordem - b.ordem);
+    let favD = 0, desfD = 0, nD = 0;
     const stats = its.map(it => {
-      const dist = {1:0,2:0,3:0,4:0,5:0}; let soma = 0, n = 0;
+      const dist = {1:0,2:0,3:0,4:0,5:0}; let soma = 0, n = 0, fav = 0, desf = 0;
       linhas.forEach(r => {
-        const v = r.h[it.id];
-        if (v >= 1 && v <= HSE_ESCALA_MAX) { dist[v]++; soma += it.inversa ? (HSE_ESCALA_MAX + 1 - v) : v; n++; }
+        let v; for (const id of it.ids) { if (r.h[id] != null) { v = r.h[id]; break; } }
+        if (v >= 1 && v <= HSE_ESCALA_MAX) {
+          const s = it.inversa ? (HSE_ESCALA_MAX + 1 - v) : v;
+          dist[v]++; soma += s; n++;
+          if (s >= 4) fav++; else if (s <= 2) desf++;
+        }
       });
+      favD += fav; desfD += desf; nD += n;
       return { id: it.id, codigo: it.codigo, ordem: it.ordem, texto: it.texto, inversa: it.inversa,
-               escala_labels: it.escala_labels, n, dist, media: n ? soma / n : null };
+               escala_labels: it.escala_labels, n, dist, media: n ? soma / n : null,
+               favoravel: n ? fav / n : null, desfavoravel: n ? desf / n : null };
     });
     const ef = stats.filter(s => s.media !== null);
     const score = ef.length ? ef.reduce((a, s) => a + s.media, 0) / ef.length : null;
     const ref = bench[d.id] != null ? bench[d.id] : null;
+    const indice = _hseIndice(score);
     return { id: d.id, nome: d.nome, invertida: its.some(i => i.inversa), nItens: its.length, nItensEf: ef.length,
              score, ref, gap: (score != null && ref != null) ? score - ref : null,
-             faixa: (score != null && ref != null) ? _hseFaixa(score, ref) : null, itens: stats };
+             faixa: (score != null && ref != null) ? _hseFaixa(score, ref) : null,
+             indice, zona: _hseZonaFixa(indice),
+             favoravel: nD ? favD / nD : null, desfavoravel: nD ? desfD / nD : null, itens: stats };
   });
-  return { n: linhas.length, dims };
+  return { n: linhas.length, versoes: _hseVersoesNasLinhas(linhas), dims };
 }
 
 // Taxa de resposta = respostas do ciclo ÷ quadro de funcionários (sem dimensão de ciclo, como a adesão do BS).
@@ -5332,7 +5504,7 @@ function _hseBarraDim(d) {
   const cor = d.faixa ? HSE_COR[d.faixa] : '#9ca3af';
   return `<div style="position:relative;height:14px;background:#eef0f3;border-radius:7px;margin:6px 0 2px">
       ${d.score != null ? `<div style="position:absolute;left:0;top:0;bottom:0;width:${pct(d.score).toFixed(1)}%;background:${cor};border-radius:7px"></div>` : ''}
-      ${d.ref != null ? `<div title="Média de referência HSE 2023: ${d.ref.toFixed(2)}" style="position:absolute;left:${pct(d.ref).toFixed(1)}%;top:-3px;bottom:-3px;width:2px;background:#111"></div>` : ''}
+      ${d.ref != null ? `<div title="Média de referência HSE 2023: ${_hseNum(d.ref)}" style="position:absolute;left:${pct(d.ref).toFixed(1)}%;top:-3px;bottom:-3px;width:2px;background:#111"></div>` : ''}
     </div>`;
 }
 
@@ -5350,9 +5522,10 @@ function _hseItensHTML(d) {
         <div style="font-size:11px;color:var(--tx)"><span style="color:var(--tl);font-weight:700">${_hEsc(s.codigo)}</span> ${_hEsc(s.texto)}${s.inversa ? ' <span style="font-size:9px;color:var(--amber)">↺ invertido</span>' : ''}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
           <div style="flex:1;height:8px;background:#eef0f3;border-radius:4px"><div style="width:${w}%;height:100%;background:#64748b;border-radius:4px"></div></div>
-          <div style="font-size:11px;font-weight:700;width:34px;text-align:right">${s.media != null ? s.media.toFixed(2) : '—'}</div>
+          <div style="font-size:11px;font-weight:700;width:34px;text-align:right">${s.media != null ? _hseNum(s.media) : '—'}</div>
           <div style="font-size:10px;width:96px;text-align:right">${_hseIndiceHTML(s.media)}</div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px"><div style="flex:1">${_hseBarraFavHTML(s.favoravel, s.desfavoravel, 6)}</div><div style="font-size:9px;color:#6b7280;width:130px;text-align:right">${_pct0(s.desfavoravel)} desfav. · ${_pct0(s.favoravel)} fav.</div></div>
         <div style="font-size:9px;color:#6b7280;margin-top:2px">respostas brutas — ${distTxt}</div>
       </div>`;
     }).join('')}</details>`;
@@ -5385,15 +5558,21 @@ function _hseBlocoHTML(label, linhas, metaPorId, bench, risco) {
     ${ord.map(d => `<div style="padding:9px 0;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <div style="font-size:12px;font-weight:700;color:var(--tx)">${d.nome}${d.invertida ? ' <span style="font-size:9px;color:var(--amber)">↺ resposta invertida</span>' : ''}</div>
-        <div style="font-size:12px"><strong>${d.score != null ? d.score.toFixed(2) : '—'}</strong>
-          ${d.ref != null ? `<span style="color:var(--tm)"> · ref. ${d.ref.toFixed(2)} (${d.gap >= 0 ? '+' : ''}${d.gap.toFixed(2)})</span>` : ''}
+        <div style="font-size:12px"><strong>${d.score != null ? _hseNum(d.score) : '—'}</strong>
+          ${d.ref != null ? `<span style="color:var(--tm)"> · ref. ${_hseNum(d.ref)} (${d.gap >= 0 ? '+' : ''}${_hseNum(d.gap)})</span>` : ''}
           ${d.faixa ? `<span style="margin-left:6px;font-size:10px;font-weight:700;color:white;background:${HSE_COR[d.faixa]};border-radius:4px;padding:1px 6px">${HSE_FAIXA[d.faixa]}</span>` : ''}</div>
       </div>
       ${_hseBarraDim(d)}
       <div style="font-size:9px;color:#6b7280">${d.nItensEf} de ${d.nItens} itens com resposta · escala 1–5 · maior = melhor · índice de favorabilidade ${_hseIndiceHTML(d.score)} <span title="Leitura de referência (zonas fixas ≥75 / 40–74,99 / <40). A classificação do PsicoMap é a faixa relativa ao benchmark.">ⓘ</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div style="flex:1;max-width:260px">${_hseBarraFavHTML(d.favoravel, d.desfavoravel, 6)}</div><div style="font-size:9.5px;color:#6b7280">${_pct0(d.desfavoravel)} das respostas desfavoráveis · ${_pct0(d.favoravel)} favoráveis</div></div>
+      <div style="font-size:10px;color:var(--tm);margin-top:4px">${_hEsc(HSE_DIM_INFO[d.id]?.avalia || '')}</div>
+      ${(d.faixa === 'VERMELHO' || d.faixa === 'AMBAR') && HSE_DIM_INFO[d.id] ? `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;color:${HSE_COR[d.faixa]};font-weight:700">Ações sugeridas (${HSE_DIM_INFO[d.id].acoes.length})</summary>
+        <div style="font-size:10px;color:#6b7280;margin:6px 0 4px">Estado esperado: ${_hEsc(HSE_DIM_INFO[d.id].padrao)}</div>
+        <ul style="margin:4px 0 0 18px;font-size:11px;color:var(--tx);line-height:1.6">${HSE_DIM_INFO[d.id].acoes.map(a => `<li>${_hEsc(a)}</li>`).join('')}</ul>
+        <div style="font-size:10px;color:#6b7280;margin-top:4px">Pontos de partida — confirme com os trabalhadores (grupos focais) antes de definir o plano.</div></details>` : ''}
       ${_hseItensHTML(d)}
     </div>`).join('')}
-    ${(() => { const m = _hseMediaSimples(res); return m == null ? '' : `<div style="margin-top:10px;font-size:10px;color:#6b7280;border-top:1px dashed var(--border);padding-top:6px">Média simples das 7 dimensões: <strong>${m.toFixed(2)}</strong> · ${_hseIndiceHTML(m)} — referência interna; o HSE não define score global, e este número não substitui a leitura por dimensão.</div>`; })()}
+    ${(() => { const m = _hseMediaSimples(res); return m == null ? '' : `<div style="margin-top:10px;font-size:10px;color:#6b7280;border-top:1px dashed var(--border);padding-top:6px">Média simples das 7 dimensões: <strong>${_hseNum(m)}</strong> · ${_hseIndiceHTML(m)} — referência interna; o HSE não define score global, e este número não substitui a leitura por dimensão.</div>`; })()}
     ${risco ? _hseRiscoBlocoTela(res, risco.cfg, risco.indicativo) : ''}</div>`;
 }
 
@@ -5439,8 +5618,19 @@ async function rodarAnaliseHSE(panel, empresaId, cicloId) {
       <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior score = melhor condição (direção oposta ao BS 8800). O <strong>índice de favorabilidade</strong> é (média − 1) ÷ 4, de 0 a 100; as <strong>zonas fixas</strong> (verde ≥75 · amarela 40–74,99 · vermelha &lt;40) são a leitura de relatórios de mercado, mostrada só como referência. A linha preta na barra é a média de referência do benchmark HSE 2023 (base de organizações que escolheram usar a ferramenta; não é amostra nacional representativa). Cores: relativas a essa média.</div>
     </div>`;
     const risco = { cfg: await _hseCarregarRiscosCfg(), indicativo: leitura.indicativo };
-    panel.innerHTML = cabecalho + segmentos.filter(s => s.linhas.length)
-      .map(s => _hseBlocoHTML(s.label, s.linhas, _hseMetaCache, bench, risco)).join('');
+    const segComDados = segmentos.filter(s => s.linhas.length);
+    // Análise pela divisão do HSE entre recortes: uma linha por recorte, uma coluna por dimensão.
+    const mapa = segComDados.length > 1 ? (() => {
+      const recs = segComDados.map(s => ({ nome: s.label || 'Geral', n: s.linhas.length,
+        res: s.linhas.length >= HSE_N_MIN_PROVISORIO ? calcDimensoesHSE(s.linhas, _hseMetaDasLinhas(s.linhas), bench) : null }));
+      return `<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Comparação entre recortes</div>
+        <div style="font-size:11px;color:var(--tm);margin-bottom:8px">Score de cada dimensão (1–5, maior = melhor) e a cor da leitura em relação à média de referência. Detalhe de cada recorte logo abaixo.</div>
+        <div style="overflow-x:auto">${_hseMapaRecortesHTML(recs)}</div></div>`;
+    })() : '';
+    const versoes = _hseVersoesNasLinhas(filtrado) > 1
+      ? `<div class="card" style="margin-bottom:12px"><div class="alert alert-y">Este recorte tem respostas de <strong>mais de uma versão</strong> do questionário HSE (o texto mudou durante a coleta). Os itens foram somados pelo código.</div></div>` : '';
+    panel.innerHTML = cabecalho + versoes + mapa + segmentos.filter(s => s.linhas.length)
+      .map(s => _hseBlocoHTML(s.label, s.linhas, _hseMetaDasLinhas(s.linhas), bench, risco)).join('');
   } catch (e) {
     console.warn('rodarAnaliseHSE:', e);
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao carregar a análise HSE: ${_hEsc(e?.message || e)}</div></div>`;
@@ -5451,17 +5641,134 @@ async function rodarAnaliseHSE(panel, empresaId, cicloId) {
 function exportarCSVHSE() {
   if (!_hseUltimo || !_hseUltimo.linhas.length) { toast('Rode a análise primeiro.', 'w'); return; }
   if (_hseUltimo.linhas.length < HSE_N_MIN_PROVISORIO) { toast(`Exportação bloqueada: menos de ${HSE_N_MIN_PROVISORIO} respondentes no recorte.`, 'w'); return; }
-  const itens = Object.values(_hseMetaCache).sort((a, b) => a.ordem - b.ordem);
+  const itens = Object.values(_hseMetaDasLinhas(_hseUltimo.linhas)).sort((a, b) => a.ordem - b.ordem);
   const emp = _empresas.find(e => e.id === _hseUltimo.empresaId);
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const cab = ['empresa','ciclo','setor','funcao','escolaridade', ...itens.map(i => i.codigo)];
-  const linhas = _hseUltimo.linhas.map(r => [emp?.nome || '', _hseUltimo.cicloNome, r.setor, r.funcao, r.escolaridade, ...itens.map(i => r.h[i.id] ?? '')]);
+  // Uma coluna por CÓDIGO (estável entre versões): um ciclo com duas versões não pode duplicar colunas.
+  const porCod = new Map();
+  itens.forEach(i => { if (!porCod.has(i.codigo)) porCod.set(i.codigo, []); porCod.get(i.codigo).push(i.id); });
+  const cods = [...porCod.keys()];
+  const val = (r, cod) => { for (const id of porCod.get(cod)) if (r.h[id] != null) return r.h[id]; return ''; };
+  // Valor BRUTO (o que o respondente marcou); a inversão de Demandas/Relacionamentos é aplicada só no cálculo.
+  const cab = ['empresa','ciclo','setor','funcao','escolaridade', ...cods];
+  const linhas = _hseUltimo.linhas.map(r => [emp?.nome || '', _hseUltimo.cicloNome, r.setor, r.funcao, r.escolaridade, ...cods.map(c => val(r, c))]);
   const csv = '﻿' + [cab, ...linhas].map(l => l.map(q).join(';')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = `hse_${(emp?.nome || 'empresa').replace(/[^\w]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
 }
+
+// ── Análise pela divisão do HSE: o que cada dimensão avalia, o estado esperado e ações ─────────────────────
+// `padrao` resume, com redação nossa, o "estado a ser atingido" de cada HSE Management Standard (conteúdo do HSE
+// sob Open Government Licence v3.0 — a atribuição OGL vai em toda página do laudo). `acoes` são SUGESTÕES de
+// partida, nunca plano pronto: o próprio método do HSE manda confirmar os achados com os trabalhadores (grupos
+// focais) antes de decidir. Texto-base para REVISÃO de SST, como o restante do texto fixo do laudo.
+// Fonte única: tela de Resultados e laudo leem daqui (o BS 8800 tem o seu, CATALOGO_ACOES — não misturar).
+const HSE_DIM_INFO = {
+  DEMANDS: { curto: 'Demandas',
+    avalia: 'Carga de trabalho, prazos, ritmo e intensidade, pressão de tempo e pausas.',
+    padrao: 'Os trabalhadores conseguem dar conta das exigências do trabalho: as demandas são adequadas e alcançáveis dentro da jornada combinada, as tarefas são compatíveis com as competências de quem as executa e as preocupações com o ambiente de trabalho são ouvidas e tratadas.',
+    acoes: ['Mapear com a equipe a carga e os prazos por setor e função e redistribuir os picos recorrentes',
+            'Rever metas e prazos considerados inatingíveis, com a participação de quem executa',
+            'Garantir as pausas e limitar horas extras habituais, acompanhando o banco de horas',
+            'Planejar a cobertura de ausências e férias para não sobrecarregar quem fica',
+            'Adequar treinamento e recursos às tarefas atribuídas'] },
+  CONTROL: { curto: 'Controle',
+    avalia: 'Autonomia sobre como, quando e em que ritmo o trabalho é feito, e participação nas decisões que o afetam.',
+    padrao: 'Os trabalhadores têm voz sobre a forma de realizar o trabalho: sempre que possível controlam o próprio ritmo, são incentivados a usar e desenvolver suas competências, opinam sobre as pausas e são consultados sobre os padrões de trabalho.',
+    acoes: ['Envolver as equipes na definição de métodos, escalas e metas',
+            'Dar flexibilidade de ritmo e de horário das pausas onde a operação permitir',
+            'Criar oportunidades de desenvolvimento e de uso de novas habilidades',
+            'Consultar os trabalhadores antes de mudar a organização do trabalho'] },
+  MANAGER_SUPPORT: { curto: 'Apoio da gestão',
+    avalia: 'Apoio, orientação, retorno (feedback) e incentivo oferecidos pela chefia imediata.',
+    padrao: 'Há práticas que levam a chefia a apoiar a equipe: os trabalhadores sabem que apoio existe e como obtê-lo, conseguem os recursos de que precisam e recebem retorno regular e construtivo sobre o trabalho.',
+    acoes: ['Capacitar as lideranças em gestão de pessoas, escuta e retorno construtivo',
+            'Instituir conversas individuais periódicas entre chefia e equipe',
+            'Divulgar os canais de apoio disponíveis (RH, SESMT, programa de assistência)',
+            'Incluir o apoio à equipe entre os critérios de avaliação das lideranças'] },
+  PEER_SUPPORT: { curto: 'Colegas',
+    avalia: 'Ajuda, colaboração e respeito entre colegas de trabalho.',
+    padrao: 'A organização incentiva os colegas a se apoiarem: há práticas que favorecem a cooperação, os trabalhadores sabem a quem recorrer e recebem a ajuda necessária para realizar as tarefas.',
+    acoes: ['Favorecer o trabalho em equipe e a troca de experiência (duplas, rodízio, mentoria)',
+            'Criar momentos regulares de alinhamento da equipe',
+            'Reconhecer comportamentos de cooperação',
+            'Integrar novos colaboradores com o acompanhamento de um colega de referência'] },
+  RELATIONSHIPS: { curto: 'Relacionamentos',
+    avalia: 'Conflitos, atritos, assédio e outros comportamentos inaceitáveis no ambiente de trabalho.',
+    padrao: 'A organização promove relações positivas para evitar conflitos e garantir tratamento justo: há regras acordadas para prevenir e resolver comportamentos inaceitáveis, as chefias sabem lidar com eles e os trabalhadores têm um canal seguro para relatá-los.',
+    acoes: ['Formalizar e divulgar a política de conduta e de prevenção ao assédio',
+            'Manter canal de relato seguro, confidencial e sem retaliação, com prazo de resposta',
+            'Capacitar as lideranças para mediar conflitos e agir diante de comportamentos inaceitáveis',
+            'Acompanhar os casos relatados e dar retorno sobre as providências tomadas'] },
+  ROLE: { curto: 'Papel',
+    avalia: 'Clareza sobre atribuições, responsabilidades e o que se espera do trabalhador; ausência de papéis conflitantes.',
+    padrao: 'Os trabalhadores entendem seu papel e suas responsabilidades: as exigências feitas a eles são compatíveis entre si, a informação necessária está disponível e há como apontar dúvidas ou conflitos de atribuição.',
+    acoes: ['Revisar e comunicar as descrições de cargo e as responsabilidades',
+            'Alinhar objetivos e prioridades da equipe com cada pessoa',
+            'Eliminar sobreposições e ordens conflitantes entre chefias',
+            'Oferecer um canal para esclarecer dúvidas sobre atribuições'] },
+  CHANGE: { curto: 'Mudanças',
+    avalia: 'Como as mudanças organizacionais são comunicadas, discutidas e implantadas.',
+    padrao: 'As mudanças são conduzidas com comunicação e participação: os trabalhadores recebem a tempo as razões das mudanças, são consultados e podem influenciar as propostas, conhecem o impacto provável em seu trabalho e o cronograma, e têm treinamento e apoio durante a transição.',
+    acoes: ['Comunicar as mudanças com antecedência, explicando motivo, impacto e cronograma',
+            'Consultar as equipes afetadas antes de decidir e dar retorno sobre as contribuições',
+            'Oferecer treinamento e apoio durante a transição',
+            'Avaliar o efeito das mudanças depois da implantação'] },
+};
+const HSE_FAIXA_DESC = {
+  VERMELHO: 'mais de 0,50 abaixo da média de referência',
+  AMBAR:    'abaixo da média de referência (até 0,50)',
+  AZUL:     'na média ou até 0,40 acima',
+  VERDE:    '0,40 ou mais acima da média',
+};
+// Dimensões que pedem ação: Ação urgente primeiro, depois Necessidade clara; dentro da faixa, o menor score.
+function _hsePrioridades(res) {
+  const ord = { VERMELHO: 0, AMBAR: 1 };
+  return res.dims.filter(d => d.faixa in ord).sort((a, b) => ord[a.faixa] - ord[b.faixa] || a.score - b.score);
+}
+// Onde uma dimensão pede ação, entre recortes com resultado próprio: `urgente` (Ação urgente) é a concentração do
+// problema; `abaixo` (Necessidade clara) é secundário — 0,01 abaixo da referência também é "abaixo", e misturar
+// os dois diluía a leitura. Fonte única para o Plano de Ação HSE e para o laudo.
+function _hseOndeDimensao(recortes, dimId, fmt) {
+  const xs = (recortes || []).filter(r => r.res).map(r => ({ r, x: r.res.dims.find(z => z.id === dimId) })).filter(o => o.x && o.x.score != null);
+  const lista = f => xs.filter(o => o.x.faixa === f).sort((a, b) => a.x.score - b.x.score).map(o => fmt(o.r.nome, o.x.score));
+  return { urgente: lista('VERMELHO'), abaixo: lista('AMBAR') };
+}
+// Recortes (setor, GHE, agrupamento) com o resultado já calculado; abaixo do n mínimo, res = null (OCULTO —
+// nunca "sem risco"). Grupo sem nenhuma linha é descartado.
+function _hseRecortes(grupos, linhas, metaPorId, bench) {
+  return (grupos || []).map(g => {
+    const ls = _linhasDoGrupo(g, linhas);
+    return { grupo: g, nome: g.nome || 'Sem identificação', n: ls.length, linhas: ls,
+             res: ls.length >= HSE_N_MIN_PROVISORIO ? calcDimensoesHSE(ls, metaPorId, bench) : null };
+  }).filter(r => r.n > 0);
+}
+const HSE_COR_CLARA = { VERMELHO: '#fde2e2', AMBAR: '#fff4cc', AZUL: '#dbeafe', VERDE: '#dcfce7' };
+const HSE_COR_TEXTO = { VERMELHO: '#991b1b', AMBAR: '#854d0e', AZUL: '#1e40af', VERDE: '#166534' };
+// Mapa recortes × dimensões. Estilos inline: o mesmo HTML serve à tela e ao laudo.
+function _hseMapaRecortesHTML(recortes, { fonte = 11 } = {}) {
+  const th = a => `style="padding:6px 6px;font-size:${fonte - 1}px;text-align:${a};background:#1f2937;color:#fff;font-weight:600"`;
+  const td = 'padding:6px 6px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:700';
+  return `<table style="width:100%;border-collapse:collapse;font-size:${fonte}px;margin-bottom:8px"><thead><tr>
+    <th ${th('left')}>Recorte</th><th ${th('center')}>n</th>${HSE_DIMS.map(d => `<th ${th('center')}>${_hEsc(HSE_DIM_INFO[d.id].curto)}</th>`).join('')}</tr></thead><tbody>
+    ${recortes.map(r => `<tr><td style="padding:6px 6px;border-bottom:1px solid #e5e7eb;font-weight:600;text-align:left">${_hEsc(r.nome)}</td>
+      <td style="${td};font-weight:400">${r.res ? r.n : `&lt; ${HSE_N_MIN_PROVISORIO}`}</td>
+      ${r.res ? r.res.dims.map(d => `<td style="${td};background:${d.faixa ? HSE_COR_CLARA[d.faixa] : '#f3f4f6'};color:${d.faixa ? HSE_COR_TEXTO[d.faixa] : '#374151'}" title="${_hEsc(d.nome)}: ${d.faixa ? HSE_FAIXA[d.faixa] : ''}">${d.score != null ? _hseNum(d.score) : '—'}</td>`).join('')
+        : `<td colspan="${HSE_DIMS.length}" style="padding:6px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-style:italic;text-align:center">resultado omitido para preservar o anonimato (menos de ${HSE_N_MIN_PROVISORIO} respondentes)</td>`}</tr>`).join('')}
+  </tbody></table>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:${fonte - 2}px;color:#4b5563;margin-bottom:12px">${['VERMELHO', 'AMBAR', 'AZUL', 'VERDE'].map(f => `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${HSE_COR_CLARA[f]};border:1px solid ${HSE_COR[f]};vertical-align:middle"></span> ${HSE_FAIXA[f]}</span>`).join('')}</div>`;
+}
+// Barra empilhada desfavorável / neutro / favorável (respostas já normalizadas: 1–2 · 3 · 4–5).
+function _hseBarraFavHTML(fav, desf, alt = 8) {
+  if (fav == null || desf == null) return '';
+  const neu = Math.max(0, 1 - fav - desf);
+  const p = v => (v * 100).toFixed(1);
+  return `<div style="display:flex;height:${alt}px;border-radius:${alt / 2}px;overflow:hidden;background:#eef0f3;min-width:80px" title="Desfavoráveis ${Math.round(desf * 100)}% · neutras ${Math.round(neu * 100)}% · favoráveis ${Math.round(fav * 100)}%">
+    <i style="display:block;width:${p(desf)}%;background:${HSE_COR.VERMELHO}"></i><i style="display:block;width:${p(neu)}%;background:#cbd5e1"></i><i style="display:block;width:${p(fav)}%;background:${HSE_COR.VERDE}"></i></div>`;
+}
+const _pct0 = v => v == null ? '—' : Math.round(v * 100) + '%';
 // ==== HSE (S7) END ====
 
 // ==== HSE (S8b-UI) BEGIN — cadastro do critério de severidade por dimensão (só super_admin) ====
@@ -5587,7 +5894,7 @@ async function _laudoHSEContexto() {
   const campoResp = (document.getElementById('ld-responsavel')?.value || '').trim();
   // Sem fallback literal tipo "Responsável Técnico": placeholder impresso em laudo é defeito (a checagem barra).
   const responsavel = campoResp || _estPerfil?.responsavel_padrao || '';
-  const itensMeta = Object.values(_hseMetaCache);
+  const itensMeta = Object.values(_hseMetaDasLinhas(linhas)).sort((a, b) => a.ordem - b.ordem);
   const rascunhoQ = await _hseQuestionarioEhRascunho([...new Set(linhas.map(l => l.questionario_id))]);
   return {
     empId, cicloId, cicloNome: ciclo?.nome || '', nomeEmp: _empresas.find(e => e.id === empId)?.nome || '',
@@ -5621,6 +5928,7 @@ function _laudoHSEPreflight(c) {
   const ocultos = (c.gran !== 'consolidado' && c.grupos.length > 1)
     ? c.grupos.filter(g => _linhasDoGrupo(g, c.linhas).length < HSE_N_MIN_PROVISORIO) : [];
   if (ocultos.length) avisos.push(`${ocultos.length} recorte(s) com menos de ${HSE_N_MIN_PROVISORIO} respondentes terão o resultado omitido.`);
+  if (_hseVersoesNasLinhas(c.linhas) > 1) avisos.push('O recorte tem respostas de mais de uma versão do questionário HSE (o texto dos itens mudou durante a coleta). Os itens foram somados pelo código; confira se a comparação faz sentido.');
   if (c.rascunho) avisos.push('Os textos dos itens ainda NÃO foram validados (questionário marcado como rascunho). O documento sairá marcado como RASCUNHO e não pode ser entregue a cliente.');
   return { erros, avisos };
 }
@@ -5654,74 +5962,156 @@ tr:nth-child(even) td{background:#f9fafb}.num{text-align:right;white-space:nowra
 .ref{font-size:11px;color:#4b5563;line-height:1.6;margin-bottom:6px}
 .page-footer{margin-top:auto;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9.5px;color:#9ca3af}.page-footer .l1{display:flex;justify-content:space-between}.page-footer .ogl{font-size:8px;margin-top:3px;color:#9ca3af}
 .assinatura{margin-top:34px;width:280px}.assinatura .linha{border-top:1px solid #1a1a1a;margin-bottom:6px}.assinatura .nome{font-size:12px;font-weight:700;color:#111}.assinatura .reg{font-size:11px;color:#4b5563}
-.draft-tag{color:#b45309;font-weight:700}`;
+.draft-tag{color:#b45309;font-weight:700}
+.dim-head{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid #1a5e2a;border-radius:6px;padding:10px 12px;margin:4px 0 12px}
+.kpi-l{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af}.kpi-v{font-size:17px;font-weight:700;color:#111;line-height:1.3;margin-top:2px}.kpi-s{font-size:9px;color:#6b7280;margin-top:2px}
+.lista{margin:4px 0 10px 18px;font-size:11.5px;color:#374151;line-height:1.6}.lista li{margin-bottom:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}`;
 
-function _hseTabelaDimensoes(res) {
+// Linha de dimensão no formato do resumo: nome · barra (score, com a referência marcada) · score · ref · faixa · índice.
+function _hseLinhaResumoHTML(d) {
   const pct = v => Math.max(0, Math.min(100, (v - 1) / (HSE_ESCALA_MAX - 1) * 100));
-  const linhas = [...res.dims].sort((a, b) => (a.score ?? 99) - (b.score ?? 99));
-  return `<table><thead><tr><th>Dimensão</th><th class="num">Score</th><th>Posição (barra) · linha = referência</th><th class="num">Ref. 2023</th><th class="num">Dif.</th><th>Leitura</th><th class="num">Índice · zona fixa</th></tr></thead><tbody>${linhas.map(d => `<tr>
-    <td><strong>${_hEsc(d.nome)}</strong>${d.invertida ? '<div style="font-size:9px;color:#b45309">resposta invertida no cálculo</div>' : ''}<div style="font-size:9px;color:#9ca3af">${d.nItensEf} de ${d.nItens} itens</div></td>
-    <td class="num"><strong>${d.score != null ? d.score.toFixed(2) : '—'}</strong></td>
-    <td><div class="bar">${d.score != null ? `<i style="width:${pct(d.score).toFixed(1)}%;background:${d.faixa ? HSE_COR[d.faixa] : '#9ca3af'}"></i>` : ''}${d.ref != null ? `<b style="left:${pct(d.ref).toFixed(1)}%"></b>` : ''}</div></td>
-    <td class="num">${d.ref != null ? d.ref.toFixed(2) : '—'}</td>
-    <td class="num">${d.gap != null ? (d.gap >= 0 ? '+' : '') + d.gap.toFixed(2) : '—'}</td>
+  return `<tr class="nobreak">
+    <td><strong>${_hEsc(d.nome)}</strong>${d.invertida ? '<div style="font-size:9px;color:#b45309">resposta invertida no cálculo</div>' : ''}</td>
+    <td style="width:34%"><div class="bar">${d.score != null ? `<i style="width:${pct(d.score).toFixed(1)}%;background:${d.faixa ? HSE_COR[d.faixa] : '#9ca3af'}"></i>` : ''}${d.ref != null ? `<b style="left:${pct(d.ref).toFixed(1)}%"></b>` : ''}</div></td>
+    <td class="num"><strong>${d.score != null ? _hseNum(d.score) : '—'}</strong></td>
+    <td class="num">${d.ref != null ? _hseNum(d.ref) : '—'}</td>
+    <td class="num">${d.gap != null ? (d.gap >= 0 ? '+' : '') + _hseNum(d.gap) : '—'}</td>
     <td>${d.faixa ? `<span class="badge" style="background:${HSE_COR[d.faixa]}">${HSE_FAIXA[d.faixa]}</span>` : '—'}</td>
-    <td class="num">${_hseIndiceHTML(d.score)}</td></tr>`).join('')}</tbody></table>
-  <p style="font-size:10px;color:#6b7280">Índice de favorabilidade = (média − 1) ÷ 4, de 0 a 100 (um índice, não uma proporção de trabalhadores). As zonas fixas — verde ≥ 75 · amarela 40 a 74,99 · vermelha &lt; 40 — são uma leitura de referência usada por outros relatórios de mercado; a <strong>classificação deste documento é a coluna “Leitura”</strong>, relativa à média de referência do HSE 2023.</p>`;
+    <td class="num">${_hseIndiceHTML(d.score)}</td></tr>`;
+}
+function _hseTabelaDimensoes(res) {
+  const linhas = [...res.dims].sort((a, b) => (a.score ?? 99) - (b.score ?? 99));
+  return `<table><thead><tr><th>Dimensão</th><th>Score (barra) · linha = referência</th><th class="num">Score</th><th class="num">Ref. 2023</th><th class="num">Dif.</th><th>Leitura</th><th class="num">Índice · zona fixa</th></tr></thead>
+    <tbody>${linhas.map(_hseLinhaResumoHTML).join('')}</tbody></table>`;
+}
+
+// Página de UMA dimensão: cabeçalho com os números, o que avalia, o estado esperado, os itens (barra
+// desfavorável/neutro/favorável + média + índice), a comparação entre recortes e as ações sugeridas.
+function _hsePaginaDimensaoHTML(d, num, recortes, e) {
+  const info = HSE_DIM_INFO[d.id] || {};
+  const cor = d.faixa ? HSE_COR[d.faixa] : '#9ca3af';
+  const sentido = d.invertida
+    ? 'Nesta dimensão os itens descrevem situações negativas: para o respondente, <strong>“Nunca” é a melhor resposta</strong> e “Sempre” a pior. As médias abaixo já estão normalizadas (maior = melhor).'
+    : 'Nesta dimensão <strong>“Sempre” é a melhor resposta</strong> e “Nunca” a pior. Maior média = melhor condição.';
+  const kpi = (rot, val, sub = '') => `<div class="kpi"><div class="kpi-l">${rot}</div><div class="kpi-v">${val}</div>${sub ? `<div class="kpi-s">${sub}</div>` : ''}</div>`;
+  const itens = d.itens.map(s => `<tr class="nobreak">
+      <td style="white-space:nowrap;color:#6b7280">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td>
+      <td>${e(s.texto)}</td>
+      <td style="width:22%">${_hseBarraFavHTML(s.favoravel, s.desfavoravel)}<div style="font-size:8.5px;color:#6b7280;margin-top:2px">${_pct0(s.desfavoravel)} desfav. · ${_pct0(s.favoravel)} fav.</div></td>
+      <td class="num"><strong>${s.media != null ? _hseNum(s.media) : '—'}</strong></td>
+      <td class="num">${_hseIndiceHTML(s.media)}</td></tr>`).join('');
+  const comRes = (recortes || []).filter(r => r.res);
+  const porRecorte = (recortes || []).length > 1 ? `<div class="sec-title sub nobreak">Por recorte</div>
+    <table><thead><tr><th>Recorte</th><th class="num">n</th><th class="num">Score</th><th>Leitura</th><th class="num">Desfav. · Fav.</th></tr></thead><tbody>
+    ${recortes.map(r => { const x = r.res && r.res.dims.find(z => z.id === d.id); return x
+      ? `<tr><td>${e(r.nome)}</td><td class="num">${r.n}</td><td class="num"><strong>${_hseNum(x.score)}</strong></td><td>${x.faixa ? `<span class="badge" style="background:${HSE_COR[x.faixa]}">${HSE_FAIXA[x.faixa]}</span>` : '—'}</td><td class="num">${_pct0(x.desfavoravel)} · ${_pct0(x.favoravel)}</td></tr>`
+      : `<tr><td>${e(r.nome)}</td><td class="num">&lt; ${HSE_N_MIN_PROVISORIO}</td><td colspan="3" style="color:#6b7280;font-style:italic">omitido para preservar o anonimato</td></tr>`; }).join('')}</tbody></table>
+    ${comRes.length > 1 ? (() => { const o = _hseOndeDimensao(recortes, d.id, (n, v) => `<strong>${e(n)}</strong> (${_hseNum(v)})`);
+      return (o.urgente.length ? `<p style="font-size:11px">Ação urgente em: ${o.urgente.join(', ')}.${o.abaixo.length ? ` Também abaixo da referência: ${o.abaixo.join(', ')}.` : ''}</p>`
+        : o.abaixo.length ? `<p style="font-size:11px">Abaixo da referência em: ${o.abaixo.join(', ')}.</p>` : ''); })() : ''}` : '';
+  const pedeAcao = d.faixa === 'VERMELHO' || d.faixa === 'AMBAR';
+  const acoes = pedeAcao && info.acoes ? `<div class="sec-title sub nobreak">Ações sugeridas</div>
+    <div class="box nobreak"><p style="margin-bottom:6px">Pontos de partida para discutir com os trabalhadores e a liderança — confirme o diagnóstico (por exemplo, em grupos focais) antes de definir o plano:</p>
+    <ul class="lista">${info.acoes.map(a => `<li>${e(a)}</li>`).join('')}</ul></div>` : '';
+  return `<div class="sec-title">${num} ${e(d.nome)}</div>
+    <div class="dim-head nobreak" style="border-left-color:${cor}">
+      ${kpi('Score', d.score != null ? _hseNum(d.score) : '—', 'de 1 a 5 · maior = melhor')}
+      ${kpi('Referência HSE 2023', d.ref != null ? _hseNum(d.ref) : '—', d.gap != null ? `diferença ${(d.gap >= 0 ? '+' : '') + _hseNum(d.gap)}` : '')}
+      ${kpi('Leitura', d.faixa ? `<span class="badge" style="background:${cor};font-size:11px">${HSE_FAIXA[d.faixa]}</span>` : '—', d.faixa ? HSE_FAIXA_DESC[d.faixa] : '')}
+      ${kpi('Respostas', `${_pct0(d.desfavoravel)} <span style="font-size:10px;font-weight:500;color:#6b7280">desfav.</span> · ${_pct0(d.favoravel)} <span style="font-size:10px;font-weight:500;color:#6b7280">fav.</span>`, _hseBarraFavHTML(d.favoravel, d.desfavoravel, 7))}
+    </div>
+    <p><strong>O que avalia.</strong> ${e(info.avalia || '')}</p>
+    <div class="box"><strong>Estado esperado (HSE Management Standards).</strong> ${e(info.padrao || '')}</div>
+    <p style="font-size:10.5px;color:#4b5563">${sentido} Índice de favorabilidade: ${_hseIndiceHTML(d.score)} (referência; ver Metodologia).</p>
+    <table><thead><tr><th>Item</th><th>Enunciado</th><th>Respostas (desfav. · neutras · fav.)</th><th class="num">Média</th><th class="num">Índice · zona</th></tr></thead><tbody>${itens}</tbody></table>
+    ${porRecorte}${acoes}`;
 }
 
 // Documento COMPLETO. opts.preview=true → sem toolbar (vai para o iframe). Mesmo HTML nos dois destinos.
+// Estrutura (referência: relatório de mercado do outro player, sem os defeitos dele — ver nota 2026-10-08 §4):
+// capa · índice · 1 identificação · 2 metodologia · 3 resumo (uma página) · 4 uma página por dimensão ·
+// [5 comparação entre recortes] · risco para o PGR · plano de ação sugerido · limitações e responsabilidades · referências.
+// Sem score global como manchete (o HSE não define) e sem seção vazia: seção sem conteúdo não é emitida.
 function _buildLaudoHSEHTML(c, opts = {}) {
   const e = _hEsc;
   const estNome = c.estPerfil?.nome_empresa || 'PsicoMap';
   const logo = c.estPerfil?.logo_base64
     ? `<div class="cover-logo" style="background:white;padding:4px;border:1.5px solid #e5e7eb"><img src="${c.estPerfil.logo_base64}" style="width:100%;height:100%;object-fit:contain"></div>`
     : `<div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>`;
-  const geral = calcDimensoesHSE(c.linhas, _hseMetaCache, c.bench);
+  const meta = _hseMetaDasLinhas(c.linhas);
+  const geral = calcDimensoesHSE(c.linhas, meta, c.bench);
   const seloInd = c.leitura.indicativo
     ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> ${e(c.leitura.txt)}. O HSE considera os resultados confiáveis a partir de 50% de resposta; interprete com cautela e priorize a confirmação com os trabalhadores.</div>` : '';
   const seloRasc = c.rascunho
     ? `<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Os enunciados dos itens ainda não foram validados por profissional de SST nem têm uso autorizado. Este documento é de teste e não deve ser entregue a cliente.</div>` : '';
   const critNaoValidado = !_hseRiscoValidado(c.riscoCfg);
-  const seloCrit = critNaoValidado
-    ? `<div class="box draft"><span class="draft-tag">CRITÉRIO NÃO VALIDADO.</span> A severidade por dimensão usada na seção 4 ainda não foi validada por profissional de SST. Documento de teste; não deve ser entregue a cliente.</div>` : '';
   let pg = 0;
   const footer = (sec = '') => { pg++; return `<div class="page-footer"><div class="l1"><span>${e(estNome)}${(c.rascunho || critNaoValidado) ? ' · <span class="draft-tag">RASCUNHO</span>' : ''}</span><span>${sec ? e(sec) + ' · ' : ''}Página ${pg}</span></div><div class="ogl">${HSE_OGL}</div></div>`; };
 
-  // Recortes (granularidade escolhida). Recorte com n < mínimo NÃO exibe resultado.
+  // Recortes (granularidade escolhida). Recorte com n < mínimo NÃO exibe resultado — e diz que omitiu.
   const mostrarSeg = c.gran !== 'consolidado' && c.grupos.length > 1;
-  let segHTML = '', segRiscoHTML = '';
-  if (mostrarSeg) {
-    c.grupos.forEach(g => {
-      const ls = _linhasDoGrupo(g, c.linhas);
-      if (!ls.length) return;
-      const tit = `<div class="sec-title sub nobreak">${e(g.nome || 'Sem identificação')} · ${ls.length} respondente(s)</div>`;
-      segHTML += tit; segRiscoHTML += tit;
-      if (ls.length < HSE_N_MIN_PROVISORIO) {
-        const omit = `<p style="color:#6b7280">Resultado omitido: menos de ${HSE_N_MIN_PROVISORIO} respondentes, para preservar o anonimato.</p>`;
-        segHTML += omit; segRiscoHTML += omit;
-      } else {
-        const rs = calcDimensoesHSE(ls, _hseMetaCache, c.bench);
-        segHTML += _hseTabelaDimensoes(rs);
-        segRiscoHTML += _hseTabelaRiscoHTML(calcRiscoHSE(rs, c.riscoCfg), 'laudo');
-      }
-    });
-  }
+  const recortes = mostrarSeg ? _hseRecortes(c.grupos, c.linhas, meta, c.bench) : [];
+  const prioridades = _hsePrioridades(geral);
   const riscoGeral = calcRiscoHSE(geral, c.riscoCfg);
+  const nivelDe = id => riscoGeral.find(r => r.id === id)?.nivel || null;
+  const seloCrit = critNaoValidado
+    ? `<div class="box draft"><span class="draft-tag">CRITÉRIO NÃO VALIDADO.</span> A severidade por dimensão usada no risco para o PGR ainda não foi validada por profissional de SST. Documento de teste; não deve ser entregue a cliente.</div>` : '';
+
+  // Numeração corrida sobre o que entra de fato (seção opcional não deixa buraco na numeração).
+  const sec = []; const N = t => { sec.push(t); return sec.length; };
+  const nIdent = N('Identificação e amostra'), nMet = N('Metodologia'), nRes = N('Resumo dos resultados'), nDim = N('Análise por dimensão');
+  const nRec = recortes.length > 1 ? N('Comparação entre recortes') : null;
+  const nRisco = N('Risco psicossocial para o PGR'), nPlano = N('Plano de ação sugerido'), nLim = N('Limitações e responsabilidades'), nRef = N('Referências e atribuição');
+
+  // Escala declarada a partir dos itens de verdade (a v2 tem escala única; a v1, duas).
+  const escalas = new Set(Object.values(meta).map(i => i.escala_labels || 'freq'));
+  const txtEscala = escalas.has('concord')
+    ? 'em escala de 1 a 5 — frequência (Nunca a Sempre) nos itens de 1 a 23 e concordância (Discordo totalmente a Concordo totalmente) nos itens de 24 a 35'
+    : 'numa escala única de frequência de 1 a 5 (Nunca, Raramente, Às vezes, Frequentemente, Sempre)';
+  const pctGeral = c.taxa != null ? Math.round(c.taxa * 100) + '%' : 'não calculável';
+
   // Matriz 4×4 impressa (a mesma MATRIZ_RISCO do cálculo) — o leitor confere o critério sem abrir o sistema.
   const matrizHTML = `<table style="width:auto"><thead><tr><th></th>${[1, 2, 3, 4].map(s => `<th class="num">S${s} ${e(S_LABELS[s])}</th>`).join('')}</tr></thead><tbody>${[4, 3, 2, 1].map(p => `<tr><td><strong>P${p}</strong></td>${[1, 2, 3, 4].map(s => { const n = MATRIZ_RISCO[`${p}_${s}`]; return `<td class="num" style="background:${LAUDO_NIVEL_BG[n]};color:${LAUDO_NIVEL_TX[n]};font-weight:700">${n}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
   const sevHTML = `<table><thead><tr><th>Dimensão</th><th class="num">S</th><th>Severidade</th><th>Possíveis danos</th></tr></thead><tbody>${HSE_DIMS.map(d => { const r = c.riscoCfg?.[d.id]; return `<tr><td>${e(d.nome)}</td><td class="num">${r?.severidade ?? '—'}</td><td>${e(S_LABELS[r?.severidade] || '')}</td><td style="font-size:10px">${e(r?.danos || '')}</td></tr>`; }).join('')}</tbody></table>`;
   const validadoPor = (() => { const v = HSE_DIMS.map(d => c.riscoCfg?.[d.id]).filter(r => r?.validado && r.validado_por); return v.length ? [...new Set(v.map(r => r.validado_por))].join('; ') : ''; })();
-  const itensHTML = geral.dims.map(d => `<div class="nobreak"><div class="sec-title sub">${e(d.nome)} — score ${d.score != null ? d.score.toFixed(2) : '—'}</div>
-    <p style="font-size:10px;color:#6b7280">${d.invertida ? 'Dimensão com resposta invertida: “Nunca” é a melhor resposta; a média abaixo já está normalizada (maior = melhor).' : 'Maior = melhor.'}</p>
-    <table><thead><tr><th>Item</th><th>Enunciado</th><th class="num">Média</th><th class="num">Índice · zona fixa</th><th class="num">n</th></tr></thead><tbody>${d.itens.map(s => `<tr><td style="white-space:nowrap">${e(s.codigo)}${s.inversa ? ' ↺' : ''}</td><td>${e(s.texto)}</td><td class="num">${s.media != null ? s.media.toFixed(2) : '—'}</td><td class="num">${_hseIndiceHTML(s.media)}</td><td class="num">${s.n}</td></tr>`).join('')}</tbody></table></div>`).join('');
+  const segRiscoHTML = recortes.length > 1 ? recortes.map(r => `<div class="sec-title sub nobreak">${e(r.nome)} · ${r.res ? r.n + ' respondente(s)' : 'menos de ' + HSE_N_MIN_PROVISORIO}</div>
+    ${r.res ? _hseTabelaRiscoHTML(calcRiscoHSE(r.res, c.riscoCfg), 'laudo') : `<p style="color:#6b7280">Resultado omitido: menos de ${HSE_N_MIN_PROVISORIO} respondentes, para preservar o anonimato.</p>`}`).join('') : '';
 
-  const prioridades = geral.dims.filter(d => d.faixa === 'VERMELHO' || d.faixa === 'AMBAR').sort((a, b) => a.score - b.score);
-  const recom = prioridades.length
-    ? `<p>Dimensões que pedem atenção, da mais crítica para a menos crítica (posição em relação à média de referência): ${prioridades.map(d => `<strong>${e(d.nome)}</strong> (${HSE_FAIXA[d.faixa].toLowerCase()})`).join('; ')}.</p>`
-    : `<p>Nenhuma dimensão ficou abaixo da média de referência neste recorte.</p>`;
+  // Resumo: pontos de atenção e favoráveis (sem score global).
+  const fortes = geral.dims.filter(d => d.faixa === 'VERDE').sort((a, b) => b.score - a.score);
+  const listaDims = arr => arr.map(d => `<li><strong>${e(d.nome)}</strong> — ${_hseNum(d.score)} (${HSE_FAIXA[d.faixa].toLowerCase()})</li>`).join('');
+  const kpiR = (rot, val, sub = '') => `<div class="kpi"><div class="kpi-l">${rot}</div><div class="kpi-v">${val}</div>${sub ? `<div class="kpi-s">${sub}</div>` : ''}</div>`;
+  const resumoHTML = `<div class="sec-title">${nRes}. Resumo dos resultados</div>
+    <div class="dim-head nobreak" style="border-left-color:#1a5e2a">
+      ${kpiR('Respondentes', c.linhas.length, c.linhas.length !== c.todas.length ? `de ${c.todas.length} no ciclo` : 'no ciclo')}
+      ${kpiR('Taxa de resposta', pctGeral, e(c.leitura.txt.replace(/^Taxa de resposta \d+% — /, '')))}
+      ${kpiR('Pedem ação', `${prioridades.length} de ${HSE_DIMS.length}`, 'dimensões abaixo da referência')}
+      ${kpiR('Favoráveis', `${fortes.length} de ${HSE_DIMS.length}`, 'dimensões “Muito bem”')}
+    </div>
+    ${seloInd}
+    <p>Score de cada dimensão de 1 a 5 (maior = melhor), comparado com a média de referência do HSE (linha preta na barra). Ordem: da pior para a melhor.</p>
+    ${_hseTabelaDimensoes(geral)}
+    <table class="nobreak" style="width:100%;margin-top:4px"><thead><tr><th colspan="4">Como ler a coluna “Leitura”</th></tr></thead><tbody><tr>${['VERMELHO', 'AMBAR', 'AZUL', 'VERDE'].map(f => `<td style="width:25%"><span class="badge" style="background:${HSE_COR[f]}">${HSE_FAIXA[f]}</span><div style="font-size:9.5px;color:#4b5563;margin-top:3px">${HSE_FAIXA_DESC[f]}</div></td>`).join('')}</tr></tbody></table>
+    <div class="g2 nobreak">
+      <div><div class="sec-title sub">Pontos de atenção</div>${prioridades.length ? `<ul class="lista">${listaDims(prioridades)}</ul>` : '<p>Nenhuma dimensão abaixo da média de referência.</p>'}</div>
+      <div><div class="sec-title sub" style="background:#166534">Pontos favoráveis</div>${fortes.length ? `<ul class="lista">${listaDims(fortes)}</ul>` : '<p>Nenhuma dimensão 0,40 ou mais acima da referência.</p>'}</div>
+    </div>`;
 
-  const itensIndice = ['Identificação e amostra', 'Metodologia', 'Resultados por dimensão', 'Risco psicossocial para o PGR', 'Detalhamento por item', 'Recomendações e próximos passos', 'Referências e atribuição'];
+  // Uma página por dimensão, na ordem do instrumento (Demandas … Mudanças) — o leitor encontra cada uma no mesmo lugar.
+  const paginasDim = geral.dims.map((d, i) => `<div class="page">${i === 0 ? `<div class="sec-title" style="background:#111827">${nDim}. Análise por dimensão</div><p>Uma página por dimensão do HSE: o que ela avalia, o estado esperado segundo os Management Standards, o resultado de cada item e, quando houver, a comparação entre recortes e ações sugeridas.</p>` : ''}
+    ${_hsePaginaDimensaoHTML(d, `${nDim}.${i + 1}`, recortes, e)}
+    ${footer(d.nome)}</div>`).join('');
+
+  const planoHTML = prioridades.length
+    ? `<table><thead><tr><th class="num">#</th><th>Dimensão</th><th>Leitura</th><th>Nível (PGR)</th><th>Ações sugeridas para discutir</th></tr></thead><tbody>
+      ${prioridades.map((d, i) => { const nv = nivelDe(d.id); return `<tr class="nobreak"><td class="num"><strong>${i + 1}</strong></td><td><strong>${e(d.nome)}</strong><div style="font-size:9px;color:#6b7280">${_hseNum(d.score)} · ref. ${_hseNum(d.ref)}</div></td>
+        <td><span class="badge" style="background:${HSE_COR[d.faixa]}">${HSE_FAIXA[d.faixa]}</span></td>
+        <td>${nv ? `<span class="badge" style="background:${LAUDO_NIVEL_BG[nv]};color:${LAUDO_NIVEL_TX[nv]};border:1px solid rgba(0,0,0,.1)">${nv}</span>` : '—'}</td>
+        <td><ul class="lista" style="margin:0">${(HSE_DIM_INFO[d.id]?.acoes || []).slice(0, 3).map(a => `<li>${e(a)}</li>`).join('')}</ul></td></tr>`; }).join('')}</tbody></table>`
+    : `<p>Nenhuma dimensão ficou abaixo da média de referência neste recorte. Recomenda-se manter as práticas atuais, acompanhar os recortes com resultado próprio e repetir a avaliação no próximo ciclo.</p>`;
+
+  const itensIndice = sec;
   const toolbar = opts.preview ? '' : `<div class="toolbar no-print"><span class="tt">${e(estNome)} — Laudo Técnico (HSE)</span><span style="font-size:11px;color:#9ca3af">${e(c.nomeEmp)} · ${e(c.hoje)}</span>
     <button class="btn-print" onclick="if (window.opener && window.opener._registrarLaudo) window.opener._registrarLaudo(); window.print()">Imprimir / PDF</button>
     <button class="btn-outline" onclick="window.close()">Fechar</button></div>`;
@@ -5733,41 +6123,48 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   <div class="cover-header">${logo}<div class="cover-company"><div class="cover-company-name">${e(estNome)}</div><div class="cover-company-sub">${e(c.estPerfil?.endereco || '')}</div></div></div>
   <div class="cover-body"><div class="cover-tag">Laudo técnico</div>
     <div class="cover-title">Avaliação de fatores psicossociais do trabalho</div>
-    <div class="cover-subtitle">HSE Management Standards — escala ICAO-35</div>
+    <div class="cover-subtitle">HSE Management Standards — 35 itens, 7 dimensões</div>
     ${seloRasc}${seloCrit}
     <div class="cover-meta">
-      ${[['Empresa avaliada', c.nomeEmp], ['Ciclo de avaliação', c.cicloNome], ['Respondentes no recorte', c.linhas.length + ' colaboradores'], ['Data de emissão', c.hoje], ['Responsável técnico', c.responsavel]]
+      ${[['Empresa avaliada', c.nomeEmp], ['Ciclo de avaliação', c.cicloNome], ['Respondentes no recorte', c.linhas.length + ' colaboradores'], ['Taxa de resposta', pctGeral], ['Data de emissão', c.hoje], ['Responsável técnico', c.responsavel]]
         .map(([k, v]) => `<div><div class="cover-meta-label">${e(k)}</div><div class="cover-meta-value">${e(v)}</div></div>`).join('')}
     </div></div>
   ${footer('Capa')}
 </div>
 <div class="page"><div class="sec-title">Índice</div><ul class="indice-lista">${itensIndice.map((t, i) => `<li>${i + 1}. ${e(t)}</li>`).join('')}</ul>${footer('Índice')}</div>
-<div class="page"><div class="sec-title">1. Identificação e amostra</div>
+<div class="page"><div class="sec-title">${nIdent}. Identificação e amostra</div>
   <table><tbody>
     <tr><td><strong>Empresa</strong></td><td>${e(c.nomeEmp)}</td></tr>
     <tr><td><strong>Ciclo</strong></td><td>${e(c.cicloNome)}</td></tr>
     <tr><td><strong>Respostas no ciclo</strong></td><td>${c.todas.length}</td></tr>
     <tr><td><strong>Respondentes neste recorte</strong></td><td>${c.linhas.length}</td></tr>
     <tr><td><strong>Quadro de funcionários</strong></td><td>${c.headcount ? c.headcount : 'não cadastrado'}</td></tr>
-    <tr><td><strong>Taxa de resposta</strong></td><td>${c.taxa != null ? Math.round(c.taxa * 100) + '%' : 'não calculável'} — ${e(c.leitura.txt)}</td></tr>
+    <tr><td><strong>Taxa de resposta</strong></td><td>${pctGeral} — ${e(c.leitura.txt)}</td></tr>
+    ${recortes.length > 1 ? `<tr><td><strong>${e(_rotuloGranularidade(c.gran))}</strong></td><td>${recortes.map(r => `${e(r.nome)} (${r.res ? r.n : 'menos de ' + HSE_N_MIN_PROVISORIO})`).join('; ')}</td></tr>` : ''}
   </tbody></table>
   ${seloInd}
   <p>A taxa de resposta é um indicador de confiabilidade: o HSE considera adequada acima de 50%, desejável acima de 60%, boa acima de 70% e muito boa acima de 80%. Resultados com taxa menor devem ser tratados como indicativos.</p>
   ${footer('Identificação e amostra')}</div>
-<div class="page"><div class="sec-title">2. Metodologia</div>
-  <p>O HSE Management Standards Indicator Tool é um questionário de 35 itens, desenvolvido pelo <em>Health and Safety Executive</em> (Reino Unido), que mede a percepção dos trabalhadores sobre sete dimensões do ambiente de trabalho: Demandas, Controle, Apoio da gestão, Suporte dos colegas, Relacionamentos, Clareza de papel e Mudanças. A coleta é anônima e refere-se aos últimos 6 meses de trabalho.</p>
-  <p>Cada item é respondido em escala de 1 a 5 (frequência nos itens 1 a 23; concordância nos itens 24 a 35). Os itens das dimensões <strong>Demandas</strong> e <strong>Relacionamentos</strong> são formulados em sentido negativo e têm a pontuação invertida no cálculo. O score de cada dimensão é a média simples das médias de seus itens, variando de 1,00 a 5,00, e <strong>quanto maior, melhor a condição percebida</strong> (direção oposta à da metodologia BS 8800). Não existe score global oficial.</p>
-  <p>Cada dimensão é comparada à média de referência do relatório de benchmarking do HSE (2023, ${e(String(39484))} respondentes): <strong>${HSE_FAIXA.VERMELHO}</strong> (mais de 0,50 abaixo da média), <strong>${HSE_FAIXA.AMBAR}</strong> (abaixo da média), <strong>${HSE_FAIXA.AZUL}</strong> (até 0,40 acima) e <strong>${HSE_FAIXA.VERDE}</strong> (acima disso). Essas faixas são relativas à referência adotada por esta consultoria — não são percentis oficiais do HSE. A base do HSE reúne organizações que escolheram usar a ferramenta e não é uma amostra nacional representativa.</p>
-  <p>Resultados de recortes com menos de ${HSE_N_MIN_PROVISORIO} respondentes não são exibidos, para preservar o anonimato. Este documento descreve a percepção dos trabalhadores em um momento; não constitui avaliação clínica nem substitui outras avaliações exigidas pela legislação aplicável.</p>
+<div class="page"><div class="sec-title">${nMet}. Metodologia</div>
+  <p>O HSE Management Standards Indicator Tool é um questionário de 35 itens, desenvolvido pelo <em>Health and Safety Executive</em> (Reino Unido), que mede a percepção dos trabalhadores sobre sete dimensões do trabalho associadas ao estresse ocupacional. A coleta é anônima e refere-se aos últimos 6 meses de trabalho.</p>
+  <table><thead><tr><th>Dimensão</th><th>O que avalia</th><th class="num">Itens</th><th>Sentido da resposta</th></tr></thead><tbody>
+    ${geral.dims.map(d => `<tr><td><strong>${e(d.nome)}</strong></td><td style="font-size:10.5px">${e(HSE_DIM_INFO[d.id]?.avalia || '')}</td><td class="num">${d.nItens}</td><td style="font-size:10.5px">${d.invertida ? '“Nunca” é o melhor (invertido no cálculo)' : '“Sempre” é o melhor'}</td></tr>`).join('')}
+  </tbody></table>
+  <p>Cada item é respondido ${txtEscala}. Os itens das dimensões <strong>Demandas</strong> e <strong>Relacionamentos</strong> descrevem situações negativas e têm a pontuação invertida no cálculo (6 − resposta). O score de cada dimensão é a média das médias de seus itens, de 1,00 a 5,00, e <strong>quanto maior, melhor a condição percebida</strong> (direção oposta à da metodologia BS 8800). O HSE não define score global; por isso este documento não apresenta uma nota única.</p>
+  <p>Cada dimensão é comparada à média de referência do relatório de benchmarking do HSE (2023, 39.484 respondentes): <strong>${HSE_FAIXA.VERMELHO}</strong> (${HSE_FAIXA_DESC.VERMELHO}), <strong>${HSE_FAIXA.AMBAR}</strong> (${HSE_FAIXA_DESC.AMBAR}), <strong>${HSE_FAIXA.AZUL}</strong> (${HSE_FAIXA_DESC.AZUL}) e <strong>${HSE_FAIXA.VERDE}</strong> (${HSE_FAIXA_DESC.VERDE}). As faixas são relativas à referência adotada por esta consultoria — não são percentis oficiais do HSE —, e a base do HSE reúne organizações que escolheram usar a ferramenta, não uma amostra nacional representativa.</p>
+  <p>Como leitura complementar, o documento mostra o <strong>índice de favorabilidade</strong> — (média − 1) ÷ 4, de 0 a 100 —, com as <strong>zonas fixas</strong> usadas por relatórios de mercado (verde ≥ 75 · amarela 40 a 74,99 · vermelha &lt; 40), e a proporção de respostas <strong>favoráveis</strong> (4 e 5, depois da normalização) e <strong>desfavoráveis</strong> (1 e 2). O índice não é uma proporção de trabalhadores, e a classificação deste documento é a coluna “Leitura”.</p>
+  <p>Resultados de recortes com menos de ${HSE_N_MIN_PROVISORIO} respondentes não são exibidos, para preservar o anonimato.</p>
   ${footer('Metodologia')}</div>
-<div class="page"><div class="sec-title">3. Resultados por dimensão</div>
-  <p>Score de 1 a 5 (maior = melhor). A linha preta na barra marca a média de referência; as dimensões estão ordenadas da menor para a maior pontuação.</p>
-  <div class="sec-title sub">Geral · ${c.linhas.length} respondente(s)</div>
-  ${_hseTabelaDimensoes(geral)}
-  ${segHTML}
-  ${footer('Resultados')}</div>
-<div class="page"><div class="sec-title">4. Risco psicossocial para o PGR</div>
+<div class="page">${resumoHTML}${footer('Resumo')}</div>
+${paginasDim}
+${nRec ? `<div class="page"><div class="sec-title">${nRec}. Comparação entre recortes</div>
+  <p>Score de cada dimensão por recorte (${e(_rotuloGranularidade(c.gran).toLowerCase())}), com a cor da leitura em relação à média de referência. Recortes com menos de ${HSE_N_MIN_PROVISORIO} respondentes têm o resultado omitido.</p>
+  ${_hseMapaRecortesHTML(recortes, { fonte: 10.5 })}
+  ${recortes.filter(r => r.res).map(r => { const pr = _hsePrioridades(r.res); return pr.length ? `<p style="font-size:11px"><strong>${e(r.nome)}:</strong> ${pr.map(d => `${e(d.nome)} (${HSE_FAIXA[d.faixa].toLowerCase()})`).join('; ')}.</p>` : ''; }).join('')}
+  ${footer('Comparação entre recortes')}</div>` : ''}
+<div class="page"><div class="sec-title">${nRisco}. Risco psicossocial para o PGR</div>
   <p>O inventário de riscos do PGR exige um nível de risco para cada fator. O HSE, por si só, não o fornece: ele classifica a condição percebida de cada dimensão. Para essa finalidade esta consultoria adota o critério descrito abaixo. <strong>Este critério não faz parte do instrumento HSE</strong> e não é comparável ao nível de risco calculado pela metodologia BS 8800.</p>
+  ${seloCrit}
   <div class="box"><strong>Critério adotado.</strong> <strong>P</strong> (1 a 4) é dado pela faixa da dimensão no HSE: ${e(HSE_FAIXA.VERMELHO)} = P4; ${e(HSE_FAIXA.AMBAR)} = P3; ${e(HSE_FAIXA.AZUL)} = P2; ${e(HSE_FAIXA.VERDE)} = P1. <strong>S</strong> (1 a 4) é fixa por dimensão, definida por profissional de SST (tabela abaixo)${validadoPor ? ` — validada por ${e(validadoPor)}` : ''}. O <strong>nível</strong> resulta da matriz P × S.</div>
   ${c.leitura.indicativo ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> Com a taxa de resposta atual os níveis abaixo devem ser confirmados com os trabalhadores antes de integrar o inventário.</div>` : ''}
   <div class="sec-title sub">Geral · ${c.linhas.length} respondente(s)</div>
@@ -5776,17 +6173,27 @@ function _buildLaudoHSEHTML(c, opts = {}) {
   <div class="sec-title sub nobreak">Severidade por dimensão e matriz</div>
   ${sevHTML}${matrizHTML}
   ${footer('Risco para o PGR')}</div>
-<div class="page"><div class="sec-title">5. Detalhamento por item</div>
-  <p>Média de cada item após a normalização (maior = melhor). ↺ indica item cuja resposta foi invertida no cálculo.</p>
-  ${itensHTML}
-  ${footer('Itens')}</div>
-<div class="page"><div class="sec-title">6. Recomendações e próximos passos</div>
-  ${recom}
-  <p>O método do HSE não termina no questionário: os resultados devem ser confirmados com os trabalhadores (por exemplo, em <strong>grupos focais</strong>) antes de definir as ações. Recomenda-se priorizar, nessas conversas, as dimensões indicadas acima, comparar os achados com o que a organização já conhece de seus processos e acompanhar a evolução em avaliações periódicas, mantendo o mesmo instrumento para preservar a comparabilidade.</p>
+<div class="page"><div class="sec-title">${nPlano}. Plano de ação sugerido</div>
+  <p>Dimensões em ordem de prioridade (primeiro “${e(HSE_FAIXA.VERMELHO)}”, depois “${e(HSE_FAIXA.AMBAR)}”; dentro da faixa, o menor score). As ações são pontos de partida: o método do HSE não termina no questionário, e os resultados devem ser confirmados com os trabalhadores — por exemplo, em <strong>grupos focais</strong> — antes de definir responsáveis, prazos e recursos.</p>
+  ${planoHTML}
+  <p>Recomenda-se acompanhar a evolução em avaliações periódicas, mantendo o mesmo instrumento para preservar a comparabilidade, e registrar no PGR as medidas adotadas e seus responsáveis.</p>
   <div class="assinatura nobreak"><div class="linha"></div><div class="nome">${e(c.responsavel)}</div>${c.registro ? `<div class="reg">${e(c.registro)}</div>` : ''}<div class="reg">${e(c.hoje)}</div></div>
-  ${footer('Recomendações')}</div>
-<div class="page"><div class="sec-title">7. Referências e atribuição</div>
+  ${footer('Plano de ação')}</div>
+<div class="page"><div class="sec-title">${nLim}. Limitações e responsabilidades</div>
+  <div class="sec-title sub">Limitações</div>
+  <ul class="lista">
+    <li>O resultado descreve a <strong>percepção</strong> dos trabalhadores no período avaliado; não constitui avaliação clínica, diagnóstico individual nem substitui outras avaliações exigidas pela legislação aplicável.</li>
+    <li>A participação é voluntária e anônima: nenhum dado identifica o respondente, e recortes com menos de ${HSE_N_MIN_PROVISORIO} pessoas não têm resultado exibido.</li>
+    <li>A confiabilidade depende da taxa de resposta (${pctGeral} neste ciclo).${c.leitura.indicativo ? ' Abaixo de 50%, os resultados são apenas indicativos.' : ''}</li>
+    <li>A média de referência do HSE vem de organizações do Reino Unido que escolheram usar a ferramenta; serve de parâmetro, não de padrão nacional.</li>
+    <li>O nível de risco para o PGR resulta de critério adotado pela consultoria, descrito na seção ${nRisco}, e não é parte do instrumento HSE.</li>
+  </ul>
+  <div class="sec-title sub">Responsabilidades</div>
+  <p>Cabe à consultoria a aplicação do instrumento, o tratamento dos dados e a análise apresentada neste documento. Cabe à empresa avaliada definir e implementar as medidas de prevenção, integrá-las ao Programa de Gerenciamento de Riscos e acompanhar sua efetividade, com a participação dos trabalhadores.</p>
+  ${footer('Limitações')}</div>
+<div class="page"><div class="sec-title">${nRef}. Referências e atribuição</div>
   <p class="ref"><strong>HSE — Health and Safety Executive.</strong> Management Standards Indicator Tool (questionário de 35 itens) e Analysis Tool. https://www.hse.gov.uk/stress/standards/downloads.htm</p>
+  <p class="ref"><strong>HSE.</strong> Management Standards — "What are the Management Standards?". https://www.hse.gov.uk/stress/standards/</p>
   <p class="ref"><strong>HSE.</strong> Stress Indicator Tool — Benchmarking Report, agosto/2023.</p>
   <p class="ref"><strong>Escala ICAO</strong> — adaptação brasileira do HSE Management Standards Indicator Tool. Revista Psicologia: Organizações e Trabalho, 20(3), 1141-1149, 2020.</p>
   <div class="box"><strong>Atribuição.</strong> ${HSE_OGL} Este documento não é endossado pelo Health and Safety Executive nem pelo governo do Reino Unido.</div>
@@ -5829,7 +6236,7 @@ async function gerarLaudoHSE(win) {
     risco: {
       versao: Math.max(...HSE_DIMS.map(d => c.riscoCfg?.[d.id]?.versao || 1)), validado: _hseRiscoValidado(c.riscoCfg),
       severidades: Object.fromEntries(HSE_DIMS.map(d => [d.id, c.riscoCfg?.[d.id]?.severidade ?? null])),
-      linhas: calcRiscoHSE(calcDimensoesHSE(c.linhas, _hseMetaCache, c.bench), c.riscoCfg).map(r => ({ dimensao: r.id, faixa: r.faixa, p: r.p, s: r.s, nivel: r.nivel })),
+      linhas: calcRiscoHSE(calcDimensoesHSE(c.linhas, _hseMetaDasLinhas(c.linhas), c.bench), c.riscoCfg).map(r => ({ dimensao: r.id, faixa: r.faixa, p: r.p, s: r.s, nivel: r.nivel })),
     },
   };
   win.document.open(); win.document.write(_buildLaudoHSEHTML(c, { preview: false })); win.document.close();
@@ -7084,8 +7491,8 @@ function popularSelectCiclos(empresaId) {
   const ciclosFiltrados = empresaId
     ? _ciclos.filter(c => c.empresa_id === empresaId)
     : _ciclos;
-  el.innerHTML = `<option value="">${_hseAtivo() ? 'Sem ciclo (usa BS 8800)' : 'Sem ciclo'}</option>` +
-    ciclosFiltrados.map(c => `<option value="${c.id}">${_cicloLabel(c)}</option>`).join('');
+  _preencherCiclosAgrupados(el, ciclosFiltrados, _hseAtivo() ? 'Sem ciclo (usa BS 8800)' : 'Sem ciclo');
+  _nlMostrarInstrumento();
 }
 
 // ══════════════════════════════════════════
@@ -7817,6 +8224,7 @@ async function rodarAnalise() {
   panel.innerHTML = _loadingState('Carregando respostas…');
   const emp      = document.getElementById('f-empresa').value;
   const cicloSel = document.getElementById('f-ciclo')?.value || '';
+  _sincronizarFiltrosMetodologia('sc-analise', cicloSel);
   if (cicloSel && _metodologiaDoCiclo(cicloSel) === METODOLOGIA_HSE) {   // perfil HSE: motor e tela próprios
     await rodarAnaliseHSE(panel, emp, cicloSel);
     return;
@@ -12002,6 +12410,19 @@ function setMetTab(id, btn) {
   if (panel) panel.style.display = 'block';
   if (id === 'calculo') renderMatrizMetodologia();
   if (id === 'instrumento') renderMapaQuestoes();
+  if (id === 'hse') _renderAbaHSE();
+}
+// Atalho do modal "Novo ciclo" ("Qual escolher?") para a aba de comparação.
+function _abrirMetodologiaHSE() {
+  if (goScreen('metodologia') === false) return;
+  setTimeout(() => { const b = document.getElementById('met-tab-hse'); if (b && b.style.display !== 'none') setMetTab('hse', b); }, 60);
+}
+// Tabela das 7 dimensões da aba, gerada de HSE_DIM_INFO (fonte única).
+function _renderAbaHSE() {
+  const box = document.getElementById('mtp-hse-dims');
+  if (!box || box.dataset.ok) return;
+  box.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg2)"><th style="text-align:left;padding:7px 9px">Dimensão</th><th style="text-align:left;padding:7px 9px">O que avalia</th><th style="text-align:left;padding:7px 9px">Sentido</th></tr></thead><tbody>${HSE_DIMS.map(d => `<tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap">${_hEsc(d.nome)}</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">${_hEsc(HSE_DIM_INFO[d.id].avalia)}</td><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-size:11px;color:var(--tm)">${d.id === 'DEMANDS' || d.id === 'RELATIONSHIPS' ? '“Nunca” é o melhor (invertido)' : '“Sempre” é o melhor'}</td></tr>`).join('')}</tbody></table>`;
+  box.dataset.ok = '1';
 }
 
 function renderTelaMetodologia() {
@@ -13914,7 +14335,7 @@ function calcDistribuicaoQuestoes(linhas) {
 // ── RENDER PRINCIPAL ──
 async function renderGraficos() {
   const emp      = document.getElementById('gf-empresa').value;
-  if (_guardaTelaBS(document.getElementById('gf-ciclo')?.value || '', document.getElementById('graficos-panel'), 'prevista na fase 1.1')) return;
+  if (_guardaTelaBS(document.getElementById('gf-ciclo')?.value || '', document.getElementById('graficos-panel'), 'Esta tela mostra a distribuição das 27 questões do BS 8800. No HSE, as barras por dimensão e por item (com respostas favoráveis e desfavoráveis) estão em Resultados e no Relatório.')) return;
   const todosDados = await getLinhasParaAnalise(emp);
   // Mesma função que a conferência do acumulado de presets usa para medir cada preset.
   const linhas   = _filtroGraficos(_presetConfigAtual('graficos'), todosDados);
@@ -15610,6 +16031,7 @@ async function renderLaudo() {
   const seq = ++_laudoRenderSeq;
   const emp     = document.getElementById('ld-empresa').value;
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
+  _sincronizarFiltrosMetodologia('sc-laudo', cicloId);
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE: gerador único (preview = PDF)
     await _laudoHSEPreview(document.getElementById('laudo-preview-panel'), seq);
     return;
@@ -19375,7 +19797,7 @@ async function renderTelaAuditoria() {
 
   const panel = document.getElementById('audit-table-panel');
   if (!panel) return;
-  if (_guardaTelaBS(cicloId, panel, 'prevista na fase 1.1')) return;
+  if (_guardaTelaBS(cicloId, panel, 'A auditoria resposta a resposta ainda não existe para o HSE (prevista na fase 1.1). Os resultados agregados estão em Resultados e no Relatório.')) return;
 
   // Buscar dados
   let todosLinhas = await getLinhasParaAnalise(empId || null);
@@ -21294,14 +21716,11 @@ function _ordenarCiclosPorPeriodo(lista) {
 function preencherSelectCiclos(selId, empId) {
   const sel = document.getElementById(selId);
   if (!sel) return;
-  sel.innerHTML = '<option value="">Todos os ciclos</option>';
-  if (!empId) return;
+  if (!empId) { sel.innerHTML = '<option value="">Todos os ciclos</option>'; return; }
   const lista = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
-  lista.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = _cicloLabel(c);
-    sel.appendChild(opt);
-  });
+  // "Todos" nunca soma metodologias diferentes: com ciclo HSE na empresa, o rótulo diz que é só BS 8800.
+  const todos = (_hseAtivo() && lista.some(_cicloEhHSE)) ? 'Todos os ciclos BS 8800' : 'Todos os ciclos';
+  _preencherCiclosAgrupados(sel, lista, todos);
   // preserva o ciclo do contexto global quando ele pertence a esta empresa
   if (_cicloAtivo && lista.some(c => c.id === _cicloAtivo)) sel.value = _cicloAtivo;
 }
@@ -21562,7 +21981,7 @@ async function renderPlanoAcao() {
   // Atualizar select de ciclos
   preencherSelectCiclos('plano-ciclo', empId);
   if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
-  if (_guardaTelaBS(cicloId, panel, 'prevista na fase 1.1')) return;
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderPlanoAcaoHSE(panel, empId, cicloId); return; }
 
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
 

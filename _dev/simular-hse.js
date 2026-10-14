@@ -24,6 +24,9 @@
  *   --ruido X        desvio-padrão do sorteio por item, em pontos de escala (padrão 0.8)
  *   --seed S         semente do sorteio (padrão 1) — mesma semente, mesmas respostas
  *   --dry            não envia nada; só mostra o que enviaria e os escores esperados
+ *   --fixture ARQ    OFFLINE: não acessa a rede; grava em ARQ as respostas que ENVIARIA (mesmo sorteio do envio real,
+ *                    inclusive função e escolaridade) + os 35 itens da v2, para o harness do navegador e o teste do motor.
+ *                    Com --seed 2026 e os mesmos --setores do estado de DEV, reproduz as 66 respostas gravadas lá.
  *
  * CONVENÇÃO (a mesma do motor do sistema): "escore" do item = alto é melhor, DEPOIS da inversão.
  * Em Demandas e Relacionamentos a resposta BRUTA é o espelho (raw = 6 − escore); o simulador sorteia o escore
@@ -99,9 +102,44 @@ async function rpc(url, anon, nome, corpo) {
   return { ok: r.ok, status: r.status, corpo: j };
 }
 
+// Modo --fixture: mesmo sorteio do envio real (gerarRespondente → função → escolaridade, nesta ordem), sem rede.
+// Os itens vêm do seed da v2 (texto real), com ids sintéticos "v2-Hnn" e questionario_id da v2 de DEV.
+function gerarFixture(arquivo) {
+  const fs = require('fs'), path = require('path');
+  const seedSql = fs.readFileSync(path.join(__dirname, '..', 'seed_hse_icao35_ptbr_v2_dev.sql'), 'utf8');
+  const Q = '00000000-0000-0000-0000-000000000003';
+  const meta = [...seedSql.matchAll(/\(\s*(\d+),'([A-Z_]+)',\s*'((?:[^']|'')*)'\)/g)].map(m => {
+    const n = +m[1], cod = 'H' + String(n).padStart(2, '0');
+    return { id: 'v2-' + cod, questionario_id: Q, codigo: cod, ordem: n, parte: 1, dimensao: m[2], texto: m[3].replace(/''/g, "'"), inversa: INVERTIDAS.has(m[2]), escala_labels: 'freq' };
+  });
+  if (meta.length !== 35) { console.error('Esperava 35 itens no seed v2, achei ' + meta.length); process.exit(1); }
+  const ruido = parseFloat(arg('ruido', '0.8')), seed = parseInt(arg('seed', '1'), 10), perfilPadrao = arg('perfil', 'mediana');
+  const sArg = arg('setores', null);
+  const grupos = (sArg && sArg !== true)
+    ? String(sArg).split(',').map(p => { const [setor, n, perfil] = p.split(':'); return { setor: setor.trim(), n: parseInt(n, 10), perfil: (perfil || perfilPadrao).trim() }; })
+    : (() => { const N = parseInt(arg('n', '40'), 10), nP = Math.round(N * 0.5), nA = Math.round(N * 0.3); return [{ setor: 'Produção', n: nP, perfil: perfilPadrao }, { setor: 'Administrativo', n: nA, perfil: perfilPadrao }, { setor: 'Logística', n: N - nP - nA, perfil: perfilPadrao }].filter(g => g.n > 0); })();
+  const rnd = prng(seed), linhas = [];
+  const t0 = Date.parse('2026-10-10T12:00:00Z');
+  for (const g of grupos) {
+    const perfil = PERFIS[g.perfil]; if (!perfil) { console.error('Perfil desconhecido: ' + g.perfil); process.exit(1); }
+    const funcoes = FUNCOES[g.setor] || ['Operador'];
+    for (let k = 0; k < g.n; k++) {
+      const { brutos } = gerarRespondente(perfil, rnd, perfil.itens ? 0 : ruido);
+      const funcao = funcoes[Math.floor(rnd() * funcoes.length)], escolaridade = ESCOLARIDADES[Math.floor(rnd() * ESCOLARIDADES.length)];
+      linhas.push({ id: 'sim-' + (linhas.length + 1), setor: g.setor, funcao, escolaridade, questionario_id: Q,
+        respondido_em: new Date(t0 + linhas.length * 3600e3).toISOString(),
+        h: Object.fromEntries(Object.entries(brutos).map(([cod, v]) => ['v2-' + cod, v])) });
+    }
+  }
+  fs.writeFileSync(arquivo, JSON.stringify({ gerado: new Date().toISOString(), seed, grupos, meta, linhas }));
+  console.log(`Fixture: ${linhas.length} respostas, ${meta.length} itens → ${arquivo}`);
+}
+
 async function main() {
   if (arg('perfis', false)) { Object.entries(PERFIS).forEach(([k, p]) => console.log(`${k.padEnd(18)} ${p.desc}`)); return; }
 
+  const fixture = arg('fixture', null);
+  if (fixture && fixture !== true) return gerarFixture(fixture);
   const url = (process.env.SUPA_URL || '').trim(), anon = (process.env.SUPA_ANON || '').trim();
   if (!url || !anon) { console.error('Defina SUPA_URL e SUPA_ANON (use: node --env-file=.env _dev/simular-hse.js ...).'); process.exit(1); }
   if (url.includes(REF_PROD)) { console.error('RECUSADO: SUPA_URL aponta para PROD. O simulador é só para DEV.'); process.exit(1); }

@@ -1,5 +1,8 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **Atualização (mesmo dia, sessão seguinte):** revisão completa feita — motor testado (`npm run test:hse`), laudo HSE com layout novo,
+> Plano de Ação HSE, análise por dimensão e UX de metodologia. Detalhes em **`2026-10-13-hse-revisao-completa.md`**. Adesão HSE corrigida (`6e680b9`).
+>
 > **Leia este arquivo primeiro.** Ele substitui o §8 de `2026-10-09-hse-andamento-pendencias-e-risco.md` (que continua válido como
 > histórico detalhado, §5.x por etapa). Outros documentos: `2026-10-08-plano-implantacao-hse.md` (plano S0–S11),
 > `2026-10-08-referencia-hse-player-avalia-nr01.md` (análise do concorrente), `2026-10-10-simulacao-hse-e-comparacao-player.md`
@@ -73,13 +76,14 @@ Duas versões HSE publicadas em DEV (v1: 9 respostas de teste na empresa Allmed 
 5. **Anonimato não coberto pelo n mínimo:** Auditoria mostra `session_id`/dispositivo por respondente; `exportarCSV` exporta uma linha por respondente; filtros combinados (setor×função×escolaridade) podem fatiar até n pequeno.
 
 ### 4.3 Técnicas — **bugs/lacunas achados e NÃO corrigidos**
-1. **Adesão (tela, badge do GHE, painel de links, PDF) é cega ao HSE**: o loader do BS descarta respostas sem itens BS, então num ciclo HSE mostra 0% enquanto Dashboard/Clientes mostram o certo. Correção curta: aviso no padrão `_guardaTelaBS`; ideal: contar respostas HSE. Auditoria e Comparativo com ciclo HSE: **não verificados**.
+1. ~~**Adesão (tela, badge do GHE, painel de links, PDF) é cega ao HSE**~~ — **corrigido em `6e680b9`** (ciclo HSE lê as respostas HSE; "todos" usa o instrumento com mais respostas). Texto original: o loader do BS descarta respostas sem itens BS, então num ciclo HSE mostra 0% enquanto Dashboard/Clientes mostram o certo. Correção curta: aviso no padrão `_guardaTelaBS`; ideal: contar respostas HSE. Auditoria e Comparativo com ciclo HSE: **não verificados**.
 2. **Integração com `develop` (bloqueia o PR):** merge de teste = **6 conflitos**, todos em `psicomap-admin.html` (`CLAUDE.md` mescla sozinho). A `develop` renomeou **ciclo → campanha** na UI e tornou a campanha obrigatória em link novo; meus textos ("Ciclos", "Novo ciclo", "Sem ciclo (usa BS 8800)", cartões BS/HSE, "Trocar metodologia do ciclo") precisam seguir o vocabulário. Conflitos nos pontos: catálogo `MODULOS_CATALOGO`, selects de ciclo (`_cicloLabel`), `renderLaudo`, `gerarLaudoPDF`, `salvarCiclo`. Fazer **num worktree próprio**, nunca no diretório principal.
 3. Resolver as alterações não commitadas da outra sessão no diretório principal (descartar, porque já estão em `develop`, ou deixar que ela commite).
 4. Seed de PROD (go-live, **ainda não escrito**): `seed_hse_icao35_validado.sql` deve (a) abortar se houver `[RASCUNHO]` no texto **e** se `config->>'rascunho' = 'true'`; (b) publicar por último; (c) aplicar a severidade validada. A RPC serve a **maior versão publicada**.
 5. Pequenos: comentário desatualizado em `seed_hse_icao35_dev_placeholder.sql` ("13 médias… ainda precisam ser transcritas" — já foram); CLAUDE.md da `feat/hse-icao35` ainda diz "sem push".
 6. Não exercitado: formulário antigo em cache já testado em DEV (ok); **bfcache**, fila legada contra link BS válido, PDF real impresso.
-7. Fase 1.1 (fora da v1): seleção de setor/CNAE (usar o benchmark setorial), catálogo de ações por dimensão HSE, comparativo/plano/auditoria/gráficos para HSE, vários responsáveis técnicos, coleta em papel, combo de metodologias.
+7. Da revisão de 13/10 (ver nota própria §8): diferença por complemento (setor omitido deduzido por subtração do Geral), benchmark setorial não selecionável, textos fixos novos (`HSE_DIM_INFO`, Limitações, Plano) sem revisão de SST, PDF impresso das páginas por dimensão não conferido.
+8. Fase 1.1 (fora da v1): seleção de setor/CNAE (usar o benchmark setorial), catálogo de ações por dimensão HSE, comparativo/plano/auditoria/gráficos para HSE, vários responsáveis técnicos, coleta em papel, combo de metodologias.
 
 ## 5. Caminho até PROD (só depois de 4.1 e 4.3-2 resolvidos)
 1. B12 confirmado + janela calma (`select count(*) from respostas where respondido_em > now()-interval '7 days'` = 0 em 10/10).
