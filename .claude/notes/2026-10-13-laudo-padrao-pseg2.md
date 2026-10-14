@@ -114,3 +114,10 @@ empresa) → pacote 3 (preenchimento automático) → pacote 4 (painel de pronti
 
 **Integração com a branch HSE** (`feat/hse-icao35`, ainda não em `develop`): `renderLaudo`/`gerarLaudoPDF` serão tocados pelas duas. Manter o ramo
 HSE antes do `_p2Ativo()`; passar o HTML do laudo HSE (`_buildLaudoHSEHTML`) pelo `_p2DocxConverter` (perfil `default` é o ponto de partida) e validar no Word.
+
+## Pacote 1 — herança e padrões (2026-10-14)
+Implementado em `feat/laudo-pacote1-heranca-padroes`. Regras e funções em `CLAUDE.md`. Testado com dados sintéticos:
+precedência ciclo > padrão EST > fábrica (textos, ocultos, extras), `n_min`/`part_min`/`cor`/`rev_desc` aplicados no documento, `assina=false`,
+derivação da próxima revisão (00,01 → 02) sem copiar período/imagens, herança no carregamento com `sbAdmin` simulado (incl. 1º ciclo sem herança).
+**Não testado com login**: a query `in(ciclo_id, …)` de `_p2BuscarCicloAnterior` contra o RLS real (admin) — conferir em DEV: abrir um ciclo novo de empresa que já tem laudo salvo.
+Pacote 2 (dados da empresa), 3 (automático) e 4 (lote) seguem no ROADMAP.

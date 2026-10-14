@@ -1936,6 +1936,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div class="field" style="grid-column:1/-1"><label>Rodapé — texto livre (se preenchido, substitui telefone/e-mail/site)</label><input type="text" id="ep-p2-livre" placeholder="Opcional. Aceita {{razao_social}}, {{ciclo}}, {{rev}}" oninput="_p2Sujo.est=true"/></div>
       <div class="field" style="grid-column:1/-1"><label>Rodapé — site</label><input type="text" id="ep-p2-site" placeholder="www.empresa.com.br" oninput="_p2Sujo.est=true"/></div>
     </div>
+    <div style="font-size:12px;font-weight:700;margin:16px 0 4px">Padrões para todos os laudos</div>
+    <div style="font-size:11px;color:var(--tl);margin-bottom:10px;line-height:1.5">Valem para toda empresa e ciclo da consultoria. Textos e seções padrão são definidos pelos botões <b>"Salvar como padrão da EST"</b> no Relatório.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>Cor da marca no laudo</label><div style="display:flex;gap:6px"><input type="color" id="ep-p2-cor" value="#1F7A3D" oninput="_p2Sujo.est=true;this.dataset.set='1'" style="width:46px;padding:2px"/><button type="button" class="btn btn-ghost btn-sm" onclick="const i=document.getElementById('ep-p2-cor');i.value='#1F7A3D';i.dataset.set='';_p2Sujo.est=true">Padrão</button></div></div>
+      <div class="field"><label>Segmentação padrão do relatório</label><select id="ep-p2-gran" class="filter-select" onchange="_p2Sujo.est=true"><option value="">— a que o usuário escolher —</option><option value="ghe">Por GES (setor × função)</option><option value="segregado">Por setor</option><option value="consolidado">Geral</option></select></div>
+      <div class="field"><label>Mínimo de respondentes por grupo (anonimato)</label><input type="number" min="0" id="ep-p2-nmin" placeholder="5" oninput="_p2Sujo.est=true"/></div>
+      <div class="field"><label>Participação mínima recomendada (%)</label><input type="number" min="0" max="100" id="ep-p2-part" placeholder="30" oninput="_p2Sujo.est=true"/></div>
+      <div class="field" style="grid-column:1/-1"><label>Descrição padrão da revisão 00</label><input type="text" id="ep-p2-revdesc" placeholder="Elaboração inicial do documento" oninput="_p2Sujo.est=true"/></div>
+    </div>
+    <div id="ep-p2-pad-resumo" style="font-size:11px;color:var(--tm);margin:8px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
     <div style="font-size:12px;font-weight:700;margin:16px 0 8px">Elaboradores</div>
     <div id="ep-p2-elab"></div>
     <div style="display:flex;gap:8px;margin-top:6px">
@@ -3256,7 +3266,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <textarea id="p2t-area" rows="14" style="width:100%;font-size:12px"></textarea>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharEditarTexto()">Cancelar</button>
-      <button class="btn btn-ghost" onclick="_p2SalvarTexto(true)">Restaurar padrão</button>
+      <button class="btn btn-ghost" onclick="_p2SalvarTexto(true)" title="Volta ao texto de fábrica (e ao padrão da EST, se houver)">Restaurar padrão</button>
+      <button class="btn btn-ghost" onclick="_p2TextoPadraoEst()" title="Este texto passa a valer em todos os laudos e ciclos da consultoria">Salvar como padrão da EST</button>
       <button class="btn btn-g" style="flex:1" onclick="_p2SalvarTexto(false)">Salvar</button>
     </div>
   </div>
@@ -3278,6 +3289,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <button class="btn btn-ghost btn-sm" type="button" onclick="_p2ExtraAbrir('')">+ Nova página</button>
     <div class="modal-footer">
       <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('modal-p2-secoes').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="_p2SecoesPadraoEst()" title="Estas seções ocultas e páginas extras viram o padrão de todos os laudos novos">Salvar como padrão da EST</button>
       <button class="btn btn-g" style="flex:2" onclick="_p2SecoesSalvar()">Salvar e atualizar</button>
     </div>
   </div>
@@ -16257,9 +16269,10 @@ ${_hasConc ? `
 const P2_ID = 'padrao_pseg2.0';
 // n mínimo de respondentes para exibir o RESULTADO de um grupo. Provisório (mesmo valor do
 // N_MIN_ANONIMATO da branch HSE — unificar quando as duas chegarem em develop). 0 desliga.
-const P2_N_MIN = 5;
+const P2_N_MIN_PADRAO = 5;
 // Participação mínima recomendada pela metodologia, por grupo de exposição.
-const P2_PART_MIN = 30;
+const P2_PART_MIN_PADRAO = 30;
+const P2_COR_PADRAO = '#1F7A3D';
 
 // O modelo numera os 11 fatores de 1 a 11; o sistema usa `cd` {1,3,4,5,6,7,8,9,10,11,12}
 // (o 2 foi descontinuado). Só a APRESENTAÇÃO do v2.0 usa a numeração do modelo — o `cd`
@@ -16335,6 +16348,19 @@ const _p2e = s => String(s == null ? '' : s)
 const _p2t = v => (v == null ? '' : String(v)).trim();
 
 function _p2Permitido() { const r = _roleAtual(); return r === 'admin' || r === 'super_admin'; }
+// ── Padrões da consultoria (est.padroes): configurados uma vez no Perfil da EST ──────────────
+const _p2Pad = () => (((_p2.est || {}).padroes) || {});
+function _p2NMin() { const v = parseInt(_p2Pad().n_min, 10); return Number.isFinite(v) && v >= 0 ? v : P2_N_MIN_PADRAO; }
+function _p2PartMin() { const v = parseInt(_p2Pad().part_min, 10); return Number.isFinite(v) && v >= 0 && v <= 100 ? v : P2_PART_MIN_PADRAO; }
+function _p2Cor() { const c = _p2t(_p2Pad().cor); return /^#[0-9a-f]{6}$/i.test(c) ? c.toUpperCase() : P2_COR_PADRAO; }
+// Dados do ciclo EFETIVOS: o que o ciclo guardou por cima do padrão da EST. Textos mesclam por id;
+// seções ocultas e páginas extras só caem no padrão quando o ciclo NUNCA definiu a chave.
+function _p2DadosCicloEfetivo() {
+  const c = _p2.ciclo || {}, p = _p2Pad();
+  return { ...c, textos: { ...(p.textos || {}), ...(c.textos || {}) },
+    ocultos: Array.isArray(c.ocultos) ? c.ocultos : (p.ocultos || []),
+    extras: Array.isArray(c.extras) ? c.extras : (p.extras || []) };
+}
 function _p2Versao() {
   if (!_p2Permitido()) return 'default';
   return document.getElementById('laudo-versao')?.value === P2_ID ? P2_ID : 'default';
@@ -16380,6 +16406,13 @@ async function carregarLaudoDados(empId, cicloId, forcar) {
       .or(ors.join(','));
     if (error) throw error;
     (data || []).forEach(r => { _p2[r.escopo] = r.dados || {}; _p2.ids[r.escopo] = r.id; });
+    // Ciclo sem registro próprio: herda do anterior (em memória; grava ao salvar ou gerar).
+    if (cicloId && !_p2.ids.ciclo) {
+      try {
+        const prev = await _p2BuscarCicloAnterior(empId, cicloId);
+        if (prev) { _p2.ciclo = _p2DerivarDoAnterior(prev); _p2Sujo.ciclo = true; }
+      } catch (e2) { console.warn('[laudo_dados] herança:', e2.message); }
+    }
   } catch (e) {
     // Falha ABERTA: tabela ausente (migration não aplicada) não pode derrubar o laudo.
     if (_p2ErroTabelaAusente(e)) { _p2.disponivel = false; console.warn('[laudo_dados] tabela ausente neste ambiente:', e.message); }
@@ -16389,6 +16422,52 @@ async function carregarLaudoDados(empId, cicloId, forcar) {
   return _p2;
 }
 
+// ── Herança: um ciclo novo parte do ciclo anterior da MESMA empresa, não do zero ─────────────
+// "Anterior" = o ciclo mais recente (data_inicio, senão criação) que vem antes do atual e já tem
+// laudo_dados. Não copia período (é do ciclo) nem imagens (só em memória); a revisão sobe um número.
+async function _p2BuscarCicloAnterior(empId, cicloId) {
+  if (!sbAdmin || isDemoMode || !currentTenantId || !empId || !cicloId) return null;
+  const cs = _ciclos.filter(c => c.empresa_id === empId);
+  const chave = c => String(c.data_inicio || c.criado_em || '');
+  const atual = cs.find(c => c.id === cicloId);
+  const cand = cs.filter(c => c.id !== cicloId && (!atual || chave(c) <= chave(atual))).sort((a, b) => chave(b).localeCompare(chave(a)));
+  if (!cand.length) return null;
+  const { data, error } = await sbAdmin.from('laudo_dados').select('ciclo_id,dados')
+    .eq('tenant_id', currentTenantId).eq('template', P2_ID).eq('escopo', 'ciclo').eq('empresa_id', empId).in('ciclo_id', cand.map(c => c.id));
+  if (error) throw error;
+  for (const c of cand) { const r = (data || []).find(x => x.ciclo_id === c.id); if (r) return { de: c.nome, dados: r.dados || {} }; }
+  return null;
+}
+function _p2DerivarDoAnterior(prev) {
+  const d = prev.dados || {};
+  const revs = (Array.isArray(d.revisoes) ? d.revisoes : []).map(r => ({ ...r }));
+  const ult = revs.length ? parseInt(revs[revs.length - 1].rev, 10) : NaN;
+  const prox = String((Number.isFinite(ult) ? ult : revs.length - 1) + 1).padStart(2, '0');
+  revs.push({ rev: prox, data: new Date().toISOString().slice(0, 10), descricao: '' });
+  const out = { textos: { ...(d.textos || {}) }, revisoes: revs, _herdado: { de: prev.de } };
+  if (Array.isArray(d.ocultos)) out.ocultos = [...d.ocultos];
+  if (Array.isArray(d.extras)) out.extras = d.extras.map(e => ({ ...e, imgs: [] }));
+  return out;
+}
+async function _p2CopiarAnterior() {
+  const empId = document.getElementById('ld-empresa')?.value || '';
+  const cicloId = document.getElementById('ld-ciclo')?.value || '';
+  if (!cicloId) { toast('Selecione um ciclo para copiar do ciclo anterior.', 'w'); return; }
+  if (!confirm('Substituir revisões, textos editados, seções ocultas e páginas extras deste ciclo pelos do ciclo anterior?')) return;
+  try {
+    const prev = await _p2BuscarCicloAnterior(empId, cicloId);
+    if (!prev) { toast('Nenhum ciclo anterior desta empresa tem laudo salvo.', 'w', 5000); return; }
+    const novo = _p2DerivarDoAnterior(prev);
+    _p2.ciclo = { ...(_p2.ciclo || {}), ...novo };
+    if (!Array.isArray(novo.ocultos)) delete _p2.ciclo.ocultos;
+    if (!Array.isArray(novo.extras)) delete _p2.ciclo.extras;
+    _p2Sujo.ciclo = true;
+    toast('Copiado do ciclo "' + prev.de + '". Revise e salve.', 'g');
+    await abrirDadosLaudo();
+    renderLaudo();
+  } catch (e) { toast('Não foi possível copiar: ' + e.message, 'r', 6000); }
+}
+
 // Grava um escopo. SELECT→UPDATE/INSERT em vez de upsert: a unicidade é um índice por
 // EXPRESSÃO (COALESCE), que o onConflict do PostgREST não consegue apontar.
 async function salvarLaudoDados(escopo, empId, cicloId) {
@@ -16396,7 +16475,7 @@ async function salvarLaudoDados(escopo, empId, cicloId) {
   if (!sbAdmin || isDemoMode) throw new Error('Sem conexão com o banco.');
   if (!currentTenantId) throw new Error('Selecione a EST (modo suporte) antes de salvar.');
   if (!_p2.disponivel) throw new Error('Dados do laudo ainda não estão disponíveis neste ambiente (migration pendente).');
-  const dados = _p2[escopo] || {};
+  const dados = Object.fromEntries(Object.entries(_p2[escopo] || {}).filter(([k]) => !k.startsWith('_')));
   const quem  = currentUser?.email || currentUser?.id || null;
   const agora = new Date().toISOString();
   let id = _p2.ids[escopo];
@@ -16412,6 +16491,7 @@ async function salvarLaudoDados(escopo, empId, cicloId) {
   if (id) {
     const { error } = await sbAdmin.from('laudo_dados').update({ dados, atualizado_por: quem, atualizado_em: agora }).eq('id', id);
     if (error) throw error;
+    if (escopo === 'ciclo' && _p2.ciclo) delete _p2.ciclo._herdado;
   } else {
     const { data, error } = await sbAdmin.from('laudo_dados').insert({
       tenant_id: currentTenantId, escopo, template: P2_ID,
@@ -16421,6 +16501,7 @@ async function salvarLaudoDados(escopo, empId, cicloId) {
     }).select('id').single();
     if (error) throw error;
     _p2.ids[escopo] = data.id;
+    if (escopo === 'ciclo' && _p2.ciclo) delete _p2.ciclo._herdado;
   }
 }
 
@@ -17263,13 +17344,14 @@ async function _p2Contexto() {
   const hcRows = (await _getHeadcountCached(empId)) || [];
   const hcTotal = hcRows.reduce((s, h) => s + (h.quantidade || 0), 0);
 
-  const dEst = _p2.est || {}, dEmp = _p2.empresa || {}, dCiclo = _p2.ciclo || {};
+  const dEst = _p2.est || {}, dEmp = _p2.empresa || {}, dCiclo = _p2DadosCicloEfetivo();
   const efetivo = _p2t(dEmp.efetivo) || (hcTotal ? String(hcTotal) : '');
   const nEfetivo = parseInt(efetivo, 10);
   const pct = nEfetivo > 0 ? Math.round(linhas.length / nEfetivo * 100) : null;
 
   // Elaboradores: cadastro da EST; sem ele, cai no responsável do laudo (nunca fica sem ninguém).
-  let elaboradores = Array.isArray(dEst.elaboradores) ? dEst.elaboradores.filter(x => _p2t(x.nome)) : [];
+  // `assina === false` tira o elaborador do documento (padrão = assina). Quem decide é o Perfil da EST.
+  let elaboradores = Array.isArray(dEst.elaboradores) ? dEst.elaboradores.filter(x => _p2t(x.nome) && x.assina !== false) : [];
   if (!elaboradores.length) {
     const nome = _p2t(document.getElementById('ld-responsavel')?.value) || _p2t(_estPerfil?.responsavel_padrao);
     if (nome) elaboradores = [{ nome, funcao: '', conselho: '', registro: _p2t(document.getElementById('ld-registro')?.value) || _p2t(_estPerfil?.registro_profissional) }];
@@ -17279,7 +17361,7 @@ async function _p2Contexto() {
 
   const revisoes = (Array.isArray(dCiclo.revisoes) && dCiclo.revisoes.length)
     ? dCiclo.revisoes
-    : [{ rev: '00', data: _p2DataEmissao(), descricao: 'Elaboração inicial do documento' }];
+    : [{ rev: '00', data: _p2DataEmissao(), descricao: _p2t(_p2Pad().rev_desc) || 'Elaboração inicial do documento' }];
   const ultimaRev = _p2t(revisoes[revisoes.length - 1].rev) || '00';
 
   // Capítulos que entram: base (menos os ocultos) + páginas extras, cada uma depois do capítulo escolhido.
@@ -17296,7 +17378,7 @@ async function _p2Contexto() {
   const grs = grupos.map(g => {
     const ls = _linhasDoGrupo(g, linhas);
     const n = ls.length;
-    const omit = P2_N_MIN > 0 && n < P2_N_MIN;
+    const omit = _p2NMin() > 0 && n < _p2NMin();
     const desc = _p2t(((dEmp.ges || {})[g.nome] || {}).titulo);
     return {
       g, ls, n, omit,
@@ -17321,7 +17403,7 @@ async function _p2Contexto() {
   };
 
   return {
-    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, logoCli, caps,
+    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, logoCli, caps, cor: _p2Cor(),
     dEst, dEmp, dCiclo, elaboradores, regTxt, revisoes, ultimaRev, residuais, semResp, vars,
     emissao: _p2DataEmissao(),
     ano: (_p2DataEmissao().split('/')[2]) || String(new Date().getFullYear()),
@@ -17503,13 +17585,13 @@ function _p2CapLocal(ctx) {
 
 function _p2CapGes(ctx) {
   const comRes = ctx.grs;
-  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? '&lt;' + P2_N_MIN : x.n}</span>`, 'class="c"')]));
+  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? '&lt;' + _p2NMin() : x.n}</span>`, 'class="c"')]));
   let nota = '';
   if (ctx.pct != null) {
-    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pct}%</span>. A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
+    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pct}%</span>. A participação mínima recomendada pela metodologia é de ${_p2PartMin()}% por grupo de exposição.</p>`;
   } else {
     ctx.pend.add('Efetivo da empresa (para calcular a participação)');
-    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes. <span class="p2v p2pend">[a preencher: efetivo da empresa para calcular a participação]</span> A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
+    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes. <span class="p2v p2pend">[a preencher: efetivo da empresa para calcular a participação]</span> A participação mínima recomendada pela metodologia é de ${_p2PartMin()}% por grupo de exposição.</p>`;
   }
   const res = ctx.residuais.reduce((s, x) => s + x.n, 0);
   if (res) nota += `<p><span class="p2v">${res}</span> resposta(s) não puderam ser atreladas a nenhum grupo de exposição cadastrado e são apresentadas por setor, ao final dos grupos.</p>`;
@@ -17597,7 +17679,7 @@ function _p2CapMetodo(ctx) {
 function _p2CapResult(ctx) {
   const T = P2_TEXTOS;
   const total = ctx.linhas.length;
-  const omitTotal = P2_N_MIN > 0 && total < P2_N_MIN;
+  const omitTotal = _p2NMin() > 0 && total < _p2NMin();
   const geralFatores = omitTotal ? null : calcFatores(ctx.linhas);
   const consolidado = ctx.gran === 'consolidado';
   const part = ctx.pct != null
@@ -17616,7 +17698,7 @@ function _p2CapResult(ctx) {
   const grupos = consolidado ? '' : ctx.grs.map(x => {
     const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)} ${nResp(x.n)}</h2>`;
     if (x.omit) {
-      return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
+      return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${_p2NMin()} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
     return `<div class="p2grp">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}${analise(x.fatores)}</div>`;
   }).join('');
@@ -17652,7 +17734,7 @@ function _p2CapContinuo(ctx) {
 function _p2CapConcl(ctx) {
   const T = P2_TEXTOS;
   const base = ctx.pct != null
-    ? `A avaliação dos fatores de risco psicossociais da unidade foi realizada por meio da aplicação de questionário de autorrelato aos trabalhadores, organizado por grupo de exposição similar, e contou com a participação de {{n}} colaboradores sobre um efetivo de {{ef}} colaboradores informado pela empresa, o que corresponde a uma participação de {{pct}}%. ${ctx.pct >= P2_PART_MIN ? 'A participação obtida atende ao percentual mínimo recomendado pela metodologia, o que confere representatividade coletiva aos resultados apresentados.' : `A participação obtida é inferior ao percentual mínimo recomendado pela metodologia (${P2_PART_MIN}%); os resultados devem ser interpretados com cautela quanto à representatividade coletiva.`}`
+    ? `A avaliação dos fatores de risco psicossociais da unidade foi realizada por meio da aplicação de questionário de autorrelato aos trabalhadores, organizado por grupo de exposição similar, e contou com a participação de {{n}} colaboradores sobre um efetivo de {{ef}} colaboradores informado pela empresa, o que corresponde a uma participação de {{pct}}%. ${ctx.pct >= _p2PartMin() ? 'A participação obtida atende ao percentual mínimo recomendado pela metodologia, o que confere representatividade coletiva aos resultados apresentados.' : `A participação obtida é inferior ao percentual mínimo recomendado pela metodologia (${_p2PartMin()}%); os resultados devem ser interpretados com cautela quanto à representatividade coletiva.`}`
     : 'A avaliação dos fatores de risco psicossociais da unidade foi realizada por meio da aplicação de questionário de autorrelato aos trabalhadores, organizado por grupo de exposição similar, e contou com a participação de {{n}} colaboradores. [efetivo da empresa não informado]';
   const p1 = _p2e(base).replace('{{n}}', `<span class="p2v">${ctx.linhas.length}</span>`).replace('{{ef}}', `<span class="p2v">${_p2e(ctx.efetivo)}</span>`).replace('{{pct}}', `<span class="p2v">${ctx.pct}</span>`);
   const dims = T.concl_dim.map(([tit, ps]) => `<h3>${_p2e(tit)}</h3>${ps.map(p => `<p${/^[“"]/.test(p) ? ' class="p2cit"' : ''}>${_p2e(p)}</p>`).join('')}`).join('');
@@ -17848,7 +17930,7 @@ function _p2Cab(ctx) {
 function _p2PageCss(ctx) {
   const cab = _p2Cab(ctx);
   const rodTxt = cab.rodape, titulo = cab.titulo, razao = cab.linha2;
-  const lin = '1pt solid #1F7A3D';
+  const lin = '1pt solid ' + (ctx.cor || P2_COR_PADRAO);
   // Sem logo do cliente, o nome ocupa o lugar dela.
   const logo = cab.marca.img ? `content:url("${cab.marca.img}");` : `content:${_p2CssStr(cab.marca.nome)};font:bold 9pt Arial,sans-serif;white-space:pre-wrap;`;
   return `@page{size:A4;margin:34mm 17mm 22mm 20mm;
@@ -17932,7 +18014,7 @@ function _p2Build(ctx, { preview, docx }) {
   const titulo = `Laudo ${ctx.emp.razao_social || ctx.emp.nome || ''}${ctx.ciclo ? ' - ' + ctx.ciclo.nome : ''}`.trim();
   const nota = preview ? '<div class="p2note">Cabeçalho e rodapé aparecem em todas as páginas do PDF; a numeração de páginas é aplicada na impressão.</div>' : '';
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${_p2e(titulo)}</title>
-<style>${P2_CSS}</style><style>${_p2PageCss(ctx)}</style></head><body${preview ? ' class="p2-hl"' : ''}>${tool}${nota}
+<style>${P2_CSS.split(P2_COR_PADRAO).join(ctx.cor || P2_COR_PADRAO)}</style><style>${_p2PageCss(ctx)}</style></head><body${preview ? ' class="p2-hl"' : ''}>${tool}${nota}
 <div class="p2doc">${header}${footer}${capa}${corpo}</div></body></html>`;
 }
 
@@ -17943,6 +18025,7 @@ function _p2PendenciasHTML(ctx) {
   if (pend.length) {
     partes.push(`<div class="alert alert-y" style="margin-bottom:8px"><b>${pend.length} campo${pend.length !== 1 ? 's' : ''} a preencher</b> — aparecem em vermelho no documento.<ul style="margin:6px 0 0 16px;padding:0;font-size:11px">${pend.slice(0, 12).map(x => `<li>${_p2e(x)}</li>`).join('')}${pend.length > 12 ? `<li>… e mais ${pend.length - 12}</li>` : ''}</ul></div>`);
   }
+  if (_p2.ciclo && _p2.ciclo._herdado) partes.push(`<div class="alert alert-b" style="margin-bottom:8px">Este ciclo partiu do ciclo <b>${_p2e(_p2.ciclo._herdado.de)}</b> (revisões, textos editados, seções ocultas e páginas extras). Revise a nova revisão e salve em <b>Dados do laudo</b>; gerar o documento também grava.</div>`);
   ctx.avisos.forEach(a => partes.push(`<div class="alert alert-y" style="margin-bottom:8px">${_p2e(a)}</div>`));
   return partes.join('');
 }
@@ -18040,6 +18123,9 @@ async function _p2SalvarSujos() {
 // ── Integração com a tela de Relatório ──────────────────────────────────────
 function _onLaudoVersaoChange() {
   _p2SyncUI();
+  // Segmentação padrão da EST: só ao LIGAR o modelo, para não atropelar uma escolha feita depois.
+  const gp = _p2Pad().granularidade, gs = document.getElementById('laudo-granularidade');
+  if (_p2Ativo() && gp && gs && [...gs.options].some(o => o.value === gp && !o.hidden)) gs.value = gp;
   try { renderLaudo(); } catch (e) { console.warn('[laudo p2] renderLaudo:', e.message); }
 }
 
@@ -18077,7 +18163,7 @@ window.addEventListener('message', ev => {
 function _p2EditarTexto(id) {
   const b = P2_BLOCOS.find(x => x.id === id); if (!b) return;
   _p2EditId = id;
-  const ov = _p2t(((_p2.ciclo || {}).textos || {})[id]);
+  const ov = _p2t((_p2DadosCicloEfetivo().textos || {})[id]);
   document.getElementById('p2t-titulo').textContent = b.t;
   document.getElementById('p2t-area').value = ov || b.def().join('\n\n');
   document.getElementById('p2t-aviso').style.display = document.getElementById('ld-ciclo')?.value ? 'none' : '';
@@ -18118,7 +18204,7 @@ async function abrirDadosLaudo() {
   const ges = gesNomes.length ? `<div class="p2d-h">Título descritivo de cada GES</div>
     <div style="font-size:11px;color:var(--tl);margin-bottom:6px">Aparece depois do nome do GES nos resultados (ex.: "GES 07 e 08, <b>Produção de Lonas</b>").</div>
     ${gesNomes.map(n => `<div class="field"><label>${_p2e(n)}</label><input type="text" data-ges="${_p2e(n)}" value="${_p2e(((d.ges || {})[n] || {}).titulo || '')}" placeholder="Ex.: Produção de Lonas"/></div>`).join('')}` : '';
-  const revs = (Array.isArray(c.revisoes) && c.revisoes.length ? c.revisoes : [{ rev: '00', data: _p2DataEmissao(), descricao: 'Elaboração inicial do documento' }]);
+  const revs = (Array.isArray(c.revisoes) && c.revisoes.length ? c.revisoes : [{ rev: '00', data: _p2DataEmissao(), descricao: _p2t(_p2Pad().rev_desc) || 'Elaboração inicial do documento' }]);
   const periodoPad = _p2PeriodoPadrao(_ciclos.find(x => x.id === cicloId));
   const semCiclo = !cicloId;
   const blocos = P2_BLOCOS.map(b => {
@@ -18144,6 +18230,7 @@ async function abrirDadosLaudo() {
     ${ges}
     <div class="p2d-h">Documento deste ciclo ${semCiclo ? '<span style="color:var(--amber)">(selecione um ciclo para editar)</span>' : ''}</div>
     <div class="field"><label>Período de avaliações na empresa</label><input type="text" id="p2d-periodo" value="${_p2e(c.periodo || '')}" placeholder="${_p2e(periodoPad || 'Agosto de 2026')}" ${semCiclo ? 'disabled' : ''}/></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:4px 0 8px"><button class="btn btn-ghost btn-sm" type="button" onclick="_p2CopiarAnterior()" ${semCiclo ? 'disabled' : ''}>Copiar do ciclo anterior</button><span style="font-size:10px;color:var(--tl)">Um ciclo novo já abre assim, sem você pedir; use o botão para refazer a cópia.</span></div>
     <div style="font-size:12px;font-weight:600;margin:6px 0 4px">Controle de revisões</div>
     <div id="p2d-revs">${revs.map(_p2RevLinha).join('')}</div>
     <button class="btn btn-ghost btn-sm" type="button" onclick="_p2RevAdd()" ${semCiclo ? 'disabled' : ''}>+ Adicionar revisão</button>
@@ -18254,6 +18341,10 @@ async function p2EstPreencherForm() {
   const d = _p2.est || {}, rod = d.rodape || {};
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
   set('ep-p2-titulo', d.titulo_cab); set('ep-p2-tel', rod.tel); set('ep-p2-email', rod.email); set('ep-p2-site', rod.site);
+  const pd = d.padroes || {};
+  const corEl = document.getElementById('ep-p2-cor'); if (corEl) { corEl.value = /^#[0-9a-f]{6}$/i.test(pd.cor || '') ? pd.cor : '#1F7A3D'; corEl.dataset.set = pd.cor ? '1' : ''; }
+  set('ep-p2-gran', pd.granularidade); set('ep-p2-nmin', pd.n_min); set('ep-p2-part', pd.part_min); set('ep-p2-revdesc', pd.rev_desc);
+  _p2PadResumo();
   set('ep-p2-linha2', d.cab_linha2); set('ep-p2-cabdir', d.cab_dir); set('ep-p2-livre', rod.livre);
   if (!Array.isArray(d.elaboradores)) _p2.est.elaboradores = [];
   _p2EstRenderElab();
@@ -18261,6 +18352,21 @@ async function p2EstPreencherForm() {
   if (av) av.style.display = _p2.disponivel ? 'none' : '';
 }
 
+function _p2PadResumo() {
+  const el = document.getElementById('ep-p2-pad-resumo'); if (!el) return;
+  const p = ((_p2.est || {}).padroes) || {};
+  const nT = Object.keys(p.textos || {}).length, nO = (p.ocultos || []).length, nE = (p.extras || []).length;
+  el.innerHTML = `<span>Padrões salvos: <b>${nT}</b> texto${nT !== 1 ? 's' : ''} · <b>${nO}</b> seç${nO !== 1 ? 'ões ocultas' : 'ão oculta'} · <b>${nE}</b> página${nE !== 1 ? 's' : ''} extra${nE !== 1 ? 's' : ''}</span>` +
+    (nT ? '<button type="button" class="btn btn-ghost btn-sm" onclick="_p2LimparPadrao(\'textos\')">Limpar textos padrão</button>' : '') +
+    ((nO || nE) ? '<button type="button" class="btn btn-ghost btn-sm" onclick="_p2LimparPadrao(\'secoes\')">Limpar seções/páginas padrão</button>' : '');
+}
+function _p2LimparPadrao(qual) {
+  if (!confirm('Remover este padrão? Laudos que o usavam voltam ao texto de fábrica ao salvar.')) return;
+  const p = { ...(((_p2.est || {}).padroes) || {}) };
+  if (qual === 'textos') delete p.textos; else { delete p.ocultos; delete p.extras; }
+  _p2.est = { ...(_p2.est || {}), padroes: p }; _p2Sujo.est = true; _p2PadResumo();
+  toast('Padrão removido — clique em "Salvar parâmetros do laudo".', 'g', 4000);
+}
 function _p2EstRenderElab() {
   const el = document.getElementById('ep-p2-elab');
   if (!el) return;
@@ -18274,6 +18380,7 @@ function _p2EstRenderElab() {
       ${f(i, 'nome', 'Nome completo')}${f(i, 'funcao', 'Função', 'Engenheiro de Segurança do Trabalho')}
       ${f(i, 'conselho', 'Conselho', 'CREA, CRP…')}${f(i, 'registro', 'Registro', 'SP 5070297781')}
       ${f(i, 'tel', 'Telefone')}${f(i, 'email', 'E-mail')}
+      <label style="display:flex;gap:7px;align-items:center;font-size:12px;grid-column:1/-1;cursor:pointer"><input type="checkbox" ${x.assina === false ? '' : 'checked'} onchange="_p2EstSet(${i},'assina',this.checked)"/> Assina os laudos por padrão</label>
       ${f(i, 'cpf', 'CPF (aparece na assinatura; opcional)')}${f(i, 'papel', 'Papel na assinatura', 'Elaborador e Responsável técnico')}
       ${f(i, 'curriculo', 'Mini currículo (parágrafos separados por linha em branco)', '', true)}
       ${f(i, 'formacao', 'Formação (um item por linha)', '', true)}
@@ -18287,7 +18394,14 @@ function _p2EstDel(i) { _p2.est.elaboradores.splice(i, 1); _p2Sujo.est = true; _
 async function salvarLaudoParametros() {
   if (!_p2Permitido()) { toast('Apenas administradores editam os parâmetros do laudo.', 'r'); return; }
   const g = id => (document.getElementById(id)?.value || '').trim();
-  _p2.est = { ..._p2.est, titulo_cab: g('ep-p2-titulo'), cab_linha2: g('ep-p2-linha2'), cab_dir: g('ep-p2-cabdir'), rodape: { tel: g('ep-p2-tel'), email: g('ep-p2-email'), site: g('ep-p2-site'), livre: g('ep-p2-livre') } };
+  const corEl = document.getElementById('ep-p2-cor');
+  const padroes = { ...(((_p2.est || {}).padroes) || {}),
+    cor: corEl && corEl.dataset.set ? corEl.value.toUpperCase() : '',
+    granularidade: g('ep-p2-gran'),
+    n_min: g('ep-p2-nmin') === '' ? '' : Math.max(0, parseInt(g('ep-p2-nmin'), 10) || 0),
+    part_min: g('ep-p2-part') === '' ? '' : Math.min(100, Math.max(0, parseInt(g('ep-p2-part'), 10) || 0)),
+    rev_desc: g('ep-p2-revdesc') };
+  _p2.est = { ..._p2.est, padroes, titulo_cab: g('ep-p2-titulo'), cab_linha2: g('ep-p2-linha2'), cab_dir: g('ep-p2-cabdir'), rodape: { tel: g('ep-p2-tel'), email: g('ep-p2-email'), site: g('ep-p2-site'), livre: g('ep-p2-livre') } };
   try {
     await salvarLaudoDados('est');
     _p2Sujo.est = false;
@@ -18350,7 +18464,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
     LevelFormat, TableLayoutType, PageBreak } = D;
   const doc = new DOMParser().parseFromString(htmlStr, 'text/html');
   const TXT_W = DEF ? 9866 : 9808;          // largura útil em twips (A4; default 18mm/18mm, PSEG 20mm/17mm)
-  const VERDE = DEF ? '1A5E2A' : '1F7A3D';
+  const VERDE = DEF ? '1A5E2A' : ((ctx && ctx.cor) || '#1F7A3D').slice(1).toUpperCase();
   // Quebra de página: o próximo parágrafo "de topo" sai com pageBreakBefore (sem parágrafo vazio sobrando).
   let brk = false;
   const Paragraph = function (o) { const x = { ...o }; if (brk) { x.pageBreakBefore = true; brk = false; } return new D.Paragraph(x); };
@@ -18804,7 +18918,7 @@ async function abrirSecoesLaudo() {
   const empId = document.getElementById('ld-empresa')?.value || '';
   if (!empId) { toast('Selecione um cliente primeiro.', 'w'); return; }
   await carregarLaudoDados(empId, document.getElementById('ld-ciclo')?.value || '');
-  const c = _p2.ciclo || {};
+  const c = _p2DadosCicloEfetivo();
   _p2Tmp = { ocultos: new Set(c.ocultos || []), extras: JSON.parse(JSON.stringify(c.extras || [])) };
   _p2SecoesRender();
   _p2CicloAviso('p2s-aviso');
@@ -18838,19 +18952,44 @@ async function _p2AplicarSecoes(ocultosSet, extras) {
   catch (e) { toast(e.message, 'r', 6000); }
   renderLaudo();
 }
+async function _p2SalvarPadraoEst(mut, msg) {
+  _p2.est = { ...(_p2.est || {}) };
+  _p2.est.padroes = { ...((_p2.est.padroes) || {}) };
+  mut(_p2.est.padroes);
+  try { await salvarLaudoDados('est'); _p2Sujo.est = false; toast(msg, 'g'); }
+  catch (e) { toast('Não foi possível salvar o padrão: ' + e.message, 'r', 6000); return false; }
+  return true;
+}
+async function _p2TextoPadraoEst() {
+  const b = P2_BLOCOS.find(x => x.id === _p2EditId); if (!b) return;
+  const v = document.getElementById('p2t-area').value.trim();
+  if (!v || v === b.def().join('\n\n')) { toast('Sem alteração em relação ao texto de fábrica.', 'w'); return; }
+  const id = b.id;
+  if (!await _p2SalvarPadraoEst(p => { p.textos = { ...(p.textos || {}), [id]: v }; }, 'Texto salvo como padrão da EST.')) return;
+  // o ciclo deixa de ter override próprio desse bloco: passa a seguir o padrão
+  const c = { ...(_p2.ciclo || {}) }; c.textos = { ...(c.textos || {}) }; delete c.textos[id]; _p2.ciclo = c; _p2Sujo.ciclo = true;
+  fecharEditarTexto(); renderLaudo();
+}
+async function _p2SecoesPadraoEst() {
+  document.querySelectorAll('#p2s-lista input[data-cap]').forEach(i => { if (i.checked) _p2Tmp.ocultos.delete(i.dataset.cap); else _p2Tmp.ocultos.add(i.dataset.cap); });
+  const oc = [..._p2Tmp.ocultos], ex = JSON.parse(JSON.stringify(_p2Tmp.extras)).map(e => ({ ...e, imgs: [] }));
+  if (!await _p2SalvarPadraoEst(p => { p.ocultos = oc; p.extras = ex; }, 'Seções e páginas extras salvas como padrão da EST.')) return;
+  await _p2AplicarSecoes(_p2Tmp.ocultos, _p2Tmp.extras);
+  document.getElementById('modal-p2-secoes').classList.remove('open');
+}
 // atalhos do modo edição do preview
 async function _p2OcultarSecao(k) {
   if (!confirm('Ocultar esta seção do documento? Você pode reativá-la em "Seções e páginas extras".')) return;
-  const c = _p2.ciclo || {};
+  const c = _p2DadosCicloEfetivo();
   await _p2AplicarSecoes(new Set([...(c.ocultos || []), k]), c.extras || []);
 }
 async function _p2ExtraExcluir(id) {
   if (!confirm('Excluir esta página extra?')) return;
-  const c = _p2.ciclo || {};
+  const c = _p2DadosCicloEfetivo();
   await _p2AplicarSecoes(new Set(c.ocultos || []), (c.extras || []).filter(e => e.id !== id));
 }
 function _p2ExtraAbrir(id) {
-  if (!document.getElementById('modal-p2-secoes').classList.contains('open')) { const c = _p2.ciclo || {}; _p2Tmp = { ocultos: new Set(c.ocultos || []), extras: JSON.parse(JSON.stringify(c.extras || [])) }; }
+  if (!document.getElementById('modal-p2-secoes').classList.contains('open')) { const c = _p2DadosCicloEfetivo(); _p2Tmp = { ocultos: new Set(c.ocultos || []), extras: JSON.parse(JSON.stringify(c.extras || [])) }; }
   _p2ExtraId = id || null;
   const e = id ? (_p2Tmp.extras.find(x => x.id === id) || {}) : {};
   document.getElementById('p2x-titulo').value = e.titulo || '';
