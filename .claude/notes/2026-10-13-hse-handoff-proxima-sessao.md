@@ -1,5 +1,9 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **Atualização 2026-10-14:** referência setorial selecionável, supressão complementar (anonimato contra subtração), Distribuição e
+> Comparativo HSE, PDF conferido por impressão real (Edge headless) e corrigido, CSV com k-anonimato — `2026-10-13-hse-revisao-completa.md` §10.
+> **A `develop` está 33 commits à frente** (era 16): integrar logo.
+>
 > **Atualização (mesmo dia, sessão seguinte):** revisão completa feita — motor testado (`npm run test:hse`), laudo HSE com layout novo,
 > Plano de Ação HSE, análise por dimensão e UX de metodologia. Detalhes em **`2026-10-13-hse-revisao-completa.md`**. Adesão HSE corrigida (`6e680b9`).
 >

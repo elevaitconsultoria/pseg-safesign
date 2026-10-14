@@ -35,6 +35,7 @@ const ctx = vm.createContext({ console, N_MIN_ANONIMATO: 5, MATRIZ_RISCO, LAUDO_
 vm.runInContext(bloco + `
 ;globalThis.__m = { calcDimensoesHSE, calcRiscoHSE, _hseFaixa, _hseIndice, _hseZonaFixa, _hseMediaSimples,
   _hseLeituraTaxa, _hseMetaDasLinhas, _hseVersoesNasLinhas, HSE_DIMS, HSE_P_POR_FAIXA,
+  _hseSupressaoComplementar, _hseTendencia, _hseDistNormalizada, _hseDistDimensao, _hseRefSetor, HSE_REF_SETORES, _hseGeneralizarCSV,
   ${/function _hsePrioridades/.test(bloco) ? '_hsePrioridades,' : ''} ${/const HSE_DIM_INFO/.test(bloco) ? 'HSE_DIM_INFO,' : ''} };`, ctx);
 const M = ctx.__m;
 
@@ -223,6 +224,80 @@ if (M.HSE_DIM_INFO) {
     check('simulação: Demandas e Mudanças = Ação urgente', fx.DEMANDS === 'VERMELHO' && fx.CHANGE === 'VERMELHO', JSON.stringify(fx));
     check('simulação: prioridades começam por Demandas', M._hsePrioridades && M._hsePrioridades(r)[0].id === 'DEMANDS');
   } else console.log('  (fixture-hse-sim.json ausente — caso 10 pulado)');
+}
+
+// 11. Supressão complementar (n mínimo = 5): o recorte pequeno não pode ser deduzido por Geral − visíveis
+{
+  const mk = (spec) => {   // spec: [['A', 36], ['B', 18], ...] → recortes + linhas (mesmos objetos)
+    const linhas = [], recs = [];
+    spec.forEach(([nome, n]) => { const ls = Array.from({ length: n }, (_, i) => ({ id: nome + i })); linhas.push(...ls); recs.push({ nome, n, linhas: ls, res: n >= 5 ? { ok: true } : null }); });
+    return { linhas, recs };
+  };
+  const estado = recs => recs.map(r => `${r.nome}:${r.res ? 'V' : r._complementar ? 'C' : 'P'}`).join(' ');
+  let t = mk([['Produção', 36], ['Administrativo', 18], ['Logística', 12]]);
+  check('supressão: 36/18/12 — nada muda', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'Produção:V Administrativo:V Logística:V');
+  t = mk([['Produção', 36], ['Administrativo', 18], ['Logística', 3]]);
+  check('supressão: 36/18/3 — o menor visível (18) também sai', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'Produção:V Administrativo:C Logística:P', estado(t.recs));
+  t = mk([['A', 36], ['B', 3], ['C', 3]]);
+  check('supressão: 36/3/3 — total oculto 6 ≥ 5, nada a mais', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'A:V B:P C:P');
+  t = mk([['A', 10], ['B', 3]]);
+  check('supressão: 10/3 — os dois saem', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'A:C B:P');
+  t = mk([['A', 4], ['B', 4]]);
+  check('supressão: 4/4 — só os pequenos, sem complementar', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'A:P B:P');
+  t = mk([['Zeta', 7], ['Alfa', 7], ['C', 3], ['D', 20]]);
+  check('supressão: empate no menor — ordem alfabética (Alfa)', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'Zeta:V Alfa:C C:P D:V', estado(t.recs));
+  t = mk([['A', 36]]); t.linhas.push({ id: 'fora1' }, { id: 'fora2' }, { id: 'fora3' }, { id: 'fora4' });
+  t.recs.push({ nome: 'B', n: 0, linhas: [], res: null });
+  check('supressão: 4 respostas fora de todo recorte contam como ocultas', estado(M._hseSupressaoComplementar(t.recs, t.linhas)) === 'A:C B:P', estado(t.recs));
+  check('supressão: um recorte só — nada muda', M._hseSupressaoComplementar([{ nome: 'X', n: 3, linhas: [], res: null }], [1, 2, 3]).length === 1);
+}
+
+// 12. Tendência entre ciclos (convenção de leitura: |Δ| < 0,10 = estável; maior = melhor)
+{
+  const T = M._hseTendencia;
+  check('tendência: +0,09 estável', T(0.09) === 'ESTAVEL');
+  check('tendência: +0,10 melhora', T(0.1) === 'MELHORA');
+  check('tendência: −0,10 piora', T(-0.1) === 'PIORA');
+  check('tendência: −0,0999999 (exibe −0,10) piora', T(-0.0999999) === 'PIORA');
+  check('tendência: +0,0949 estável', T(0.0949) === 'ESTAVEL');
+  check('tendência: nulo', T(null) === null);
+}
+
+// 13. Distribuição normalizada (1 = mais desfavorável … 5 = mais favorável)
+{
+  const D = M._hseDistNormalizada;
+  check('distribuição: item direto 1 e 5 → 50%/50% nas pontas', JSON.stringify(D({ inversa: false, dist: { 1: 1, 2: 0, 3: 0, 4: 0, 5: 1 } })) === JSON.stringify([0.5, 0, 0, 0, 0.5]));
+  check('distribuição: item invertido, todos "Nunca" → 100% muito favorável', JSON.stringify(D({ inversa: true, dist: { 1: 4, 2: 0, 3: 0, 4: 0, 5: 0 } })) === JSON.stringify([0, 0, 0, 0, 1]));
+  check('distribuição: sem respostas → nulo', D({ inversa: false, dist: {} }) === null);
+  const meta = metaVersao('v2');
+  const r = M.calcDimensoesHSE(Array.from({ length: 5 }, () => respondente('v2', F2)), meta, BENCH);
+  const pd = M._hseDistDimensao(r.dims.find(d => d.id === 'DEMANDS'));
+  check('distribuição F2: Demandas 7/8 muito desfav. + 1/8 desfav.', quase(pd[0], 7 / 8) && quase(pd[1], 1 / 8) && quase(pd[4], 0), JSON.stringify(pd));
+  const pc = M._hseDistDimensao(r.dims.find(d => d.id === 'CONTROL'));
+  check('distribuição F2: Controle 5/6 muito fav. + 1/6 neutra', quase(pc[4], 5 / 6) && quase(pc[2], 1 / 6), JSON.stringify(pc));
+}
+
+// 14. Referência: sem escolha (e sem navegador) = GERAL; catálogo cobre os 13 setores do relatório + geral
+check('referência padrão = GERAL', M._hseRefSetor('qualquer') === 'GERAL');
+check('referência: 14 grupos (geral + 13 setores)', Object.keys(M.HSE_REF_SETORES).length === 14);
+
+// 15. CSV com k-anonimato (k = 5): nenhuma combinação setor/função/escolaridade com menos de 5 linhas
+{
+  const L = [];
+  const add = (n, setor, funcao, escolaridade) => { for (let i = 0; i < n; i++) L.push({ setor, funcao, escolaridade }); };
+  add(6, 'Produção', 'Operador', 'Médio'); add(2, 'Produção', 'Operador', 'Superior');   // escolaridade rara
+  add(3, 'Produção', 'Supervisor', 'Médio');                                               // função rara
+  add(5, 'Adm', 'Analista', 'Superior'); add(1, 'RH', 'Analista', 'Superior');            // setor raro
+  const g = M._hseGeneralizarCSV(L);
+  const cont = new Map(); g.forEach(o => { const k = o.setor + '|' + o.funcao + '|' + o.escolaridade; cont.set(k, (cont.get(k) || 0) + 1); });
+  const menor = Math.min(...cont.values());
+  check('CSV: as 6 linhas comuns ficam intactas', g.slice(0, 6).every(o => o.setor === 'Produção' && o.funcao === 'Operador' && o.escolaridade === 'Médio'));
+  check('CSV: escolaridade rara é generalizada primeiro', g[6].escolaridade !== 'Superior' && g[6].setor === 'Produção');
+  check('CSV: as respostas (objeto original) não mudam', g.every((o, i) => o.r === L[i]));
+  check('CSV: o setor raro (RH, 1 pessoa) não aparece', !g.some(o => o.setor === 'RH'));
+  check("CSV: toda combinação tem pelo menos 5 linhas (k-anonimato)", menor >= 5, `menor grupo = ${menor} · ${JSON.stringify([...cont])}`);
+  const grandes = M._hseGeneralizarCSV(Array.from({ length: 12 }, () => ({ setor: 'A', funcao: 'B', escolaridade: 'C' })));
+  check('CSV: grupo grande não é tocado', grandes.every(o => o.setor === 'A' && o.funcao === 'B' && o.escolaridade === 'C'));
 }
 
 // ── Linhas reais (opcional) ───────────────────────────────────────────────────────────────────────────────

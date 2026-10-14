@@ -446,7 +446,7 @@ uma ideia de "combo" de metodologias, em
 >   questionário **v2** (texto PT-BR do formulário de um terceiro, **não validado**, `config.rascunho=true`). O selo RASCUNHO do laudo lê essa flag.
 >   Detalhes e comparação com o relatório do outro player: `.claude/notes/2026-10-10-simulacao-hse-e-comparacao-player.md`.
 > - **Revisão completa (2026-10-13)** — `.claude/notes/2026-10-13-hse-revisao-completa.md`. O que vale para qualquer mudança no HSE:
->   - **Motor:** `npm run test:hse` (`_dev/test-hse-motor.js`, 99 casos, sem rede) extrai o bloco `HSE (S7)` do admin e confere contra
+>   - **Motor:** `npm run test:hse` (`_dev/test-hse-motor.js`, 126 casos, sem rede) extrai o bloco `HSE (S7)` do admin e confere contra
 >     oráculo próprio (exemplo F2 do player, limites de faixa, inversão, versões, simulação de DEV conferida por SQL). Rodar antes de commitar.
 >   - **`calcDimensoesHSE` só usa os itens do questionário das linhas** (`_hseMetaDasLinhas`): `_hseMetaCache` é global e acumula versões e
 >     empresas da sessão. Itens casam por **código** (H01..H35 estáveis entre versões). Nunca passar o cache cru a outra função.
@@ -457,6 +457,13 @@ uma ideia de "combo" de metodologias, em
 >   - Cartões de filtro só-BS levam `data-so-bs`; o explicativo HSE, `data-so-hse`; `_sincronizarFiltrosMetodologia(tela, ciclo)` roda nos
 >     dois ramos de `rodarAnalise`/`renderLaudo` (mostra **e** esconde). Selects de ciclo com as duas metodologias saem agrupados (`optgroup`).
 >   - Harness sem login: `node _dev/harness-hse.js <saida.html>` (fixture de `simular-hse.js --fixture`); servir por HTTP, nunca `file://`.
+> - **Melhorias de 2026-10-14** (nota de revisão §10) — o que vale para mudanças futuras:
+>   - **Supressão complementar** (`_hseSupressaoComplementar`): todo lugar que mostra recortes HSE ao lado do Geral passa por ela (tela,
+>     laudo, plano). Recorte novo sem ela reabre a dedução por subtração. **No BS 8800 ainda não existe** — aplicar após integrar a `develop`.
+>   - Referência do benchmark: `_hseCarregarBenchmark(empId)` (grupo escolhido pela empresa, padrão GERAL); nunca ler `setor='GERAL'` direto.
+>   - Laudo HSE impresso: rodapé por **caixas de margem** `@page` (Chromium 131+, `html.mb`), ajuste automático de folha quase vazia e
+>     conferência por PDF real (`msedge --headless --print-to-pdf` sobre o harness com `?auto=laudo`). Ao mexer no layout, imprimir de novo.
+>   - CSV HSE com k-anonimato (`_hseGeneralizarCSV`). Estado HSE de tenant é zerado em `_limparEstadoTenant()`.
 
 Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
 antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:
