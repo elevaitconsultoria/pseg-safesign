@@ -131,3 +131,8 @@ Pedido do usuário com prints do modelo (seção 13 e "Análise dos resultados d
 - **Tabela `p2res`**: células centralizadas na vertical e zebra leve `#F3F8F4` nas linhas pares (no .docx e no PDF).
 - Validado com dados sintéticos (5 setores, um com 18 funções, um omitido por <5), modos "Por setor" e "Geral": .docx no Word
   (COM → PDF) e HTML no Edge headless, paginação idêntica nos dois. **Não testado com sessão real nem com dado de cliente.**
+- **Mínimo de respondentes por grupo = 2** (`P2_N_MIN`, decisão do usuário em 2026-10-14, a partir de um laudo real com vários
+  setores de 1–2 respostas saindo como "<5 func."). Grupo de 1 respondente: bloco "Grupo com apenas 1 respondente — o resultado
+  não é apresentado porque corresponderia às respostas individuais…"; no quadro de GES aparece "1 (omitido)". Fecha a decisão
+  pendente "P2_N_MIN definitivo". Atenção: com 2 respondentes, cada um consegue inferir parte da resposta do outro — risco aceito
+  pelo usuário. O laudo `default` e o HSE não mudaram.

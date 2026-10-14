@@ -16255,9 +16255,10 @@ ${_hasConc ? `
 
 
 const P2_ID = 'padrao_pseg2.0';
-// n mínimo de respondentes para exibir o RESULTADO de um grupo. Provisório (mesmo valor do
-// N_MIN_ANONIMATO da branch HSE — unificar quando as duas chegarem em develop). 0 desliga.
-const P2_N_MIN = 5;
+// n mínimo de respondentes para exibir o RESULTADO de um grupo. Decisão do usuário (2026-10-14): só o
+// grupo de 1 respondente é omitido — a partir de 2 a tabela sai normalmente. A branch HSE usa
+// N_MIN_ANONIMATO = 5; ao juntar, decidir se unifica. 0 desliga.
+const P2_N_MIN = 2;
 // Participação mínima recomendada pela metodologia, por grupo de exposição.
 const P2_PART_MIN = 30;
 
@@ -17510,7 +17511,7 @@ function _p2CapLocal(ctx) {
 
 function _p2CapGes(ctx) {
   const comRes = ctx.grs;
-  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? '&lt;' + P2_N_MIN : x.n}</span>`, 'class="c"')]));
+  const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? x.n + ' (omitido)' : x.n}</span>`, 'class="c"')]));
   let nota = '';
   if (ctx.pct != null) {
     nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pctTxt}%</span>. A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
@@ -17625,7 +17626,7 @@ function _p2CapResult(ctx) {
   const grupos = consolidado ? '' : ctx.grs.map(x => {
     const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)} ${nResp(x.n)}</h2>`;
     if (x.omit) {
-      return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
+      return `<div class="p2grp">${cab}<p class="p2omit"><b>Grupo com ${x.n === 1 ? 'apenas 1 respondente' : x.n + ' respondentes'}</b> — o resultado não é apresentado porque corresponderia às respostas individuais, o que comprometeria o anonimato. As respostas estão incluídas na visão geral consolidada. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
     const pg = primeiro ? 'p2pk' : 'p2pg'; primeiro = false;
     return `<div class="p2grp ${pg}"><div class="p2bl">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}</div>${analise(x.fatores)}</div>`;
