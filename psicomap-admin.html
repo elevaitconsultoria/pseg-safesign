@@ -3032,6 +3032,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
           <div style="font-size:10px;color:var(--tl);margin-top:6px;line-height:1.5">Estrutura fixa do modelo PSEG: capítulos, textos padrão e variáveis da empresa. Campos vazios aparecem em vermelho. Cabeçalho, rodapé e elaboradores ficam em <b>Perfil da EST</b>. O filtro de nível de risco recorta as tabelas de resultado.</div>
           <button id="p2-btn-secoes" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="abrirSecoesLaudo()" title="Excluir seções do documento ou acrescentar páginas com texto e imagens">Seções e páginas extras</button>
           <button id="p2-btn-docx" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="baixarLaudoDocx()" title="Documento editável no Word ou Google Docs, com o mesmo conteúdo do PDF">Baixar .docx (editável)</button>
+          <label style="display:flex;align-items:center;gap:7px;font-size:11px;margin-top:5px;color:var(--tm)">Tabelas de resultado no .docx
+            <select id="p2-docx-tab" style="flex:1;min-width:0;font-size:11px" title="Imagem: sai igual à tela Resultados (não editável no Word). Tabela editável: tabela nativa do Word.">
+              <option value="imagem" selected>Imagem (visual da tela)</option><option value="texto">Tabela editável</option></select></label>
           <label style="display:flex;align-items:center;gap:7px;font-size:11px;margin-top:5px;cursor:pointer;color:var(--tm)"><input type="checkbox" id="p2-docx-destacar"> Destacar campos variáveis em amarelo no .docx</label>
           <label style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:8px;cursor:pointer"><input type="checkbox" id="p2-edicao" onchange="_p2ToggleEdicao(this.checked)"> Modo edição de textos</label>
           <div style="font-size:10px;color:var(--tl);margin-top:3px">Mostra "✎ Editar texto" em cada bloco de texto padrão do documento.</div>
@@ -8259,6 +8262,48 @@ function renderViewGrafica({grupos, filtrado, niveis}) {
 }
 
 // ─── VIEW POR RISCO ───────────────────────────────────────────────
+// ── Tabela "Por risco" — FONTE ÚNICA ────────────────────────────
+// Usada pela tela Resultados e pela IMAGEM do .docx do modelo PSEG (opção "Imagem" em Tabelas de
+// resultado). Duas cópias divergiriam sem erro visível; mexer na tabela é mexer só aqui.
+// compacto: só para a imagem do .docx — a imagem não quebra entre páginas, então precisa caber
+// numa folha; tira o max-width da Consequência e reduz o respiro das linhas.
+function _riscoTabelaTelaHTML(resultado, { compacto = false } = {}) {
+  const NC = NIVEIS_CORES;
+  const e = _p2e;
+  const pv = compacto ? '7px 10px' : '11px 12px';
+  const th = (t, al) => `<th style="color:white;padding:7px 10px;text-align:${al || 'left'};font-size:10px;font-weight:600">${t}</th>`;
+  return `<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#1a5e2a">
+          ${th('Risco')}${th('Fator Ergonômico observado')}${th('Consequência')}${th('Classificação Ergonômica')}${th('Nível de Risco', 'center')}
+        </tr></thead>
+        <tbody>
+          ${resultado.map((f, i) => {
+            const nc = NC[f.nivel] || NC.BAIXO;
+            const classifErg = CLASSIF_ERGONOMICA[f.nivel] || '';
+            return `<tr style="background:${i % 2 ? '#fafcfb' : 'white'};border-bottom:.5px solid var(--bs)">
+              <td style="padding:${pv};color:var(--tm)">Psicossocial</td>
+              <td style="padding:${pv};font-weight:600;color:var(--tx)">${e(f.nome)}</td>
+              <td style="padding:${pv};color:var(--tm);${compacto ? '' : 'max-width:220px;'}line-height:1.6">${e(f.cons)}</td>
+              <td style="padding:${pv};color:var(--tm);font-style:italic">${e(classifErg)}</td>
+              <td style="padding:${compacto ? '6px 8px' : '8px 10px'};text-align:center">
+                <span style="background:${nc.bg};color:${nc.cor};font-size:10px;font-weight:700;
+                  padding:3px 9px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+}
+// Cabeçalho do bloco (faixa com o nome do grupo) + tabela.
+function _riscoBlocoTelaHTML(blocoLabel, resultado, { compacto = false } = {}) {
+  return `<div style="${compacto ? '' : 'margin-bottom:40px'}">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:${compacto ? 10 : 14}px;
+        padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);
+        border-radius:0 6px 6px 0">${blocoLabel}</div>
+      ${_riscoTabelaTelaHTML(resultado, { compacto })}
+    </div>`;
+}
+
 function renderViewRisco({grupos, filtrado, niveis}) {
   const NC = NIVEIS_CORES;
   let html = '';
@@ -8280,36 +8325,7 @@ function renderViewRisco({grupos, filtrado, niveis}) {
       ? `Todos os setores filtrados <span style="font-size:11px;font-weight:400;color:var(--tl)">(${linhasSetor.length} respondentes)</span>`
       : (label || '<em style="color:var(--tl);font-style:italic;font-weight:400">Setor não informado</em>');
 
-    html += `<div style="margin-bottom:40px">
-      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:14px;
-        padding:10px 16px;background:var(--bg);border-left:3px solid var(--tx);
-        border-radius:0 6px 6px 0">${blocoLabel}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="background:#1a5e2a">
-          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Risco</th>
-          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Fator Ergonômico observado</th>
-          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Consequência</th>
-          <th style="color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600">Classificação Ergonômica</th>
-          <th style="color:white;padding:7px 10px;text-align:center;font-size:10px;font-weight:600">Nível de Risco</th>
-        </tr></thead>
-        <tbody>
-          ${resultado.map((f,i) => {
-            const nc = NC[f.nivel] || NC.BAIXO;
-            const classifErg = CLASSIF_ERGONOMICA[f.nivel] || '';
-            return `<tr style="background:${i%2?'#fafcfb':'white'};border-bottom:.5px solid var(--bs)">
-              <td style="padding:11px 12px;color:var(--tm)">Psicossocial</td>
-              <td style="padding:11px 12px;font-weight:600;color:var(--tx)">${f.nome}</td>
-              <td style="padding:11px 12px;color:var(--tm);max-width:220px;line-height:1.6">${f.cons}</td>
-              <td style="padding:11px 12px;color:var(--tm);font-style:italic">${classifErg}</td>
-              <td style="padding:8px 10px;text-align:center">
-                <span style="background:${nc.bg};color:${nc.cor};font-size:10px;font-weight:700;
-                  padding:3px 9px;border-radius:4px;white-space:nowrap">${f.nivel}</span>
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
+    html += _riscoBlocoTelaHTML(blocoLabel, resultado);
   });
 
   document.getElementById('view-content').innerHTML =
@@ -17373,10 +17389,13 @@ function _p2FiguraFatores() {
 // Mesma regra da tela Resultados › Por risco › Tabela (renderViewRisco): sem IRRELEVANTE, do nível mais
 // alto para o mais baixo (empate: ordem de calcFatores = dimensão e depois cd), 5 colunas, mesma paleta
 // de nível (NIVEIS_CORES). O filtro "Nível de risco" recorta os FATORES, como no laudo default.
-function _p2TabelaFatores(fatores) {
-  const vis = fatores
+function _p2FatoresVisiveis(fatores) {
+  return fatores
     .filter(f => f.nivel !== 'IRRELEVANTE' && (!_p2NivelFiltro || _p2NivelFiltro.includes(f.nivel)))
     .sort((a, b) => P2_RANK_NIVEL[b.nivel] - P2_RANK_NIVEL[a.nivel]);   // sort estável: preserva a ordem de calcFatores
+}
+function _p2TabelaFatores(fatores) {
+  const vis = _p2FatoresVisiveis(fatores);
   if (!vis.length) return '<p class="p2leg">Nenhum fator acima de irrelevante' + (_p2NivelFiltro ? ' nos níveis de risco selecionados' : '') + '.</p>';
   const rows = vis.map(f => {
     const nc = NIVEIS_CORES[f.nivel] || NIVEIS_CORES.BAIXO;
@@ -17391,11 +17410,31 @@ function _p2TabelaFatores(fatores) {
 
 // Quadro "SETORES / FUNÇÕES" do recorte — igual ao da tela Resultados, mas calculado sobre as
 // respostas do bloco (não sobre o estado dos combos da outra tela).
-function _p2FiltroBox(ls) {
+function _p2FiltroListas(ls) {
   const ord = arr => [...new Set(arr.map(x => _p2t(x)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const lista = arr => arr.length > 14 ? arr.slice(0, 14).join(' · ') + ` · … e mais ${arr.length - 14} (${arr.length} no total)` : (arr.join(' · ') || '—');
-  const s = ord(ls.map(r => r.setor)), f = ord(ls.map(r => r.funcao));
-  return `<div class="p2fl"><div><b>SETORES</b> <span>${_p2e(lista(s))}</span></div><div><b>FUNÇÕES</b> <span>${_p2e(lista(f))}</span></div></div>`;
+  return { setores: lista(ord(ls.map(r => r.setor))), funcoes: lista(ord(ls.map(r => r.funcao))) };
+}
+function _p2FiltroBox(ls) {
+  const l = _p2FiltroListas(ls);
+  return `<div class="p2fl"><div><b>SETORES</b> <span>${_p2e(l.setores)}</span></div><div><b>FUNÇÕES</b> <span>${_p2e(l.funcoes)}</span></div></div>`;
+}
+
+// Resultados como IMAGEM no .docx (opção "Imagem" em Tabelas de resultado): o bloco inteiro — quadro
+// SETORES/FUNÇÕES, faixa do grupo e tabela — sai com o visual da tela Resultados. O conversor
+// (_p2DocxConverter) rasteriza o `.p2rimg`; o PDF e o preview nunca passam por aqui (só ctx.docxImg).
+// Sem fator visível não há tabela para desenhar: devolve null e o chamador mantém o texto nativo.
+function _p2BlocoResultadoImagem(titulo, n, ls, fatores) {
+  const vis = _p2FatoresVisiveis(fatores);
+  if (!vis.length) return null;
+  const l = _p2FiltroListas(ls);
+  const linha = (rot, val) => `<div style="display:flex;gap:6px;align-items:baseline;margin-top:2px">
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tl);white-space:nowrap;min-width:52px">${rot}</span>
+      <span style="font-size:10px;color:var(--tx);line-height:1.5">${_p2e(val)}</span></div>`;
+  const box = `<div style="border:1px solid var(--border);border-left:3px solid var(--g);border-radius:4px;padding:8px 12px;margin-bottom:12px;background:var(--bg)">${linha('Setores', l.setores)}${linha('Funções', l.funcoes)}</div>`;
+  const label = `${_p2e(titulo)} <span style="font-size:11px;font-weight:400;color:var(--tl)">(${n} respondente${n !== 1 ? 's' : ''})</span>`;
+  const alt = `Tabela de resultados — ${titulo} (${n} respondente${n !== 1 ? 's' : ''}). ` + vis.map(f => `${f.nome}: ${f.nivel}`).join('; ') + '.';
+  return `<div class="p2rimg" data-alt="${_p2e(alt)}">${box}${_riscoBlocoTelaHTML(label, vis, { compacto: true })}</div>`;
 }
 
 // Parágrafo "Neste grupo de exposição foram identificados N fatores…" — gerado dos dados.
@@ -17609,7 +17648,8 @@ function _p2CapResult(ctx) {
   // Visão geral: um bloco com todo o recorte (equivale ao "Todos os setores filtrados" da tela).
   const visao = omitTotal
     ? '<p><i>Visão geral omitida: o recorte tem menos respondentes que o mínimo para preservar o anonimato.</i></p>'
-    : `<div class="p2grp"><h2>Todos os setores filtrados ${nResp(total)}</h2>${_p2FiltroBox(ctx.linhas)}${_p2TabelaFatores(geralFatores)}${consolidado ? analise(geralFatores) : ''}</div>`;
+    : `<div class="p2grp">${(ctx.docxImg && _p2BlocoResultadoImagem('Todos os setores filtrados', total, ctx.linhas, geralFatores))
+        || `<h2>Todos os setores filtrados ${nResp(total)}</h2>${_p2FiltroBox(ctx.linhas)}${_p2TabelaFatores(geralFatores)}`}${consolidado ? analise(geralFatores) : ''}</div>`;
 
   // Por grupo (setor / GHE / agrupamento / preset): mesmo bloco, um por grupo. No modo Geral não há
   // o que repetir — a visão geral já é o único bloco.
@@ -17618,7 +17658,8 @@ function _p2CapResult(ctx) {
     if (x.omit) {
       return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
-    return `<div class="p2grp">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}${analise(x.fatores)}</div>`;
+    const img = ctx.docxImg ? _p2BlocoResultadoImagem(x.titulo, x.n, x.ls, x.fatores) : null;
+    return `<div class="p2grp">${img || `${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}`}${analise(x.fatores)}</div>`;
   }).join('');
 
   const rotulo = { ghe: 'por GES (setor × função)', segregado: 'por setor', agrupado: 'por agrupamento de setores', preset: 'por preset de filtro', consolidado: 'geral (todos os setores)' }[ctx.gran] || '';
@@ -18343,6 +18384,78 @@ function _p2RasterizarImg(src, maxDim) {
   });
 }
 
+// ── PNG indexado (256 cores) ─────────────────────────────────────────────────
+// Por que não o PNG do canvas: texto antialiasado em escala 3 gera milhares de tons e cada tabela
+// pesava ~550 KB (laudo de 9 grupos = 6,5 MB só em tabelas). Reduzir a LARGURA quase não ajuda — a
+// reamostragem cria ainda mais tons —; reduzir as CORES corta o arquivo em 3-4x sem perda visível.
+// JPEG foi testado e é maior que o PNG nesse tipo de imagem. Sem dependência: median-cut sobre o
+// histograma de cores + PNG escrito à mão (zlib via CompressionStream do navegador).
+const _crcTab = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function _crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = _crcTab[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function _pngChunk(tipo, dados) {
+  const out = new Uint8Array(12 + dados.length), dv = new DataView(out.buffer);
+  dv.setUint32(0, dados.length);
+  for (let i = 0; i < 4; i++) out[4 + i] = tipo.charCodeAt(i);
+  out.set(dados, 8);
+  dv.setUint32(8 + dados.length, _crc32(out.subarray(4, 8 + dados.length)));
+  return out;
+}
+function _paleta(rgba, n) {
+  const hist = new Map();
+  for (let i = 0; i < rgba.length; i += 4) { const k = (rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2]; hist.set(k, (hist.get(k) || 0) + 1); }
+  const medir = px => {
+    const mn = [255, 255, 255], mx = [0, 0, 0];
+    for (const p of px) { if (p.r < mn[0]) mn[0] = p.r; if (p.r > mx[0]) mx[0] = p.r; if (p.g < mn[1]) mn[1] = p.g; if (p.g > mx[1]) mx[1] = p.g; if (p.b < mn[2]) mn[2] = p.b; if (p.b > mx[2]) mx[2] = p.b; }
+    const rg = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]]; const ch = rg.indexOf(Math.max(...rg));
+    return { px, ch: ['r', 'g', 'b'][ch], amp: rg[ch] };
+  };
+  const caixas = [medir([...hist.entries()].map(([k, c]) => ({ r: k >> 16, g: (k >> 8) & 255, b: k & 255, c })))];
+  while (caixas.length < n) {
+    let bi = -1, ba = 0;
+    caixas.forEach((cx, i) => { if (cx.px.length > 1 && cx.amp > ba) { ba = cx.amp; bi = i; } });
+    if (bi < 0) break;                                   // todas as caixas já são uma cor só
+    const cx = caixas[bi]; cx.px.sort((a, b) => a[cx.ch] - b[cx.ch]);
+    const tot = cx.px.reduce((t, p) => t + p.c, 0); let acc = 0, corte = 1;
+    for (let i = 0; i < cx.px.length - 1; i++) { acc += cx.px[i].c; corte = i + 1; if (acc >= tot / 2) break; }
+    caixas.splice(bi, 1, medir(cx.px.slice(0, corte)), medir(cx.px.slice(corte)));
+  }
+  const pal = caixas.map(cx => { let r = 0, g = 0, b = 0, t = 0; for (const p of cx.px) { r += p.r * p.c; g += p.g * p.c; b += p.b * p.c; t += p.c; } return [Math.round(r / t), Math.round(g / t), Math.round(b / t)]; });
+  const mapa = new Map();
+  caixas.forEach((cx, i) => { for (const p of cx.px) mapa.set((p.r << 16) | (p.g << 8) | p.b, i); });   // cada cor vai para a caixa em que caiu
+  return { pal, mapa };
+}
+async function _pngIndexado(canvas, n = 256) {
+  const w = canvas.width, h = canvas.height;
+  const rgba = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+  const { pal, mapa } = _paleta(rgba, n);
+  const raw = new Uint8Array((w + 1) * h);                // 1 byte de filtro (0) + w índices por linha
+  for (let y = 0, o = 0, q = 0; y < h; y++) { raw[o++] = 0; for (let x = 0; x < w; x++, q += 4) raw[o++] = mapa.get((rgba[q] << 16) | (rgba[q + 1] << 8) | rgba[q + 2]); }
+  const zl = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+  const ihdr = new Uint8Array(13), dv = new DataView(ihdr.buffer);
+  dv.setUint32(0, w); dv.setUint32(4, h); ihdr[8] = 8; ihdr[9] = 3;          // 8 bits, cor indexada
+  const plte = new Uint8Array(pal.length * 3); pal.forEach((c, i) => plte.set(c, i * 3));
+  const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), _pngChunk('IHDR', ihdr), _pngChunk('PLTE', plte), _pngChunk('IDAT', zl), _pngChunk('IEND', new Uint8Array(0))];
+  const out = new Uint8Array(partes.reduce((t, p) => t + p.length, 0)); let o = 0; partes.forEach(p => { out.set(p, o); o += p.length; });
+  return out;
+}
+
+// HTML (mesmo markup da tela Resultados) → PNG indexado, fora da viewport, como os demais exports.
+// Largura 760 e escala 3: o conversor a exibe com a largura útil da página (~654 px). Falha ALTO —
+// sem html2canvas ou sem canvas não há como desenhar, e um .docx sem a tabela seria pior que o erro.
+const P2_RIMG_LARG = 760, P2_RIMG_ESC = 3;
+async function _p2RasterizarBloco(html) {
+  if (!window.html2canvas) throw new Error('A biblioteca de imagens (html2canvas) não carregou — verifique a internet ou gere com "Tabela editável".');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = `position:absolute;left:0;top:${document.documentElement.scrollHeight + 60}px;width:${P2_RIMG_LARG}px;background:#fff;font-family:Inter,sans-serif`;
+  wrap.innerHTML = html; document.body.appendChild(wrap);
+  try {
+    await new Promise(r => setTimeout(r, 60));
+    _resolveStyleVars(wrap);
+    const canvas = await html2canvas(wrap, { scale: P2_RIMG_ESC, useCORS: true, backgroundColor: '#fff', logging: false });
+    return { data: await _pngIndexado(canvas), cw: canvas.width / P2_RIMG_ESC, ch: canvas.height / P2_RIMG_ESC };
+  } finally { document.body.removeChild(wrap); }
+}
+
 async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta = {}) {
   const DEF = perfil === 'default';
   const { Document, Packer, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
@@ -18374,6 +18487,8 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
   let logoHdr = null;
   if (cab && cab.marca.img) jobs.push(_p2RasterizarImg(cab.marca.img, 500).then(r => { logoHdr = r; }));
   await Promise.all(jobs);
+  // Resultados como imagem: sequencial de propósito (cada canvas @3x tem ~13 MB; em paralelo estoura memória num laudo de dezenas de grupos).
+  for (const el of doc.querySelectorAll('.p2rimg')) imgs.set(el, await _p2RasterizarBloco(el.innerHTML));
 
   const NB_DEF = { 'nb-irr': { bg: 'F1F5F9', fg: '334155' }, 'nb-bax': { bg: 'DCFCE7', fg: '14532D' }, 'nb-med': { bg: 'FEF3C7', fg: '78350F' }, 'nb-alt': { bg: 'FFEDD5', fg: '7C2D12' }, 'nb-cri': { bg: 'FEE2E2', fg: '7F1D1D' } };
   const NC_DEF = { 'nc-irr': ['E2E8F0', '334155'], 'nc-bax': ['BBF7D0', '14532D'], 'nc-med': ['FDE68A', '78350F'], 'nc-alt': ['FED7AA', '7C2D12'], 'nc-cri': ['FECACA', '7F1D1D'] };
@@ -18593,6 +18708,16 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
         const cap = el.querySelector('figcaption'); if (cap) out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: runs(cap, { italics: true, size: 18 }) }));
       }
       else if (tag === 'img') { const p = imgPara(el, 600, 820); if (p) out.push(p); }
+      else if (cl.contains('p2rimg')) {
+        const r = imgs.get(el);
+        if (r) {
+          const k = Math.min(654 / r.cw, 880 / r.ch);          // largura útil da página; a imagem não quebra, então também cabe em 1 folha
+          const alt = el.getAttribute('data-alt') || 'Tabela de resultados';
+          out.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60, after: 160 }, keepNext: true,
+            children: [new ImageRun({ data: r.data, type: 'png', transformation: { width: Math.round(r.cw * k), height: Math.round(r.ch * k) },
+              altText: { title: 'Tabela de resultados', description: alt, name: 'resultados' } })] }));
+        }
+      }
       else if (cl.contains('p2assin')) out.push(...assinaturas(el));
       else if (cl.contains('p2gap')) out.push(new Paragraph({ children: [], spacing: { after: 100 } }));
       else if (tag === 'div' || tag === 'section') {
@@ -18773,6 +18898,7 @@ async function baixarLaudoDocx() {
     await _p2SalvarSujos();
     const ctx = await _p2Contexto();
     if (ctx.erro) { toast(ctx.erro, 'w', 6000); return; }
+    ctx.docxImg = (document.getElementById('p2-docx-tab')?.value || 'imagem') === 'imagem';
     const html = _p2Build(ctx, { preview: false, docx: true });
     const pend = [...ctx.pend];
     if (pend.length && !confirm(`Há ${pend.length} campo(s) sem preenchimento que sairão como "[a preencher]" no documento:\n\n• ${pend.slice(0, 10).join('\n• ')}${pend.length > 10 ? `\n• … e mais ${pend.length - 10}` : ''}\n\nGerar o .docx assim mesmo?`)) return;
