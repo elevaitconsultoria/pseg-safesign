@@ -114,3 +114,25 @@ empresa) → pacote 3 (preenchimento automático) → pacote 4 (painel de pronti
 
 **Integração com a branch HSE** (`feat/hse-icao35`, ainda não em `develop`): `renderLaudo`/`gerarLaudoPDF` serão tocados pelas duas. Manter o ramo
 HSE antes do `_p2Ativo()`; passar o HTML do laudo HSE (`_buildLaudoHSEHTML`) pelo `_p2DocxConverter` (perfil `default` é o ponto de partida) e validar no Word.
+
+## Capítulo de resultados — paginação, negritos e tabela (2026-10-14)
+Pedido do usuário com prints do modelo (seção 13 e "Análise dos resultados do grupo") e da tabela da tela Resultados.
+- **Negritos do modelo**: na frase "Participaram da avaliação…" ficam em negrito o nº de colaboradores, o nº de grupos e
+  "uma participação de X%." (o efetivo NÃO); a frase "A tabela a seguir, apresenta a consolidação macro…" sai inteira em
+  negrito (`_p2paras(ctx,'res_geral',…,{negrito:true})` — vale também para texto editado). Na análise do grupo: "**1 fator de
+  risco**"/"**N fatores de risco**" e a lista de fatores "**A, B e C.**" (com o ponto).
+- **Lista de fatores só com os nomes**, como no modelo — antes saía "X, classificado como risco médio; Y, …". O nível de cada
+  fator está na tabela da página anterior. O modelo escreve "foram identificados 1 fator"; mantivemos a concordância
+  ("foi identificado 1 fator de risco").
+- **Participação com duas casas** ("51,39%") via `ctx.pctTxt`; `ctx.pct` deixou de ser arredondado — com o arredondamento,
+  49,6% virava 50% e a conclusão dizia que atendia ao mínimo.
+- **Paginação**: tabela de cada grupo sozinha na folha e análise na seguinte. Ver CLAUDE.md (classes `.p2pg`, `.p2bl`,
+  `.p2anlh`, `.p2pgh`, `.p2pk`). A folha da tabela fica com sobra embaixo e a da análise quase vazia — é o layout do modelo.
+- **Tabela `p2res`**: células centralizadas na vertical e zebra leve `#F3F8F4` nas linhas pares (no .docx e no PDF).
+- Validado com dados sintéticos (5 setores, um com 18 funções, um omitido por <5), modos "Por setor" e "Geral": .docx no Word
+  (COM → PDF) e HTML no Edge headless, paginação idêntica nos dois. **Não testado com sessão real nem com dado de cliente.**
+- **Mínimo de respondentes por grupo = 2** (`P2_N_MIN`, decisão do usuário em 2026-10-14, a partir de um laudo real com vários
+  setores de 1–2 respostas saindo como "<5 func."). Grupo de 1 respondente: bloco "Grupo com apenas 1 respondente — o resultado
+  não é apresentado porque corresponderia às respostas individuais…"; no quadro de GES aparece "1 (omitido)". Fecha a decisão
+  pendente "P2_N_MIN definitivo". Atenção: com 2 respondentes, cada um consegue inferir parte da resposta do outro — risco aceito
+  pelo usuário. O laudo `default` e o HSE não mudaram.
