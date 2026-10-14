@@ -1722,11 +1722,19 @@ Modelo da PSEG (18 capítulos, controle de revisões, elaboradores, plano de aç
 - **Imagens anexadas** (ART etc.) ficam só em memória (`_p2Anexos`) — nunca em banco, snapshot ou localStorage.
 - `P2_N_MIN = 5` (provisório): grupo menor sai como "<5 func.". Unificar com `N_MIN_ANONIMATO` quando o HSE chegar em `develop`.
 - Numeração dos fatores no v2.0 (1–11) é só de apresentação (`P2_FATORES_ORDEM`); o `cd` interno não muda.
+- **Capítulo de resultados segue a paginação e os negritos do modelo (2026-10-14)**: cada grupo com tabela abre página
+  (`.p2pg`); título + quadro SETORES/FUNÇÕES + tabela formam um bloco indivisível (`.p2bl` no CSS; `keepNext`/`keepLines` no
+  .docx); "Análise dos resultados do grupo" abre a página seguinte (`.p2anlh`). "Resultados por …" (`.p2pgh`) abre página e o
+  1º grupo (`.p2pk`) divide a folha com ela se couber. Tabela `p2res`: centralizada na vertical + zebra `#F3F8F4`. Negrito: os 3
+  números da frase "Participaram…", a frase que apresenta a tabela (`_p2paras(..., {negrito:true})`), a contagem e a lista de
+  fatores na análise (`_p2AnaliseGrupo` devolve HTML, só nomes). Participação com 2 casas (`ctx.pctTxt`, "51,39%"); `ctx.pct`
+  é o valor exato para comparar com o mínimo. Vale para PDF e .docx (mesmo HTML).
 
 **Regras que custaram tempo (não "limpar")**
 - **Cabeçalho/rodapé usam caixas de margem do `@page` (Chrome/Edge ≥ 131), nunca `position:fixed`** — no Chrome a impressão ignora o offset negativo e o cabeçalho cai no pé da página.
 - **PDF sem pop-up**: `window.open` + `document.write` falhava em silêncio e o `catch` fechava a janela. O visualizador é um iframe no app; **erro tem que aparecer na tela**, não só em toast.
 - **Anexos do modelo só LISTAM** ART e relatórios (vão por fora do sistema); o cartão de barras no anexo quebrava com dado real e pesava ~500 KB.
 - **Validação**: PDF → Chrome headless `--print-to-pdf` + PyMuPDF para olhar as páginas; `.docx` → abrir no Word via COM (`Word.Application`, `ExportAsFixedFormat`) e olhar o PDF. Reproduzir o CSP de produção com um servidor local que aplique o `_headers`.
-- Edição por scripts: `node -e` com heredoc e aspas quebra no bash; gravar o script em arquivo e rodar. O `psicomap-admin.html` é LF no índice — se um script reescrever com CRLF, o diff vira o arquivo inteiro.
+- Edição por scripts: `node -e` com heredoc e aspas quebra no bash; gravar o script em arquivo e rodar. O `psicomap-admin.html` é LF no índice — se um script reescrever com CRLF, o diff vira o arquivo inteiro. No worktree o arquivo está **CRLF no disco** (autocrlf): normalizar para LF ao casar o texto e gravar de volta com o EOL original.
+- **Paginação só se prova com estresse**: um grupo com 18 funções fez o Word partir o quadro SETORES/FUNÇÕES entre duas páginas (faltava `keepLines`) e o Chrome cortar a caixa — nada disso aparece com dado curto. Gerar com dado sintético longo e olhar as páginas do .docx (Word COM) **e** do PDF (Edge headless).
 - `gh` pode não estar autenticado no shell do agente; a credencial do Git (`git credential fill`) chama a API do GitHub.

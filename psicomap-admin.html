@@ -16449,10 +16449,12 @@ function _p2sub(ctx, texto) {
     return _p2v(ctx, x.v, x.r, x.raw);
   });
 }
-function _p2paras(ctx, id, def) {
+// opt.negrito: o parágrafo inteiro sai em negrito, como no modelo (ex.: a frase que apresenta a
+// tabela da visão geral) — vale também para o texto editado pelo usuário.
+function _p2paras(ctx, id, def, opt = {}) {
   const ov = _p2t((ctx.dCiclo.textos || {})[id]);
   const paras = ov ? ov.split(/\n{2,}/).map(s => s.trim()).filter(Boolean) : def;
-  const corpo = paras.map(p => `<p>${_p2sub(ctx, p)}</p>`).join('');
+  const corpo = paras.map(p => opt.negrito ? `<p><b>${_p2sub(ctx, p)}</b></p>` : `<p>${_p2sub(ctx, p)}</p>`).join('');
   // Modo edição (só no preview): o botão pede ao painel o texto CRU — com {{variáveis}} —,
   // porque editar o texto já renderizado gravaria o valor no lugar da variável.
   if (!ctx.edicao) return corpo;
@@ -17266,7 +17268,10 @@ async function _p2Contexto() {
   const dEst = _p2.est || {}, dEmp = _p2.empresa || {}, dCiclo = _p2.ciclo || {};
   const efetivo = _p2t(dEmp.efetivo) || (hcTotal ? String(hcTotal) : '');
   const nEfetivo = parseInt(efetivo, 10);
-  const pct = nEfetivo > 0 ? Math.round(linhas.length / nEfetivo * 100) : null;
+  // Valor exato (a comparação com o mínimo não pode arredondar 49,6 para 50) e texto no formato do
+  // modelo, com duas casas: "51,39%".
+  const pct = nEfetivo > 0 ? linhas.length / nEfetivo * 100 : null;
+  const pctTxt = pct != null ? pct.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
 
   // Elaboradores: cadastro da EST; sem ele, cai no responsável do laudo (nunca fica sem ninguém).
   let elaboradores = Array.isArray(dEst.elaboradores) ? dEst.elaboradores.filter(x => _p2t(x.nome)) : [];
@@ -17321,7 +17326,7 @@ async function _p2Contexto() {
   };
 
   return {
-    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, logoCli, caps,
+    emp, empId, ciclo, cicloId, linhas, gran, grs, hcRows, efetivo, nEfetivo, pct, pctTxt, logoCli, caps,
     dEst, dEmp, dCiclo, elaboradores, regTxt, revisoes, ultimaRev, residuais, semResp, vars,
     emissao: _p2DataEmissao(),
     ano: (_p2DataEmissao().split('/')[2]) || String(new Date().getFullYear()),
@@ -17399,15 +17404,17 @@ function _p2FiltroBox(ls) {
 }
 
 // Parágrafo "Neste grupo de exposição foram identificados N fatores…" — gerado dos dados.
+// Devolve HTML. Padrão do modelo: negrito na contagem ("1 fator de risco") e na lista de fatores,
+// só com os nomes (o nível de cada um está na tabela da página anterior).
 function _p2AnaliseGrupo(fatores) {
   const rel = fatores.filter(f => P2_RANK_NIVEL[f.nivel] >= P2_RANK_NIVEL['MÉDIO'])
     .sort((a, b) => (P2_RANK_NIVEL[b.nivel] - P2_RANK_NIVEL[a.nivel]) || ((P2_N_DE_CD[a.cd] || 99) - (P2_N_DE_CD[b.cd] || 99)));
   if (!rel.length) {
-    return 'Neste grupo de exposição não foram identificados fatores de risco classificados como médio ou superior. Todos os fatores foram classificados como risco baixo, situação em que nenhum controle adicional é necessário, cabendo a manutenção dos controles existentes e o monitoramento no próximo ciclo.';
+    return 'Neste grupo de exposição <b>não foram identificados fatores de risco</b> classificados como médio ou superior. Todos os fatores foram classificados como risco baixo, situação em que nenhum controle adicional é necessário, cabendo a manutenção dos controles existentes e o monitoramento no próximo ciclo.';
   }
   const n = rel.length;
-  const lista = rel.map(f => `${f.nome}, classificado como risco ${f.nivel.toLowerCase()}`).join('; ');
-  return `Neste grupo de exposição ${n === 1 ? 'foi identificado 1 fator' : `foram identificados ${n} fatores`} de risco que ${n === 1 ? 'demanda' : 'demandam'} adoção de medidas de controle com responsáveis e prazos definidos, a saber: ${lista}. Os demais fatores foram classificados como risco baixo, situação em que nenhum controle adicional é necessário, cabendo a manutenção dos controles existentes e o monitoramento no próximo ciclo.`;
+  const lista = _p2e(_p2lista(rel.map(f => f.nome)));
+  return `Neste grupo de exposição ${n === 1 ? 'foi identificado <b>1 fator de risco</b>' : `foram identificados <b>${n} fatores de risco</b>`} que ${n === 1 ? 'demanda' : 'demandam'} adoção de medidas de controle com responsáveis e prazos definidos, a saber: <b>${lista}.</b> Os demais fatores foram classificados como risco baixo, situação em que nenhum controle adicional é necessário, cabendo a manutenção dos controles existentes e o monitoramento no próximo ciclo.`;
 }
 
 // Numeração corrida SOBRE O QUE ENTRA no documento: ocultar um capítulo renumera os seguintes e o
@@ -17506,7 +17513,7 @@ function _p2CapGes(ctx) {
   const rows = comRes.map(x => _p2tr([_p2td(`<b>${_p2e(x.g.nome)}</b>`), _p2td(`<span class="p2v">${_p2e(x.ref)}</span>`), _p2td(`<span class="p2v">${_p2e(x.setores.join(', '))}</span>`), _p2td(`<span class="p2v">${x.omit ? '&lt;' + P2_N_MIN : x.n}</span>`, 'class="c"')]));
   let nota = '';
   if (ctx.pct != null) {
-    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pct}%</span>. A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
+    nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a uma participação de <span class="p2v">${ctx.pctTxt}%</span>. A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
   } else {
     ctx.pend.add('Efetivo da empresa (para calcular a participação)');
     nota = `<p>Total de <span class="p2v">${ctx.linhas.length}</span> respondentes. <span class="p2v p2pend">[a preencher: efetivo da empresa para calcular a participação]</span> A participação mínima recomendada pela metodologia é de ${P2_PART_MIN}% por grupo de exposição.</p>`;
@@ -17601,31 +17608,34 @@ function _p2CapResult(ctx) {
   const geralFatores = omitTotal ? null : calcFatores(ctx.linhas);
   const consolidado = ctx.gran === 'consolidado';
   const part = ctx.pct != null
-    ? `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} ${consolidado ? 'grupo de exposição' : 'grupos de exposição'}</span>, sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a <span class="p2v">uma participação de ${ctx.pct}%</span>.`
-    : `Participaram da avaliação <span class="p2v">${total} colaboradores</span>, distribuídos em <span class="p2v">${ctx.grs.length} grupos de exposição</span>. ${_p2v(ctx, '', 'Efetivo da empresa (Dados do laudo → Empresa)')}`;
-  const analise = fatores => `<h3>Análise dos resultados do grupo</h3><p>${_p2e(_p2AnaliseGrupo(fatores))}</p>${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}`;
+    ? `Participaram da avaliação <b><span class="p2v">${total} colaboradores</span></b>, distribuídos em <b><span class="p2v">${ctx.grs.length} ${consolidado ? 'grupo de exposição' : 'grupos de exposição'}</span>,</b> sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a <b><span class="p2v">uma participação de ${ctx.pctTxt}%</span>.</b>`
+    : `Participaram da avaliação <b><span class="p2v">${total} colaboradores</span></b>, distribuídos em <b><span class="p2v">${ctx.grs.length} grupos de exposição</span></b>. ${_p2v(ctx, '', 'Efetivo da empresa (Dados do laudo → Empresa)')}`;
+  // A análise abre página nova (classe p2anlh): a página anterior fica só com a tabela do grupo.
+  const analise = fatores => `<h3 class="p2anlh">Análise dos resultados do grupo</h3><p>${_p2AnaliseGrupo(fatores)}</p>${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}`;
   const nResp = n => `<span class="p2gn">(${n} respondente${n !== 1 ? 's' : ''})</span>`;
 
   // Visão geral: um bloco com todo o recorte (equivale ao "Todos os setores filtrados" da tela).
   const visao = omitTotal
     ? '<p><i>Visão geral omitida: o recorte tem menos respondentes que o mínimo para preservar o anonimato.</i></p>'
-    : `<div class="p2grp"><h2>Todos os setores filtrados ${nResp(total)}</h2>${_p2FiltroBox(ctx.linhas)}${_p2TabelaFatores(geralFatores)}${consolidado ? analise(geralFatores) : ''}</div>`;
+    : `<div class="p2grp p2pg"><div class="p2bl"><h2>Todos os setores filtrados ${nResp(total)}</h2>${_p2FiltroBox(ctx.linhas)}${_p2TabelaFatores(geralFatores)}</div>${consolidado ? analise(geralFatores) : ''}</div>`;
 
   // Por grupo (setor / GHE / agrupamento / preset): mesmo bloco, um por grupo. No modo Geral não há
   // o que repetir — a visão geral já é o único bloco.
+  let primeiro = true;
   const grupos = consolidado ? '' : ctx.grs.map(x => {
     const cab = `<h2 id="p2-g-${_p2e(x.g.nome).replace(/\W+/g, '-')}">${_p2e(x.titulo)} ${nResp(x.n)}</h2>`;
     if (x.omit) {
       return `<div class="p2grp">${cab}<p class="p2omit"><b>&lt;${P2_N_MIN} func.</b> — resultados omitidos para preservar o anonimato. A ausência de resultado não indica ausência de risco.</p></div>`;
     }
-    return `<div class="p2grp">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}${analise(x.fatores)}</div>`;
+    const pg = primeiro ? 'p2pk' : 'p2pg'; primeiro = false;
+    return `<div class="p2grp ${pg}"><div class="p2bl">${cab}${_p2FiltroBox(x.ls)}${_p2TabelaFatores(x.fatores)}</div>${analise(x.fatores)}</div>`;
   }).join('');
 
   const rotulo = { ghe: 'por GES (setor × função)', segregado: 'por setor', agrupado: 'por agrupamento de setores', preset: 'por preset de filtro', consolidado: 'geral (todos os setores)' }[ctx.gran] || '';
   return `${_p2paras(ctx, 'res_intro', T.res_intro)}
   <h2>Visão geral consolidada da unidade</h2>
-  <p>${part}</p>${_p2paras(ctx, 'res_geral', [T.res_geral_p])}${_p2NivelFiltro ? `<p class="p2leg">Filtro de nível de risco aplicado às tabelas: ${_p2e(_p2NivelFiltro.join(', '))}. A análise textual considera todos os fatores.</p>` : ''}${visao}
-  ${consolidado ? '' : `<h2>Resultados ${_p2e(rotulo)}</h2>${T.res_ges_intro.map(p => `<p>${_p2e(p)}</p>`).join('')}`}${grupos}`;
+  <p>${part}</p>${_p2paras(ctx, 'res_geral', [T.res_geral_p], { negrito: true })}${_p2NivelFiltro ? `<p class="p2leg">Filtro de nível de risco aplicado às tabelas: ${_p2e(_p2NivelFiltro.join(', '))}. A análise textual considera todos os fatores.</p>` : ''}${visao}
+  ${consolidado ? '' : `<h2 class="p2pgh">Resultados ${_p2e(rotulo)}</h2>${T.res_ges_intro.map(p => `<p>${_p2e(p)}</p>`).join('')}`}${grupos}`;
 }
 
 function _p2CapPlano(ctx) {
@@ -17654,7 +17664,7 @@ function _p2CapConcl(ctx) {
   const base = ctx.pct != null
     ? `A avaliação dos fatores de risco psicossociais da unidade foi realizada por meio da aplicação de questionário de autorrelato aos trabalhadores, organizado por grupo de exposição similar, e contou com a participação de {{n}} colaboradores sobre um efetivo de {{ef}} colaboradores informado pela empresa, o que corresponde a uma participação de {{pct}}%. ${ctx.pct >= P2_PART_MIN ? 'A participação obtida atende ao percentual mínimo recomendado pela metodologia, o que confere representatividade coletiva aos resultados apresentados.' : `A participação obtida é inferior ao percentual mínimo recomendado pela metodologia (${P2_PART_MIN}%); os resultados devem ser interpretados com cautela quanto à representatividade coletiva.`}`
     : 'A avaliação dos fatores de risco psicossociais da unidade foi realizada por meio da aplicação de questionário de autorrelato aos trabalhadores, organizado por grupo de exposição similar, e contou com a participação de {{n}} colaboradores. [efetivo da empresa não informado]';
-  const p1 = _p2e(base).replace('{{n}}', `<span class="p2v">${ctx.linhas.length}</span>`).replace('{{ef}}', `<span class="p2v">${_p2e(ctx.efetivo)}</span>`).replace('{{pct}}', `<span class="p2v">${ctx.pct}</span>`);
+  const p1 = _p2e(base).replace('{{n}}', `<span class="p2v">${ctx.linhas.length}</span>`).replace('{{ef}}', `<span class="p2v">${_p2e(ctx.efetivo)}</span>`).replace('{{pct}}', `<span class="p2v">${ctx.pctTxt}</span>`);
   const dims = T.concl_dim.map(([tit, ps]) => `<h3>${_p2e(tit)}</h3>${ps.map(p => `<p${/^[“"]/.test(p) ? ' class="p2cit"' : ''}>${_p2e(p)}</p>`).join('')}`).join('');
   const enc = _p2paras(ctx, 'encaminhamento', T.encaminhamento[1]);
   return `<p>${p1}</p>${_p2paras(ctx, 'conclusao', T.conclusao)}${dims}
@@ -17725,7 +17735,7 @@ h3{font-size:11pt;font-weight:700;font-style:italic;margin:11pt 0 5pt;page-break
 .p2q2 .p2dim td{background:#E8EEE9}
 .p2q1 td:nth-child(2){width:56%}
 .p2res td{font-size:9pt}
-.p2grp>h2{background:#f1f5f9;border-left:3pt solid #111827;padding:5pt 9pt;margin:14pt 0 7pt;font-size:11.5pt}
+.p2grp h2{background:#f1f5f9;border-left:3pt solid #111827;padding:5pt 9pt;margin:14pt 0 7pt;font-size:11.5pt}
 .p2gn{font-weight:400;font-size:9.5pt;color:#6b7280}
 .p2fl{border:.5pt solid #d1d5db;border-left:3pt solid #1F7A3D;background:#f8fafc;padding:4pt 8pt;margin:0 0 7pt;font-size:9pt;line-height:1.45}
 .p2fl b{font-size:7.5pt;letter-spacing:.5pt;color:#6b7280;display:inline-block;min-width:46pt}
@@ -17757,6 +17767,16 @@ tr.p2dim{page-break-after:avoid}
 .p2toc a{color:#000;text-decoration:none;display:flex;gap:6pt}
 .p2toc .n{min-width:20pt}
 .p2grp{margin-bottom:10pt}
+/* Resultados: cada grupo com tabela abre página (a tabela ocupa uma folha só) e a análise do grupo
+   abre a seguinte, como no modelo. Linhas centralizadas na vertical e zebradas para leitura. */
+.p2pg{page-break-before:always}
+.p2pg h2:first-child{margin-top:0}
+.p2bl{page-break-inside:avoid}
+.p2res{page-break-inside:avoid}
+.p2res td{vertical-align:middle}
+.p2res tbody tr:nth-child(even) td{background:#F3F8F4}
+.p2anlh{page-break-before:always;margin-top:0}
+.p2pgh{page-break-before:always;margin-top:0}
 .p2omit{background:#f3f4f6;border:.5pt solid #9ca3af;padding:6pt 8pt}
 .p2assin{display:flex;gap:30pt;margin-top:34pt;flex-wrap:wrap}
 .p2ass{flex:1;min-width:150pt;text-align:center;font-size:10pt;page-break-inside:avoid}
@@ -18460,27 +18480,33 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
     const colW = w.map(x => Math.round(x / tot * TXT_W));
     const diff = TXT_W - colW.reduce((a, b) => a + b, 0); colW[colW.length - 1] += diff;
     const q2 = cls.contains('p2q2');
+    const res = cls.contains('p2res');
+    let iCorpo = -1;
 
-    const rows = trs.map(tr => {
+    const rows = trs.map((tr, iTr) => {
       let ci = 0;
       const dim = tr.classList.contains('p2dim');
+      const corpo = tr.parentNode.tagName.toLowerCase() !== 'thead';
+      if (corpo) iCorpo++;
+      const zebra = res && corpo && iCorpo % 2 === 1;
+      const prende = res && iTr < trs.length - 1;
       const cells = [...tr.children].map(c => {
         const sp = parseInt(c.getAttribute('colspan') || '1', 10), rs = parseInt(c.getAttribute('rowspan') || '1', 10);
         const isTh = c.tagName.toLowerCase() === 'th';
         const width = colW.slice(ci, ci + sp).reduce((a, b) => a + b, 0); ci += sp;
-        let fill = hex(stl(c, 'background')) || (DEF ? defFill(c) : null) || (isTh ? VERDE : dim ? (q2 ? 'E8EEE9' : 'CCFFCC') : c.classList.contains('p2mx-ax') ? 'A6A6A6' : null);
+        let fill = hex(stl(c, 'background')) || (DEF ? defFill(c) : null) || (isTh ? VERDE : dim ? (q2 ? 'E8EEE9' : 'CCFFCC') : c.classList.contains('p2mx-ax') ? 'A6A6A6' : zebra ? 'F3F8F4' : null);
         let color = hex(stl(c, 'color')) || (DEF ? defColor(c) : null) || (isTh ? 'FFFFFF' : undefined);
         const bold = isTh || dim || (DEF && /nivel-cell|axis-label|p-label|s-label/.test(c.className)) || c.classList.contains('k') || c.classList.contains('p2mx-c') || c.classList.contains('p2mx-ax');
         const center = c.classList.contains('c') || mx || (DEF && /nivel-cell|axis-label|s-label/.test(c.className)) || (DEF && c.getAttribute('style') && /text-align:\s*center/.test(c.getAttribute('style')));
         const vert = c.classList.contains('p2mx-vert');
         const f = { size: (mx || mxd) ? 15 : DEF ? 17 : 19, bold, color };
         // várias linhas dentro da célula (br) ficam num único parágrafo
-        const para = new Paragraph({ children: runs(c, f), alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT, spacing: { before: 30, after: 30 } });
+        const para = new Paragraph({ children: runs(c, f), alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT, spacing: { before: 30, after: 30 }, keepNext: prende || undefined });
         return new TableCell({
           children: [para], columnSpan: sp > 1 ? sp : undefined, rowSpan: rs > 1 ? rs : undefined,
           width: { size: width, type: WidthType.DXA },
           shading: fill ? { type: ShadingType.CLEAR, fill, color: 'auto' } : undefined,
-          verticalAlign: (mx || mxd) ? VerticalAlign.CENTER : VerticalAlign.TOP,
+          verticalAlign: (mx || mxd || res) ? VerticalAlign.CENTER : VerticalAlign.TOP,
           textDirection: vert ? TextDirection.BOTTOM_TO_TOP_LEFT_TO_RIGHT : undefined,
           margins: { top: 40, bottom: 40, left: 90, right: 90 },
         });
@@ -18556,8 +18582,10 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
       }
       if (tag === 'h1') out.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: el.parentNode.classList.contains('p2cap'), children: [new TextRun({ text: el.textContent.replace(/\s+/g, ' ').trim() })] }));
       else if (tag === 'h2') {
-        const barra = el.parentNode && el.parentNode.classList.contains('p2grp');
-        out.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: runs(el, barra ? { size: 23 } : {}).concat([]),
+        const grp = el.closest('.p2grp');
+        const barra = !!grp;
+        const novaPag = (grp && grp.classList.contains('p2pg') && grp.querySelector('h2') === el) || cl.contains('p2pgh');
+        out.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: runs(el, barra ? { size: 23 } : {}).concat([]), pageBreakBefore: novaPag || undefined,
           shading: barra ? { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' } : undefined,
           border: barra ? { left: { style: BorderStyle.SINGLE, size: 18, color: '111827', space: 6 } } : undefined }));
       }
@@ -18567,10 +18595,10 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
         lin.forEach((d, i) => { if (i) kids.push(new TextRun({ break: 1 })); d.childNodes.forEach(n => {
           if (n.nodeType === 1 && n.tagName.toLowerCase() === 'b') kids.push(new TextRun({ text: n.textContent + '   ', bold: true, size: 15, color: '6B7280' }));
           else kids.push(new TextRun({ text: n.textContent.trim(), size: 18 })); }); });
-        out.push(new Paragraph({ children: kids, spacing: { after: 140 }, shading: { type: ShadingType.CLEAR, fill: 'F8FAFC', color: 'auto' },
+        out.push(new Paragraph({ children: kids, spacing: { after: 140 }, keepNext: true, keepLines: true, shading: { type: ShadingType.CLEAR, fill: 'F8FAFC', color: 'auto' },
           border: { left: { style: BorderStyle.SINGLE, size: 18, color: VERDE, space: 6 } } }));
       }
-      else if (tag === 'h3') out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(el) }));
+      else if (tag === 'h3') out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(el), pageBreakBefore: cl.contains('p2anlh') || undefined }));
       else if (tag === 'p') {
         const ex = { alignment: AlignmentType.JUSTIFIED };
         let f = {};
