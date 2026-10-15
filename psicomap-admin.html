@@ -17760,7 +17760,7 @@ function _p2CapResult(ctx) {
     ? `Participaram da avaliação <b><span class="p2v">${total} colaboradores</span></b>, distribuídos em <b><span class="p2v">${ctx.grs.length} ${consolidado ? 'grupo de exposição' : 'grupos de exposição'}</span>,</b> sobre um efetivo de <span class="p2v">${_p2e(ctx.efetivo)}</span> colaboradores, o que corresponde a <b><span class="p2v">uma participação de ${ctx.pctTxt}%</span>.</b>`
     : `Participaram da avaliação <b><span class="p2v">${total} colaboradores</span></b>, distribuídos em <b><span class="p2v">${ctx.grs.length} grupos de exposição</span></b>. ${_p2v(ctx, '', 'Efetivo da empresa (Dados do laudo → Empresa)')}`;
   // A análise abre página nova (classe p2anlh): a página anterior fica só com a tabela do grupo.
-  const analise = fatores => `<h3 class="p2anlh">Análise dos resultados do grupo</h3><p>${_p2AnaliseGrupo(fatores)}</p>${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}`;
+  const analise = fatores => `<div class="p2ana"><h3 class="p2anlh">Análise dos resultados do grupo</h3><p>${_p2AnaliseGrupo(fatores)}</p>${_p2paras(ctx, 'res_ges', [T.res_ges_cons, T.res_ges_rec])}</div>`;
   const nResp = n => `<span class="p2gn">(${n} respondente${n !== 1 ? 's' : ''})</span>`;
 
   // Visão geral: um bloco com todo o recorte (equivale ao "Todos os setores filtrados" da tela).
@@ -17925,6 +17925,10 @@ tr.p2dim{page-break-after:avoid}
 .p2res td{vertical-align:middle}
 .p2res tbody tr:nth-child(even) td{background:#F3F8F4}
 .p2anlh{page-break-before:always;margin-top:0}
+/* Analise do grupo: Arial 12, titulo sem italico, paragrafos com recuo de primeira linha (tab) */
+.p2ana,.p2ana h3,.p2ana p{font-family:Arial,Helvetica,sans-serif;font-size:12pt}
+.p2ana h3{font-style:normal}
+.p2ana p{text-indent:1.25cm}
 .p2pgh{page-break-before:always;margin-top:0}
 .p2omit{background:#f3f4f6;border:.5pt solid #9ca3af;padding:6pt 8pt}
 .p2assin{display:flex;gap:30pt;margin-top:34pt;flex-wrap:wrap}
@@ -18747,7 +18751,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
         out.push(new Paragraph({ children: kids, spacing: { after: 140 }, keepNext: true, keepLines: true, shading: { type: ShadingType.CLEAR, fill: 'F8FAFC', color: 'auto' },
           border: { left: { style: BorderStyle.SINGLE, size: 18, color: VERDE, space: 6 } } }));
       }
-      else if (tag === 'h3') out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(el), pageBreakBefore: cl.contains('p2anlh') || undefined }));
+      else if (tag === 'h3') out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(el, el.closest('.p2ana') ? { font: 'Arial', size: 24, italics: false } : {}), pageBreakBefore: cl.contains('p2anlh') || undefined }));
       else if (tag === 'p') {
         const ex = { alignment: AlignmentType.JUSTIFIED };
         let f = {};
@@ -18760,6 +18764,7 @@ async function _p2DocxConverter(D, ctx, htmlStr, destacar, perfil = 'p2', meta =
         else if (cl.contains('p2sub')) ex.spacing = { after: 40 };
         if (!cl.contains('p2leg') && !ex.spacing) ex.spacing = { after: 120, line: 276 };
         if (DEF && !f.size) f = { ...f, size: 20 };
+        if (el.closest('.p2ana')) { f = { ...f, font: 'Arial', size: 24 }; ex.indent = { firstLine: 709 }; }   // Arial 12 + tab
         out.push(new Paragraph({ children: runs(el, f), ...ex }));
       }
       else if (tag === 'ul' || tag === 'ol') out.push(...lista(el, 0));
