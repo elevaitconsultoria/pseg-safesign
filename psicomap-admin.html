@@ -7417,8 +7417,9 @@ async function exportarResultados(fmt, opts = {}) {
   const canvas = await _capturarAnaliseCanvas(3);
 
   const today = new Date().toISOString().slice(0, 10);
-  const sufixo = opts.sufixo ? opts.sufixo + '-' : '';
-  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `psicomap-analise-${sufixo}${today}.png` });
+  // Nome: <escopo>-<analise>-<data>. Sem sufixo explicito, a analise e a que esta na tela.
+  const conteudo = opts.sufixo || (ANALISES_PACOTE.find(x => x.vm === window._viewMode && (x.vm === 'questao' || x.dm === window._displayMode)) || {}).slug || 'analise';
+  const a = Object.assign(document.createElement('a'), { href: canvas.toDataURL('image/png'), download: `${_escopoResultados().slug}-${conteudo}-${today}.png` });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   if (!opts.silencioso) toast('✓ PNG exportado.', 'g');
 }
@@ -7507,15 +7508,43 @@ function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes) {
   pdf.save(nomeArquivo);
 }
 
-const _SEG_SLUG = { consolidado: 'visao-geral', segregado: 'setor', agrupado: 'agrupamento', ghe: 'ghe' };
+// Escopo (GHE, agrupamento ou setor) que o arquivo exportado cobre, para nomear o download.
+// Vale o primeiro combo da lista que esteja de fato filtrado para UM item (ordem = do recorte
+// mais especifico ao menos); sem isso, se os dados filtrados so tem um setor, usa ele; senao "geral".
+// "Todos selecionados" e "nenhum" significam SEM filtro, igual a _grupoValoresFiltro.
+function _slugArquivo(txt) {
+  return String(txt || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+}
+function _escopoArquivo(comboIds, setoresRef) {
+  let nome = '';
+  for (const cid of comboIds) {
+    const st = comboState[cid];
+    const univ = (comboItems[cid] && comboItems[cid]()) || [];
+    if (st && st.size === 1 && univ.length > 1) { nome = [...st][0]; break; }
+  }
+  if (!nome) {
+    const uni = [...new Set((setoresRef || []).filter(Boolean))];
+    if (uni.length === 1) nome = uni[0];
+  }
+  return { nome: nome || 'Geral', slug: _slugArquivo(nome) || 'geral' };
+}
+// Laudo: mesmos combos do Relatorio; `linhas` sao as ja filtradas (fallback: setor unico).
+function _escopoLaudo(linhas) {
+  return _escopoArquivo(['combo-ld-ghe-par', 'combo-ld-ghe', 'combo-ld-setor'], (linhas || []).map(r => r.setor));
+}
+// Resultados: do recorte mais especifico (GHE) ao menos (setor).
+function _escopoResultados() {
+  return _escopoArquivo(['combo-ghe-par', 'combo-ghe', 'combo-setor'], window._analiseData?.setoresAtivos);
+}
 
 // Anexos para o cliente: 3 PDFs + 1 PNG, download automatico (sem dialogo de impressao).
 // Sequencial: as analises compartilham #view-content. risco/tabela e capturada UMA vez e
 // serve ao PDF e ao PNG.
 const ANEXOS_CLIENTE = [
-  { vm: 'risco',   dm: 'grafica', nome: 'risco_grafico',   titulo: 'Riscos — gráfico',   png: false },
-  { vm: 'risco',   dm: 'tabela',  nome: 'risco_tabela',    titulo: 'Riscos — tabela',    png: true  },
-  { vm: 'questao', dm: 'grafica', nome: 'questao_grafico', titulo: 'Questões — gráfico', png: false },
+  { vm: 'risco',   dm: 'grafica', nome: 'risco-grafico',   titulo: 'Riscos — gráfico',   png: false },
+  { vm: 'risco',   dm: 'tabela',  nome: 'risco-tabela',    titulo: 'Riscos — tabela',    png: true  },
+  { vm: 'questao', dm: 'grafica', nome: 'questao-grafico', titulo: 'Questões — gráfico', png: false },
 ];
 
 async function baixarAnexosCliente(btn) {
@@ -7525,7 +7554,7 @@ async function baixarAnexosCliente(btn) {
 
   const htmlOrig = btn ? btn.innerHTML : '';
   const vmOrig = window._viewMode, dmOrig = window._displayMode;
-  const base = (_SEG_SLUG[window._segMode] || _SEG_SLUG[SEG_PADRAO]) + '_';
+  const base = _escopoResultados().slug + '-';
   if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
 
   const falhas = [];
@@ -7843,7 +7872,7 @@ function exportarResultadosPrint(secoes) {
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Análise de Riscos Psicossociais${empNome ? ' · ' + empNome : ''}</title>
+<title>Análise de Riscos Psicossociais${empNome ? ' · ' + empNome : ''} · ${_escopoResultados().nome}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -15751,7 +15780,7 @@ function _laudoCardRiscoHTML(f) {
 }
 
 // ── Gerador do HTML completo do laudo ───────────────────────────
-function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro = '', estPerfil, niveisLd = [], empId = '' }) {
+function _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro = '', estPerfil, niveisLd = [], empId = '', escopoNome = '' }) {
   const e = _esc;
   const NORDEM = ['IRRELEVANTE','BAIXO','MÉDIO','ALTO','CRÍTICO'];
   const NB = {IRRELEVANTE:'nb-irr',BAIXO:'nb-bax',MÉDIO:'nb-med',ALTO:'nb-alt',CRÍTICO:'nb-cri'};
@@ -16079,7 +16108,7 @@ tr:last-child td{border-bottom:none}
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PsicoMap — Laudo — ${e(nomeEmp)}</title>
+<title>PsicoMap — Laudo — ${e(nomeEmp)}${escopoNome ? ' — ' + e(escopoNome) : ''}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>${css}</style></head>
 <body>
@@ -17950,7 +17979,7 @@ function _p2Build(ctx, { preview, docx }) {
          <button onclick="parent._p2AbrirNovaAba()">Abrir em nova aba</button>
          <button onclick="parent.baixarLaudoDocx()">Baixar .docx</button>
          <button onclick="parent._p2FecharViewer()">Fechar</button></div>`;
-  const titulo = `Laudo ${ctx.emp.razao_social || ctx.emp.nome || ''}${ctx.ciclo ? ' - ' + ctx.ciclo.nome : ''}`.trim();
+  const titulo = `Laudo ${ctx.emp.razao_social || ctx.emp.nome || ''}${ctx.ciclo ? ' - ' + ctx.ciclo.nome : ''} - ${_escopoLaudo(ctx.linhas).nome}`.trim();
   const nota = preview ? '<div class="p2note">Cabeçalho e rodapé aparecem em todas as páginas do PDF; a numeração de páginas é aplicada na impressão.</div>' : '';
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${_p2e(titulo)}</title>
 <style>${P2_CSS}</style><style>${_p2PageCss(ctx)}</style></head><body${preview ? ' class="p2-hl"' : ''}>${tool}${nota}
@@ -18807,7 +18836,7 @@ async function baixarLaudoDocx() {
     if (pend.length && !confirm(`Há ${pend.length} campo(s) sem preenchimento que sairão como "[a preencher]" no documento:\n\n• ${pend.slice(0, 10).join('\n• ')}${pend.length > 10 ? `\n• … e mais ${pend.length - 10}` : ''}\n\nGerar o .docx assim mesmo?`)) return;
     const destacar = !!document.getElementById('p2-docx-destacar')?.checked;
     const blob = await _p2DocxConverter(D, ctx, html, destacar);
-    const nome = ('Laudo_' + (ctx.emp.razao_social || ctx.emp.nome || 'empresa') + (ctx.ciclo ? '_' + ctx.ciclo.nome : '')).replace(/[^\w\-]+/g, '_').replace(/_+/g, '_').slice(0, 90) + '.docx';
+    const nome = ('Laudo_' + (ctx.emp.razao_social || ctx.emp.nome || 'empresa') + (ctx.ciclo ? '_' + ctx.ciclo.nome : '') + '_' + _escopoLaudo(ctx.linhas).slug).replace(/[^\w\-]+/g, '_').replace(/_+/g, '_').slice(0, 90) + '.docx';
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
     _laudoUltimoN = ctx.linhas.length;
@@ -18994,14 +19023,15 @@ async function gerarLaudoPDF(opts = {}) {
     const cicloNome   = cicloId ? (_ciclos.find(c=>c.id===cicloId)?.nome||'') : 'Avaliação ' + new Date().getFullYear();
 
     let html;
+    const escopo = _escopoLaudo(linhas);
     if (opts.docx) window._laudoDocxMode = true;
-    try { html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro, estPerfil: _estPerfil, niveisLd, empId }); }
+    try { html = _buildLaudoHTML({ linhas, nomeEmp, cicloNome, hoje, responsavel, registro, estPerfil: _estPerfil, niveisLd, empId, escopoNome: escopo.nome }); }
     finally { window._laudoDocxMode = false; }
 
     if (opts.docx) {
       const D = await _p2CarregarDocx();
       const blob = await _p2DocxConverter(D, null, html, false, 'default', { estNome: _estPerfil?.nome_empresa || 'PsicoMap', titulo: 'Laudo — ' + nomeEmp });
-      _p2BaixarBlob(blob, ('Laudo_' + nomeEmp + (cicloNome ? '_' + cicloNome : '')));
+      _p2BaixarBlob(blob, ('Laudo_' + nomeEmp + (cicloNome ? '_' + cicloNome : '') + '_' + escopo.slug));
       _p2UltimoSnap = null;
       toast('.docx gerado — abra no Word ou importe no Google Docs.', 'g');
       return;
