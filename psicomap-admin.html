@@ -2389,6 +2389,16 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <div class="filter-label">Exportação</div>
         <div id="chk-data-emissao"></div>
         <div style="font-size:10px;color:var(--tl);margin-top:4px">Vale para o PDF e para a imagem exportados desta tela.</div>
+        <!-- Dividir os "Anexos para o cliente": Geral = 4 arquivos do recorte atual; Por GHE/setor =
+             um .zip com uma pasta por grupo. A opcao GHE some quando a empresa nao tem matriz. -->
+        <div style="margin-top:8px">
+          <div style="font-size:11px;color:var(--tm);margin-bottom:3px">Anexos para o cliente — dividir por</div>
+          <select id="f-anexos-div" class="filter-select">
+            <option value="geral">Geral (um conjunto)</option>
+            <option value="ghe">Por GHE (um .zip)</option>
+            <option value="setor">Por setor (um .zip)</option>
+          </select>
+        </div>
       </div>
 
       <button class="btn btn-g" style="width:100%;justify-content:center;padding:12px" onclick="rodarAnalise()">
@@ -7472,7 +7482,7 @@ async function _capturarAnaliseCanvas(scale, fatias) {
 // PDF direto do canvas, sem janela de impressao (logo sem cabecalho/rodape do navegador e
 // com download automatico). Pagina A4 com margem; corta preferindo o intervalo entre cards.
 // Texto vira imagem — e o preco de nao passar pelo window.print().
-function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes) {
+function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes, comoBlob = false) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   const PW = 210, PH = 297, M = 10;
@@ -7505,6 +7515,7 @@ function _baixarPdfDeCanvas(canvas, nomeArquivo, cortes) {
     if (i > 0) pdf.addPage();
     pdf.addImage(parte.toDataURL('image/jpeg', 0.92), 'JPEG', M, M, util.w, h / pxPorMm);
   });
+  if (comoBlob) return pdf.output('blob');
   pdf.save(nomeArquivo);
 }
 
@@ -7535,6 +7546,7 @@ function _escopoLaudo(linhas) {
 }
 // Resultados: do recorte mais especifico (GHE) ao menos (setor).
 function _escopoResultados() {
+  if (window._anexoGrupo) return { nome: window._anexoGrupo.nome, slug: window._anexoGrupo.slug };
   return _escopoArquivo(['combo-ghe-par', 'combo-ghe', 'combo-setor'], window._analiseData?.setoresAtivos);
 }
 
@@ -7551,6 +7563,8 @@ async function baixarAnexosCliente(btn) {
   if (!_podeAnexosCliente()) { toast('Ação indisponível para o seu perfil.', 'r'); return; }
   if (!window._analiseData) { toast('Rode a análise primeiro.', 'w'); return; }
   if (btn?.dataset.busy === '1') return;
+  const modo = document.getElementById('f-anexos-div')?.value || 'geral';
+  if (modo !== 'geral') return _baixarAnexosPorGrupo(btn, modo);
 
   const htmlOrig = btn ? btn.innerHTML : '';
   const vmOrig = window._viewMode, dmOrig = window._displayMode;
@@ -7584,6 +7598,108 @@ async function baixarAnexosCliente(btn) {
                         : '✓ 4 arquivos baixados. Se faltar algum, permita downloads múltiplos neste site.',
           falhas.length ? 'w' : 'g', 5000);
   } finally {
+    window._displayMode = dmOrig;
+    try { _setViewMode(vmOrig); } catch (e) { console.warn('restaurar view:', e); }
+    if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
+  }
+}
+
+// ── Anexos para o cliente, divididos por GHE ou setor ───────────────────────
+// Grupos a partir do recorte JA aplicado na tela (filtros da sidebar valem). Setor = valor cru da
+// resposta; GHE = o mesmo agruparPorPares do laudo, e o grupo residual (fora de todo GHE) e ignorado.
+function _anexosGrupos(modo) {
+  const filtrado = window._analiseData?.filtrado || [];
+  if (modo === 'setor') {
+    return [...new Set(filtrado.map(r => r.setor))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map(nome => ({ nome, tipo: 'setor', linhas: filtrado.filter(r => r.setor === nome) }));
+  }
+  return agruparPorPares(filtrado, gruposGhe).grupos
+    .filter(g => !g._residual)
+    .map(g => ({ nome: g.nome, tipo: 'ghe', linhas: _linhasDoGrupo(g, filtrado) }))
+    .filter(g => g.linhas.length);
+}
+
+let _jszipPromise = null;
+function _carregarJSZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  if (_jszipPromise) return _jszipPromise;
+  _jszipPromise = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    sc.onload = () => window.JSZip ? res(window.JSZip) : rej(new Error('JSZip carregou vazio'));
+    sc.onerror = () => { _jszipPromise = null; rej(new Error('Não foi possível carregar a biblioteca de .zip (sem internet ou bloqueada).')); };
+    document.head.appendChild(sc);
+  });
+  return _jszipPromise;
+}
+
+async function _baixarAnexosPorGrupo(btn, modo) {
+  const adOrig = window._analiseData;
+  if (modo === 'ghe' && !gruposGhe.length) { toast('Este cliente não tem GHE importado.', 'w'); return; }
+  const grupos = _anexosGrupos(modo);
+  const validos = grupos.filter(g => g.linhas.length >= 2);
+  const pulados = grupos.filter(g => g.linhas.length < 2).map(g => g.nome);
+  if (!validos.length) { toast('Nenhum ' + (modo === 'ghe' ? 'GHE' : 'setor') + ' com 2 ou mais respondentes no recorte atual.', 'w', 6000); return; }
+
+  const htmlOrig = btn ? btn.innerHTML : '';
+  const vmOrig = window._viewMode, dmOrig = window._displayMode, segOrig = window._segMode;
+  if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-loading'); }
+  const falhas = [];
+  try {
+    const JSZip = await _carregarJSZip();
+    const zip = new JSZip();
+    const usados = new Set();
+    window._segMode = 'consolidado';   // um bloco por arquivo; o grupo ja e o recorte
+    for (let gi = 0; gi < validos.length; gi++) {
+      const g = validos[gi];
+      let slug = _slugArquivo(g.nome) || 'grupo', n = 2;
+      while (usados.has(slug)) slug = (_slugArquivo(g.nome) || 'grupo') + '-' + (n++);
+      usados.add(slug);
+      const setoresAtivos = [...new Set(g.linhas.map(r => r.setor))];
+      window._anexoGrupo = { nome: g.nome, tipo: g.tipo, slug };
+      window._analiseData = { grupos: agruparPorGrupos(setoresAtivos, gruposSetor), filtrado: g.linhas, niveis: adOrig.niveis, setoresAtivos };
+      for (let i = 0; i < ANEXOS_CLIENTE.length; i++) {
+        const a = ANEXOS_CLIENTE[i];
+        if (btn) btn.textContent = `Gerando ${gi + 1}/${validos.length} — ${g.nome} · ${a.titulo}…`;
+        try {
+          _renderAnaliseParaExport(a.vm, a.dm);
+          await new Promise(r => setTimeout(r, 120));
+          const cortes = [];
+          const canvas = await _capturarAnaliseCanvas(2, cortes);
+          const nomeBase = slug + '-' + a.nome;
+          zip.file(slug + '/' + nomeBase + '.pdf', _baixarPdfDeCanvas(canvas, nomeBase + '.pdf', cortes, true));
+          if (a.png) {
+            const png = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            zip.file(slug + '/' + nomeBase + '.png', png);
+          }
+        } catch (e) {
+          console.warn('anexos por grupo ' + g.nome + ' / ' + a.nome + ':', e);
+          falhas.push(g.nome + ' · ' + a.titulo);
+        }
+      }
+    }
+    if (btn) btn.textContent = 'Compactando .zip…';
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    const emp = document.getElementById('f-empresa');
+    const empSlug = _slugArquivo(emp?.options[emp.selectedIndex]?.text || '') || 'cliente';
+    const el = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: `anexos-por-${modo === 'ghe' ? 'ghe' : 'setor'}_${empSlug}_${new Date().toISOString().slice(0, 10)}.zip`,
+    });
+    document.body.appendChild(el); el.click();
+    setTimeout(() => { URL.revokeObjectURL(el.href); el.remove(); }, 4000);
+    const avisos = [];
+    if (pulados.length) avisos.push(`${pulados.length} com só 1 respondente e pulado(s): ${pulados.join(', ')}`);
+    if (falhas.length) avisos.push('falhas: ' + falhas.join('; '));
+    toast(`✓ .zip com ${validos.length} ${modo === 'ghe' ? 'GHE' : 'setor(es)'} baixado.` + (avisos.length ? ' Atenção — ' + avisos.join(' | ') : ''),
+          avisos.length ? 'w' : 'g', avisos.length ? 12000 : 5000);
+  } catch (e) {
+    console.error('anexos por grupo:', e);
+    toast('Erro ao gerar os anexos: ' + e.message, 'r', 7000);
+  } finally {
+    window._anexoGrupo = null;
+    window._analiseData = adOrig;
+    window._segMode = segOrig;
     window._displayMode = dmOrig;
     try { _setViewMode(vmOrig); } catch (e) { console.warn('restaurar view:', e); }
     if (btn) { btn.dataset.busy = ''; btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = htmlOrig; }
@@ -7703,7 +7819,9 @@ function _resumoFiltrosHTML(opts = {}) {
   // documento despejava a lista inteira — 45% da primeira página num caso real, o que
   // empurrava o primeiro card (break-inside: avoid) para a folha seguinte e deixava a
   // página quase em branco.
+  const gx = window._anexoGrupo;   // export por grupo: o recorte e o grupo, nao o estado dos combos
   const semFiltro = cid => {
+    if (gx) return false;
     const st = comboState[cid];
     const univ = (comboItems[cid] && comboItems[cid]()) || [];
     return !st || st.size === 0 || (univ.length > 0 && st.size >= univ.length);
@@ -7713,7 +7831,7 @@ function _resumoFiltrosHTML(opts = {}) {
   const label = (sel, univ, todos, cid) => {
     if (semFiltro(cid)) return todos;
     if (!sel.length) return '—';
-    if (univ.length && sel.length >= univ.length) return todos;
+    if (!gx && univ.length && sel.length >= univ.length) return todos;
     if (sel.length > RESUMO_MAX_ITENS) {
       return sel.slice(0, RESUMO_MAX_ITENS).join(' · ') +
              ' · … e mais ' + (sel.length - RESUMO_MAX_ITENS) + ' (' + sel.length + ' no total)';
@@ -7731,6 +7849,7 @@ function _resumoFiltrosHTML(opts = {}) {
     : '';
   return '<div class="psicomap-filtros" style="border:1px solid var(--border);border-left:3px solid var(--g);' +
     'border-radius:4px;padding:8px 12px;margin-bottom:14px;background:var(--bg)">' +
+    (gx && gx.tipo === 'ghe' ? linha('GHE', gx.nome) : '') +
     linha('Setores', label(setores, univSet, 'Todos os setores', 'combo-setor')) +
     linha('Funções', label(funcoes, univFun, 'Todas as funções', 'combo-funcao')) +
     dataLinha +
