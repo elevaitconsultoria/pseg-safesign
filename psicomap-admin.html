@@ -2425,6 +2425,15 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
+      <div class="filter-card met-off" data-so-hse style="border-color:#c4b5fd;background:#faf5ff">
+        <div class="filter-label" style="color:#6d28d9">Auditoria HSE (ICAO-35)</div>
+        <select id="audit-hse-modo" class="filter-select" onchange="renderTelaAuditoria()">
+          <option value="real">Respostas reais</option>
+          <option value="teste">Respostas de teste</option>
+        </select>
+        <div style="font-size:10.5px;color:var(--tm);line-height:1.5;margin-top:6px">Setor, função e escolaridade saem generalizados em grupos pequenos (anonimato) e os filtros valem sobre o que é exibido. “Respostas de teste” mostra as de links de teste, para validar a coleta.</div>
+      </div>
+
       <div class="filter-card">
         <label class="filter-label">Setor</label>
         <div class="combo" id="combo-audit-setor">
@@ -3722,7 +3731,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
             <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">Direção</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Maior = pior</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)"><strong>Maior = melhor</strong></td></tr>
             <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">PGR</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Nível de risco direto do cálculo</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Nível por critério da consultoria (P pela faixa, S por dimensão definida por SST)</td></tr>
             <tr><td style="padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700">Quando preferir</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Continuidade com ciclos anteriores; inventário de riscos por fator; questionário curto</td><td style="padding:7px 9px;border-bottom:1px solid var(--border)">Diagnóstico organizacional comparável internacionalmente; leitura por dimensão do trabalho; cliente que já usa o HSE</td></tr>
-            <tr><td style="padding:7px 9px;font-weight:700">Telas</td><td style="padding:7px 9px">Todas</td><td style="padding:7px 9px">Resultados, Relatório, Plano de Ação e Adesão. Distribuição, Auditoria e Comparativo ainda são só BS 8800</td></tr>
+            <tr><td style="padding:7px 9px;font-weight:700">Telas</td><td style="padding:7px 9px">Todas</td><td style="padding:7px 9px">Todas: Resultados, Distribuição, Comparativo, Auditoria, Relatório, Plano de Ação e Adesão</td></tr>
           </tbody></table></div>
         <div class="met-card-title" style="margin-top:18px">As 7 dimensões do HSE</div>
         <div id="mtp-hse-dims" style="margin-top:8px;overflow-x:auto"></div>
@@ -5244,6 +5253,8 @@ async function renderPlanoAcaoHSE(panel, empId, cicloId) {
     const geral = calcDimensoesHSE(todas, _hseMetaDasLinhas(todas), bench);
     const setores = _hseRecortes([...new Set(todas.map(r => r.setor))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(s => ({ nome: s, setores: [s] })), todas, _hseMetaCache, bench);
     const pr = _hsePrioridades(geral);
+    const cfgRisco = await _hseCarregarRiscosCfg();
+    const riscoPlano = _hseRiscoCompleto(cfgRisco) ? calcRiscoHSE(geral, cfgRisco) : null;
     const ciclo = _ciclos.find(c => c.id === cicloId);
     const cab = `<div class="card" style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Plano de ação sugerido — HSE (ICAO-35)</div>
       <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${todas.length} respondente(s) · ${pr.length} de ${HSE_DIMS.length} dimensões pedem ação · referência: ${_hEsc(_hseRefTexto(ref))}</div>
@@ -5263,7 +5274,7 @@ async function renderPlanoAcaoHSE(panel, empId, cicloId) {
           <tr><td style="padding:5px 8px;width:110px;color:var(--tm);font-weight:700;vertical-align:top">Por quê</td><td style="padding:5px 8px">${_hEsc(info.avalia)} ${_pct0(d.desfavoravel)} das respostas foram desfavoráveis.<div style="font-size:10px;color:#6b7280;margin-top:3px">Estado esperado: ${_hEsc(info.padrao)}</div></td></tr>
           <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Onde</td><td style="padding:5px 8px">${onde.urgente.length ? `Ação urgente em ${onde.urgente.join(', ')}.` : 'Sem setor em “Ação urgente” nesta dimensão.'}${onde.abaixo.length ? `<div style="font-size:10.5px;color:var(--tm);margin-top:2px">Também abaixo da referência: ${onde.abaixo.join(', ')}.</div>` : ''}${notaOcultos ? `<div style="font-size:10px;color:#6b7280">Não entram nesta leitura (anonimato): ${notaOcultos}.</div>` : ''}</td></tr>
           <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">O quê</td><td style="padding:5px 8px"><ul style="margin:0 0 0 16px;line-height:1.6">${info.acoes.map(a => `<li>${_hEsc(a)}</li>`).join('')}</ul></td></tr>
-          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Quem · Quando · Quanto</td><td style="padding:5px 8px;color:#6b7280">A definir com a empresa depois da confirmação com os trabalhadores.</td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Quem · Quando · Quanto</td><td style="padding:5px 8px;color:#6b7280">A definir com a empresa depois da confirmação com os trabalhadores.${(() => { const rr = riscoPlano && riscoPlano.find(x => x.id === d.id); return rr && rr.nivel ? `<div style="margin-top:4px;color:var(--tx)"><span style="display:inline-block;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:${LAUDO_NIVEL_BG[rr.nivel]};color:${LAUDO_NIVEL_TX[rr.nivel]};border:1px solid rgba(0,0,0,.1)">PGR: ${rr.nivel}</span> ${_hEsc(CONDUTA_ADMINISTRATIVA[rr.nivel] || '')}${_hseRiscoValidado(cfgRisco) ? '' : ' <em style="color:#b45309">(critério de severidade não validado por SST)</em>'}</div>` : ''; })()}</td></tr>
         </table></div>`;
     }).join('');
   } catch (e) {
@@ -5372,23 +5383,29 @@ async function _hseCarregarBenchmark(empId) {
 // Linhas: {id, setor, funcao, escolaridade, ciclo_id, questionario_id, h:{item_id:valor_bruto}}.
 // setor/funcao normalizados como no loader do BS ('Geral'/'—'), para os filtros e a segmentação
 // (GHE, agrupamento) casarem com os combos da tela. Links de teste excluídos, como no BS.
-async function carregarRespostasHSE(empresaId, cicloId) {
+// opts.auditoria: traz também session_id, dispositivo e consentimento LGPD (só a Auditoria precisa deles; as análises não).
+// opts.teste: devolve as respostas dos links de TESTE (que as análises excluem) — para validar a coleta.
+async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {
   const { data: tk } = await sbAdmin.from('links_coleta').select('token').eq('empresa_id', empresaId).eq('is_teste', true);
   const testTokens = (tk || []).map(x => x.token);
+  if (opts.teste && !testTokens.length) return [];
+  const colsExtra = opts.auditoria ? ',session_id,device_info,lgpd_aceito,lgpd_aceito_em' : '';
   const { data, error } = await _fetchAllSupabase(() => {
     let q = sbAdmin.from('respostas')
-      .select('id,setor,funcao,escolaridade,ciclo_id,link_token,questionario_id,respondido_em,resposta_itens_hse(item_id,valor)')
+      .select('id,setor,funcao,escolaridade,ciclo_id,link_token,questionario_id,respondido_em' + colsExtra + ',resposta_itens_hse(item_id,valor)')
       .eq('empresa_id', empresaId).eq('metodologia', METODOLOGIA_HSE).eq('ciclo_id', cicloId)
       .order('respondido_em', { ascending: false });
-    if (testTokens.length) q = q.not('link_token', 'in', `(${testTokens.join(',')})`);
+    if (opts.teste) q = q.in('link_token', testTokens);
+    else if (testTokens.length) q = q.not('link_token', 'in', `(${testTokens.join(',')})`);
     return q;
   });
   if (error) throw error;
   const linhas = (data || []).map(r => ({
     id: r.id, setor: r.setor || 'Geral', funcao: r.funcao || '—', escolaridade: r.escolaridade || 'Não informado',
-    ciclo_id: r.ciclo_id || null, questionario_id: r.questionario_id || null, data: r.respondido_em || null,
+    ciclo_id: r.ciclo_id || null, questionario_id: r.questionario_id || null, data: r.respondido_em || null, link_token: r.link_token || null,
+    ...(opts.auditoria ? { session_id: r.session_id || null, device_info: r.device_info || null, lgpd_aceito: r.lgpd_aceito === true, lgpd_aceito_em: r.lgpd_aceito_em || null } : {}),
     h: Object.fromEntries((r.resposta_itens_hse || []).map(i => [i.item_id, i.valor])),
-  })).filter(r => Object.keys(r.h).length > 0);
+  })).filter(r => Object.keys(r.h).length > 0 || opts.auditoria);
   await _hseCarregarMeta([...new Set(linhas.map(l => l.questionario_id))]);
   return linhas;
 }
@@ -5432,7 +5449,8 @@ function calcRiscoHSE(res, cfg) {
     const p = d.faixa ? HSE_P_POR_FAIXA[d.faixa] : null;
     const s = Number(cfg?.[d.id]?.severidade) >= 1 ? Number(cfg[d.id].severidade) : null;
     return { id: d.id, nome: d.nome, score: d.score, faixa: d.faixa, p, s,
-             nivel: (p && s) ? MATRIZ_RISCO[`${p}_${s}`] : null, danos: cfg?.[d.id]?.danos || '' };
+             nivel: (p && s) ? MATRIZ_RISCO[`${p}_${s}`] : null, danos: cfg?.[d.id]?.danos || '',
+             indice: d.indice ?? null, zona: d.zona ?? null, alerta: _hseAlertaAbsoluto(d) };
   });
 }
 // modo 'laudo': usa as classes do CSS do documento; modo 'tela': estilos inline (a tela do app não tem essas classes).
@@ -5449,8 +5467,8 @@ function _hseTabelaRiscoHTML(linhas, modo = 'tela') {
     : `background:${bg};${extra}`;
   const badge = tela ? '' : ' class="badge"';
   return `<table${tb}><thead><tr><th${th}>Dimensão</th><th${th}>Faixa HSE</th><th${th}>P</th><th${th}>S</th><th${th}>Nível de risco</th><th${th}>Possíveis danos</th></tr></thead><tbody>${rows.map(r => `<tr>
-    <td${td}><strong>${_hEsc(r.nome)}</strong></td>
-    <td${td}>${r.faixa ? `<span${badge} style="${bd(HSE_COR[r.faixa], 'color:white')}">${HSE_FAIXA[r.faixa]}</span>` : '—'}</td>
+    <td${td}><strong>${_hEsc(r.nome)}</strong><div style="font-size:8.5px;color:#6b7280;font-weight:400;line-height:1.3">${_hEsc(HSE_DIM_AGENTE[r.id] || '')}</div></td>
+    <td${td}>${r.faixa ? `<span${badge} style="${bd(HSE_COR[r.faixa], 'color:white')}">${HSE_FAIXA[r.faixa]}</span>` : '—'}${r.alerta ? ` <span title="Índice de favorabilidade abaixo de 40% (zona fixa vermelha), mas a faixa é relativa à referência escolhida. Confira o nível." style="color:#b45309;font-weight:700;cursor:help">⚠</span>` : ''}</td>
     <td${tdn}>${r.p ?? '—'}</td><td${tdn}>${r.s ? `${r.s}<div style="font-size:8.5px;color:#6b7280;font-weight:400">${S_LABELS[r.s] || ''}</div>` : '—'}</td>
     <td${td}>${r.nivel ? `<span${badge} style="${bd(LAUDO_NIVEL_BG[r.nivel], `color:${LAUDO_NIVEL_TX[r.nivel]};border:1px solid rgba(0,0,0,.1)`)}">${r.nivel}</span>` : '—'}</td>
     <td${td}><span style="font-size:10px">${_hEsc(r.danos)}</span></td></tr>`).join('')}</tbody></table>`;
@@ -5603,7 +5621,7 @@ function _hseBlocoHTML(label, linhas, metaPorId, bench, risco) {
         <div style="font-size:10px;color:#6b7280;margin-top:4px">Pontos de partida — confirme com os trabalhadores (grupos focais) antes de definir o plano.</div></details>` : ''}
       ${_hseItensHTML(d)}
     </div>`).join('')}
-    ${(() => { const m = _hseMediaSimples(res); return m == null ? '' : `<div style="margin-top:10px;font-size:10px;color:#6b7280;border-top:1px dashed var(--border);padding-top:6px">Média simples das 7 dimensões: <strong>${_hseNum(m)}</strong> · ${_hseIndiceHTML(m)} — referência interna; o HSE não define score global, e este número não substitui a leitura por dimensão.</div>`; })()}
+    ${(() => { const v = _hseVisaoSinteticaHTML(res); return v ? `<div style="margin-top:10px;font-size:10.5px;color:#4b5563;border-top:1px dashed var(--border);padding-top:7px;line-height:1.55">${v}</div>` : ''; })()}
     ${risco ? _hseRiscoBlocoTela(res, risco.cfg, risco.indicativo) : ''}</div>`;
 }
 
@@ -6077,6 +6095,11 @@ async function renderComparativoHSE(panel, empId, setor) {
         <td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${_hseVariacaoHTML(u.score != null && p.score != null ? u.score - p.score : null)}</td>
         ${dados.length > 2 ? `<td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${_hseVariacaoHTML(u.score != null && f.score != null ? u.score - f.score : null)}</td>` : ''}</tr>`;
     }).join('');
+    const mm = dados.map(x => _hseMediaGeral(x.res)), mU = mm[mm.length - 1], mP = mm[mm.length - 2], mF = mm[0];
+    const linhaMedia = (mU && mP && mF) ? `<tr style="background:#f9fafb"><td style="padding:7px 8px;border-top:2px solid #cbd5e1;font-weight:700">Média simples <span style="font-weight:400;font-size:10px;color:#6b7280" title="Referência interna: o HSE não define score global">(referência)</span></td>
+        ${mm.map(x => `<td style="padding:7px 8px;border-top:2px solid #cbd5e1;text-align:center;font-weight:700">${_hseNum(x.media)}</td>`).join('')}
+        <td style="padding:7px 8px;border-top:2px solid #cbd5e1;text-align:center">${_hseVariacaoHTML(mU.media - mP.media)}</td>
+        ${dados.length > 2 ? `<td style="padding:7px 8px;border-top:2px solid #cbd5e1;text-align:center">${_hseVariacaoHTML(mU.media - mF.media)}</td>` : ''}</tr>` : '';
     const resumo = ['MELHORA', 'PIORA'].map(t => {
       const ds = HSE_DIMS.filter(dm => { const u = ult.res.dims.find(z => z.id === dm.id), p = pen.res.dims.find(z => z.id === dm.id); return _hseTendencia(u.score - p.score) === t; });
       return ds.length ? `<li><strong>${t === 'MELHORA' ? 'Melhoraram' : 'Pioraram'}</strong> desde ${_hEsc(pen.ciclo.nome)}: ${ds.map(d => _hEsc(d.nome)).join(', ')}.</li>` : '';
@@ -6091,7 +6114,7 @@ async function renderComparativoHSE(panel, empId, setor) {
       <div class="card" style="margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr><th style="${th};text-align:left">Dimensão</th>${dados.map(d => `<th style="${th}">${_hEsc(d.ciclo.nome)}<div style="font-weight:400;opacity:.8">n = ${d.n}</div></th>`).join('')}
           <th style="${th}">vs ciclo anterior</th>${dados.length > 2 ? `<th style="${th}">vs primeiro ciclo</th>` : ''}</tr></thead>
-        <tbody>${linhasTab}</tbody></table></div>
+        <tbody>${linhasTab}${linhaMedia}</tbody></table></div>
         ${resumo ? `<ul style="margin:10px 0 0 18px;font-size:12px;color:var(--tx);line-height:1.6">${resumo}</ul>` : `<div style="font-size:12px;color:var(--tm);margin-top:8px">Nenhuma dimensão variou 0,10 ou mais desde ${_hEsc(pen.ciclo.nome)}.</div>`}
       </div>`;
     panel.innerHTML = html + `<div style="text-align:right"><button class="btn btn-ghost" style="font-size:11px" onclick="_hseUltimoCmp && _hseImprimirPainel(_hseUltimoCmp.titulo, _hseUltimoCmp.html)">🖨 Imprimir comparativo</button></div>`;
@@ -6136,7 +6159,273 @@ function _hseImprimirResultados() {
   if (!p || !_hseUltimo) { toast('Rode a análise primeiro.', 'w'); return; }
   _hseImprimirPainel(`Resultados HSE — ${_hseUltimo.cicloNome}`, p.innerHTML);
 }
+
+// ── Visão sintética: média simples das 7 dimensões (decisão do usuário, 2026-10-19) ────────────────────────────
+// O HSE NÃO define score global. Esta média é uma leitura de apoio, sempre rotulada como tal e sempre acompanhada
+// do que ela esconde: quantas dimensões pedem ação e qual é a pior. (O relatório do outro player a usava como
+// manchete — "Atenção" — enquanto o inventário do mesmo documento dizia "Intolerável"; aqui os dois lados aparecem
+// juntos, e a média nunca recebe faixa própria: não existe corte do HSE para ela.)
+function _hseMediaGeral(res) {
+  const ds = res.dims.filter(d => d.score != null);
+  if (!ds.length || ds.length !== res.dims.length) return null;
+  const media = ds.reduce((a, d) => a + d.score, 0) / ds.length;
+  const refs = res.dims.map(d => d.ref).filter(v => v != null);
+  const refMedia = refs.length === res.dims.length ? refs.reduce((a, v) => a + v, 0) / refs.length : null;
+  const indice = _hseIndice(media);
+  const pior = [...ds].sort((a, b) => a.score - b.score)[0];
+  return { media, indice, zona: _hseZonaFixa(indice), refMedia, gap: refMedia != null ? media - refMedia : null,
+           nUrgente: res.dims.filter(d => d.faixa === 'VERMELHO').length, nAcao: _hsePrioridades(res).length, nDims: ds.length, pior };
+}
+function _hseVisaoSinteticaHTML(res) {
+  const m = _hseMediaGeral(res);
+  if (!m) return '';
+  const urg = res.dims.filter(d => d.faixa === 'VERMELHO');
+  const gap = m.gap != null ? ` · média das referências ${_hseNum(m.refMedia)} (${m.gap >= 0 ? '+' : ''}${_hseNum(m.gap)})` : '';
+  return `<strong>Visão sintética (referência interna).</strong> Média simples das ${m.nDims} dimensões: <strong>${_hseNum(m.media)}</strong> · índice ${_hseIndiceHTML(m.media)}${gap}.
+    O HSE não define score global, e esta média não recebe faixa: ela pode esconder uma dimensão crítica. Neste recorte, <strong>${m.nAcao} de ${m.nDims}</strong> dimensões pedem ação${urg.length ? ` (${urg.length} em “${_hEsc(HSE_FAIXA.VERMELHO)}”: ${urg.map(d => _hEsc(d.nome)).join(', ')})` : ''}; a mais baixa é <strong>${_hEsc(m.pior.nome)}</strong> (${_hseNum(m.pior.score)}). A leitura deste documento é por dimensão.`;
+}
+
+// ── Ponte para o PGR: agente, pontos de corte e alerta de piso absoluto ─────────────────────────────────────────
+// Vocabulário de "fator/agente" por dimensão (redação nossa; a referência de mercado só serviu de comparação).
+const HSE_DIM_AGENTE = {
+  DEMANDS: 'Excesso de demandas, prazos e pressão de tempo',
+  CONTROL: 'Baixo controle e autonomia sobre o trabalho',
+  MANAGER_SUPPORT: 'Falta de apoio e retorno da chefia',
+  PEER_SUPPORT: 'Falta de apoio e cooperação entre colegas',
+  RELATIONSHIPS: 'Conflitos e comportamentos inaceitáveis (assédio) no trabalho',
+  ROLE: 'Papéis e responsabilidades pouco claros ou conflitantes',
+  CHANGE: 'Mudanças organizacionais mal comunicadas e conduzidas',
+};
+// A faixa é RELATIVA à referência. Com uma referência setorial de média baixa (ex.: Saúde, Demandas 2,90), uma
+// dimensão pode estar em zona fixa vermelha (índice < 40%) e mesmo assim cair em "Necessidade clara de melhoria".
+// Não se altera a faixa nem o P (ficaria incoerente com a leitura): sinaliza-se, para o consultor decidir.
+function _hseAlertaAbsoluto(d) { return !!(d && d.zona === 'VERMELHA' && d.faixa && d.faixa !== 'VERMELHO'); }
+// Pontos de corte da leitura para uma referência ({DIMENSAO: media}): a faixa muda em ref−0,50 · ref · ref+0,40.
+function _hsePontosCorte(bench) {
+  return HSE_DIMS.map(d => {
+    const ref = bench ? bench[d.id] : null;
+    if (ref == null) return { id: d.id, nome: d.nome, ref: null };
+    const r2 = v => Math.round(v * 100) / 100;
+    return { id: d.id, nome: d.nome, ref, urgenteAbaixo: r2(ref - 0.5), acaoAbaixo: r2(ref), bomAbaixo: r2(ref + 0.4) };
+  });
+}
+function _hsePontosCorteHTML(bench) {
+  const f = v => `${_hseNum(v)} <span style="color:#9ca3af">(${_hseIndice(v).toFixed(0)}%)</span>`;
+  const fx = v => v <= 1 ? 'mín.' : f(v);
+  return `<table class="tbl-compacta"><thead><tr><th>Dimensão</th><th class="num">Referência</th><th class="num">${_hEsc(HSE_FAIXA.VERMELHO)}<br><span style="font-weight:400">abaixo de</span></th><th class="num">${_hEsc(HSE_FAIXA.AMBAR)}<br><span style="font-weight:400">de · até</span></th><th class="num">${_hEsc(HSE_FAIXA.AZUL)}<br><span style="font-weight:400">de · até</span></th><th class="num">${_hEsc(HSE_FAIXA.VERDE)}<br><span style="font-weight:400">a partir de</span></th></tr></thead><tbody>
+    ${_hsePontosCorte(bench).map(p => p.ref == null ? `<tr><td>${_hEsc(p.nome)}</td><td colspan="5">—</td></tr>`
+      : `<tr><td><strong>${_hEsc(p.nome)}</strong></td><td class="num">${_hseNum(p.ref)}</td><td class="num">${f(p.urgenteAbaixo)}</td><td class="num">${f(p.urgenteAbaixo)} · ${_hseNum(p.acaoAbaixo - 0.01)}</td><td class="num">${f(p.acaoAbaixo)} · ${_hseNum(p.bomAbaixo - 0.01)}</td><td class="num">${f(p.bomAbaixo)}</td></tr>`).join('')}
+  </tbody></table>
+  <p class="dim-nota">Entre parênteses, o índice de favorabilidade equivalente (média − 1) ÷ 4. Os cortes são sobre a média exibida (duas casas).</p>`;
+}
+// Conduta administrativa por nível: a MESMA do BS 8800 (CONDUTA_ADMINISTRATIVA) — o inventário do PGR tem uma só escala
+// de nível e uma só conduta, qualquer que seja a metodologia que o originou.
+function _hseCondutaNiveisHTML(niveisPresentes) {
+  const ORD = ['CRÍTICO', 'ALTO', 'MÉDIO', 'BAIXO', 'IRRELEVANTE'];
+  return `<table class="tbl-compacta"><thead><tr><th style="width:92px">Nível</th><th>Conduta administrativa</th></tr></thead><tbody>
+    ${ORD.map(n => `<tr class="nobreak"><td><span class="badge" style="background:${LAUDO_NIVEL_BG[n]};color:${LAUDO_NIVEL_TX[n]};border:1px solid rgba(0,0,0,.1)">${n}</span>${niveisPresentes && niveisPresentes.has(n) ? '<div style="font-size:8px;color:#6b7280;margin-top:2px">neste documento</div>' : ''}</td><td>${_hEsc(CONDUTA_ADMINISTRATIVA[n] || '')}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+// Critérios de severidade (os mesmos da metodologia BS 8800 — S_CRITERIA) com as dimensões a que cada S foi atribuído.
+function _hseSeveridadeCriteriosHTML(cfg) {
+  return `<table class="tbl-compacta"><thead><tr><th style="width:80px">Severidade</th><th>Critério</th><th style="width:30%">Dimensões (definição de SST)</th></tr></thead><tbody>
+    ${[1, 2, 3, 4].map(s => { const ds = HSE_DIMS.filter(d => Number(cfg?.[d.id]?.severidade) === s).map(d => _hEsc(d.nome)); return `<tr class="nobreak"><td><strong>S${s}</strong> ${_hEsc(S_LABELS[s])}</td><td style="font-size:10px">${_hEsc(S_CRITERIA[s] || '')}</td><td>${ds.length ? ds.join(', ') : '<span style="color:#9ca3af">—</span>'}</td></tr>`; }).join('')}
+  </tbody></table>`;
+}
+
+// ── Auditoria resposta a resposta (HSE) ─────────────────────────────────────────────────────────────────────────
+// Funções puras (testadas em _dev/test-hse-motor.js). Uma "linha" é a saída de carregarRespostasHSE com
+// {auditoria:true}: {id, setor, funcao, escolaridade, questionario_id, session_id, device_info, lgpd_aceito, data, h:{item_id:valor}}.
+// Sinais de QUALIDADE do dado, não de culpa: servem para o consultor decidir se uma resposta merece conferência.
+function _hseAuditoriaAvaliar(r, nEsperado) {
+  const vals = Object.values(r.h || {}).filter(v => v >= 1 && v <= HSE_ESCALA_MAX);
+  const n = vals.length, cont = {};
+  vals.forEach(v => { cont[v] = (cont[v] || 0) + 1; });
+  const maxIg = n ? Math.max(...Object.values(cont)) : 0;
+  return { n, esperado: nEsperado, incompleta: n < nEsperado,
+           uniforme: n > 0 && maxIg === n,                                   // as 35 respostas iguais (marcou tudo igual)
+           quase: n > 0 && maxIg < n && maxIg / n >= 0.9 };                  // ≥ 90% iguais
+}
+function _hseAuditoriaResumo(avaliadas, linhas) {
+  const sess = new Map();
+  linhas.forEach(r => { if (r.session_id) sess.set(r.session_id, (sess.get(r.session_id) || 0) + 1); });
+  const links = new Map(), versoes = new Map();
+  linhas.forEach(r => { const l = r.link_token || '—'; links.set(l, (links.get(l) || 0) + 1); const q = r.questionario_id || '—'; versoes.set(q, (versoes.get(q) || 0) + 1); });
+  const datas = linhas.map(r => r.data ? new Date(r.data).getTime() : NaN).filter(t => !isNaN(t));
+  return {
+    total: linhas.length,
+    completas: avaliadas.filter(a => !a.incompleta).length,
+    incompletas: avaliadas.filter(a => a.incompleta).length,
+    uniformes: avaliadas.filter(a => a.uniforme).length,
+    quase: avaliadas.filter(a => a.quase).length,
+    semLgpd: linhas.filter(r => !r.lgpd_aceito).length,
+    sessoesRepetidas: [...sess.values()].filter(c => c > 1).length,
+    links, versoes,
+    primeira: datas.length ? new Date(Math.min(...datas)) : null, ultima: datas.length ? new Date(Math.max(...datas)) : null,
+  };
+}
+// ID de auditoria: início do session_id (sem hífens, maiúsculo). Aleatório e sem relação com a ordem de chegada;
+// a tabela é ordenada por ele, de propósito — ordenar por data (ou numerar por ordem de chegada) revelaria "o primeiro
+// a responder", que um colega pode reconhecer.
+const _hseAuditId = r => String(r.session_id || r.id || '').replace(/-/g, '').slice(0, 8).toUpperCase() || '—';
+// Linhas prontas para exibir/exportar: identificadores generalizados (k-anonimato) quando são respostas reais.
+function _hseAuditoriaPreparar(linhas, meta, { real = true } = {}) {
+  const gen = real ? _hseGeneralizarCSV(linhas) : linhas.map(r => ({ r, setor: r.setor, funcao: r.funcao, escolaridade: r.escolaridade }));
+  const nPorQ = {};
+  Object.values(meta).forEach(i => { nPorQ[i.questionario_id] = (nPorQ[i.questionario_id] || 0) + 1; });
+  return gen.map(o => ({ r: o.r, id: _hseAuditId(o.r), setor: o.setor, funcao: o.funcao, escolaridade: o.escolaridade,
+    aval: _hseAuditoriaAvaliar(o.r, nPorQ[o.r.questionario_id] || Object.keys(o.r.h || {}).length) }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
 // ==== HSE (S7) END ====
+
+// ==== HSE (AUD) BEGIN — Auditoria resposta a resposta para ciclo HSE ====
+// Decisão do usuário (2026-10-19): permitir. Como o BS 8800 já faz, mas com o que o BS não tem:
+//  • setor/função/escolaridade GENERALIZADOS (k-anonimato, mesmo _hseGeneralizarCSV do CSV) — e os FILTROS atuam sobre os
+//    valores generalizados, nunca sobre os brutos (senão filtrar por "RH" e ver 3 linhas "Outros setores" revelaria quem é);
+//  • data sem hora, ID aleatório (início do session_id) e tabela ordenada por ele, sem relação com a ordem de chegada;
+//  • abaixo do n mínimo no CICLO a tabela não abre (o resumo de qualidade abre sempre);
+//  • sinais de qualidade por resposta (uniforme, quase uniforme, incompleta, sem LGPD, sessão repetida);
+//  • modo "Respostas de teste" (links is_teste, que as análises excluem): sem restrição de anonimato — serve para validar a coleta.
+// Risco residual aceito e declarado na tela: data (dia) + grupo de 5 ainda pode ser reconhecida por quem sabe quando respondeu.
+let _auditSetorModoHSE = false;
+
+function _auditReconciliar(id, itens, reiniciar) {
+  const sel = comboState[id], ant = comboItems[id] ? comboItems[id]() : [];
+  const estavaTodos = reiniciar || ant.length === 0 || ant.every(x => sel.has(x));
+  [...sel].forEach(x => { if (!itens.includes(x)) sel.delete(x); });
+  if (estavaTodos) itens.forEach(x => sel.add(x));
+  comboItems[id] = () => itens;
+  buildCombo(id);
+}
+const _AUD_ALERTAS = {
+  uniforme: { t: 'Uniforme', cor: '#b91c1c', dica: 'As respostas aos itens são todas iguais (marcou tudo igual). Confira se foi pressa ou clique repetido.' },
+  quase: { t: 'Quase uniforme', cor: '#b45309', dica: '90% ou mais das respostas são iguais.' },
+  incompleta: { t: 'Incompleta', cor: '#b91c1c', dica: 'Menos itens do que o questionário tem. A RPC de coleta rejeita resposta incompleta: investigue.' },
+  semLgpd: { t: 'Sem LGPD', cor: '#b91c1c', dica: 'Consentimento LGPD não registrado.' },
+  repetida: { t: 'Sessão repetida', cor: '#b45309', dica: 'O mesmo identificador de sessão aparece em mais de uma resposta.' },
+};
+function _audAlertasDe(p, sessRep) {
+  const a = [];
+  if (p.aval.uniforme) a.push('uniforme'); else if (p.aval.quase) a.push('quase');
+  if (p.aval.incompleta) a.push('incompleta');
+  if (!p.r.lgpd_aceito) a.push('semLgpd');
+  if (p.r.session_id && sessRep.has(p.r.session_id)) a.push('repetida');
+  return a;
+}
+const _audChip = k => `<span title="${_hEsc(_AUD_ALERTAS[k].dica)}" style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-right:3px;color:#fff;background:${_AUD_ALERTAS[k].cor};white-space:nowrap;cursor:help">${_AUD_ALERTAS[k].t}</span>`;
+
+async function renderAuditoriaHSE(panel, empId, cicloId) {
+  panel.innerHTML = _loadingState('Carregando auditoria HSE…');
+  window._auditHSE = null;
+  const btnExp = document.getElementById('btn-audit-export');
+  if (btnExp) btnExp.style.display = 'none';
+  try {
+    const real = document.getElementById('audit-hse-modo')?.value !== 'teste';
+    const linhas = await carregarRespostasHSE(empId, cicloId, { auditoria: true, teste: !real });
+    const ciclo = _ciclos.find(c => c.id === cicloId);
+    if (!linhas.length) {
+      panel.innerHTML = `<div class="card"><div class="alert alert-y">${real ? 'Nenhuma resposta real neste ciclo ainda.' : 'Nenhuma resposta de link de teste neste ciclo. Gere um link de teste e responda o formulário para validar a coleta.'}</div></div>`;
+      return;
+    }
+    await _hseCarregarMeta([...new Set(linhas.map(l => l.questionario_id))]);
+    const meta = _hseMetaDasLinhas(linhas);
+    const prep = _hseAuditoriaPreparar(linhas, meta, { real });
+    const sessRep = new Set(); { const c = new Map(); linhas.forEach(r => { if (r.session_id) c.set(r.session_id, (c.get(r.session_id) || 0) + 1); }); c.forEach((v, k) => { if (v > 1) sessRep.add(k); }); }
+    const resumo = _hseAuditoriaResumo(prep.map(p => p.aval), linhas);
+    let verMap = {};
+    try { const { data } = await sbAdmin.from('questionarios').select('id,versao').in('id', Object.keys(resumo.versoes).filter(x => x !== '—')); (data || []).forEach(q => { if (q.versao != null) verMap[q.id] = 'v' + q.versao; }); } catch (e) { /* sem versão legível: cai no rótulo curto */ }
+    const verRot = qid => verMap[qid] || (qid ? String(qid).slice(0, 4) : '—');
+
+    // Filtros sobre os valores EXIBIDOS (generalizados)
+    const setoresDisp = [...new Set(prep.map(p => p.setor))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const funcoesDisp = [...new Set(prep.map(p => p.funcao))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    _auditReconciliar('combo-audit-setor', setoresDisp, !_auditSetorModoHSE);
+    _auditReconciliar('combo-audit-funcao', funcoesDisp, _auditFuncaoReiniciar);
+    _auditSetorModoHSE = true; _auditFuncaoReiniciar = false;
+    const sSel = comboState['combo-audit-setor'], fSel = comboState['combo-audit-funcao'];
+    const busca = (document.getElementById('audit-busca')?.value || '').toLowerCase().trim();
+    const vis = prep.filter(p => (!sSel.size || sSel.has(p.setor)) && (!fSel.size || fSel.has(p.funcao))
+      && (!busca || p.id.toLowerCase().includes(busca) || p.setor.toLowerCase().includes(busca) || p.funcao.toLowerCase().includes(busca)));
+
+    const kpi = (rot, val, sub = '', cor = 'var(--tx)') => `<div style="padding:8px 10px;background:var(--bg);border-radius:8px;min-width:104px"><div style="font-size:9px;font-weight:700;color:var(--tl);text-transform:uppercase;letter-spacing:.4px">${rot}</div><div style="font-size:18px;font-weight:700;color:${cor}">${val}</div>${sub ? `<div style="font-size:9.5px;color:var(--tm)">${sub}</div>` : ''}</div>`;
+    const dia = d => d ? d.toLocaleDateString('pt-BR') : '—';
+    const cabecalho = `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start">
+        <div><div style="font-size:14px;font-weight:700;color:var(--tx)">Auditoria de respostas — HSE (ICAO-35)</div>
+        <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${real ? 'respostas reais' : '<strong style="color:#6d28d9">respostas de LINKS DE TESTE</strong> (não entram em nenhuma análise)'}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        ${kpi('Respostas', resumo.total, `${dia(resumo.primeira)} a ${dia(resumo.ultima)}`)}
+        ${kpi('Completas', resumo.completas, `${resumo.incompletas ? resumo.incompletas + ' incompleta(s)' : 'todas com todos os itens'}`, resumo.incompletas ? '#b91c1c' : 'var(--tx)')}
+        ${kpi('Uniformes', resumo.uniformes, `${resumo.quase} quase uniforme(s)`, resumo.uniformes ? '#b91c1c' : 'var(--tx)')}
+        ${kpi('Sem LGPD', resumo.semLgpd, resumo.semLgpd ? 'consentimento ausente' : 'consentimento em todas', resumo.semLgpd ? '#b91c1c' : 'var(--tx)')}
+        ${kpi('Sessões repetidas', resumo.sessoesRepetidas, resumo.sessoesRepetidas ? 'investigar' : 'nenhuma', resumo.sessoesRepetidas ? '#b45309' : 'var(--tx)')}
+        ${kpi('Links', resumo.links.size, [...resumo.links.entries()].map(([k, v]) => `${_hEsc(String(k).slice(0, 8))}: ${v}`).join(' · '))}
+        ${kpi('Versões', resumo.versoes.size, [...resumo.versoes.entries()].map(([k, v]) => `${_hEsc(verRot(k))}: ${v}`).join(' · '))}
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-top:10px;line-height:1.55">${real
+        ? 'Para preservar o anonimato: setor, função e escolaridade aparecem <strong>generalizados</strong> quando a combinação tem menos de ' + N_MIN_ANONIMATO + ' pessoas (“Outros setores”, “Outras funções”); os filtros atuam sobre o que é exibido; a data não tem hora; o ID é aleatório e a ordem das linhas não segue a ordem de chegada. Os sinais abaixo são de <em>qualidade do dado</em>, não de culpa.'
+        : 'Respostas de teste não identificam ninguém: aparecem com os dados originais, só para conferir a coleta (formulário → banco → análise).'}</div>
+    </div>`;
+
+    if (real && _abaixoDoMinimo(linhas.length)) {
+      panel.innerHTML = cabecalho + `<div class="card"><div class="alert alert-y">Tabela de respostas oculta: ${_textoOculto(linhas.length)}. O resumo de qualidade acima continua valendo. Para validar a coleta com poucas respostas, use “Respostas de teste”.</div></div>`;
+      return;
+    }
+    if (!vis.length) { panel.innerHTML = cabecalho + `<div class="card"><div class="alert alert-y" style="margin:0">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
+
+    const itensOrd = Object.values(meta).sort((a, b) => a.ordem - b.ordem);
+    const porCod = new Map(); itensOrd.forEach(i => { if (!porCod.has(i.codigo)) porCod.set(i.codigo, { ids: [], texto: i.texto, inversa: i.inversa }); porCod.get(i.codigo).ids.push(i.id); });
+    const cods = [...porCod.keys()];
+    const val = (r, c) => { for (const id of porCod.get(c).ids) if (r.h[id] != null) return r.h[id]; return null; };
+    const th = (t, extra = '') => `<th style="text-align:left;padding:7px 9px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;${extra}">${t}</th>`;
+    const tbl = `<div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--bs);background:var(--bg);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:600;color:var(--tx)">${vis.length} resposta${vis.length !== 1 ? 's' : ''}</div>
+        <div style="font-size:11px;color:var(--tl)">Valores brutos (o que a pessoa marcou): 1=Nunca … 5=Sempre · ↺ item invertido no cálculo (Demandas e Relacionamentos)</div>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:collapse;width:100%;min-width:${620 + cods.length * 34}px;font-size:11px">
+        <thead><tr style="background:var(--bg);position:sticky;top:0;z-index:2">${th('#')}${th('ID')}${th('SETOR / GHE')}${th('FUNÇÃO')}${th('ESCOLARIDADE')}${th('DATA')}${th('VERSÃO')}${th('ITENS')}${th('ALERTAS')}${th('LGPD', 'text-align:center')}${th('DISPOSITIVO')}
+          ${cods.map(c => `<th title="${_hEsc(porCod.get(c).texto || '')}" style="text-align:center;padding:6px 3px;border-bottom:2px solid var(--border);border-left:1px solid var(--bs);font-size:9px;color:var(--tm);font-weight:600;min-width:30px">${c}${porCod.get(c).inversa ? '<span style="color:var(--amber)">↺</span>' : ''}</th>`).join('')}</tr></thead>
+        <tbody>${vis.map((p, i) => { const al = _audAlertasDe(p, sessRep); return `<tr style="${i % 2 ? 'background:#f9fafb' : ''}">
+          <td style="padding:5px 9px;color:var(--tl);font-size:10px">${i + 1}</td>
+          <td style="padding:5px 9px;font-family:monospace;font-size:10px;color:var(--tm)">${_hEsc(p.id)}</td>
+          <td style="padding:5px 9px;white-space:nowrap">${_hEsc(p.setor)}</td><td style="padding:5px 9px;white-space:nowrap">${_hEsc(p.funcao)}</td><td style="padding:5px 9px;white-space:nowrap">${_hEsc(p.escolaridade)}</td>
+          <td style="padding:5px 9px;white-space:nowrap;color:var(--tl)">${p.r.data ? dia(new Date(p.r.data)) : '—'}</td>
+          <td style="padding:5px 9px;color:var(--tl)">${_hEsc(verRot(p.r.questionario_id))}</td>
+          <td style="padding:5px 9px;color:${p.aval.incompleta ? '#b91c1c' : 'var(--tl)'}">${p.aval.n}/${p.aval.esperado}</td>
+          <td style="padding:5px 9px;white-space:nowrap">${al.map(_audChip).join('') || '<span style="color:#9ca3af">—</span>'}</td>
+          <td style="padding:5px 9px;text-align:center">${p.r.lgpd_aceito ? '<span style="color:#15803d">✓</span>' : '<span style="color:#b91c1c">✗</span>'}</td>
+          <td style="padding:5px 9px;color:var(--tl);font-size:10px;white-space:nowrap">${p.r.device_info ? _hEsc(p.r.device_info.split(' | ').slice(0, 2).join(' · ')) : '—'}</td>
+          ${cods.map(c => { const v = val(p.r, c); return `<td style="padding:4px 3px;text-align:center;border-left:1px solid var(--bs);font-weight:500;color:${v != null ? 'var(--tx)' : 'var(--tl)'}">${v != null ? v : '—'}</td>`; }).join('')}</tr>`; }).join('')}
+        </tbody></table></div></div>`;
+    panel.innerHTML = cabecalho + tbl;
+    window._auditHSE = {
+      cicloNome: ciclo?.nome || '', real,
+      cols: ['ID', 'Setor/GHE', 'Função', 'Escolaridade', 'Data', 'Versão', 'Itens respondidos', 'Alertas', 'LGPD aceito', 'Dispositivo', ...cods],
+      rows: vis.map(p => [p.id, p.setor, p.funcao, p.escolaridade, p.r.data ? dia(new Date(p.r.data)) : '', verRot(p.r.questionario_id), `${p.aval.n}/${p.aval.esperado}`,
+        _audAlertasDe(p, sessRep).map(k => _AUD_ALERTAS[k].t).join(', '), p.r.lgpd_aceito ? 'Sim' : 'Não',
+        p.r.device_info ? p.r.device_info.split(' | ').slice(0, 2).join(' · ') : '', ...cods.map(c => val(p.r, c) ?? '')]),
+    };
+    if (btnExp) btnExp.style.display = 'flex';
+  } catch (e) {
+    console.warn('renderAuditoriaHSE:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao carregar a auditoria HSE: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+function exportarAuditoriaHSE() {
+  const a = window._auditHSE;
+  if (!a || !a.rows.length) { toast('Abra a auditoria primeiro.', 'w'); return; }
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = '﻿' + [a.cols, ...a.rows].map(l => l.map(q).join(';')).join('\r\n');
+  const el = document.createElement('a');
+  el.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  el.download = `auditoria_hse_${a.real ? 'respostas' : 'teste'}_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(el); el.click(); el.remove(); URL.revokeObjectURL(el.href);
+}
+// ==== HSE (AUD) END ====
+
 
 // ==== HSE (S8b-UI) BEGIN — cadastro do critério de severidade por dimensão (só super_admin) ====
 // A tabela hse_riscos_config só aceita escrita de super_admin (RLS) e vale para todas as ESTs. O critério é UM
@@ -6144,6 +6433,29 @@ function _hseImprimirResultados() {
 // Regras: qualquer mudança de S ou de danos remove a validação de TODAS as linhas e sobe a versão; validar exige
 // as 7 severidades e um responsável identificado (nome + registro). Validação nunca é implícita.
 let _hseCfgAtual = {};
+// PROPOSTA DE PARTIDA para a SST (2026-10-19) — redação nossa, a partir dos critérios de severidade do BS 8800 (S_CRITERIA).
+// NÃO é validação e não é gravada sozinha: o botão só PREENCHE o formulário; salvar e validar continuam exigindo as 7
+// severidades, o responsável e a confirmação. Estudo e justificativa: .claude/notes/2026-10-19-hse-ponte-pgr-4x4-estudo.md §5.
+const HSE_PROPOSTA_SEVERIDADE = {
+  DEMANDS: { s: 3, danos: 'Estresse ocupacional crônico, fadiga mental, esgotamento (burnout) e distúrbios do sono; DORT associados à sobrecarga' },
+  CONTROL: { s: 2, danos: 'Frustração, desmotivação e irritabilidade; agrava os efeitos das demandas elevadas' },
+  MANAGER_SUPPORT: { s: 2, danos: 'Sensação de desamparo e frustração frequente; queda de motivação e de desempenho' },
+  PEER_SUPPORT: { s: 2, danos: 'Isolamento, desconforto e fadiga; piora do clima da equipe' },
+  RELATIONSHIPS: { s: 3, danos: 'Ansiedade, estresse crônico e afastamentos associados a conflitos e assédio; implicações legais' },
+  ROLE: { s: 2, danos: 'Insegurança, retrabalho e frustração; conflito de papéis' },
+  CHANGE: { s: 2, danos: 'Ansiedade e insegurança diante de mudanças mal conduzidas; queda de engajamento' },
+};
+function hseRiscosCfgProposta() {
+  if (_roleAtual() !== 'super_admin') return;
+  const preenchido = HSE_DIMS.some(dm => document.getElementById('hsecfg-s-' + dm.id)?.value || (document.getElementById('hsecfg-d-' + dm.id)?.value || '').trim());
+  if (preenchido && !confirm('Substituir os valores digitados pela proposta de partida?\n\nNada é salvo até você clicar em "Salvar critério".')) return;
+  HSE_DIMS.forEach(dm => {
+    const p = HSE_PROPOSTA_SEVERIDADE[dm.id], s = document.getElementById('hsecfg-s-' + dm.id), t = document.getElementById('hsecfg-d-' + dm.id);
+    if (s) s.value = String(p.s); if (t) t.value = p.danos;
+  });
+  const v = document.getElementById('hsecfg-validar'); if (v) v.checked = false;
+  toast('Proposta preenchida no formulário. Revise, salve como rascunho e envie à SST para validação.', 'g', 5000);
+}
 const _HSE_SEV_OPC = ['', 'S1 — Leve', 'S2 — Moderado', 'S3 — Sério', 'S4 — Severo'];
 
 async function hseRiscosCfgRender() {
@@ -6174,6 +6486,10 @@ async function hseRiscosCfgRender() {
   const inp = 'padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--tx);font-size:12px;box-sizing:border-box';
   box.innerHTML = `
     <div style="margin-bottom:12px;color:var(--tx)">${estado}</div>
+    <details style="margin-bottom:10px"><summary style="cursor:pointer;font-size:12px;color:var(--tm)">Critérios de severidade (S) — os mesmos da metodologia BS 8800</summary>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">${[1, 2, 3, 4].map(n => `<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;vertical-align:top">S${n} — ${_hEsc(S_LABELS[n])}</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--tm)">${_hEsc(S_CRITERIA[n] || '')}</td></tr>`).join('')}</table></details>
+    <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-ghost" onclick="hseRiscosCfgProposta()" style="font-size:12px">Preencher com a proposta de partida</button>
+      <span style="color:var(--tl);font-size:11px">Só preenche o formulário: nada é salvo nem validado até “Salvar critério”. A validação continua sendo da SST.</span></div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:var(--bg2)">
         <th style="padding:8px 10px;text-align:left;color:var(--tl);font-weight:600">Dimensão</th>
@@ -6482,6 +6798,7 @@ function _buildLaudoHSEHTML(c, opts = {}) {
     ${seloInd}
     <p>Score de cada dimensão de 1 a 5 (maior = melhor), comparado com a média de referência do HSE, marcada pela linha preta na barra (${e(_hseRefTexto(c.ref || { setor: 'GERAL', nome: '', n: null }))}). Ordem: da pior para a melhor.</p>
     ${_hseTabelaDimensoes(geral)}
+    <div class="box nobreak" style="margin:4px 0 8px;font-size:11px;line-height:1.55">${_hseVisaoSinteticaHTML(geral)}</div>
     <table class="nobreak" style="width:100%;margin-top:4px"><thead><tr><th colspan="4">Como ler a coluna “Leitura”</th></tr></thead><tbody><tr>${['VERMELHO', 'AMBAR', 'AZUL', 'VERDE'].map(f => `<td style="width:25%"><span class="badge" style="background:${HSE_COR[f]}">${HSE_FAIXA[f]}</span><div style="font-size:9.5px;color:#4b5563;margin-top:3px">${HSE_FAIXA_DESC[f]}</div></td>`).join('')}</tr></tbody></table>
     <div class="g2 nobreak">
       <div><div class="sec-title sub">Pontos de atenção</div>${prioridades.length ? `<ul class="lista">${listaDims(prioridades)}</ul>` : '<p>Nenhuma dimensão abaixo da média de referência.</p>'}</div>
@@ -6512,14 +6829,14 @@ function _buildLaudoHSEHTML(c, opts = {}) {
 <style>${HSE_LAUDO_CSS}${cssImpressao}</style>
 <script>(function(){var m=navigator.userAgent.match(/Chrom(?:e|ium)\\/(\\d+)/);if(m&&+m[1]>=131)document.documentElement.classList.add('mb');})();
 // Folha quase vazia é defeito (aconteceu em relatório de terceiro): quando uma seção sobraria com menos de 15% de uma
-// folha, ela é reduzida (no máximo 13%) para caber nas folhas anteriores. Mede no layout de tela (mesma largura A4) e
-// de novo antes de imprimir. Área útil = 297 mm − 14 mm da margem do rodapé, com folga.
+// folha, ela é reduzida (no máximo 13%) para caber nas folhas anteriores. Mede com display:block (como na impressão: na
+// tela a .page é flex e as margens não colapsam, o que superestimava a altura em ~9%) e de novo antes de imprimir. Área útil = 297 mm − 14 mm da margem do rodapé, com folga.
 (function(){var H=283*96/25.4-20;
 function ajustar(){var mb=document.documentElement.classList.contains('mb');
-document.querySelectorAll('.page').forEach(function(p){p.style.zoom='';var f=p.querySelector('.page-footer'),u=null;
+document.querySelectorAll('.page').forEach(function(p){p.style.zoom='';p.style.display='block';var f=p.querySelector('.page-footer'),u=null;
 for(var k=p.lastElementChild;k;k=k.previousElementSibling){if(k!==f){u=k;break;}}if(!u)return;
 var fim=u.offsetTop+u.offsetHeight-p.offsetTop+((mb||!f)?0:f.offsetHeight)+16,s=fim/H,i=Math.floor(s),r=s-i;
-if(i>=1&&r>0&&r<0.15)p.style.zoom=(i/s).toFixed(3);});}
+p.style.display='';if(i>=1&&r>0&&r<0.15)p.style.zoom=(i/s).toFixed(3);});}
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(ajustar);window.addEventListener('load',ajustar);window.addEventListener('beforeprint',ajustar);})();<\/script></head><body>${toolbar}
 <div class="page">
   <div class="cover-header">${logo}<div class="cover-company"><div class="cover-company-name">${e(estNome)}</div><div class="cover-company-sub">${e(c.estPerfil?.endereco || '')}</div></div></div>
@@ -6573,8 +6890,19 @@ ${nRec ? `<div class="page"><div class="sec-title">${nRec}. Comparação entre r
   ${c.leitura.indicativo ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> Com a taxa de resposta atual os níveis abaixo devem ser confirmados com os trabalhadores antes de integrar o inventário.</div>` : ''}
   <div class="sec-title sub">Geral · ${c.linhas.length} respondente(s)</div>
   ${_hseTabelaRiscoHTML(riscoGeral, 'laudo')}
+  ${riscoGeral.some(r => r.alerta) ? `<p class="dim-nota"><strong>⚠</strong> Dimensão com índice de favorabilidade abaixo de 40% (zona fixa vermelha) cuja faixa, relativa à referência escolhida, não é “${e(HSE_FAIXA.VERMELHO)}”: a referência tem média baixa nesta dimensão. O nível acima segue o critério; confira-o antes de levar ao inventário.</p>` : ''}
   ${segRiscoHTML}
   ${footer('Risco para o PGR')}</div>
+<div class="page"><div class="sec-title">${nRisco}. Risco psicossocial para o PGR — conduta, severidade e cortes</div>
+  <div class="lbl-sub" style="margin-top:0">Conduta administrativa por nível de risco</div>
+  <p class="dim-nota">A mesma escala de cinco níveis e a mesma conduta da metodologia BS 8800: o inventário do PGR tem uma só régua, qualquer que seja o instrumento que originou o risco.</p>
+  ${_hseCondutaNiveisHTML(new Set(riscoGeral.map(r => r.nivel).filter(Boolean)))}
+  <div class="lbl-sub">Severidade (S): critérios e atribuição por dimensão</div>
+  ${_hseSeveridadeCriteriosHTML(c.riscoCfg)}
+  <div class="lbl-sub">Pontos de corte da leitura (P)</div>
+  <p class="dim-nota">P é dado pela faixa da dimensão; a faixa muda nos pontos abaixo, calculados sobre a referência deste documento (${e(_hseRefTexto(c.ref || { setor: 'GERAL', nome: '', n: null }))}).</p>
+  ${_hsePontosCorteHTML(c.bench)}
+  ${footer('Conduta e cortes')}</div>
 <div class="page"><div class="sec-title">${nPlano}. Plano de ação sugerido</div>
   <p>Dimensões em ordem de prioridade (primeiro “${e(HSE_FAIXA.VERMELHO)}”, depois “${e(HSE_FAIXA.AMBAR)}”; dentro da faixa, o menor score). As ações são pontos de partida: o método do HSE não termina no questionário, e os resultados devem ser confirmados com os trabalhadores — por exemplo, em <strong>grupos focais</strong> — antes de definir responsáveis, prazos e recursos.</p>
   ${planoHTML}
@@ -17562,7 +17890,7 @@ function _limparEstadoTenant() {
   // HSE: linhas de resposta da última análise (fonte do CSV e da impressão), itens dos questionários e escolhas de
   // referência têm escopo de tenant — sem isto, exportar/imprimir depois de trocar de tenant usaria dados do anterior.
   // O benchmark (_hseBenchCache) é referência pública e fica.
-  if (typeof _hseUltimo !== 'undefined') { _hseUltimo = null; _hseUltimaDist = null; _hseUltimoCmp = null; _hseMetaCache = {}; _hseRefPorEmpresa = {}; }
+  if (typeof _hseUltimo !== 'undefined') { _hseUltimo = null; _hseUltimaDist = null; _hseUltimoCmp = null; _hseMetaCache = {}; _hseRefPorEmpresa = {}; window._auditHSE = null; _auditSetorModoHSE = false; }
   try {
     sessionStorage.removeItem('pseg_empresa_ativa');
     sessionStorage.removeItem('pseg_ciclo_ativo');
@@ -20219,7 +20547,12 @@ async function renderTelaAuditoria() {
 
   const panel = document.getElementById('audit-table-panel');
   if (!panel) return;
-  if (_guardaTelaBS(cicloId, panel, 'A auditoria resposta a resposta ainda não existe para o HSE (prevista na fase 1.1). Os resultados agregados estão em Resultados e no Relatório.')) return;
+  _sincronizarFiltrosMetodologia('sc-auditoria', cicloId);
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderAuditoriaHSE(panel, empId, cicloId); return; }
+  window._auditHSE = null;
+  // Voltando de um ciclo HSE: o combo de setor estava com os valores generalizados — recarrega os reais (BS) e re-renderiza.
+  if (_auditSetorModoHSE) { _auditSetorModoHSE = false; await onAuditEmpresaChange(); return; }
+  _avisarHSEForaDaAnaliseBS(empId, cicloId);
 
   // Buscar dados
   let todosLinhas = await getLinhasParaAnalise(empId || null);
@@ -20412,6 +20745,7 @@ function resetarFiltrosAuditoria() {
 }
 
 function exportarAuditoriaCSV() {
+  if (window._auditHSE) { exportarAuditoriaHSE(); return; }
   const dados = window._auditDados;
   const qs    = window._auditQs || QS_OFICIAIS;
   if (!dados?.length) return;

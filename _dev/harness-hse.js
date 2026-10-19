@@ -14,6 +14,7 @@
  *   await __hse.plano()                    // Plano de Ação HSE
  *   await __hse.distribuicao()             // Distribuição (tela Gráficos) HSE
  *   await __hse.comparativo()              // Comparativo entre os 2 ciclos HSE
+ *   __hse.comQA(); await __hse.auditoria('real'|'teste')   // Auditoria: acrescenta uniformes/sem LGPD/sessão repetida e 4 respostas de teste
  *   await __hse.laudoHTML('segregado')     // { pf, html } — o MESMO HTML do PDF
  *   __hse.semLogistica(3)                  // deixa só 3 respostas de Logística (testa n mínimo e supressão complementar)
  *
@@ -46,24 +47,43 @@ const fake = function () {
   const SEV = { DEMANDS: 3, CONTROL: 2, MANAGER_SUPPORT: 2, PEER_SUPPORT: 2, RELATIONSHIPS: 3, ROLE: 2, CHANGE: 2 };   // TESTE
   const HC = [{ setor: 'Produção', funcao: 'Operador', quantidade: 45 }, { setor: 'Produção', funcao: 'Supervisor', quantidade: 15 },
               { setor: 'Administrativo', funcao: 'Analista', quantidade: 30 }, { setor: 'Logística', funcao: 'Auxiliar', quantidade: 30 }];
-  const respostasDe = (fxx, ciclo) => (fxx ? fxx.linhas : []).map(r => ({ id: ciclo.slice(-2) + '-' + r.id, setor: r.setor, funcao: r.funcao, escolaridade: r.escolaridade,
+  const respostasDe = (fxx, ciclo) => (fxx ? fxx.linhas : []).map((r, i) => ({ id: ciclo.slice(-2) + '-' + r.id, setor: r.setor, funcao: r.funcao, escolaridade: r.escolaridade,
     ciclo_id: ciclo, link_token: 'simhse000001', questionario_id: r.questionario_id, respondido_em: r.respondido_em, metodologia: 'HSE_ICAO35',
+    session_id: (Math.imul(i + 1, 2654435761) >>> 0).toString(16).padStart(8, '0') + '-' + ciclo.slice(-2).padStart(4, '0') + '-4000-8000-000000000000', device_info: i % 2 ? 'Android 14 | Chrome 126' : 'iOS 17 | Safari 17',
+    lgpd_aceito: i % 17 !== 0, lgpd_aceito_em: r.respondido_em,
     resposta_itens_hse: Object.entries(r.h).map(([item_id, valor]) => ({ item_id, valor })) }));
+  // Linhas para a Auditoria (só entram com __hse.comQA()): uniformes, quase uniforme, sem LGPD, sessão repetida e 4 de TESTE.
+  const linhaQA = (id, setor, valorDe, extra = {}) => ({ id, setor, funcao: setor === 'Logística' ? 'Auxiliar' : 'Operador', escolaridade: 'Ensino Médio', ciclo_id: CIC,
+    link_token: 'simhse000001', questionario_id: Q, respondido_em: '2026-10-12T15:00:00Z', metodologia: 'HSE_ICAO35', session_id: (Math.imul(id.charCodeAt(0) * 31 + id.charCodeAt(1), 2246822519) >>> 0).toString(16).padStart(8, '0') + '-0000-4000-8000-' + id.padStart(12, '0'),
+    device_info: 'Windows 11 | Edge 126', lgpd_aceito: true, lgpd_aceito_em: '2026-10-12T15:00:00Z',
+    resposta_itens_hse: FX.meta.map((m, k) => ({ item_id: m.id, valor: valorDe(m, k) })), ...extra });
+  const QA = () => [
+    linhaQA('u1', 'Produção', () => 3), linhaQA('u2', 'Produção', () => 5),                                              // uniformes
+    linhaQA('q1', 'Produção', (m, k) => (k < 32 ? 4 : 2)),                                                              // quase uniforme (32/35)
+    linhaQA('n1', 'Produção', (m, k) => 1 + (k % 5), { lgpd_aceito: false, lgpd_aceito_em: null }),                      // sem LGPD
+    linhaQA('d1', 'Administrativo', (m, k) => 1 + (k % 4), { session_id: 'd0d0d0d0-0000-4000-8000-000000000001' }),      // sessão repetida (par)
+    linhaQA('d2', 'Administrativo', (m, k) => 2 + (k % 3), { session_id: 'd0d0d0d0-0000-4000-8000-000000000001' }),
+    linhaQA('t1', 'Produção', (m, k) => 1 + (k % 5), { link_token: 'simteste0001' }), linhaQA('t2', 'Produção', () => 4, { link_token: 'simteste0001' }),
+    linhaQA('t3', 'Logística', (m, k) => 1 + (k % 3), { link_token: 'simteste0001' }), linhaQA('t4', 'Logística', (m, k) => 2 + (k % 4), { link_token: 'simteste0001' }),
+  ];
   let RESP = [...respostasDe(FX, CIC), ...respostasDe(FX0, CIC0)];
+  const respostasQA = () => QA();
   const tabelas = {
-    questionarios: () => [{ id: Q, config: { rascunho: true } }],
+    questionarios: () => [{ id: Q, versao: 2, config: { rascunho: true } }],
     hse_itens: () => FX.meta,
     hse_benchmark: () => [...Object.entries(BENCH).map(([dimensao, media]) => ({ dimensao, media, setor: 'GERAL', n_amostra: 39484, vigente: true })), ...window.__HSE_BENCH_SETORES],
     hse_riscos_config: () => Object.entries(SEV).map(([dimensao, severidade]) => ({ dimensao, severidade, danos: 'Transtorno mental (teste)', versao: 1, validado: false })),
-    links_coleta: () => [],
-    respostas: f => RESP.filter(r => !f.ciclo_id || r.ciclo_id === f.ciclo_id),
+    links_coleta: () => [{ token: 'simteste0001', is_teste: true }],
+    respostas: f => RESP.filter(r => (!f.ciclo_id || r.ciclo_id === f.ciclo_id) && (!f.__in || f.__in.includes(r.link_token)) && (!f.__not || !f.__not.includes(r.link_token))),
     empresa_headcount: () => HC,
   };
   function q(t) {
     let rng = null; const f = {};
     const b = { _t: t };
-    ['select', 'in', 'not', 'order', 'limit', 'is', 'gte', 'lte', 'neq', 'or', 'ilike', 'filter', 'match', 'upsert', 'insert', 'update', 'delete'].forEach(m => { b[m] = () => b; });
+    ['select', 'order', 'limit', 'is', 'gte', 'lte', 'neq', 'or', 'ilike', 'filter', 'match', 'upsert', 'insert', 'update', 'delete'].forEach(m => { b[m] = () => b; });
     b.eq = (col, val) => { f[col] = val; return b; };
+    b.in = (col, arr) => { if (col === 'link_token') f.__in = arr; return b; };
+    b.not = (col, op, v) => { if (col === 'link_token') f.__not = String(v).replace(/[()]/g, '').split(','); return b; };
     b.range = (a, z) => { rng = [a, z]; return b; };
     b.single = b.maybeSingle = () => b;
     b.then = (res, rej) => { let data = (tabelas[t] || (() => []))(f); if (rng) data = data.slice(rng[0], rng[1] + 1); return Promise.resolve({ data, error: null }).then(res, rej); };
@@ -91,6 +111,8 @@ const fake = function () {
       const sh = document.getElementById('app-shell'); if (sh) sh.style.display = '';
       return 'ok';
     },
+    comQA() { RESP = [...RESP, ...respostasQA()]; _hseMetaCache = {}; return RESP.length; },
+    reduzir(n = 3) { let i = 0; RESP = RESP.filter(r => r.ciclo_id !== CIC || r.link_token !== 'simhse000001' || (i++ < n)); _hseMetaCache = {}; return RESP.filter(r => r.ciclo_id === CIC).length; },
     semLogistica(k = 3) { let i = 0; RESP = RESP.filter(r => r.setor !== 'Logística' || r.ciclo_id !== CIC || (i++ < k)); _hseMetaCache = {}; return RESP.filter(r => r.ciclo_id === CIC).length; },
     tela(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); document.getElementById(id).classList.add('on'); },
     async resultados(seg = 'consolidado') {
@@ -111,6 +133,12 @@ const fake = function () {
       const c = await _laudoHSEContexto(); return { pf: _laudoHSEPreflight(c), html: _buildLaudoHSEHTML(c, { preview: true }) };
     },
     async plano() { this.tela('sc-plano'); const s = document.getElementById('plano-ciclo'); if (s) s.value = CIC; await renderPlanoAcao(); return document.getElementById('plano-panel').innerText.slice(0, 400); },
+    async auditoria(modo = 'real') {
+      this.tela('sc-auditoria'); ['audit-empresa'].forEach(id => { const s = document.getElementById(id); if (s) s.innerHTML = `<option value="${EMP}">SIMULAÇÃO HSE (fictícia)</option>`; });
+      preencherSelectCiclos('audit-ciclo', EMP); const c = document.getElementById('audit-ciclo'); if (c) c.value = CIC;
+      const m = document.getElementById('audit-hse-modo'); if (m) m.value = modo;
+      await renderTelaAuditoria(); return document.getElementById('audit-table-panel').innerText.slice(0, 700);
+    },
     async distribuicao() { this.tela('sc-graficos'); const s = document.getElementById('gf-ciclo'); if (s) s.value = CIC; await renderGraficos(); return document.getElementById('graficos-panel').innerText.slice(0, 400); },
     async comparativo(setor = '') {
       this.tela('sc-comparativo'); _cmpMetEmp = null;

@@ -31,11 +31,18 @@ const MATRIZ_RISCO = {
   '4_1':'MÉDIO','4_2':'ALTO','4_3':'ALTO','4_4':'CRÍTICO',
 };
 const matrizNoHtml = html.match(/const MATRIZ_RISCO = \{([\s\S]*?)\};/);
-const ctx = vm.createContext({ console, N_MIN_ANONIMATO: 5, MATRIZ_RISCO, LAUDO_NIVEL_BG: {}, LAUDO_NIVEL_TX: {}, Math, Object, Number, String, Set, Map, Array, JSON });
+const ctx = vm.createContext({ console, N_MIN_ANONIMATO: 5, MATRIZ_RISCO, Math, Object, Number, String, Set, Map, Array, JSON });
+// Constantes do admin que o bloco usa (extraídas do próprio HTML — não duplicadas aqui).
+['S_LABELS', 'S_CRITERIA', 'CONDUTA_ADMINISTRATIVA', 'LAUDO_NIVEL_BG', 'LAUDO_NIVEL_TX'].forEach(n => {
+  const m = html.match(new RegExp('const ' + n + ' = ' + String.fromCharCode(92) + '{[' + String.fromCharCode(92) + 's' + String.fromCharCode(92) + 'S]*?' + String.fromCharCode(92) + '};'));
+  if (!m) { console.error('Constante não encontrada no admin: ' + n); process.exit(2); }
+  vm.runInContext(m[0], ctx);
+});
 vm.runInContext(bloco + `
 ;globalThis.__m = { calcDimensoesHSE, calcRiscoHSE, _hseFaixa, _hseIndice, _hseZonaFixa, _hseMediaSimples,
   _hseLeituraTaxa, _hseMetaDasLinhas, _hseVersoesNasLinhas, HSE_DIMS, HSE_P_POR_FAIXA,
-  _hseSupressaoComplementar, _hseTendencia, _hseDistNormalizada, _hseDistDimensao, _hseRefSetor, HSE_REF_SETORES, _hseGeneralizarCSV,
+  _hseMediaGeral, _hseVisaoSinteticaHTML, _hseAlertaAbsoluto, _hsePontosCorte, _hsePontosCorteHTML, _hseCondutaNiveisHTML, _hseSeveridadeCriteriosHTML,
+  _hseAuditoriaAvaliar, _hseAuditoriaResumo, _hseAuditoriaPreparar, _hseAuditId, _hseNum, HSE_FAIXA, HSE_DIM_AGENTE, _hseSupressaoComplementar, _hseTendencia, _hseDistNormalizada, _hseDistDimensao, _hseRefSetor, HSE_REF_SETORES, _hseGeneralizarCSV,
   ${/function _hsePrioridades/.test(bloco) ? '_hsePrioridades,' : ''} ${/const HSE_DIM_INFO/.test(bloco) ? 'HSE_DIM_INFO,' : ''} };`, ctx);
 const M = ctx.__m;
 
@@ -298,6 +305,88 @@ check('referência: 14 grupos (geral + 13 setores)', Object.keys(M.HSE_REF_SETOR
   check("CSV: toda combinação tem pelo menos 5 linhas (k-anonimato)", menor >= 5, `menor grupo = ${menor} · ${JSON.stringify([...cont])}`);
   const grandes = M._hseGeneralizarCSV(Array.from({ length: 12 }, () => ({ setor: 'A', funcao: 'B', escolaridade: 'C' })));
   check('CSV: grupo grande não é tocado', grandes.every(o => o.setor === 'A' && o.funcao === 'B' && o.escolaridade === 'C'));
+}
+
+// 16. Média simples (visão sintética) — decisão do usuário 2026-10-19
+{
+  const meta = metaVersao('v2');
+  const r = M.calcDimensoesHSE(Array.from({ length: 5 }, () => respondente('v2', F2)), meta, BENCH);
+  const mg = M._hseMediaGeral(r);
+  const refMedia = Object.values(BENCH).reduce((a, v) => a + v, 0) / 7;
+  check('média: F2 = 3,237', quase(mg.media, 3.2369, 1e-3), `obtido ${mg.media}`);
+  check('média: índice 55,9% e zona fixa AMARELA', Math.abs(mg.indice - 55.92) < 0.05 && mg.zona === 'AMARELA');
+  check('média: referência = média das 7 referências', quase(mg.refMedia, refMedia, 1e-9));
+  check('média: diferença para a referência', quase(mg.gap, mg.media - refMedia, 1e-9) && mg.gap < 0);
+  check('média: a pior dimensão é Demandas (1,125)', mg.pior.id === 'DEMANDS' && quase(mg.pior.score, 1.125));
+  check('média: conta as dimensões que pedem ação', mg.nAcao === M._hsePrioridades(r).length && mg.nAcao >= 3, `nAcao ${mg.nAcao}`);
+  const v = M._hseVisaoSinteticaHTML(r);
+  check('média: texto diz que o HSE não define score global e cita a pior dimensão', /não define score global/.test(v) && /Demandas/.test(v) && /A leitura deste documento é por dimensão/.test(v));
+  check('média: sem faixa própria (nenhum selo de faixa antes do trecho "Neste recorte")', !/badge/.test(v.split('Neste recorte')[0]));
+  const r2 = { dims: r.dims.map((d, i) => i === 0 ? { ...d, score: null } : d) };
+  check('média: dimensão sem dado → nulo (não inventa)', M._hseMediaGeral(r2) === null && M._hseVisaoSinteticaHTML(r2) === '');
+}
+
+// 17. Ponte 4×4 para o PGR: alerta de piso absoluto, pontos de corte, conduta e critérios de severidade
+{
+  const A = M._hseAlertaAbsoluto;
+  check('alerta: zona vermelha + faixa AMBAR → alerta', A({ zona: 'VERMELHA', faixa: 'AMBAR' }) === true);
+  check('alerta: zona vermelha + faixa VERMELHO → sem alerta (coerente)', A({ zona: 'VERMELHA', faixa: 'VERMELHO' }) === false);
+  check('alerta: zona amarela → sem alerta', A({ zona: 'AMARELA', faixa: 'AMBAR' }) === false && A(null) === false);
+  // Caso real: referência de Saúde (Demandas 2,90) com score 2,5 → índice 37,5% (vermelha) mas faixa relativa AMBAR
+  check('alerta: Saúde/Demandas 2,50 — faixa AMBAR × zona vermelha', M._hseFaixa(2.5, 2.9) === 'AMBAR' && M._hseZonaFixa(M._hseIndice(2.5)) === 'VERMELHA');
+  // Com a referência GERAL o alerta NUNCA dispara: todo score < 2,60 já é "Ação urgente" nas 7 dimensões
+  check('alerta: com a referência GERAL, score < 2,60 é sempre Ação urgente (o piso nunca é necessário)', Object.values(BENCH).every(ref => M._hseFaixa(2.59, ref) === 'VERMELHO'));
+  const pc = M._hsePontosCorte(BENCH);
+  check('cortes: Demandas 2,75 · 3,25 · 3,65', pc[0].id === 'DEMANDS' && pc[0].urgenteAbaixo === 2.75 && pc[0].acaoAbaixo === 3.25 && pc[0].bomAbaixo === 3.65);
+  let ok = true, det = '';
+  M.HSE_DIMS.forEach((dm, i) => {
+    const p = pc[i], f = M._hseFaixa;
+    const esp = [[p.urgenteAbaixo - 0.01, 'VERMELHO'], [p.urgenteAbaixo, 'AMBAR'], [p.acaoAbaixo - 0.01, 'AMBAR'], [p.acaoAbaixo, 'AZUL'], [p.bomAbaixo - 0.01, 'AZUL'], [p.bomAbaixo, 'VERDE']];
+    esp.forEach(([sc, fx]) => { if (f(Math.round(sc * 100) / 100, p.ref) !== fx) { ok = false; det += ` ${dm.id}:${sc}≠${fx}`; } });
+  });
+  check('cortes: a tabela impressa coincide com _hseFaixa nas 7 dimensões (6 fronteiras cada)', ok, det);
+  const html = M._hsePontosCorteHTML(BENCH);
+  check('cortes: tabela tem 7 linhas e o índice equivalente', (html.match(/<tr>/g) || []).length === 8 && /\(\d+%\)/.test(html));
+  const cond = M._hseCondutaNiveisHTML(new Set(['ALTO']));
+  check('conduta: 5 níveis, os textos do BS 8800, e marca o nível presente', ['CRÍTICO', 'ALTO', 'MÉDIO', 'BAIXO', 'IRRELEVANTE'].every(n => cond.includes('>' + n + '<')) && cond.includes('neste documento') && cond.includes('O trabalho não deve ser iniciado'));
+  const cfg = Object.fromEntries(M.HSE_DIMS.map(d => [d.id, { severidade: d.id === 'DEMANDS' || d.id === 'RELATIONSHIPS' ? 3 : 2 }]));
+  const sev = M._hseSeveridadeCriteriosHTML(cfg);
+  check('severidade: S3 lista Demandas e Relacionamentos; S4 sem dimensão', /S3<\/strong> Sério[\s\S]*?Demandas, Relacionamentos/.test(sev) && /S4<\/strong> Severo[\s\S]*?—/.test(sev));
+  check('agente: as 7 dimensões têm texto próprio', M.HSE_DIMS.every(d => (M.HSE_DIM_AGENTE[d.id] || '').length > 15));
+  const rr = M.calcRiscoHSE(M.calcDimensoesHSE(Array.from({ length: 5 }, () => respondente('v2', F2)), metaVersao('v2'), BENCH), cfg);
+  check('risco: linhas carregam índice e zona (para a tabela do laudo)', rr.every(x => x.indice != null && x.zona));
+}
+
+// 18. Auditoria HSE: sinais de qualidade, resumo, ID e generalização
+{
+  const A = M._hseAuditoriaAvaliar;
+  const h = fn => Object.fromEntries(Array.from({ length: 35 }, (_, i) => ['i' + i, fn(i)]));
+  const u = A({ h: h(() => 3) }, 35), q = A({ h: h(i => (i < 32 ? 4 : 2)) }, 35), n = A({ h: h(i => 1 + (i % 5)) }, 35), inc = A({ h: Object.fromEntries(Object.entries(h(i => 1 + (i % 5))).slice(0, 30)) }, 35);
+  check('auditoria: 35 iguais = uniforme', u.uniforme && !u.quase && !u.incompleta);
+  check('auditoria: 32 de 35 iguais (91%) = quase uniforme', q.quase && !q.uniforme);
+  check('auditoria: resposta variada sem alerta', !n.uniforme && !n.quase && !n.incompleta && n.n === 35);
+  check('auditoria: 30 de 35 itens = incompleta', inc.incompleta && inc.n === 30 && inc.esperado === 35);
+  check('auditoria: 31 de 35 iguais (88,6%) ainda não é quase uniforme', !A({ h: h(i => (i < 31 ? 4 : 2)) }, 35).quase);
+  check('auditoria: valor fora da escala não conta', A({ h: { a: 9, b: 0, c: 3 } }, 3).n === 1);
+
+  const meta = metaVersao('v2');
+  const mk = n => Array.from({ length: n }, (_, i) => ({ id: 'r' + i, session_id: `${String(i).padStart(2, '0')}abcdef-0000-4000-8000-000000000000`, setor: 'Produção', funcao: 'Operador', escolaridade: 'Médio',
+    questionario_id: 'v2', data: '2026-10-05T14:33:10Z', lgpd_aceito: true, link_token: 'L1', h: Object.fromEntries(Object.keys(meta).map((id, k) => [id, 1 + ((k + i) % 5)])) }));
+  const L = [...mk(6), { id: 'raro', session_id: 'ffffffff-0000-4000-8000-000000000000', setor: 'RH', funcao: 'Analista', escolaridade: 'Superior', questionario_id: 'v2', data: '2026-10-06T09:01:00Z', lgpd_aceito: false, link_token: 'L1',
+    h: Object.fromEntries(Object.keys(meta).map(id => [id, 3])) }];
+  const P = M._hseAuditoriaPreparar(L, meta, { real: true });
+  check('auditoria: ordenada pelo ID (sem relação com a ordem de chegada)', P.every((p, i) => i === 0 || P[i - 1].id <= p.id));
+  check('auditoria: ID = início do session_id sem hífens, maiúsculo', M._hseAuditId({ session_id: 'abcdef12-3456-4000-8000-0' }) === 'ABCDEF12' && M._hseAuditId({ id: 'xyz' }) === 'XYZ');
+  const raro = P.find(p => p.r.id === 'raro');
+  check('auditoria: o recorte raro (RH, 1 pessoa) sai generalizado — e a resposta é a mesma', raro.setor !== 'RH' && raro.r.h === L[6].h);
+  check('auditoria: o esperado vem da versão (35 itens) e o uniforme é detectado', raro.aval.esperado === 35 && raro.aval.uniforme);
+  const T = M._hseAuditoriaPreparar(L, meta, { real: false });
+  check('auditoria de TESTE: identificadores originais (sem generalização)', T.find(p => p.r.id === 'raro').setor === 'RH');
+  const R = M._hseAuditoriaResumo(P.map(p => p.aval), [...L, { ...L[0], id: 'dup' }]);
+  check('resumo: total, uniforme, sem LGPD, sessão repetida, 1 link, 1 versão', R.total === 8 && R.uniformes === 1 && R.semLgpd === 1 && R.sessoesRepetidas === 1 && R.links.size === 1 && R.versoes.size === 1, JSON.stringify({ t: R.total, u: R.uniformes, l: R.semLgpd, s: R.sessoesRepetidas }));
+  check('resumo: período', R.primeira < R.ultima);
+  const cont = new Map(); P.forEach(p => { const k = p.setor + '|' + p.funcao + '|' + p.escolaridade; cont.set(k, (cont.get(k) || 0) + 1); });
+  check('auditoria: toda combinação exibida tem ≥ 5 linhas, ou é o grupo genérico', [...cont.entries()].every(([k, v]) => v >= 5 || k.startsWith('Outros setores')), JSON.stringify([...cont]));
 }
 
 // ── Linhas reais (opcional) ───────────────────────────────────────────────────────────────────────────────

@@ -446,7 +446,7 @@ uma ideia de "combo" de metodologias, em
 >   questionário **v2** (texto PT-BR do formulário de um terceiro, **não validado**, `config.rascunho=true`). O selo RASCUNHO do laudo lê essa flag.
 >   Detalhes e comparação com o relatório do outro player: `.claude/notes/2026-10-10-simulacao-hse-e-comparacao-player.md`.
 > - **Revisão completa (2026-10-13)** — `.claude/notes/2026-10-13-hse-revisao-completa.md`. O que vale para qualquer mudança no HSE:
->   - **Motor:** `npm run test:hse` (`_dev/test-hse-motor.js`, 126 casos, sem rede) extrai o bloco `HSE (S7)` do admin e confere contra
+>   - **Motor:** `npm run test:hse` (`_dev/test-hse-motor.js`, 161 casos, sem rede) extrai o bloco `HSE (S7)` do admin e confere contra
 >     oráculo próprio (exemplo F2 do player, limites de faixa, inversão, versões, simulação de DEV conferida por SQL). Rodar antes de commitar.
 >   - **`calcDimensoesHSE` só usa os itens do questionário das linhas** (`_hseMetaDasLinhas`): `_hseMetaCache` é global e acumula versões e
 >     empresas da sessão. Itens casam por **código** (H01..H35 estáveis entre versões). Nunca passar o cache cru a outra função.
@@ -462,8 +462,14 @@ uma ideia de "combo" de metodologias, em
 >     laudo, plano). Recorte novo sem ela reabre a dedução por subtração. **No BS 8800 ainda não existe** — aplicar após integrar a `develop`.
 >   - Referência do benchmark: `_hseCarregarBenchmark(empId)` (grupo escolhido pela empresa, padrão GERAL); nunca ler `setor='GERAL'` direto.
 >   - Laudo HSE impresso: rodapé por **caixas de margem** `@page` (Chromium 131+, `html.mb`), ajuste automático de folha quase vazia e
->     conferência por PDF real (`msedge --headless --print-to-pdf` sobre o harness com `?auto=laudo`). Ao mexer no layout, imprimir de novo.
+>     conferência por PDF real (`chrome.exe --headless=new --print-to-pdf` sobre o harness com `?auto=laudo`; em 19/10 o `msedge` headless passou a sair sem gravar o arquivo, o Chrome funcionou). Ao mexer no layout, imprimir de novo.
 >   - CSV HSE com k-anonimato (`_hseGeneralizarCSV`). Estado HSE de tenant é zerado em `_limparEstadoTenant()`.
+>   - **Decisões de 2026-10-19** (`.claude/notes/2026-10-19-hse-decisoes-ponte-pgr-auditoria.md`): texto H22/H08/H26 mantido (B1 segue), ordem
+>     intercalada, **ponte para o PGR = 4×4 do BS 8800** (P pela faixa do benchmark, S fixo assinado por SST; estudo em `_dev/estudo-ponte-pgr.js`),
+>     média simples = "visão sintética" (nunca sozinha, sem faixa própria), **Auditoria HSE permitida** (k-anonimato dos identificadores, filtros sobre o
+>     valor exibido, data sem hora, ID aleatório, tabela fechada abaixo do n mínimo, modo "respostas de teste"). Conduta por nível e critérios de S são os do BS 8800.
+>   - **Multi-metodologia / COPSOQ** (`.claude/notes/2026-10-19-copsoq-e-arquitetura-multi-metodologia.md`): recomendação de generalizar `hse_*` → `instrumento_*` e criar um
+>     registro de metodologias **antes do go-live do HSE** (janela barata: HSE ainda fora de PROD). COPSOQ pergunta dados de **saúde** (sensíveis, LGPD) — exige RIPD e anonimato reforçado.
 
 Pontos que **já valem para qualquer trabalho futuro no pipeline de submissão de respostas**, ainda
 antes da implementação, porque foram descobertos auditando o banco de produção nesta investigação:

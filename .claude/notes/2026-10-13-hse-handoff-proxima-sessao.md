@@ -1,5 +1,8 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **Atualização 2026-10-19:** o usuário respondeu as decisões (§4.2 abaixo): H22/H08/H26 **mantidos**, ordem **intercalada**, ponte **4×4 mantida**, média simples **criada**, Auditoria HSE **permitida e implementada**.
+> Estudo, implementação e análise do COPSOQ: `2026-10-19-hse-decisoes-ponte-pgr-auditoria.md` e `2026-10-19-copsoq-e-arquitetura-multi-metodologia.md`. `test:hse` = 161 casos. **A `develop` está ~50 commits à frente.**
+>
 > **Atualização 2026-10-14:** referência setorial selecionável, supressão complementar (anonimato contra subtração), Distribuição e
 > Comparativo HSE, PDF conferido por impressão real (Edge headless) e corrigido, CSV com k-anonimato — `2026-10-13-hse-revisao-completa.md` §10.
 > **A `develop` está 33 commits à frente** (era 16): integrar logo.
@@ -72,11 +75,12 @@ Duas versões HSE publicadas em DEV (v1: 9 respostas de teste na empresa Allmed 
 6. **Teste logado em DEV** (nunca feito com sessão real): criar ciclo → responder → analisar → laudo; conferir carregamento real com RLS e **PDF impresso** (paginação).
 7. Golden master do BS 8800 (precisa do usuário logado no admin de DEV).
 
-### 4.2 Decisões do usuário (levantadas em 10/10, sem resposta)
+### 4.2 Decisões do usuário — **RESPONDIDAS em 2026-10-19** (resumo no fim desta seção; detalhe em `2026-10-19-hse-decisoes-ponte-pgr-auditoria.md`)
 1. Texto: manter o F1 verbatim ou corrigir H22/H08/H26?
 2. Ordem dos itens: intercalada (atual, a do HSE original) ou agrupada por dimensão como no F1?
 3. Ponte PGR: manter 4×4 + severidade fixa assinada (atual) ou adotar a 5×5 do player (P por faixas fixas de %, S variável)?
 4. Média simples das 7 dimensões: só nota discreta na tela (atual) ou também no laudo? (o HSE não define score global — D3)
+**Respostas (19/10):** 1 manter H22/H08/H26 (B1 segue) · 2 ordem intercalada (recomendação adotada) · 3 manter 4×4 (estudo feito; conduta/critérios do BS 8800 reaproveitados; proposta de severidade para SST) · 4 média simples criada (visão sintética) · 5 Auditoria permitida, com k-anonimato (§7 da nota). Item 5 abaixo ficou parcialmente resolvido (Auditoria e CSV tratados; filtros combinados, não).
 5. **Anonimato não coberto pelo n mínimo:** Auditoria mostra `session_id`/dispositivo por respondente; `exportarCSV` exporta uma linha por respondente; filtros combinados (setor×função×escolaridade) podem fatiar até n pequeno.
 
 ### 4.3 Técnicas — **bugs/lacunas achados e NÃO corrigidos**
