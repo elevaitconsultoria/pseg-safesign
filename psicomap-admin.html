@@ -7637,9 +7637,9 @@ async function _baixarAnexosPorGrupo(btn, modo) {
   const adOrig = window._analiseData;
   if (modo === 'ghe' && !gruposGhe.length) { toast('Este cliente não tem GHE importado.', 'w'); return; }
   const grupos = _anexosGrupos(modo);
-  const validos = grupos.filter(g => g.linhas.length >= 2);
-  const pulados = grupos.filter(g => g.linhas.length < 2).map(g => g.nome);
-  if (!validos.length) { toast('Nenhum ' + (modo === 'ghe' ? 'GHE' : 'setor') + ' com 2 ou mais respondentes no recorte atual.', 'w', 6000); return; }
+  // Todo grupo com resposta sai, inclusive o de 1 respondente (decisão 2026-10-19).
+  const validos = grupos;
+  if (!validos.length) { toast('Nenhum ' + (modo === 'ghe' ? 'GHE' : 'setor') + ' com respostas no recorte atual.', 'w', 6000); return; }
 
   const htmlOrig = btn ? btn.innerHTML : '';
   const vmOrig = window._viewMode, dmOrig = window._displayMode, segOrig = window._segMode;
@@ -7689,7 +7689,6 @@ async function _baixarAnexosPorGrupo(btn, modo) {
     document.body.appendChild(el); el.click();
     setTimeout(() => { URL.revokeObjectURL(el.href); el.remove(); }, 4000);
     const avisos = [];
-    if (pulados.length) avisos.push(`${pulados.length} com só 1 respondente e pulado(s): ${pulados.join(', ')}`);
     if (falhas.length) avisos.push('falhas: ' + falhas.join('; '));
     toast(`✓ .zip com ${validos.length} ${modo === 'ghe' ? 'GHE' : 'setor(es)'} baixado.` + (avisos.length ? ' Atenção — ' + avisos.join(' | ') : ''),
           avisos.length ? 'w' : 'g', avisos.length ? 12000 : 5000);
@@ -16403,10 +16402,10 @@ ${_hasConc ? `
 
 
 const P2_ID = 'padrao_pseg2.0';
-// n mínimo de respondentes para exibir o RESULTADO de um grupo. Decisão do usuário (2026-10-14): só o
-// grupo de 1 respondente é omitido — a partir de 2 a tabela sai normalmente. A branch HSE usa
-// N_MIN_ANONIMATO = 5; ao juntar, decidir se unifica. 0 desliga.
-const P2_N_MIN = 2;
+// n mínimo de respondentes para exibir o RESULTADO de um grupo. Decisão do usuário (2026-10-19):
+// o mínimo foi DESLIGADO — grupo com 1 respondente sai com tabela, gráficos e análise como os demais
+// (em 2026-10-14 era 2). A branch HSE usa N_MIN_ANONIMATO = 5; ao juntar, decidir se unifica. 0 desliga.
+const P2_N_MIN = 0;
 // Participação mínima recomendada pela metodologia, por grupo de exposição.
 const P2_PART_MIN = 30;
 
