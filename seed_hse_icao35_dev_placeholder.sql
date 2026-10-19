@@ -18,6 +18,7 @@
 -- Benchmark: só as médias GERAIS do relatório HSE 2023 (39.484 respondentes). As 13 médias por
 -- setor ainda precisam ser transcritas da fonte — NÃO foram inventadas aqui.
 --
+-- GENERALIZAÇÃO (2026-10-19): grava em instrumento_* (migration_metodologias_instrumentos.sql), não mais em hse_*.
 -- Idempotente: se o questionário já estiver publicado, não toca nos itens (estão congelados).
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
@@ -36,8 +37,9 @@ BEGIN
       'instrucoes', '[RASCUNHO] As perguntas a seguir referem-se aos últimos 6 meses de trabalho.',
       'cabecalho_parte1', '[RASCUNHO] Com que frequência isto acontece com você?',
       'cabecalho_parte2', '[RASCUNHO] Quanto você concorda com cada afirmação?',
-      'rotulos_freq',    jsonb_build_array('Nunca','Raramente','Às vezes','Frequentemente','Sempre'),
-      'rotulos_concord', jsonb_build_array('Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente')
+      'rotulos', jsonb_build_object(
+        'freq',    jsonb_build_array('Nunca','Raramente','Às vezes','Frequentemente','Sempre'),
+        'concord', jsonb_build_array('Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'))
     )
   )
   ON CONFLICT (id) DO NOTHING;
@@ -45,8 +47,8 @@ BEGIN
   SELECT publicado INTO v_pub FROM questionarios WHERE id = v_q;
 
   IF NOT v_pub THEN
-    INSERT INTO hse_itens (questionario_id, codigo, ordem, parte, dimensao, texto, inversa, escala_labels)
-    SELECT v_q,
+    INSERT INTO instrumento_itens (questionario_id, metodologia, codigo, ordem, parte, dimensao, texto, inversa, escala_labels)
+    SELECT v_q, 'HSE_ICAO35',
            'H' || lpad(n::text, 2, '0'),
            n,
            CASE WHEN n <= 23 THEN 1 ELSE 2 END,
@@ -93,14 +95,15 @@ BEGIN
       ) AS t(n, dim, en)
     ON CONFLICT (questionario_id, codigo) DO NOTHING;
 
-    -- Publica POR ÚLTIMO: depois disto os itens ficam congelados (trigger tg_hse_itens_congelados).
+    -- Publica POR ÚLTIMO: depois disto os itens ficam congelados (trigger tg_instrumento_itens_congelados).
     UPDATE questionarios SET publicado = true WHERE id = v_q;
   END IF;
 END
 $seed$;
 
 -- Benchmark HSE 2023 — médias gerais (39.484 respondentes). Percentis ficam NULL de propósito.
-INSERT INTO hse_benchmark (fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao) VALUES
+INSERT INTO instrumento_referencias (metodologia, fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao)
+SELECT 'HSE_ICAO35', v.* FROM (VALUES
   ('HSE_2023', 2023, 'GERAL', 'DEMANDS',         3.25, 39484, true, 'Média geral, relatório HSE ago/2023; alto = melhor'),
   ('HSE_2023', 2023, 'GERAL', 'CONTROL',         3.72, 39484, true, 'idem'),
   ('HSE_2023', 2023, 'GERAL', 'MANAGER_SUPPORT', 3.80, 39484, true, 'idem'),
@@ -108,13 +111,14 @@ INSERT INTO hse_benchmark (fonte, fonte_ano, setor, dimensao, media, n_amostra, 
   ('HSE_2023', 2023, 'GERAL', 'RELATIONSHIPS',   4.11, 39484, true, 'idem'),
   ('HSE_2023', 2023, 'GERAL', 'ROLE',            4.16, 39484, true, 'idem'),
   ('HSE_2023', 2023, 'GERAL', 'CHANGE',          3.30, 39484, true, 'idem')
-ON CONFLICT (fonte, setor, dimensao) DO NOTHING;
+) AS v(fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao)
+ON CONFLICT (metodologia, fonte, setor, dimensao) DO NOTHING;
 
 -- ── Verificação ─────────────────────────────────────────────────────────────────────────
 -- SELECT count(*) itens, count(*) FILTER (WHERE inversa) invertidos, count(DISTINCT dimensao) dimensoes,
 --        count(*) FILTER (WHERE texto LIKE '[RASCUNHO]%') rascunho,
 --        count(*) FILTER (WHERE parte=1) parte1, count(*) FILTER (WHERE parte=2) parte2
---   FROM hse_itens WHERE questionario_id='00000000-0000-0000-0000-000000000002';
+--   FROM instrumento_itens WHERE questionario_id='00000000-0000-0000-0000-000000000002';
 --   -- esperado: 35 | 12 | 7 | 35 | 23 | 12
--- SELECT dimensao, count(*) FROM hse_itens GROUP BY 1 ORDER BY 1;
+-- SELECT dimensao, count(*) FROM instrumento_itens GROUP BY 1 ORDER BY 1;
 --   -- esperado: CHANGE 3, CONTROL 6, DEMANDS 8, MANAGER_SUPPORT 5, PEER_SUPPORT 4, RELATIONSHIPS 4, ROLE 5

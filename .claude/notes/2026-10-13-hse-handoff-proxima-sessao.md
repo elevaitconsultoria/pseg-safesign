@@ -1,5 +1,13 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **Atualização 2026-10-19 (noite) — ONDE RETOMAR:** o trabalho está agora na branch **`feat/hse-integracao-develop`** (worktree **`../pseg-safesign-hse-integ`**,
+> = `feat/hse-icao35-sim` + merge da `develop` de 49 commits + **generalização para a família `instrumento_*`**). `feat/hse-icao35-sim` fica como histórico.
+> A generalização está **aplicada em DEV** (as tabelas `hse_*` foram removidas; o preview antigo de `feat/hse-icao35` não funciona mais contra DEV), **PROD intocado, nada em `develop`**.
+> Detalhe e evidências: **`2026-10-19-copsoq-avaliacao-documentos-e-generalizacao.md`**. Para PROD a ordem é `migration_metodologias_instrumentos.sql` →
+> `migration_instrumento_riscos_config.sql` → `migration_obter_instrumento_link.sql` → `migration_salvar_resposta_instrumento_prod.sql` → HTML; **nunca** `migration_dev_converter_*`.
+> Admin: registro `METODOLOGIAS` + guarda `_metSemMotor` em cada ponto de despacho; formulário genérico (rótulos, `ajuda`, `aviso`). Pendências novas: texto validado + licença do COPSOQ,
+> motor/laudo/anonimato reforçado do COPSOQ, e as de sempre (B1, B12, severidade assinada, valor do n mínimo, revisão de SST).
+>
 > **Atualização 2026-10-19:** o usuário respondeu as decisões (§4.2 abaixo): H22/H08/H26 **mantidos**, ordem **intercalada**, ponte **4×4 mantida**, média simples **criada**, Auditoria HSE **permitida e implementada**.
 > Estudo, implementação e análise do COPSOQ: `2026-10-19-hse-decisoes-ponte-pgr-auditoria.md` e `2026-10-19-copsoq-e-arquitetura-multi-metodologia.md`. `test:hse` = 161 casos. **A `develop` está ~50 commits à frente.**
 >

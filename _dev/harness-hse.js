@@ -51,12 +51,12 @@ const fake = function () {
     ciclo_id: ciclo, link_token: 'simhse000001', questionario_id: r.questionario_id, respondido_em: r.respondido_em, metodologia: 'HSE_ICAO35',
     session_id: (Math.imul(i + 1, 2654435761) >>> 0).toString(16).padStart(8, '0') + '-' + ciclo.slice(-2).padStart(4, '0') + '-4000-8000-000000000000', device_info: i % 2 ? 'Android 14 | Chrome 126' : 'iOS 17 | Safari 17',
     lgpd_aceito: i % 17 !== 0, lgpd_aceito_em: r.respondido_em,
-    resposta_itens_hse: Object.entries(r.h).map(([item_id, valor]) => ({ item_id, valor })) }));
+    resposta_itens_instrumento: Object.entries(r.h).map(([item_id, valor]) => ({ item_id, valor })) }));
   // Linhas para a Auditoria (só entram com __hse.comQA()): uniformes, quase uniforme, sem LGPD, sessão repetida e 4 de TESTE.
   const linhaQA = (id, setor, valorDe, extra = {}) => ({ id, setor, funcao: setor === 'Logística' ? 'Auxiliar' : 'Operador', escolaridade: 'Ensino Médio', ciclo_id: CIC,
     link_token: 'simhse000001', questionario_id: Q, respondido_em: '2026-10-12T15:00:00Z', metodologia: 'HSE_ICAO35', session_id: (Math.imul(id.charCodeAt(0) * 31 + id.charCodeAt(1), 2246822519) >>> 0).toString(16).padStart(8, '0') + '-0000-4000-8000-' + id.padStart(12, '0'),
     device_info: 'Windows 11 | Edge 126', lgpd_aceito: true, lgpd_aceito_em: '2026-10-12T15:00:00Z',
-    resposta_itens_hse: FX.meta.map((m, k) => ({ item_id: m.id, valor: valorDe(m, k) })), ...extra });
+    resposta_itens_instrumento: FX.meta.map((m, k) => ({ item_id: m.id, valor: valorDe(m, k) })), ...extra });
   const QA = () => [
     linhaQA('u1', 'Produção', () => 3), linhaQA('u2', 'Produção', () => 5),                                              // uniformes
     linhaQA('q1', 'Produção', (m, k) => (k < 32 ? 4 : 2)),                                                              // quase uniforme (32/35)
@@ -70,9 +70,9 @@ const fake = function () {
   const respostasQA = () => QA();
   const tabelas = {
     questionarios: () => [{ id: Q, versao: 2, config: { rascunho: true } }],
-    hse_itens: () => FX.meta,
-    hse_benchmark: () => [...Object.entries(BENCH).map(([dimensao, media]) => ({ dimensao, media, setor: 'GERAL', n_amostra: 39484, vigente: true })), ...window.__HSE_BENCH_SETORES],
-    hse_riscos_config: () => Object.entries(SEV).map(([dimensao, severidade]) => ({ dimensao, severidade, danos: 'Transtorno mental (teste)', versao: 1, validado: false })),
+    instrumento_itens: () => FX.meta,
+    instrumento_referencias: () => [...Object.entries(BENCH).map(([dimensao, media]) => ({ dimensao, media, setor: 'GERAL', n_amostra: 39484, vigente: true })), ...window.__HSE_BENCH_SETORES],
+    instrumento_riscos_config: () => Object.entries(SEV).map(([dimensao, severidade]) => ({ dimensao, severidade, danos: 'Transtorno mental (teste)', versao: 1, validado: false })),
     links_coleta: () => [{ token: 'simteste0001', is_teste: true }],
     respostas: f => RESP.filter(r => (!f.ciclo_id || r.ciclo_id === f.ciclo_id) && (!f.__in || f.__in.includes(r.link_token)) && (!f.__not || !f.__not.includes(r.link_token))),
     empresa_headcount: () => HC,
@@ -93,7 +93,7 @@ const fake = function () {
     async instalar() {
       sbAdmin = { from: q, rpc: async () => ({ data: null, error: null }), auth: { getSession: async () => ({ data: { session: null } }) } };
       currentUser = { id: 'harness', role: 'admin', tenant_id: 't' };
-      _hseDisponivel = true;
+      _hseDisponivel = true; _instrPublicados = new Set(['HSE_ICAO35']); _instrNoBanco = {};
       _estPerfil = { nome_empresa: 'Consultoria Harness', responsavel_padrao: 'Responsável de Teste' };
       _empresas = [{ id: EMP, nome: 'SIMULAÇÃO HSE (fictícia)', setores: ['Administrativo', 'Logística', 'Produção'], hierarquia: [] }];
       _ciclos = [{ id: CIC0, empresa_id: EMP, nome: 'Avaliação HSE — Março 2026', metodologia: 'HSE_ICAO35', ano_referencia: 2026, mes_referencia: 3 },

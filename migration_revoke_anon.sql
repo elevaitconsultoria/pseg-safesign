@@ -91,15 +91,16 @@ GRANT SELECT ON public.empresa_funcoes TO anon;
 -- ── RPCs EXECUTAVEIS PELO ANON (acrescentado em 2026-10-09, metodologia HSE) ───────────
 -- Alem das 5 tabelas acima, o formulario publico chama DUAS funcoes SECURITY DEFINER:
 --   salvar_resposta(uuid,uuid,text,text,text,text,jsonb,uuid,boolean,text)   [10 args]
---   obter_instrumento_link(text)   -- devolve a metodologia do ciclo do link e, no HSE, os
---                                     35 itens SEM `inversa`/`dimensao`. E ANONIMA DE PROPOSITO:
+--   obter_instrumento_link(text)   -- devolve a metodologia do ciclo do link e, em instrumento
+--                                     generico (HSE, COPSOQ...), os itens SEM `inversa`/`dimensao`. E ANONIMA DE PROPOSITO:
 --                                     `anon` nao tem SELECT em `ciclos`, e embutir
 --                                     `ciclos(metodologia)` no select de links_coleta derrubaria
 --                                     todo link com "Token invalido".
 -- Overloads antigos de salvar_resposta (7 e 9 args) tem de estar SEM EXECUTE para anon: eles
--- driblam as validacoes do ramo HSE (migration_salvar_resposta_hse_*.sql).
--- As tabelas hse_itens, resposta_itens_hse, hse_benchmark e hse_riscos_config NAO entram na
--- lista do anon e ja nascem com REVOKE nas proprias migrations (o loop acima tambem as cobre).
+-- driblam as validacoes do ramo de instrumentos (migration_salvar_resposta_instrumento_*.sql).
+-- As tabelas instrumentos, instrumento_dimensoes, instrumento_itens, resposta_itens_instrumento,
+-- instrumento_referencias e instrumento_riscos_config NAO entram na lista do anon e ja nascem com
+-- REVOKE nas proprias migrations (o loop acima tambem as cobre).
 --
 -- Verificacao (rodar em DEV e PROD). Atencao: `anon` executa MAIS funcoes SECURITY DEFINER do que
 -- estas duas — em DEV (2026-10-09) sao 17, por causa do EXECUTE padrao do PUBLIC (helpers de RLS

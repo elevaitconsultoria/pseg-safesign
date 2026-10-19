@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════════════════
--- PsicoMap — RPC pública obter_instrumento_link(token)  (etapa S2)
+-- PsicoMap — RPC pública obter_instrumento_link(token)  (etapa S2, v2 genérica)
 -- Plano: .claude/notes/2026-10-08-plano-implantacao-hse.md
 --
--- Executar: DEV primeiro, PROD depois. Pré-requisito: migration_metodologia_hse_icao35.sql.
+-- Executar: DEV primeiro, PROD depois. Pré-requisito: migration_metodologias_instrumentos.sql.
 -- ⚠ ORDEM DE DEPLOY: aplicar em PROD ANTES de promover o psicomap-forms.html que a chama.
 --   O formulário passa a depender desta função para saber qual instrumento exibir.
 --
@@ -13,16 +13,17 @@
 --   requisição INTEIRA e todo link mostraria "Token inválido".
 --
 -- DESENHO
---   • SECURITY DEFINER: lê ciclos/questionarios/hse_itens como dono; o anon só recebe o JSON.
+--   • SECURITY DEFINER: lê ciclos/questionarios/instrumento_itens como dono; o anon só recebe o JSON.
 --   • Token inexistente, inativo ou expirado devolvem o MESMO erro (token_invalido) — a função
 --     não vira oráculo de tokens. (O token já é legível via links_coleta, então nada vaza a mais.)
 --   • Link sem ciclo, ou ciclo BS 8800 → {"metodologia":"BS8800","ciclo_id":...} (nada mais).
---   • Ciclo HSE → instrumento completo. NÃO devolve `inversa` nem `dimensao`: o respondente não
---     precisa saber como será pontuado (e a dimensão enviesaria a resposta).
---   • Instrumento HSE não publicado neste ambiente → erro instrumento_indisponivel (a chave
---     geral do HSE é questionarios.publicado).
+--   • Ciclo de instrumento genérico (qualquer metodologia do catálogo ≠ BS8800) → instrumento completo, com a
+--     escala (escala_min/escala_max) e o texto de ajuda de cada item, quando existir. NÃO devolve `inversa` nem
+--     `dimensao`: o respondente não precisa saber como será pontuado (e a dimensão enviesaria a resposta).
+--   • Instrumento não publicado neste ambiente → erro instrumento_indisponivel (a chave geral de
+--     cada metodologia é questionarios.publicado).
 --
--- LIMITAÇÃO CONHECIDA (v1): usa o questionário HSE publicado de MAIOR versão. Se um dia houver
+-- LIMITAÇÃO CONHECIDA (v1): usa o questionário publicado de MAIOR versão da metodologia. Se um dia houver
 --   duas versões publicadas e um ciclo já em andamento, as respostas novas cairiam na versão
 --   nova. Antes de publicar uma 2ª versão, pinar o questionário no ciclo (ciclos.questionario_id).
 --
@@ -42,6 +43,7 @@ DECLARE
   v_expira     timestamptz;
   v_encontrado boolean := false;
   v_metod      text := 'BS8800';
+  v_ins        instrumentos%ROWTYPE;
   v_q          questionarios%ROWTYPE;
   v_itens      jsonb;
 BEGIN
@@ -66,13 +68,18 @@ BEGIN
     v_metod := COALESCE(v_metod, 'BS8800');
   END IF;
 
-  IF v_metod <> 'HSE_ICAO35' THEN
+  IF v_metod = 'BS8800' THEN
     RETURN jsonb_build_object('metodologia', v_metod, 'ciclo_id', v_ciclo_id);
+  END IF;
+
+  SELECT * INTO v_ins FROM instrumentos WHERE metodologia = v_metod;
+  IF NOT FOUND OR NOT v_ins.generico OR NOT v_ins.ativo THEN
+    RAISE EXCEPTION 'instrumento_indisponivel';
   END IF;
 
   SELECT * INTO v_q
     FROM questionarios
-   WHERE metodologia = 'HSE_ICAO35' AND publicado
+   WHERE metodologia = v_metod AND publicado
    ORDER BY versao DESC
    LIMIT 1;
 
@@ -80,11 +87,11 @@ BEGIN
     RAISE EXCEPTION 'instrumento_indisponivel';
   END IF;
 
-  SELECT jsonb_agg(jsonb_build_object(
+  SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
            'id', i.id, 'codigo', i.codigo, 'ordem', i.ordem, 'parte', i.parte,
-           'texto', i.texto, 'escala_labels', i.escala_labels) ORDER BY i.ordem)
+           'texto', i.texto, 'ajuda', i.ajuda, 'escala_labels', i.escala_labels)) ORDER BY i.ordem)
     INTO v_itens
-    FROM hse_itens i
+    FROM instrumento_itens i
    WHERE i.questionario_id = v_q.id;
 
   RETURN jsonb_build_object(
@@ -93,6 +100,8 @@ BEGIN
     'questionario_id', v_q.id,
     'versao',          v_q.versao,
     'config',          v_q.config,
+    'escala_min',      v_ins.escala_min,
+    'escala_max',      v_ins.escala_max,
     'itens',           COALESCE(v_itens, '[]'::jsonb)
   );
 END;
@@ -102,7 +111,7 @@ REVOKE ALL ON FUNCTION public.obter_instrumento_link(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.obter_instrumento_link(text) TO anon, authenticated;
 
 COMMENT ON FUNCTION public.obter_instrumento_link(text) IS
-  'RPC pública: metodologia (e, se HSE, o instrumento) do ciclo do link. Erro token_invalido para token inexistente/inativo/expirado.';
+  'RPC pública: metodologia (e, se instrumento genérico, o instrumento) do ciclo do link. Erro token_invalido para token inexistente/inativo/expirado.';
 
 -- Faz o PostgREST enxergar a função nova sem esperar o ciclo de recarga do schema.
 NOTIFY pgrst, 'reload schema';
@@ -110,5 +119,5 @@ NOTIFY pgrst, 'reload schema';
 -- ── Verificação (SET LOCAL ROLE anon; em transação com ROLLBACK) ────────────────────────
 --   select obter_instrumento_link('token-que-nao-existe');          -- erro token_invalido
 --   select obter_instrumento_link(<token de link ativo BS>);          -- {"metodologia":"BS8800",...}
---   select obter_instrumento_link(<token de link ativo HSE>);         -- instrumento completo (35 itens)
+--   select obter_instrumento_link(<token de link ativo HSE>);         -- instrumento completo (35 itens, escala 1..5)
 --   select * from ciclos;                                             -- permission denied (continua)

@@ -20,12 +20,12 @@ Cada resposta recebida pelo formulário é gravada em **3 camadas independentes*
 
 A restauração usa a **1ª camada** para reconstruir a **3ª**.
 
-> ⚠️ **Respostas HSE/ICAO-35 (desde a segunda metodologia).** Os Passos 3–4 abaixo restauram **apenas
+> ⚠️ **Respostas de instrumentos genéricos (HSE/ICAO-35 e os que vierem depois).** Os Passos 3–4 abaixo restauram **apenas
 > respostas BS 8800**. O backup bruto de uma resposta HSE tem `itens[].item_id`/`questao_id` apontando
-> para `hse_itens` e valores 1–5. Rodar o Passo 4 sobre elas **descarta os itens em silêncio** (o filtro
+> para `instrumento_itens` e valores 1–5. Rodar o Passo 4 sobre elas **descarta os itens em silêncio** (o filtro
 > `BETWEEN 1 AND 4` os ignora e o `JOIN` não os encontra), e o Passo 3 as gravaria como `BS8800`
-> (default da coluna). Por isso os passos 3 e 4 filtram por metodologia, e os passos **3-HSE** e
-> **4-HSE** logo depois cuidam das respostas HSE. A metodologia vem do **ciclo** do payload, nunca
+> (default da coluna). Por isso os passos 3 e 4 filtram por metodologia, e os passos **3-INSTR** e
+> **4-INSTR** logo depois cuidam das respostas dos demais instrumentos (um por vez). A metodologia vem do **ciclo** do payload, nunca
 > do formato dos itens.
 
 
@@ -129,18 +129,22 @@ WHERE (item->>'valor')::int BETWEEN 1 AND 4
 
 ---
 
-## Passo 3-HSE e 4-HSE — Restaurar respostas HSE/ICAO-35
+## Passo 3-INSTR e 4-INSTR — Restaurar respostas de instrumentos genéricos (HSE/ICAO-35, COPSOQ…)
 
-Só necessário se houver ciclos HSE. Descubra antes se há backups HSE a restaurar:
+Só necessário se houver ciclos de metodologia ≠ BS 8800. Descubra antes quais backups restaurar:
 
 ```sql
-SELECT count(*) AS backups_hse
+SELECT c.metodologia, count(*) AS backups
 FROM respostas_raw_backup rb
 JOIN ciclos c ON c.id = (rb.payload->>'ciclo_id')::uuid
-WHERE c.metodologia = 'HSE_ICAO35';
+WHERE c.metodologia <> 'BS8800'
+GROUP BY 1;
 ```
 
-**3-HSE — `respostas`** (grava `metodologia` e o questionário HSE publicado):
+Rode os dois passos **uma metodologia por vez**, trocando `'HSE_ICAO35'` pelo valor da linha acima
+(a metodologia vem do **ciclo** do payload, nunca do formato dos itens).
+
+**3-INSTR — `respostas`** (grava `metodologia` e o questionário publicado dessa metodologia):
 
 ```sql
 INSERT INTO respostas (empresa_id, ciclo_id, questionario_id, tenant_id, link_token, session_id,
@@ -156,25 +160,27 @@ JOIN ciclos c ON c.id = (rb.payload->>'ciclo_id')::uuid AND c.metodologia = 'HSE
 WHERE NOT EXISTS (SELECT 1 FROM respostas r WHERE r.session_id = (rb.payload->>'session_id')::uuid);
 ```
 
-**4-HSE — `resposta_itens_hse`** (escala 1–5; o id do item vem de `item_id` **ou** `questao_id`):
+**4-INSTR — `resposta_itens_instrumento`** (o id do item vem de `item_id` **ou** `questao_id`; a escala vem de `instrumentos`):
 
 ```sql
-INSERT INTO resposta_itens_hse (resposta_id, item_id, valor)
-SELECT r.id,
-       lower(COALESCE(item->>'item_id', item->>'questao_id'))::uuid,
-       (item->>'valor')::int
+INSERT INTO resposta_itens_instrumento (resposta_id, item_id, valor)
+SELECT r.id, ii.id, (item->>'valor')::int
 FROM respostas_raw_backup rb
 JOIN respostas r ON r.session_id = (rb.payload->>'session_id')::uuid AND r.metodologia = 'HSE_ICAO35'
+JOIN instrumentos i ON i.metodologia = r.metodologia
 CROSS JOIN jsonb_array_elements(rb.payload->'itens') AS item
-WHERE (item->>'valor')::int BETWEEN 1 AND 5
-  AND NOT EXISTS (SELECT 1 FROM resposta_itens_hse x WHERE x.resposta_id = r.id)
+JOIN instrumento_itens ii ON ii.id = lower(COALESCE(item->>'item_id', item->>'questao_id'))::uuid
+                         AND ii.metodologia = r.metodologia
+WHERE (item->>'valor')::int BETWEEN i.escala_min AND i.escala_max
+  AND NOT EXISTS (SELECT 1 FROM resposta_itens_instrumento x WHERE x.resposta_id = r.id)
 ON CONFLICT DO NOTHING;
 ```
 
-Conferência obrigatória: cada resposta HSE restaurada deve ter **35 itens** (ou o total publicado em
-`hse_itens`). `SELECT resposta_id, count(*) FROM resposta_itens_hse GROUP BY 1 HAVING count(*) <> 35;`
-deve voltar vazio. Se `hse_itens` do questionário original não existir mais, **pare**: itens HSE são
-`ON DELETE RESTRICT` e o texto é congelado, então isso indicaria um problema maior que a restauração.
+Conferência obrigatória: cada resposta restaurada deve ter **todos os itens** do questionário dela
+(35 no HSE). `SELECT x.resposta_id, count(*) FROM resposta_itens_instrumento x GROUP BY 1
+HAVING count(*) <> (SELECT count(*) FROM instrumento_itens WHERE questionario_id = (SELECT questionario_id FROM respostas WHERE id = x.resposta_id));`
+deve voltar vazio. Se `instrumento_itens` do questionário original não existir mais, **pare**: itens
+são `ON DELETE RESTRICT` e o texto é congelado, então isso indicaria um problema maior que a restauração.
 
 ---
 

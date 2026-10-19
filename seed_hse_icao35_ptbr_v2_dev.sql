@@ -7,7 +7,7 @@
 --    (a) validação de SST/psicólogo e (b) confirmar com o usuário/jurídico a permissão de uso da redação.
 --    Por isso `config.origem` registra a procedência e `config.rascunho` continua true.
 --
--- POR QUE UMA VERSÃO NOVA (e não UPDATE na v1): os itens congelam ao publicar (tg_hse_itens_congelados) e
+-- POR QUE UMA VERSÃO NOVA (e não UPDATE na v1): os itens congelam ao publicar (tg_instrumento_itens_congelados) e
 --   a v1 já tem respostas. Regra B21: mudou uma palavra → questionário novo. A v1 continua publicada para que
 --   as respostas antigas sigam analisáveis; `obter_instrumento_link` e `salvar_resposta` usam a MAIOR versão
 --   publicada, então links novos já recebem a v2.
@@ -31,8 +31,9 @@
 --     dura" e "bullying" como "Sou perseguido" — redações mais fracas que o original.
 --   • Itens de concordância reescritos como pergunta de frequência alteram o construto (H01, H04, H11, H13…).
 --
+-- GENERALIZAÇÃO (2026-10-19): grava em instrumento_* (migration_metodologias_instrumentos.sql), não mais em hse_*.
 -- Idempotente. Rollback: DELETE FROM questionarios WHERE id='00000000-0000-0000-0000-000000000003'
---   (só se ainda não houver respostas nele — hse_itens é ON DELETE RESTRICT para resposta_itens_hse).
+--   (só se ainda não houver respostas nele — instrumento_itens é ON DELETE RESTRICT para resposta_itens_instrumento).
 -- ═══════════════════════════════════════════════════════════════════════════════════════
 
 DO $seed$
@@ -50,7 +51,7 @@ BEGIN
       'origem', 'Formulário impresso "AVALIAÇÃO - IMPRESSA HSE" de terceiro (F1), recebido em 2026-10-09. Texto NÃO validado por SST nem autorizado para uso comercial (B1).',
       'instrucoes', 'As perguntas a seguir referem-se aos últimos seis meses de trabalho. Para cada afirmativa, selecione com que frequência ela acontece com você.',
       'cabecalho_parte1', 'Considerando os últimos seis meses, com que frequência isto acontece?',
-      'rotulos_freq', jsonb_build_array('Nunca','Raramente','Às vezes','Frequentemente','Sempre')
+      'rotulos', jsonb_build_object('freq', jsonb_build_array('Nunca','Raramente','Às vezes','Frequentemente','Sempre'))
     )
   )
   ON CONFLICT (id) DO NOTHING;
@@ -58,8 +59,8 @@ BEGIN
   SELECT publicado INTO v_pub FROM questionarios WHERE id = v_q;
 
   IF NOT v_pub THEN
-    INSERT INTO hse_itens (questionario_id, codigo, ordem, parte, dimensao, texto, inversa, escala_labels)
-    SELECT v_q,
+    INSERT INTO instrumento_itens (questionario_id, metodologia, codigo, ordem, parte, dimensao, texto, inversa, escala_labels)
+    SELECT v_q, 'HSE_ICAO35',
            'H' || lpad(n::text, 2, '0'),
            n,
            1,
@@ -113,9 +114,9 @@ END
 $seed$;
 
 -- ── Verificação ─────────────────────────────────────────────────────────────────────────
--- SELECT versao, publicado, (SELECT count(*) FROM hse_itens i WHERE i.questionario_id=q.id) itens
+-- SELECT versao, publicado, (SELECT count(*) FROM instrumento_itens i WHERE i.questionario_id=q.id) itens
 --   FROM questionarios q WHERE metodologia='HSE_ICAO35' ORDER BY versao;          -- v1: 35 · v2: 35 (ambas publicadas)
--- SELECT dimensao, count(*), bool_and(inversa) FROM hse_itens
+-- SELECT dimensao, count(*), bool_and(inversa) FROM instrumento_itens
 --   WHERE questionario_id='00000000-0000-0000-0000-000000000003' GROUP BY 1 ORDER BY 1;
 --   -- CHANGE 3 · CONTROL 6 · DEMANDS 8 (inversa) · MANAGER_SUPPORT 5 · PEER_SUPPORT 4 · RELATIONSHIPS 4 (inversa) · ROLE 5
--- SELECT count(*) FROM hse_itens WHERE questionario_id='00000000-0000-0000-0000-000000000003' AND texto LIKE '[RASCUNHO]%';  -- 0
+-- SELECT count(*) FROM instrumento_itens WHERE questionario_id='00000000-0000-0000-0000-000000000003' AND texto LIKE '[RASCUNHO]%';  -- 0

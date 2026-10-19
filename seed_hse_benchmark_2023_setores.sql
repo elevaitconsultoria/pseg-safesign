@@ -14,9 +14,11 @@
 --   desempenho), e vários têm poucos respondentes (Healthcare 242, Retail 263, Energy 252).
 --   O app hoje usa APENAS setor='GERAL' (_hseCarregarBenchmark); estas linhas são referência
 --   guardada, sem efeito em nenhuma tela até existir seleção de setor (fase 1.1, depende de CNAE).
--- Rollback: DELETE FROM hse_benchmark WHERE fonte='HSE_2023' AND setor <> 'GERAL';
+-- Rollback: DELETE FROM instrumento_referencias WHERE metodologia='HSE_ICAO35' AND fonte='HSE_2023' AND setor <> 'GERAL';
+-- GENERALIZAÇÃO (2026-10-19): grava em instrumento_* (migration_metodologias_instrumentos.sql), não mais em hse_*.
 -- ═══════════════════════════════════════════════════════════════════════════════════════
-INSERT INTO hse_benchmark (fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao) VALUES
+INSERT INTO instrumento_referencias (metodologia, fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao)
+SELECT 'HSE_ICAO35', v.* FROM (VALUES
   ('HSE_2023', 2023, 'BLUE_LIGHT', 'DEMANDS', 3.24, 1976, true, 'Blue light / emergency services · mín 2.94 · máx 3.58 · 4 avaliações; relatório HSE ago/2023 p.6; alto = melhor'),
   ('HSE_2023', 2023, 'BLUE_LIGHT', 'CONTROL', 3.27, 1976, true, 'Blue light / emergency services · mín 3.11 · máx 3.45 · 4 avaliações; relatório HSE ago/2023 p.6; alto = melhor'),
   ('HSE_2023', 2023, 'BLUE_LIGHT', 'MANAGER_SUPPORT', 3.74, 1976, true, 'Blue light / emergency services · mín 3.46 · máx 3.92 · 4 avaliações; relatório HSE ago/2023 p.6; alto = melhor'),
@@ -108,10 +110,11 @@ INSERT INTO hse_benchmark (fonte, fonte_ano, setor, dimensao, media, n_amostra, 
   ('HSE_2023', 2023, 'WATER', 'RELATIONSHIPS', 4.11, 752, true, 'Water · mín 3.46 · máx 4.35 · 6 avaliações; relatório HSE ago/2023 p.18; alto = melhor'),
   ('HSE_2023', 2023, 'WATER', 'ROLE', 4.11, 752, true, 'Water · mín 3.50 · máx 4.59 · 6 avaliações; relatório HSE ago/2023 p.18; alto = melhor'),
   ('HSE_2023', 2023, 'WATER', 'CHANGE', 3.12, 752, true, 'Water · mín 2.09 · máx 3.60 · 6 avaliações; relatório HSE ago/2023 p.18; alto = melhor')
-ON CONFLICT (fonte, setor, dimensao) DO NOTHING;
+) AS v(fonte, fonte_ano, setor, dimensao, media, n_amostra, vigente, observacao)
+ON CONFLICT (metodologia, fonte, setor, dimensao) DO NOTHING;
 
 -- ── Verificação ─────────────────────────────────────────────────────────────────────────
 -- SELECT count(*) AS setores_x_dimensoes, count(DISTINCT setor) AS setores
---   FROM hse_benchmark WHERE fonte='HSE_2023' AND setor <> 'GERAL';          -- esperado: 91 | 13
--- SELECT setor, round(avg(media),2) FROM hse_benchmark WHERE fonte='HSE_2023' GROUP BY 1 ORDER BY 1;
+--   FROM instrumento_referencias WHERE metodologia='HSE_ICAO35' AND fonte='HSE_2023' AND setor <> 'GERAL';          -- esperado: 91 | 13
+-- SELECT setor, round(avg(media),2) FROM instrumento_referencias WHERE metodologia='HSE_ICAO35' AND fonte='HSE_2023' GROUP BY 1 ORDER BY 1;
 -- O GERAL (7 linhas) NÃO é tocado por este arquivo.

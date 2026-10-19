@@ -429,14 +429,22 @@ uma ideia de "combo" de metodologias, em
 > O parágrafo acima descreve o planejamento original; o que vale hoje:
 > - `ciclos.metodologia` (fonte da verdade, **imutável** depois que há link ou resposta) e `respostas.metodologia`
 >   (snapshot). Link sem ciclo = BS 8800. Uma metodologia por ciclo.
-> - Tabelas **separadas** do HSE: `hse_itens` (35 itens, congelados ao publicar), `resposta_itens_hse` (escala 1–5),
->   `hse_benchmark`, `hse_riscos_config`. Nunca reusar `questoes`/`resposta_itens` (H01 colidiria com Q01).
+> - **Família genérica de instrumentos (2026-10-19)** — o HSE NÃO tem tabelas próprias: `instrumentos` (catálogo: escala,
+>   `generico`, `sensivel`), `instrumento_dimensoes` (dimensão + `direcao` nativa), `instrumento_itens` (congelados ao
+>   publicar; `inversa` POR ITEM; `ajuda` opcional), `resposta_itens_instrumento` (valor BRUTO), `instrumento_referencias`
+>   (benchmark) e `instrumento_riscos_config` (severidade para o PGR). Uma metodologia nova = linhas nessas tabelas + um
+>   motor no admin (registro `METODOLOGIAS` + despacho), nunca tabelas novas. Nunca reusar `questoes`/`resposta_itens`
+>   (H01 colidiria com Q01). Rótulos de escala em `questionarios.config.rotulos.<escala_labels>`; nº de rótulos = valor máximo.
 > - **`obter_instrumento_link(token)` é RPC ANÔNIMA de propósito** (`anon` não lê `ciclos`). Não devolve `inversa`/`dimensao`.
-> - `salvar_resposta` (10 args, **mesma assinatura**) ganhou o ramo HSE: exige os 35 itens, sem duplicar, valor 1–5, e
->   rejeita item HSE num ciclo BS. Erros permanentes: `instrumento_incompativel`, `hse_incompleto`, `item_duplicado`,
+> - `salvar_resposta` (10 args, **mesma assinatura**) tem o ramo genérico: exige TODOS os itens do questionário publicado, sem
+>   duplicar, valor entre `escala_min` e o nº de rótulos da escala do item, e rejeita item de outro instrumento. Erros
+>   permanentes: `instrumento_incompativel`, `instrumento_incompleto` (era `hse_incompleto`), `item_duplicado`,
 >   `valor_fora_da_escala`, `ciclo_inexistente`, `instrumento_indisponivel`. **Um arquivo por ambiente**:
->   `migration_salvar_resposta_hse_dev.sql` (session_id `text`, 3 overloads) e `..._prod.sql` (session_id `uuid`,
+>   `migration_salvar_resposta_instrumento_dev.sql` (session_id `text`, 3 overloads) e `..._prod.sql` (session_id `uuid`,
 >   2 overloads) — nunca aplicar um no outro.
+> - **Admin**: `METODOLOGIAS` (registro) define rótulo, selo, cartão do modal e `motor`. Metodologia sem `motor:true` aparece
+>   como "em desenvolvimento" e **nunca** cai no fluxo do BS 8800 (`_metSemMotor` / `_painelSemMotor` em cada ponto de
+>   despacho). Ao criar um ponto de despacho novo por metodologia, chamar a guarda ANTES do `=== METODOLOGIA_HSE`.
 > - O filtro `BETWEEN 1 AND 4` do ramo BS foi **mantido** (endurecê-lo é decisão separada).
 > - **n mínimo de anonimato** (`N_MIN_ANONIMATO`, hoje **5, PROVISÓRIO**, 0 desliga): abaixo dele nenhum recorte BS 8800 nem HSE exibe resultado
 >   (Resultados, Gráficos, Plano, Comparativo e Laudo; grupo pequeno no laudo sai omitido com nota). Nunca ler "oculto" como "sem risco".

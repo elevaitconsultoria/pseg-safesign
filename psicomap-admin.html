@@ -4026,9 +4026,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     </div>
     <div class="filter-grp" id="cmp-met-grp" style="display:none">
       <label class="filter-lbl">Metodologia</label>
-      <select id="cmp-metodologia" class="filter-sel" onchange="renderComparativo()">
+      <select id="cmp-metodologia" class="filter-sel" onchange="renderComparativo()">   <!-- opções geradas de METODOLOGIAS (_cmpSincronizarMetodologia) -->
         <option value="BS8800">BS 8800</option>
-        <option value="HSE_ICAO35">HSE (ICAO-35)</option>
       </select>
     </div>
     <div class="filter-grp">
@@ -4634,21 +4633,12 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       <div style="font-size:10px;color:#6b7280;margin-bottom:10px">
         💡 Refere-se ao período que a coleta representa — não precisa ser o mês atual. O nome do ciclo é gerado automaticamente a partir disso.
       </div>
-      <!-- Metodologia: só aparece quando o instrumento HSE está publicado neste ambiente (ver _hseAtivo) -->
+      <!-- Metodologia: só aparece quando há mais de uma metodologia disponível neste ambiente (ver _multiMet) -->
       <div id="nc-met-wrap" style="display:none;margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:6px">Metodologia desta avaliação</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <div id="nc-card-BS8800" onclick="_ncSelecionarMet('BS8800')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--tx)">BS 8800 (PsicoMap)</div>
-            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">27 questões, escala 1–4. Classifica cada fator de risco por P×S, de irrelevante a crítico, e alimenta o inventário do PGR. Comparável com os ciclos anteriores da empresa.</div>
-          </div>
-          <div id="nc-card-HSE_ICAO35" onclick="_ncSelecionarMet('HSE_ICAO35')" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--tx)">HSE (ICAO-35)</div>
-            <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">35 questões, 7 dimensões (Demandas, Controle, Apoio, Colegas, Relacionamentos, Papel, Mudanças), escala 1–5. Compara com a referência internacional do HSE; o nível para o PGR vem de critério definido por SST.</div>
-          </div>
-        </div>
+        <div id="nc-met-cards" style="display:flex;gap:8px;flex-wrap:wrap"></div>   <!-- cartões gerados de METODOLOGIAS (_ncMontarCartoes) -->
         <div style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">🔒 A metodologia não muda depois que a campanha tem link ou resposta. Para trocar, crie uma nova campanha. Resultados de metodologias diferentes nunca são somados nem comparados entre si. <a href="#" onclick="event.preventDefault();fecharModalCiclo();_abrirMetodologiaHSE()" style="color:var(--g)">Qual escolher?</a></div>
-        <label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--tx);cursor:pointer">
+        <label id="nc-ambas-lab" style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--tx);cursor:pointer">
           <input type="checkbox" id="nc-ambas"> <span id="nc-ambas-txt">Criar também um ciclo com HSE (links separados)</span>
         </label>
       </div>
@@ -5302,21 +5292,97 @@ function _omitidoLaudoHTML(n) {
 const METODOLOGIA_BS  = 'BS8800';
 const METODOLOGIA_HSE = 'HSE_ICAO35';
 let _hseDisponivel = false;      // existe questionário HSE PUBLICADO neste ambiente? (chave geral)
+let _instrPublicados = new Set(); // metodologias com questionário PUBLICADO neste ambiente (a chave geral de cada uma)
+let _instrNoBanco = {};          // metodologia → { nome, sensivel, ativo } (tabela instrumentos); só para rotular o que o código ainda não conhece
 let _ncMet = METODOLOGIA_BS;     // metodologia escolhida no modal "Novo ciclo"
 const _avisoHSEFora = new Set(); // empresas já avisadas de que ciclos HSE não entram na análise BS
 
+// ── Registro de metodologias (generalização, 2026-10-19) ─────────────────────────────────────────────────
+// UMA entrada por metodologia que o código SABE analisar. `motor:true` = existem análise, laudo e (quando vale)
+// plano/auditoria para ela. Uma metodologia que existe no banco (tabela instrumentos) mas não tem entrada com
+// motor aqui é "em desenvolvimento": aparece rotulada, NÃO pode ser escolhida em campanha nova e — o ponto que
+// importa — NUNCA cai no fluxo do BS 8800 por omissão. Acrescentar uma metodologia = uma entrada aqui + o motor
+// dela, despachado nos pontos que usam _metSemMotor/METODOLOGIA_*; nunca um motor genérico configurável.
+const METODOLOGIAS = {
+  BS8800: {
+    id: 'BS8800', ordem: 1, motor: true, modulo: null,
+    rotulo: 'BS 8800', nome: 'BS 8800 (PsicoMap)', tag: 'tgr',
+    instrumento: 'BS 8800 (27 questões)',
+    descricao: '27 questões, escala 1–4. Classifica cada fator de risco por P×S, de irrelevante a crítico, e alimenta o inventário do PGR. Comparável com os ciclos anteriores da empresa.',
+    prefixoCiclo: 'Avaliação',
+  },
+  HSE_ICAO35: {
+    id: 'HSE_ICAO35', ordem: 2, motor: true, modulo: 'hse',
+    rotulo: 'HSE (ICAO-35)', nome: 'HSE (ICAO-35)', curto: 'HSE', tag: 'tp',
+    instrumento: 'HSE (35 itens, escala 1–5)',
+    descricao: '35 questões, 7 dimensões (Demandas, Controle, Apoio, Colegas, Relacionamentos, Papel, Mudanças), escala 1–5. Compara com a referência internacional do HSE; o nível para o PGR vem de critério definido por SST.',
+    prefixoCiclo: 'Avaliação HSE',
+  },
+};
+// Metodologia que o banco conhece e o código não: rótulo vem de instrumentos.nome, sem motor.
+function _metDef(id) {
+  const m = METODOLOGIAS[id];
+  if (m) return m;
+  const nome = _instrNoBanco[id]?.nome || id || '—';
+  return { id, ordem: 99, motor: false, modulo: null, rotulo: nome, nome, curto: nome, tag: 'tgr', instrumento: nome, descricao: '', prefixoCiclo: 'Avaliação ' + nome };
+}
+const _metCurto = id => _metDef(id).curto || _metDef(id).rotulo;
+// Metodologia (id) de um ciclo. Ciclo sem o campo, ambiente sem a migration e link sem ciclo = BS 8800.
+function _metDoCiclo(c) { return (c && c.metodologia) || METODOLOGIA_BS; }
+function _metDisponivelNoAmbiente(m) {
+  if (m.id === METODOLOGIA_BS) return true;
+  return _instrPublicados.has(m.id) && (!m.modulo || moduloOn(m.modulo));
+}
+// Metodologias que o usuário pode ESCOLHER numa campanha nova, em ordem fixa (BS primeiro).
+function _metsSelecionaveis() {
+  return Object.values(METODOLOGIAS).filter(m => m.motor && _metDisponivelNoAmbiente(m)).sort((a, b) => a.ordem - b.ordem).map(m => m.id);
+}
+// Só vale rotular/escolher metodologia quando existe mais de uma — com uma só, a tela fica como sempre foi.
+function _multiMet() { return _metsSelecionaveis().length > 1; }
+// Ciclo cuja metodologia o código não sabe analisar. Quem despacha por metodologia chama isto ANTES do
+// `=== METODOLOGIA_HSE`: sem esta guarda, o `else` herdaria o fluxo do BS 8800 e leria respostas que não são dele.
+function _metSemMotor(cicloId) {
+  if (!cicloId) return false;
+  const c = _ciclos.find(x => x.id === cicloId);
+  return !!c && !_metDef(_metDoCiclo(c)).motor;
+}
+function _avisoSemMotorHTML(cicloId) {
+  const c = _ciclos.find(x => x.id === cicloId);
+  const m = _metDef(_metDoCiclo(c));
+  return `<div class="card"><div class="alert alert-y"><strong>Metodologia em desenvolvimento.</strong> A campanha “${_hEsc(c?.nome || '')}” usa ${_hEsc(m.rotulo)}, que ainda não tem análise nesta versão do sistema. Os dados coletados estão preservados; nada foi calculado nem misturado com outras metodologias.</div></div>`;
+}
+// Para telas com painel: troca o conteúdo pelo aviso e devolve true quando bloqueou (o chamador dá return).
+function _painelSemMotor(panel, cicloId) {
+  if (!panel || !_metSemMotor(cicloId)) return false;
+  panel.innerHTML = _avisoSemMotorHTML(cicloId);
+  window._analiseData = null;
+  if (typeof _sincronizarBotaoPacote === 'function') _sincronizarBotaoPacote();
+  return true;
+}
+// Para pontos de despacho SEM painel (exportações): avisa e devolve true quando bloqueou.
+function _bloqueiaSemMotor(cicloId) {
+  if (!_metSemMotor(cicloId)) return false;
+  toast('Esta campanha usa uma metodologia que ainda não tem análise nesta versão do sistema.', 'w', 5000);
+  return true;
+}
+
 async function carregarDisponibilidadeHSE() {
   _hseDisponivel = false;
+  _instrPublicados = new Set();
+  _instrNoBanco = {};
   try {
     if (!isDemoMode && sbAdmin) {
-      const { data, error } = await sbAdmin.from('questionarios').select('id')
-        .eq('metodologia', METODOLOGIA_HSE).eq('publicado', true).limit(1);
+      const { data, error } = await sbAdmin.from('questionarios').select('metodologia').eq('publicado', true);
       if (error) throw error;
-      _hseDisponivel = !!(data && data.length);
+      _instrPublicados = new Set((data || []).map(q => q.metodologia).filter(Boolean));
+      _hseDisponivel = _instrPublicados.has(METODOLOGIA_HSE);
+      // Rótulo das metodologias que o banco conhece. Falha aqui não derruba nada: só perde o nome amigável.
+      const ins = await sbAdmin.from('instrumentos').select('metodologia,nome,sensivel,ativo');
+      if (!ins.error) (ins.data || []).forEach(i => { _instrNoBanco[i.metodologia] = i; });
     }
   } catch (e) {
-    // Coluna ausente = ambiente sem a migration do HSE: segue só com BS 8800.
-    console.info('HSE indisponível neste ambiente:', e?.message || e);
+    // Coluna ausente = ambiente sem a migration dos instrumentos: segue só com BS 8800.
+    console.info('Instrumentos adicionais indisponíveis neste ambiente:', e?.message || e);
   }
   const sub = document.getElementById('q-sub-hse');
   if (sub) sub.textContent = _hseAtivo() ? ' Vale para campanhas BS 8800; o instrumento HSE é fechado e não pode ser personalizado.' : '';
@@ -5327,50 +5393,53 @@ async function carregarDisponibilidadeHSE() {
 function _hseAtivo() { return _hseDisponivel && moduloOn('hse'); }
 
 function _metodologiaDoCiclo(cicloId) {
-  const c = _ciclos.find(x => x.id === cicloId);
-  return c && c.metodologia === METODOLOGIA_HSE ? METODOLOGIA_HSE : METODOLOGIA_BS;
+  return _metDoCiclo(_ciclos.find(x => x.id === cicloId));   // o valor REAL: nunca colapsar uma metodologia desconhecida em BS
 }
 // Ponto de extensão do combo (v2): lista de instrumentos do ciclo. Na v1 sempre 1 elemento.
 function _instrumentosDoCiclo(cicloId) { return [_metodologiaDoCiclo(cicloId)]; }
 function _cicloEhHSE(c) { return !!c && c.metodologia === METODOLOGIA_HSE; }
 function _empresaTemCicloHSE(empId) { return _ciclos.some(c => c.empresa_id === empId && _cicloEhHSE(c)); }
+// Selo no formato do sistema: <span class="tag …">. Fonte única dos três lugares que mostram metodologia.
+function _tagMet(id) { const m = _metDef(id); return `<span class="tag ${m.tag}" style="font-size:9px">${_hEsc(_metCurto(id))}</span>`; }
 
 // Rótulo do ciclo para <select>/listas. Dois ciclos do mesmo mês teriam o MESMO nome; o rótulo distingue.
 function _cicloLabel(c) {
   if (!c) return '';
   const nome = c.nome || '—';
-  if (_cicloEhHSE(c)) return /HSE/i.test(nome) ? nome : `${nome} · HSE`;
-  return _hseAtivo() ? `${nome} · BS 8800` : nome;
+  const id = _metDoCiclo(c);
+  if (id === METODOLOGIA_BS) return _multiMet() ? `${nome} · ${_metCurto(id)}` : nome;
+  const curto = _metCurto(id);
+  return nome.toLowerCase().includes(curto.toLowerCase()) ? nome : `${nome} · ${curto}`;
 }
 function _seloMetodologia(c) {
-  if (_cicloEhHSE(c)) return '<span class="tag tp" style="font-size:9px">HSE</span>';
-  return _hseAtivo() ? '<span class="tag tgr" style="font-size:9px">BS 8800</span>' : '';
+  const id = _metDoCiclo(c);
+  if (id === METODOLOGIA_BS) return _multiMet() ? _tagMet(id) : '';
+  return _tagMet(id);
 }
 // Selo do link (a metodologia vem do ciclo; link sem ciclo = BS 8800)
 function _seloLinkMetodologia(l) {
-  if (!l.ciclo_id) return _hseAtivo() ? ' <span class="tag tgr" style="font-size:9px" title="Link sem ciclo usa a metodologia BS 8800">sem ciclo · BS 8800</span>' : '';
+  if (!l.ciclo_id) return _multiMet() ? ` <span class="tag tgr" style="font-size:9px" title="Link sem ciclo usa a metodologia BS 8800">sem ciclo · ${_metCurto(METODOLOGIA_BS)}</span>` : '';
   const c = _ciclos.find(x => x.id === l.ciclo_id);
   return c ? ' ' + _seloMetodologia(c) : '';
 }
 
-// Metodologias presentes numa empresa: os ciclos dela + link sem ciclo (= BS 8800). Ordem fixa: BS, HSE.
+// Metodologias presentes numa empresa: os ciclos dela + link sem ciclo (= BS 8800), na ordem do registro.
 function _metodologiasDaEmpresa(ciclosEmp, linksEmp) {
   const set = new Set();
-  (ciclosEmp || []).forEach(c => set.add(_cicloEhHSE(c) ? METODOLOGIA_HSE : METODOLOGIA_BS));
+  (ciclosEmp || []).forEach(c => set.add(_metDoCiclo(c)));
   (linksEmp || []).forEach(l => { if (!l.ciclo_id) set.add(METODOLOGIA_BS); });
-  return [METODOLOGIA_BS, METODOLOGIA_HSE].filter(k => set.has(k));
+  return [...set].sort((a, b) => _metDef(a).ordem - _metDef(b).ordem);
 }
-// Selo(s) de metodologia de uma EMPRESA (Dashboard e Clientes). Sem HSE publicado no ambiente nada aparece:
-// o selo só tem sentido quando existe mais de um instrumento.
+// Selo(s) de metodologia de uma EMPRESA (Dashboard e Clientes). Com uma metodologia só no ambiente nada aparece:
+// o selo só tem sentido quando existe mais de um instrumento. `m.resp` = respostas por metodologia.
 function _seloEmpresaMetodologias(m) {
-  if (!_hseAtivo() || !m || !m.metodologias || !m.metodologias.length) return '';
-  const tag = k => k === METODOLOGIA_HSE
-    ? '<span class="tag tp" style="font-size:9px">HSE</span>'
-    : '<span class="tag tgr" style="font-size:9px">BS 8800</span>';
-  const tt = (m.respBS && m.respHSE)
-    ? ` title="Respostas: BS 8800 ${m.respBS} · HSE ${m.respHSE}. A adesão usa o instrumento com mais respostas (a mesma pessoa não conta duas vezes)."`
+  if (!_multiMet() || !m || !m.metodologias || !m.metodologias.length) return '';
+  const resp = m.resp || { [METODOLOGIA_BS]: m.respBS || 0, [METODOLOGIA_HSE]: m.respHSE || 0 };
+  const comResp = m.metodologias.filter(k => (resp[k] || 0) > 0);
+  const tt = comResp.length > 1
+    ? ` title="Respostas: ${comResp.map(k => `${_metCurto(k)} ${resp[k]}`).join(' · ')}. A adesão usa o instrumento com mais respostas (a mesma pessoa não conta duas vezes)."`
     : '';
-  return `<span${tt} style="display:inline-flex;gap:4px;align-items:center">${m.metodologias.map(tag).join('')}</span>`;
+  return `<span${tt} style="display:inline-flex;gap:4px;align-items:center">${m.metodologias.map(_tagMet).join('')}</span>`;
 }
 
 // Trocar a metodologia de um ciclo que ainda não tem link nem resposta. O banco é a autoridade
@@ -5380,17 +5449,21 @@ function _nomeCicloAuto(c, metod) {
   // Só renomeia nomes gerados pelo sistema; nome editado à mão é preservado.
   const mes = MES_NOME_CICLO[c.mes_referencia], ano = c.ano_referencia;
   if (!mes || !ano) return c.nome;
-  const bs = `Avaliação — ${mes} ${ano}`, hse = `Avaliação HSE — ${mes} ${ano}`;
-  if (c.nome !== bs && c.nome !== hse) return c.nome;
-  return metod === METODOLOGIA_HSE ? hse : bs;
+  const nomeDe = k => `${_metDef(k).prefixoCiclo} — ${mes} ${ano}`;
+  // Reconhece o nome gerado por QUALQUER metodologia; só então troca pelo da nova.
+  if (!Object.keys(METODOLOGIAS).some(k => c.nome === nomeDe(k))) return c.nome;
+  return nomeDe(metod);
 }
-async function trocarMetodologiaCiclo(cicloId) {
+// `para` opcional: com uma única alternativa a tela chama sem ele; com mais de uma, o select informa.
+async function trocarMetodologiaCiclo(cicloId, para) {
   const c = _ciclos.find(x => x.id === cicloId);
-  if (!c || !_hseAtivo()) return;
+  if (!c || !_multiMet()) return;
   if (_cicloTemLink(cicloId)) { toast('Esta campanha já tem link: a metodologia não pode mais ser trocada. Crie uma nova campanha.', 'w'); renderCiclosModal(_cicloEmpresaId); return; }
-  const de = _cicloEhHSE(c) ? METODOLOGIA_HSE : METODOLOGIA_BS;
-  const para = de === METODOLOGIA_HSE ? METODOLOGIA_BS : METODOLOGIA_HSE;
-  const rot = k => k === METODOLOGIA_HSE ? 'HSE (ICAO-35)' : 'BS 8800';
+  const de = _metDoCiclo(c);
+  const outras = _metsSelecionaveis().filter(k => k !== de);
+  if (!para) para = outras[0];
+  if (!para || !outras.includes(para)) return;
+  const rot = k => _metDef(k).rotulo;
   if (!confirm(`Trocar a metodologia da campanha "${c.nome}" de ${rot(de)} para ${rot(para)}?\n\nSó é possível enquanto a campanha não tem link nem resposta.`)) return;
   const nome = _nomeCicloAuto(c, para);
   if (isDemoMode) {
@@ -5419,6 +5492,7 @@ async function trocarMetodologiaCiclo(cicloId) {
 // Telas que só leem BS 8800. Se o ciclo escolhido é HSE, explica em vez de mostrar "nenhuma resposta".
 // Devolve true quando bloqueou (o chamador deve dar return).
 function _guardaTelaBS(cicloId, panel, situacao) {
+  if (cicloId && _painelSemMotor(panel, cicloId)) return true;
   if (!cicloId || _metodologiaDoCiclo(cicloId) !== METODOLOGIA_HSE || !panel) return false;
   const c = _ciclos.find(x => x.id === cicloId);
   const nome = String(c?.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -5432,16 +5506,31 @@ function _guardaTelaBS(cicloId, panel, situacao) {
   if (typeof _sincronizarBotaoPacote === 'function') _sincronizarBotaoPacote();
   return true;
 }
-// "Todos os ciclos" numa empresa com ciclo HSE: as telas BS ignoram as respostas HSE (estrutura própria).
+// "Todos os ciclos" numa empresa com campanha de outra metodologia: as telas BS ignoram essas respostas (estrutura própria).
+function _empresaTemCicloNaoBS(empId) { return _ciclos.some(c => c.empresa_id === empId && _metDoCiclo(c) !== METODOLOGIA_BS); }
 function _avisarHSEForaDaAnaliseBS(empId, cicloId) {
-  if (cicloId || !empId || _avisoHSEFora.has(empId) || !_empresaTemCicloHSE(empId)) return;
+  if (cicloId || !empId || _avisoHSEFora.has(empId) || !_empresaTemCicloNaoBS(empId)) return;
   _avisoHSEFora.add(empId);
-  toast('Este cliente tem campanha HSE: as respostas HSE não entram nesta análise BS 8800. Selecione a campanha para ver cada metodologia.', 'w', 6000);
+  const outras = _metodologiasDaEmpresa(_ciclos.filter(c => c.empresa_id === empId), []).filter(k => k !== METODOLOGIA_BS).map(_metCurto).join(' e ');
+  toast(`Este cliente tem campanha ${outras}: as respostas dela não entram nesta análise BS 8800. Selecione a campanha para ver cada metodologia.`, 'w', 6000);
 }
 
+// Os cartões do modal "Nova campanha" são GERADOS do registro (só as metodologias selecionáveis neste ambiente):
+// acrescentar uma metodologia não exige mexer no HTML do modal.
+function _ncMontarCartoes() {
+  const box = document.getElementById('nc-met-cards');
+  if (!box) return;
+  box.innerHTML = _metsSelecionaveis().map(k => {
+    const m = _metDef(k);
+    return `<div id="nc-card-${k}" role="button" tabindex="0" onclick="_ncSelecionarMet('${k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_ncSelecionarMet('${k}')}" style="flex:1;min-width:190px;cursor:pointer;border-radius:10px;padding:10px 12px;border:1.5px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;color:var(--tx)">${_hEsc(m.nome)}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:3px;line-height:1.5">${_hEsc(m.descricao)}</div></div>`;
+  }).join('');
+}
 function _ncSelecionarMet(m) {
-  _ncMet = m === METODOLOGIA_HSE ? METODOLOGIA_HSE : METODOLOGIA_BS;
-  [METODOLOGIA_BS, METODOLOGIA_HSE].forEach(k => {
+  const sel = _metsSelecionaveis();
+  _ncMet = sel.includes(m) ? m : METODOLOGIA_BS;
+  sel.forEach(k => {
     const el = document.getElementById('nc-card-' + k);
     if (!el) return;
     const on = k === _ncMet;
@@ -5449,60 +5538,68 @@ function _ncSelecionarMet(m) {
     el.style.background  = on ? '#f0faf4' : 'transparent';
     el.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
+  // "Criar também…" só faz sentido com exatamente duas metodologias (a outra é inequívoca); com mais, cria-se uma a uma.
+  const outras = sel.filter(k => k !== _ncMet);
+  const lab = document.getElementById('nc-ambas-lab');
+  if (lab) lab.style.display = outras.length === 1 ? 'flex' : 'none';
+  if (outras.length !== 1) { const a = document.getElementById('nc-ambas'); if (a) a.checked = false; }
   const t = document.getElementById('nc-ambas-txt');
-  if (t) t.textContent = _ncMet === METODOLOGIA_HSE
-    ? 'Criar também uma campanha com BS 8800 (links separados)'
-    : 'Criar também uma campanha com HSE (links separados)';
+  if (t && outras.length === 1) t.textContent = `Criar também uma campanha com ${_metDef(outras[0]).rotulo} — links separados`;
 }
 function _ncInicializarMetodologia() {
   const wrap = document.getElementById('nc-met-wrap');
   if (!wrap) return;
-  wrap.style.display = _hseAtivo() ? 'block' : 'none';
+  wrap.style.display = _multiMet() ? 'block' : 'none';
+  _ncMontarCartoes();
   const amb = document.getElementById('nc-ambas'); if (amb) amb.checked = false;
   _ncSelecionarMet(METODOLOGIA_BS);
 }
 
 // ── UX de metodologia (2026-10-13) ───────────────────────────────────────────────────────────────────────
-// Rótulos curtos de instrumento, para selects e avisos. Fonte única — não repetir os literais nas telas.
-const MET_ROTULO = { BS8800: 'BS 8800', HSE_ICAO35: 'HSE (ICAO-35)' };
+// Rótulos de instrumento para selects e avisos vêm do registro (METODOLOGIAS/_metDef) — não repetir literais.
 
-// Preenche um <select> de ciclos AGRUPADO por metodologia quando a empresa tem as duas (optgroup), para o usuário
+// Preenche um <select> de ciclos AGRUPADO por metodologia quando a empresa tem mais de uma (optgroup), para o usuário
 // ver de relance qual instrumento cada ciclo usa. Com uma metodologia só, lista simples (comportamento histórico).
 // `opcaoVazia` é o texto da primeira opção (value=""); devolve a lista de ciclos usada.
 function _preencherCiclosAgrupados(sel, ciclos, opcaoVazia) {
   sel.innerHTML = '';
   if (opcaoVazia != null) { const o = document.createElement('option'); o.value = ''; o.textContent = opcaoVazia; sel.appendChild(o); }
-  const temHSE = _hseAtivo() && ciclos.some(_cicloEhHSE), temBS = ciclos.some(c => !_cicloEhHSE(c));
-  const add = (pai, c) => { const o = document.createElement('option'); o.value = c.id; o.textContent = (temHSE && temBS) ? (c.nome || '—') : _cicloLabel(c); pai.appendChild(o); };
-  if (temHSE && temBS) {
-    [[METODOLOGIA_BS, ciclos.filter(c => !_cicloEhHSE(c))], [METODOLOGIA_HSE, ciclos.filter(_cicloEhHSE)]].forEach(([k, lista]) => {
-      const g = document.createElement('optgroup'); g.label = MET_ROTULO[k]; lista.forEach(c => add(g, c)); sel.appendChild(g);
+  const grupos = [...new Set(ciclos.map(_metDoCiclo))].sort((a, b) => _metDef(a).ordem - _metDef(b).ordem);
+  const agrupa = _multiMet() && grupos.length > 1;
+  const add = (pai, c) => { const o = document.createElement('option'); o.value = c.id; o.textContent = agrupa ? (c.nome || '—') : _cicloLabel(c); pai.appendChild(o); };
+  if (agrupa) {
+    grupos.forEach(k => {
+      const g = document.createElement('optgroup'); g.label = _metDef(k).rotulo;
+      ciclos.filter(c => _metDoCiclo(c) === k).forEach(c => add(g, c)); sel.appendChild(g);
     });
   } else ciclos.forEach(c => add(sel, c));
   return ciclos;
 }
 
-// Cartões da sidebar que só valem para o BS 8800 (marcados com data-so-bs) somem num ciclo HSE, e o cartão
-// data-so-hse explica o que muda. Chamado por rodarAnalise e renderLaudo nos dois ramos (BS e HSE) — capaz de
-// MOSTRAR de volta, não só de esconder (lição do _sincronizarBotaoPacote).
+// Cartões da sidebar que só valem para uma metodologia: data-so-bs (só BS 8800), data-so-hse (só HSE) e o genérico
+// data-so-met="ID". Somem quando a metodologia do ciclo escolhido é outra. Chamado por rodarAnalise e renderLaudo
+// em todos os ramos — capaz de MOSTRAR de volta, não só de esconder (lição do _sincronizarBotaoPacote).
+// Sem ciclo escolhido vale BS 8800 (comportamento histórico).
 function _sincronizarFiltrosMetodologia(screenId, cicloId) {
   const tela = document.getElementById(screenId);
   if (!tela) return;
-  const hse = !!cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE;
-  tela.querySelectorAll('[data-so-bs]').forEach(el => el.classList.toggle('met-off', hse));
-  tela.querySelectorAll('[data-so-hse]').forEach(el => el.classList.toggle('met-off', !hse));
+  const met = cicloId ? _metodologiaDoCiclo(cicloId) : METODOLOGIA_BS;
+  tela.querySelectorAll('[data-so-bs]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_BS));
+  tela.querySelectorAll('[data-so-hse]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_HSE));
+  tela.querySelectorAll('[data-so-met]').forEach(el => el.classList.toggle('met-off', el.dataset.soMet !== met));
 }
 
 // Mostra, abaixo do select de ciclo do modal de link, qual instrumento o funcionário vai responder.
 function _nlMostrarInstrumento() {
   const box = document.getElementById('nl-ciclo-met');
   if (!box) return;
-  if (!_hseAtivo()) { box.textContent = ''; return; }
+  if (!_multiMet()) { box.textContent = ''; return; }
   const id = document.getElementById('nl-ciclo')?.value || '';
-  const hse = id && _metodologiaDoCiclo(id) === METODOLOGIA_HSE;
-  box.innerHTML = hse
-    ? '<span class="tag tp" style="font-size:9px">HSE</span> O funcionário responderá ao questionário <strong>HSE (35 itens, escala 1–5)</strong>.'
-    : '<span class="tag tgr" style="font-size:9px">BS 8800</span> O funcionário responderá ao questionário <strong>BS 8800 (27 questões)</strong>.';
+  const k = id ? _metodologiaDoCiclo(id) : METODOLOGIA_BS;
+  const m = _metDef(k);
+  box.innerHTML = m.motor
+    ? `${_tagMet(k)} O funcionário responderá ao questionário <strong>${_hEsc(m.instrumento)}</strong>.`
+    : `${_tagMet(k)} <strong>${_hEsc(m.rotulo)}</strong> ainda não tem análise nesta versão — não gere links para esta campanha.`;
 }
 
 // ── Plano de Ação para ciclo HSE ─────────────────────────────────────────────────────────────────────────
@@ -5553,7 +5650,8 @@ async function renderPlanoAcaoHSE(panel, empId, cicloId) {
 // ==== HSE (S7) BEGIN — carregamento, motor e tela de análise ====
 // Direção: ALTO = MELHOR (oposta ao BS 8800). Inversão = (escalaMax+1) − v, só no cálculo; o banco guarda o
 // valor bruto. NÃO é intercambiável com calcFatores(): vocabulário, escala e direção diferentes.
-// As respostas HSE vivem em resposta_itens_hse; o loader e os motores do BS 8800 nunca as enxergam.
+// As respostas HSE vivem em resposta_itens_instrumento (família genérica de instrumentos, 2026-10-19); o loader
+// e os motores do BS 8800 nunca as enxergam.
 const HSE_ESCALA_MAX = 5;
 // PROVISÓRIO: o valor definitivo do n mínimo é decisão do usuário/jurídico (etapa S9, vale também para o
 // BS 8800). Até lá, o HSE já NÃO exibe resultado de recorte com menos respondentes que isto — evita repetir
@@ -5602,7 +5700,7 @@ const _hEsc = t => String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g
 async function _hseCarregarMeta(questionarioIds) {
   const faltam = questionarioIds.filter(q => q && !Object.values(_hseMetaCache).some(i => i.questionario_id === q));
   if (faltam.length) {
-    const { data, error } = await sbAdmin.from('hse_itens')
+    const { data, error } = await sbAdmin.from('instrumento_itens')
       .select('id,questionario_id,codigo,ordem,parte,dimensao,texto,inversa,escala_labels').in('questionario_id', faltam);
     if (error) throw error;
     (data || []).forEach(i => { _hseMetaCache[i.id] = i; });
@@ -5628,7 +5726,8 @@ async function _hseQuestionarioEhRascunho(questionarioIds) {
 }
 async function _hseCarregarBenchmarks() {
   if (_hseBenchCache) return _hseBenchCache;
-  const { data, error } = await sbAdmin.from('hse_benchmark').select('setor,dimensao,media,n_amostra').eq('vigente', true);
+  const { data, error } = await sbAdmin.from('instrumento_referencias').select('setor,dimensao,media,n_amostra')
+    .eq('metodologia', METODOLOGIA_HSE).eq('vigente', true);
   if (error) throw error;
   const out = {};
   (data || []).forEach(b => {
@@ -5658,7 +5757,7 @@ async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {
   const colsExtra = opts.auditoria ? ',session_id,device_info,lgpd_aceito,lgpd_aceito_em' : '';
   const { data, error } = await _fetchAllSupabase(() => {
     let q = sbAdmin.from('respostas')
-      .select('id,setor,funcao,escolaridade,ciclo_id,link_token,questionario_id,respondido_em' + colsExtra + ',resposta_itens_hse(item_id,valor)')
+      .select('id,setor,funcao,escolaridade,ciclo_id,link_token,questionario_id,respondido_em' + colsExtra + ',resposta_itens_instrumento(item_id,valor)')
       .eq('empresa_id', empresaId).eq('metodologia', METODOLOGIA_HSE).eq('ciclo_id', cicloId)
       .order('respondido_em', { ascending: false });
     if (opts.teste) q = q.in('link_token', testTokens);
@@ -5670,7 +5769,7 @@ async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {
     id: r.id, setor: r.setor || 'Geral', funcao: r.funcao || '—', escolaridade: r.escolaridade || 'Não informado',
     ciclo_id: r.ciclo_id || null, questionario_id: r.questionario_id || null, data: r.respondido_em || null, link_token: r.link_token || null,
     ...(opts.auditoria ? { session_id: r.session_id || null, device_info: r.device_info || null, lgpd_aceito: r.lgpd_aceito === true, lgpd_aceito_em: r.lgpd_aceito_em || null } : {}),
-    h: Object.fromEntries((r.resposta_itens_hse || []).map(i => [i.item_id, i.valor])),
+    h: Object.fromEntries((r.resposta_itens_instrumento || []).map(i => [i.item_id, i.valor])),
   })).filter(r => Object.keys(r.h).length > 0 || opts.auditoria);
   await _hseCarregarMeta([...new Set(linhas.map(l => l.questionario_id))]);
   return linhas;
@@ -5691,19 +5790,19 @@ function _hseFaixa(score, media) {
 // ── Risco para o PGR derivado do HSE (S8b) ─────────────────────────────────────────────────────
 // O HSE NÃO calcula risco: ele classifica a condição de cada dimensão em 4 faixas. O NR-01 exige nível
 // de risco no inventário do PGR, então a consultoria adota um CRITÉRIO (declarado no laudo, fora do
-// instrumento): P (1–4) = faixa da dimensão; S (1–4) = fixa por dimensão, de hse_riscos_config, definida e
+// instrumento): P (1–4) = faixa da dimensão; S (1–4) = fixa por dimensão, de instrumento_riscos_config, definida e
 // validada por SST; nível = MATRIZ_RISCO[P_S], a mesma matriz 4×4 do BS 8800. Os dois resultados NUNCA
 // vão para o mesmo gráfico. Sem severidade cadastrada, nada é calculado (não há valor "padrão").
 const HSE_P_POR_FAIXA = { VERMELHO: 4, AMBAR: 3, AZUL: 2, VERDE: 1 };
 
 async function _hseCarregarRiscosCfg() {   // sem cache: SST pode atualizar a qualquer momento
   try {
-    const { data, error } = await sbAdmin.from('hse_riscos_config')
-      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em');
+    const { data, error } = await sbAdmin.from('instrumento_riscos_config')
+      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em').eq('metodologia', METODOLOGIA_HSE);
     if (error) throw error;
     return Object.fromEntries((data || []).map(r => [r.dimensao, r]));
   } catch (e) {
-    console.info('hse_riscos_config indisponível neste ambiente:', e?.message || e);
+    console.info('instrumento_riscos_config indisponível neste ambiente:', e?.message || e);
     return {};   // ambiente sem a migration = critério ausente
   }
 }
@@ -6138,7 +6237,7 @@ function _hseBarraFavHTML(fav, desf, alt = 8) {
 const _pct0 = v => v == null ? '—' : Math.round(v * 100) + '%';
 
 // ── Referência (benchmark) do HSE: GERAL por padrão; grupo setorial escolhido por empresa ──────────────────
-// Os 13 grupos setoriais do relatório HSE 2023 já estão em hse_benchmark (seed_hse_benchmark_2023_setores.sql).
+// Os 13 grupos setoriais do relatório HSE 2023 já estão em instrumento_referencias (seed_hse_benchmark_2023_setores.sql).
 // A escolha é por EMPRESA (o setor não muda entre ciclos), lembrada neste navegador como conveniência; o que vale
 // para auditoria é o que o laudo grava no snapshot (_laudoMetSnap.benchmark). Sem CNAE no cadastro, o mapeamento
 // empresa → grupo é decisão do consultor — e os grupos são de organizações do Reino Unido que usaram a ferramenta.
@@ -6309,12 +6408,22 @@ function _cmpSincronizarMetodologia(empId) {
   const grp = document.getElementById('cmp-met-grp'), sel = document.getElementById('cmp-metodologia');
   if (!grp || !sel) return METODOLOGIA_BS;
   const ciclosEmp = _ciclos.filter(c => c.empresa_id === empId);
-  const nHSE = ciclosEmp.filter(_cicloEhHSE).length, nBS = ciclosEmp.length - nHSE;
-  const mostra = _hseAtivo() && nHSE > 0;
+  const cont = {};
+  ciclosEmp.forEach(c => { const k = _metDoCiclo(c); cont[k] = (cont[k] || 0) + 1; });
+  // BS 8800 sempre é opção; as demais, só as que a empresa tem ciclo (na ordem do registro).
+  const ks = [METODOLOGIA_BS, ...Object.keys(cont).filter(k => k !== METODOLOGIA_BS).sort((a, b) => _metDef(a).ordem - _metDef(b).ordem)];
+  const mostra = _multiMet() && ks.length > 1;
   grp.style.display = mostra ? '' : 'none';
   if (!mostra) { sel.value = METODOLOGIA_BS; _cmpMetEmp = empId; return METODOLOGIA_BS; }
-  if (_cmpMetEmp !== empId) {   // empresa nova: abre na metodologia que tem o que comparar
-    sel.value = (nBS < 2 && nHSE >= 2) ? METODOLOGIA_HSE : METODOLOGIA_BS;
+  const assinatura = ks.join('|');
+  if (sel.dataset.opcoes !== assinatura) {   // reconstrói só quando o conjunto muda (preserva a escolha do usuário)
+    const atual = sel.value;
+    sel.innerHTML = ks.map(k => `<option value="${k}">${_hEsc(_metDef(k).rotulo)}</option>`).join('');
+    sel.dataset.opcoes = assinatura;
+    if (ks.includes(atual)) sel.value = atual;
+  }
+  if (_cmpMetEmp !== empId) {   // empresa nova: abre na metodologia que tem o que comparar (≥ 2 ciclos)
+    sel.value = ks.find(k => (cont[k] || 0) >= 2) || METODOLOGIA_BS;
     _cmpMetEmp = empId;
   }
   return sel.value;
@@ -6694,7 +6803,7 @@ function exportarAuditoriaHSE() {
 
 
 // ==== HSE (S8b-UI) BEGIN — cadastro do critério de severidade por dimensão (só super_admin) ====
-// A tabela hse_riscos_config só aceita escrita de super_admin (RLS) e vale para todas as ESTs. O critério é UM
+// A tabela instrumento_riscos_config só aceita escrita de super_admin (RLS) e vale para todas as ESTs. O critério é UM
 // só: a versão é única para as 7 dimensões (o laudo imprime o maior valor) e a assinatura cobre o conjunto.
 // Regras: qualquer mudança de S ou de danos remove a validação de TODAS as linhas e sobe a versão; validar exige
 // as 7 severidades e um responsável identificado (nome + registro). Validação nunca é implícita.
@@ -6731,14 +6840,14 @@ async function hseRiscosCfgRender() {
   box.textContent = 'Carregando…';
   let data;
   try {
-    const r = await sbAdmin.from('hse_riscos_config')
-      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em');
+    const r = await sbAdmin.from('instrumento_riscos_config')
+      .select('dimensao,severidade,danos,versao,validado,validado_por,validado_em').eq('metodologia', METODOLOGIA_HSE);
     if (r.error) throw r.error;
     data = r.data || [];
   } catch (e) {
     // Diferente do loader do laudo (que degrada para "critério ausente"), aqui o erro precisa aparecer:
     // tabela inexistente = migration não aplicada neste ambiente.
-    box.innerHTML = `<span style="color:#d32f2f">Não foi possível ler o critério: ${_hEsc(e?.message || e)}. Verifique se <code>migration_hse_riscos_config.sql</code> foi aplicada neste ambiente.</span>`;
+    box.innerHTML = `<span style="color:#d32f2f">Não foi possível ler o critério: ${_hEsc(e?.message || e)}. Verifique se <code>migration_instrumento_riscos_config.sql</code> foi aplicada neste ambiente.</span>`;
     return;
   }
   _hseCfgAtual = Object.fromEntries(data.map(r => [r.dimensao, r]));
@@ -6803,7 +6912,7 @@ async function hseRiscosCfgSalvar() {
   const versao = !existe ? 1 : (mudou ? base + 1 : base);
   const agora = new Date().toISOString();
   const rows = novo.map(r => ({
-    ...r, versao, atualizado_em: agora,
+    metodologia: METODOLOGIA_HSE, ...r, versao, atualizado_em: agora,
     // validar assina o conjunto; mudar sem validar derruba a assinatura de todas as linhas
     validado: validar ? true : (mudou ? false : antes[r.dimensao]?.validado === true),
     validado_por: validar ? resp : (mudou ? null : (antes[r.dimensao]?.validado_por || null)),
@@ -6812,7 +6921,7 @@ async function hseRiscosCfgSalvar() {
   const btn = document.getElementById('hsecfg-salvar');
   if (btn) btn.disabled = true;
   try {
-    const { error } = await sbAdmin.from('hse_riscos_config').upsert(rows, { onConflict: 'dimensao' });
+    const { error } = await sbAdmin.from('instrumento_riscos_config').upsert(rows, { onConflict: 'metodologia,dimensao' });
     if (error) throw error;
     toast(validar ? `Critério validado (v${versao}).` : `Rascunho salvo (v${versao}) — não validado.`, 'green');
   } catch (e) {
@@ -9275,6 +9384,7 @@ async function rodarAnalise() {
   const emp      = document.getElementById('f-empresa').value;
   const cicloSel = document.getElementById('f-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-analise', cicloSel);
+  if (_painelSemMotor(panel, cicloSel)) return;
   if (cicloSel && _metodologiaDoCiclo(cicloSel) === METODOLOGIA_HSE) {   // perfil HSE: motor e tela próprios
     await rodarAnaliseHSE(panel, emp, cicloSel);
     return;
@@ -13171,7 +13281,7 @@ function renderHistoricoLaudos() {
     // Sem isto a trilha de personalização existe no banco e ninguém vê.
     const ed = sn.edicao || null;
     const det = [
-      sn.metodologia === METODOLOGIA_HSE ? 'HSE' : null,
+      sn.metodologia && sn.metodologia !== METODOLOGIA_BS ? _metCurto(sn.metodologia) : null,
       (sn.template === P2_ID || cfg?.template === P2_ID) ? 'Modelo PSEG 2.0' : null,
       gran ? SEG_LABEL[gran] || gran : null,
       ciclo,
@@ -14374,12 +14484,36 @@ async function calcRepresentatividade(empId, cicloId) {
     }
     return out;
   };
+  // Instrumento sem loader próprio (qualquer metodologia genérica que não seja o HSE): a adesão só precisa de
+  // setor, função e data, e a RPC exige o instrumento COMPLETO para gravar — a linha em `respostas` já é resposta inteira.
+  const _doGenerico = async (ids) => {
+    const { data: tk } = await sbAdmin.from('links_coleta').select('token').eq('empresa_id', empId).eq('is_teste', true);
+    const testTokens = (tk || []).map(x => x.token);
+    const out = [];
+    for (const id of ids) {
+      const { data, error } = await _fetchAllSupabase(() => {
+        let q = sbAdmin.from('respostas').select('id,setor,funcao,respondido_em').eq('empresa_id', empId).eq('ciclo_id', id);
+        if (testTokens.length) q = q.not('link_token', 'in', `(${testTokens.join(',')})`);
+        return q;
+      });
+      if (error) throw error;
+      (data || []).forEach(r => out.push({ setor: r.setor || 'Geral', funcao: r.funcao || '—', data: r.respondido_em || null }));
+    }
+    return out;
+  };
   let respList;
-  if (cicloId) respList = _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE ? await _doHSE() : await _doBS();
-  else {
-    const bs = await _doBS();
-    const hse = _empresaTemCicloHSE(empId) ? await _doHSE() : [];
-    respList = hse.length > bs.length ? hse : bs;
+  if (cicloId) {
+    const k = _metodologiaDoCiclo(cicloId);
+    respList = k === METODOLOGIA_HSE ? await _doHSE() : k === METODOLOGIA_BS ? await _doBS() : await _doGenerico([cicloId]);
+  } else {
+    // Cada instrumento isolado; vale o que tiver mais respostas (a mesma pessoa não conta duas vezes).
+    respList = await _doBS();
+    const outras = [...new Set((_ciclos || []).filter(c => c.empresa_id === empId && _metDoCiclo(c) !== METODOLOGIA_BS).map(_metDoCiclo))];
+    for (const k of outras) {
+      const lista = k === METODOLOGIA_HSE ? await _doHSE()
+        : await _doGenerico((_ciclos || []).filter(c => c.empresa_id === empId && _metDoCiclo(c) === k).map(c => c.id));
+      if (lista.length > respList.length) respList = lista;
+    }
   }
 
   // Índices de contagem de respostas: por (setor×funcao) e por setor.
@@ -15856,6 +15990,7 @@ async function renderGraficos() {
   const emp      = document.getElementById('gf-empresa').value;
   const gfCiclo = document.getElementById('gf-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-graficos', gfCiclo);
+  if (_painelSemMotor(document.getElementById('graficos-panel'), gfCiclo)) return;
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: distribuição normalizada por item
     Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
     chartInstances = {};
@@ -16155,6 +16290,7 @@ function exportChartPNG(codigo) {
 // ── EXPORT PDF / PRINT ──
 async function exportGrafPDF() {
   const gfCiclo = document.getElementById('gf-ciclo')?.value || '';
+  if (_bloqueiaSemMotor(gfCiclo)) return;
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: sem Chart.js — imprime o painel
     if (!_hseUltimaDist) { toast('Gere a distribuição primeiro.', 'w'); return; }
     _hseImprimirPainel(_hseUltimaDist.titulo, _hseUltimaDist.html);
@@ -17568,6 +17704,7 @@ async function renderLaudo() {
   const emp     = document.getElementById('ld-empresa').value;
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-laudo', cicloId);
+  if (_painelSemMotor(document.getElementById('laudo-preview-panel'), cicloId)) return;
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE: gerador único (preview = PDF)
     await _laudoHSEPreview(document.getElementById('laudo-preview-panel'), seq);
     return;
@@ -21276,6 +21413,7 @@ async function gerarLaudoPDF(opts = {}) {
     const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
     const cicloId   = document.getElementById('ld-ciclo')?.value || '';
     _laudoMetSnap = null;   // BS 8800: snapshot_json segue exatamente como era
+    if (_bloqueiaSemMotor(cicloId)) { try { win.close(); } catch (e) {} return; }
     if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await gerarLaudoHSE(win); return; }
     const setores   = [...(comboState['combo-ld-setor'] || new Set())];
     const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
@@ -23371,12 +23509,13 @@ function _calcMetricasEmpresa(emp) {
   // Respostas por instrumento (link sem ciclo = BS 8800). A adesão compara respostas de UM instrumento com o
   // quadro: somar BS + HSE contaria a mesma pessoa duas vezes e passaria de 100%. Com um instrumento só,
   // respAdesao === respTotal (comportamento histórico).
-  let respBS = 0, respHSE = 0;
+  const resp = {};
   linksEmp.forEach(l => {
-    if (l.ciclo_id && _metodologiaDoCiclo(l.ciclo_id) === METODOLOGIA_HSE) respHSE += (l.respostas || 0);
-    else respBS += (l.respostas || 0);
+    const k = l.ciclo_id ? _metodologiaDoCiclo(l.ciclo_id) : METODOLOGIA_BS;
+    resp[k] = (resp[k] || 0) + (l.respostas || 0);
   });
-  const respAdesao = Math.max(respBS, respHSE);
+  const respBS = resp[METODOLOGIA_BS] || 0, respHSE = resp[METODOLOGIA_HSE] || 0;   // campos antigos, mantidos p/ quem os lê
+  const respAdesao = Math.max(0, ...Object.values(resp));
   const metodologias = _metodologiasDaEmpresa(ciclosEmp, linksEmp);
   const nSetores  = (emp.setores || []).length;
   const nomeEsc   = (emp.nome || '').replace(/'/g, "\\'");
@@ -23395,7 +23534,7 @@ function _calcMetricasEmpresa(emp) {
   linksEmp.forEach(l => { if (l.ultimaResposta && (!ultima || l.ultimaResposta > ultima)) ultima = l.ultimaResposta; });
   const diasParado = linksAtiv ? _diasDesde(ultima) : null;
 
-  const m = { linksEmp, respTotal, respBS, respHSE, respAdesao, metodologias, linksAtiv, finalizada, ciclosEmp, nSetores, nomeEsc, codigo,
+  const m = { linksEmp, respTotal, resp, respBS, respHSE, respAdesao, metodologias, linksAtiv, finalizada, ciclosEmp, nSetores, nomeEsc, codigo,
               inativa, quadro, pctBruto, ultima, diasParado };
   const st = _statusEmpresa(m);
   m.st = st;
@@ -23674,7 +23813,7 @@ function renderTelaEmpresas() {
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
           </div>
-          <div title="Respostas recebidas${_mEmp.respBS && _mEmp.respHSE ? ` (BS 8800 ${_mEmp.respBS} · HSE ${_mEmp.respHSE})` : ''}. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
+          <div title="Respostas recebidas${Object.values(_mEmp.resp || {}).filter(n => n > 0).length > 1 ? ` (${Object.entries(_mEmp.resp).filter(([, n]) => n > 0).map(([k, n]) => `${_metCurto(k)} ${n}`).join(' · ')})` : ''}. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
             <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
             <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
           </div>
@@ -23872,13 +24011,26 @@ function renderCiclosModal(empresaId) {
         <select onchange="atualizarTipoCiclo('${c.id}',this.value)" style="margin-top:5px;font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;color:var(--tm)">
           ${TIPOS_CICLO.map(t => `<option value="${t}"${t===tipoAtual?' selected':''}>${t}</option>`).join('')}
         </select>
-        ${_hseAtivo() ? (_cicloTemLink(c.id)
+        ${_multiMet() ? (_cicloTemLink(c.id)
           ? '<span style="font-size:9px;color:var(--tl);margin-left:6px" title="A metodologia não muda depois que a campanha tem link ou resposta. Para trocar, crie uma nova campanha.">🔒 metodologia travada</span>'
-          : `<button onclick="trocarMetodologiaCiclo('${c.id}')" style="margin-left:6px;font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:4px;background:white;color:var(--tm);cursor:pointer" title="Enquanto o ciclo não tem link nem resposta, a metodologia pode ser trocada.">⇄ Trocar para ${_cicloEhHSE(c) ? 'BS 8800' : 'HSE'}</button>`) : ''}
+          : _botaoTrocarMetodologia(c)) : ''}
       </div>
       <button onclick="removerCiclo('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--tl);font-size:16px;line-height:1;padding:0 2px;flex-shrink:0" title="Remover">&times;</button>
     </div>`;
   }).join('');
+}
+
+// Uma alternativa: botão direto. Mais de uma: select (a escolha tem de ser explícita).
+function _botaoTrocarMetodologia(c) {
+  const outras = _metsSelecionaveis().filter(k => k !== _metDoCiclo(c));
+  const dica = 'Enquanto o ciclo não tem link nem resposta, a metodologia pode ser trocada.';
+  if (outras.length === 1) {
+    return `<button onclick="trocarMetodologiaCiclo('${c.id}')" style="margin-left:6px;font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:4px;background:white;color:var(--tm);cursor:pointer" title="${dica}">⇄ Trocar para ${_hEsc(_metDef(outras[0]).rotulo)}</button>`;
+  }
+  if (outras.length > 1) {
+    return `<select onchange="if(this.value)trocarMetodologiaCiclo('${c.id}',this.value)" style="margin-left:6px;font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;color:var(--tm)" title="${dica}"><option value="">⇄ Trocar metodologia…</option>${outras.map(k => `<option value="${k}">${_hEsc(_metDef(k).rotulo)}</option>`).join('')}</select>`;
+  }
+  return '';
 }
 
 async function atualizarTipoCiclo(cicloId, novoTipo) {
@@ -23920,21 +24072,21 @@ async function salvarCiclo() {
   // Metodologia: sem HSE publicado no ambiente nada muda (insert idêntico ao de sempre, sem a coluna).
   // Com HSE, o ciclo nasce com a metodologia escolhida; o atalho cria também o ciclo da outra,
   // com links separados — cada um tem análise e laudo próprios.
-  const hseOn = _hseAtivo();
+  const hseOn = _multiMet();   // mais de uma metodologia no ambiente: o ciclo grava a escolhida
   const metodologias = [hseOn ? _ncMet : METODOLOGIA_BS];
   if (hseOn && document.getElementById('nc-ambas')?.checked) {
-    metodologias.push(metodologias[0] === METODOLOGIA_HSE ? METODOLOGIA_BS : METODOLOGIA_HSE);
+    const outras = _metsSelecionaveis().filter(k => k !== metodologias[0]);
+    if (outras.length === 1) metodologias.push(outras[0]);
   }
   const colsRetorno = 'id,nome,empresa_id,data_inicio,data_fim,ano_referencia,mes_referencia,tipo_ciclo,referencia_estimada' + (hseOn ? ',metodologia' : '');
   let criados = 0;
   for (const metod of metodologias) {
     // O nome distingue os dois ciclos do mesmo mês (antes seriam idênticos em todos os selects).
-    const nome = metod === METODOLOGIA_HSE
-      ? `Avaliação HSE — ${MES_NOME_CICLO[mes]} ${ano}`
-      : `Avaliação — ${MES_NOME_CICLO[mes]} ${ano}`;
+    const nome = `${_metDef(metod).prefixoCiclo} — ${MES_NOME_CICLO[mes]} ${ano}`;
     if (isDemoMode) {
       const novo = { id: 'c' + Date.now() + criados, empresa_id: _cicloEmpresaId, nome, data_inicio: dataInicio, data_fim: dataFim,
-                     ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false };
+                     ano_referencia: ano, mes_referencia: mes, tipo_ciclo: 'Não classificado', referencia_estimada: false,
+                     ...(hseOn ? { metodologia: metod } : {}) };
       _ciclos.unshift(novo);
     } else {
       try {
@@ -24294,6 +24446,7 @@ async function renderTelaAuditoria() {
   const panel = document.getElementById('audit-table-panel');
   if (!panel) return;
   _sincronizarFiltrosMetodologia('sc-auditoria', cicloId);
+  if (_painelSemMotor(panel, cicloId)) return;
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderAuditoriaHSE(panel, empId, cicloId); return; }
   window._auditHSE = null;
   // Voltando de um ciclo HSE: o combo de setor estava com os valores generalizados — recarrega os reais (BS) e re-renderiza.
@@ -26267,7 +26420,7 @@ function preencherSelectCiclos(selId, empId) {
   if (!empId) { sel.innerHTML = '<option value="">Todos os ciclos</option>'; return; }
   const lista = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId));
   // "Todos" nunca soma metodologias diferentes: com ciclo HSE na empresa, o rótulo diz que é só BS 8800.
-  const todos = (_hseAtivo() && lista.some(_cicloEhHSE)) ? 'Todos os ciclos BS 8800' : 'Todos os ciclos';
+  const todos = (_multiMet() && lista.some(c => _metDoCiclo(c) !== METODOLOGIA_BS)) ? 'Todos os ciclos BS 8800' : 'Todos os ciclos';
   _preencherCiclosAgrupados(sel, lista, todos);
   // "Sem campanha" só existe para quem tem link sem ciclo (de onde vêm as respostas sem ciclo):
   // para o resto seria uma opção morta.
@@ -26295,16 +26448,21 @@ async function renderComparativo() {
   }
 
   // Metodologias nunca se comparam entre si: com ciclo HSE na empresa, o seletor escolhe qual comparar.
-  if (_cmpSincronizarMetodologia(empId) === METODOLOGIA_HSE) { await renderComparativoHSE(panel, empId, setor); return; }
+  const metCmp = _cmpSincronizarMetodologia(empId);
+  if (metCmp === METODOLOGIA_HSE) { await renderComparativoHSE(panel, empId, setor); return; }
+  if (metCmp !== METODOLOGIA_BS) {   // metodologia sem comparativo: nunca herdar o do BS 8800
+    panel.innerHTML = `<div class="card"><div class="alert alert-y"><strong>Metodologia em desenvolvimento.</strong> ${_hEsc(_metDef(metCmp).rotulo)} ainda não tem comparativo entre campanhas nesta versão do sistema.</div></div>`;
+    return;
+  }
 
   panel.innerHTML = _loadingState('Carregando dados dos ciclos…');
 
   // Buscar todos os ciclos da empresa
   // Só ciclos BS 8800: o comparativo usa o eixo P (1–4) e não comparamos metodologias diferentes.
-  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId && !_cicloEhHSE(c)));
+  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId && _metDoCiclo(c) === METODOLOGIA_BS));
 
   if (ciclos.length < 2) {
-    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) BS 8800 cadastrado(s).' + (_empresaTemCicloHSE(empId) ? ' Para comparar os ciclos HSE, escolha "HSE (ICAO-35)" em Metodologia.' : '') + '</div></div>';
+    panel.innerHTML = '<div class="card"><div class="alert alert-y">São necessários ao menos 2 ciclos com respostas para exibir o comparativo. Atualmente há ' + ciclos.length + ' ciclo(s) BS 8800 cadastrado(s).' + (_empresaTemCicloNaoBS(empId) ? ' Para comparar os ciclos de outra metodologia, escolha-a em Metodologia.' : '') + '</div></div>';
     return;
   }
 
@@ -26540,6 +26698,7 @@ async function renderPlanoAcao() {
   // Atualizar select de ciclos
   preencherSelectCiclos('plano-ciclo', empId);
   if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
+  if (_painelSemMotor(panel, cicloId)) return;
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderPlanoAcaoHSE(panel, empId, cicloId); return; }
 
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
