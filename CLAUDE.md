@@ -147,6 +147,9 @@ exclusivamente um instrumento de coleta e análise de risco psicossocial.
 
 ## Divergências DEV ↔ PROD (não ignorar)
 
+> **Atualização 2026-10-19:** a família `instrumento_*`, as colunas `metodologia` (ciclos/respostas/questionarios) e as duas RPCs (`obter_instrumento_link`, `salvar_resposta` genérica) existem nos DOIS bancos.
+> Continua divergindo só o que está na tabela abaixo (`session_id` text × uuid, nº de overloads: 3 em DEV, 2 em PROD) — por isso há um arquivo de `salvar_resposta` por ambiente.
+
 | Campo | DEV | PROD |
 |-------|-----|------|
 | `respostas.session_id` | `text` (qualquer string) | `uuid` (UUID v4 válido) — **CRÍTICO** |
@@ -415,7 +418,7 @@ client `service_role` para a operação de Admin API.
   (incluindo como testar `SECURITY DEFINER` via `set_config('request.jwt.claims', ...)` sem
   precisar de uma sessão HTTP real).
 
-## Segunda metodologia de avaliação — HSE/ICAO-35 (planejada 2026-08-03; v1 em DEV desde 2026-10-09)
+## Segunda metodologia de avaliação — HSE/ICAO-35 (planejada 2026-08-03; v1 em DEV desde 2026-10-09; banco genérico também em PROD desde 2026-10-19)
 
 O produto hoje aplica **uma única metodologia** de risco psicossocial (BS 8800 / Mulhausen &
 Damiano, 27 questões, escala 1–4, P×S com lookup 4×4). A adição do **HSE Management Standards Indicator Tool**, via a adaptação brasileira
@@ -424,8 +427,17 @@ Plano completo, incluindo análise antecipada de um terceiro instrumento candida
 uma ideia de "combo" de metodologias, em
 `.claude/notes/2026-08-03-metodologia-hse-icao35-planejamento.md`.
 
-> **Estado (2026-10-13):** v1 implementada, **aplicada só em DEV; PROD intocado; nada em `develop`**. Branches `feat/hse-icao35` (GitHub) e
-> `feat/hse-icao35-sim` (local, worktree `../pseg-safesign-hse`). **Retomar por `.claude/notes/2026-10-13-hse-handoff-proxima-sessao.md`** (estado, pendências, caminho até PROD).
+> **Estado (2026-10-19, fim do dia):** v1 completa **em DEV**; **no PROD só o BANCO** (4 migrations aplicadas e validadas — ver abaixo); **HTML novo e questionário HSE NÃO estão em PROD; nada em `develop`**.
+> Trabalho na branch **`feat/hse-integracao-develop`** (worktree `../pseg-safesign-hse-integ`, só local, = `feat/hse-icao35-sim` + merge da `develop` + generalização).
+> `feat/hse-icao35` (GitHub) e `feat/hse-icao35-sim` ficaram como histórico; o preview antigo de `feat/hse-icao35` **não funciona mais contra DEV** (lê `hse_*`, removidas).
+> **Retomar por `.claude/notes/2026-10-19-sessao-encerramento-hse-generalizacao-prod.md`** (o que foi feito, o que depende de pessoas, próximos passos) e `.claude/notes/2026-10-13-hse-handoff-proxima-sessao.md`.
+> - **PROD (2026-10-19):** aplicadas, nesta ordem, `migration_metodologias_instrumentos.sql`, `migration_instrumento_riscos_config.sql`, `migration_obter_instrumento_link.sql` e
+>   `migration_salvar_resposta_instrumento_prod.sql`. Estado: 1.855 respostas, todas `BS8800`; nenhum questionário/ciclo/item HSE; `anon` sem GRANT nas 6 tabelas novas; overload de 9 args sem EXECUTE.
+>   Validado por transação com ROLLBACK (HSE completo, idempotência, 34 itens, valor 6, item BS em ciclo HSE, congelamento, trava de metodologia, submissão BS real). **O HSE só aparece em PROD quando um
+>   questionário `HSE_ICAO35` for publicado** (depende de B1 e da severidade assinada). O HTML antigo de PROD continua compatível com o banco novo.
+> - **COPSOQ (3ª metodologia):** avaliado, **nada semeado**. Os PDFs do outro player são adaptação livre, não o instrumento validado (`.claude/notes/2026-10-19-copsoq-avaliacao-documentos-e-generalizacao.md`).
+>   Decisões do usuário: o texto de "interpretação" vira **glossário do laudo** (não é mostrado ao respondente) e o contato com a rede COPSOQ deve ser iniciado
+>   (rascunhos em `.claude/notes/2026-10-19-copsoq-contato-licenca-e-briefing-juridico.md`; **ainda não enviados**). Bloqueador: texto validado + licença por escrito.
 > O parágrafo acima descreve o planejamento original; o que vale hoje:
 > - `ciclos.metodologia` (fonte da verdade, **imutável** depois que há link ou resposta) e `respostas.metodologia`
 >   (snapshot). Link sem ciclo = BS 8800. Uma metodologia por ciclo.
@@ -449,7 +461,7 @@ uma ideia de "combo" de metodologias, em
 > - **n mínimo de anonimato** (`N_MIN_ANONIMATO`, hoje **5, PROVISÓRIO**, 0 desliga): abaixo dele nenhum recorte BS 8800 nem HSE exibe resultado
 >   (Resultados, Gráficos, Plano, Comparativo e Laudo; grupo pequeno no laudo sai omitido com nota). Nunca ler "oculto" como "sem risco".
 >   Não cobertos: Auditoria por respondente, `exportarCSV` e k-anonimato de filtros combinados (ver `.claude/notes/2026-10-09-hse-andamento-pendencias-e-risco.md` §5.10).
-> - Backup/restauração: `RESTAURACAO_BACKUP.md` tem passos próprios para HSE (3-HSE/4-HSE); os passos BS filtram por metodologia.
+> - Backup/restauração: `RESTAURACAO_BACKUP.md` tem passos próprios para instrumentos genéricos (3-INSTR/4-INSTR); os passos BS filtram por metodologia.
 > - Texto dos itens é `[RASCUNHO]` até B1 (texto validado + permissão dos autores da ICAO); a chave geral é `questionarios.publicado`.
 > - **Simulação (DEV):** `_dev/simular-hse.js` envia respostas pela RPC real (recusa PROD) para a empresa fictícia de `seed_hse_simulacao_dev.sql`;
 >   questionário **v2** (texto PT-BR do formulário de um terceiro, **não validado**, `config.rascunho=true`). O selo RASCUNHO do laudo lê essa flag.

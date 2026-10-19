@@ -1,5 +1,7 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **ENCERRAMENTO 2026-10-19 — leia `2026-10-19-sessao-encerramento-hse-generalizacao-prod.md` primeiro** (banco genérico JÁ está em PROD; HTML e questionário HSE não).
+>
 > **Atualização 2026-10-19 (noite) — ONDE RETOMAR:** o trabalho está agora na branch **`feat/hse-integracao-develop`** (worktree **`../pseg-safesign-hse-integ`**,
 > = `feat/hse-icao35-sim` + merge da `develop` de 49 commits + **generalização para a família `instrumento_*`**). `feat/hse-icao35-sim` fica como histórico.
 > A generalização está **aplicada em DEV** (as tabelas `hse_*` foram removidas; o preview antigo de `feat/hse-icao35` não funciona mais contra DEV), **PROD intocado, nada em `develop`**.
