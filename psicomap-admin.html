@@ -2493,8 +2493,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         </select>
       </div>
 
-      <div class="filter-card met-off" data-so-hse style="border-color:#c4b5fd;background:#faf5ff">
-        <div class="filter-label" style="color:#6d28d9">Auditoria HSE (ICAO-35)</div>
+      <div class="filter-card met-off" data-so-met="HSE_ICAO35 COPSOQ_II" style="border-color:#c4b5fd;background:#faf5ff">
+        <div class="filter-label" style="color:#6d28d9">Auditoria de respostas (instrumento do ciclo)</div>
         <select id="audit-hse-modo" class="filter-select" onchange="renderTelaAuditoria()">
           <option value="real">Respostas reais</option>
           <option value="teste">Respostas de teste</option>
@@ -5320,9 +5320,9 @@ const METODOLOGIAS = {
     prefixoCiclo: 'Avaliação HSE',
   },
   // RASCUNHO (2026-10-28): enunciados de terceiro, sem validação nem licença confirmada. Só aparece onde houver
-  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados, Gráficos (distribuição), Plano e Laudo; as demais mostram aviso.
+  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados, Gráficos (distribuição), Plano, Auditoria, Comparativo e Laudo (CSV não).
   COPSOQ_II: {
-    id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo', 'graficos', 'plano'],
+    id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo', 'graficos', 'plano', 'auditoria'],
     rotulo: 'COPSOQ (rascunho)', nome: 'COPSOQ — questionário psicossocial (rascunho)', curto: 'COPSOQ', tag: 'tb',
     instrumento: 'COPSOQ (40 itens, escala 1–5)',
     descricao: '40 itens, 17 dimensões em 7 domínios, escala de frequência 1–5. Inclui indicadores de saúde e bem-estar (dado sensível, fora do cálculo de risco do PGR). Sem referência nem ponto de corte validados: compara ciclos e recortes da própria empresa. RASCUNHO — só para simulação.',
@@ -5601,7 +5601,7 @@ function _sincronizarFiltrosMetodologia(screenId, cicloId) {
   const met = cicloId ? _metodologiaDoCiclo(cicloId) : METODOLOGIA_BS;
   tela.querySelectorAll('[data-so-bs]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_BS));
   tela.querySelectorAll('[data-so-hse]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_HSE));
-  tela.querySelectorAll('[data-so-met]').forEach(el => el.classList.toggle('met-off', el.dataset.soMet !== met));
+  tela.querySelectorAll('[data-so-met]').forEach(el => el.classList.toggle('met-off', !el.dataset.soMet.split(/\s+/).includes(met)));
   // O subtítulo do Laudo citava sempre "BS 8800", inclusive num relatório HSE.
   const sub = screenId === 'sc-laudo' ? document.getElementById('laudo-page-sub') : null;
   if (sub) sub.textContent = 'Relatório técnico — NR-01 / NR-17 / ' + _metDef(met).rotulo;
@@ -6708,14 +6708,15 @@ function _audAlertasDe(p, sessRep) {
 }
 const _audChip = k => `<span title="${_hEsc(_AUD_ALERTAS[k].dica)}" style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-right:3px;color:#fff;background:${_AUD_ALERTAS[k].cor};white-space:nowrap;cursor:help">${_AUD_ALERTAS[k].t}</span>`;
 
-async function renderAuditoriaHSE(panel, empId, cicloId) {
-  panel.innerHTML = _loadingState('Carregando auditoria HSE…');
+// op (opcional, outros instrumentos genericos): { metodologia, titulo, legenda, arquivo, sensiveis:Set(dimensoes), ocultarSensiveis }
+async function renderAuditoriaHSE(panel, empId, cicloId, op = {}) {
+  panel.innerHTML = _loadingState('Carregando auditoria…');
   window._auditHSE = null;
   const btnExp = document.getElementById('btn-audit-export');
   if (btnExp) btnExp.style.display = 'none';
   try {
     const real = document.getElementById('audit-hse-modo')?.value !== 'teste';
-    const linhas = await carregarRespostasHSE(empId, cicloId, { auditoria: true, teste: !real });
+    const linhas = await carregarRespostasHSE(empId, cicloId, { auditoria: true, teste: !real, metodologia: op.metodologia });
     const ciclo = _ciclos.find(c => c.id === cicloId);
     if (!linhas.length) {
       panel.innerHTML = `<div class="card"><div class="alert alert-y">${real ? 'Nenhuma resposta real nesta campanha ainda.' : 'Nenhuma resposta de link de teste nesta campanha. Gere um link de teste e responda o formulário para validar a coleta.'}</div></div>`;
@@ -6745,7 +6746,7 @@ async function renderAuditoriaHSE(panel, empId, cicloId) {
     const dia = d => d ? d.toLocaleDateString('pt-BR') : '—';
     const cabecalho = `<div class="card" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start">
-        <div><div style="font-size:14px;font-weight:700;color:var(--tx)">Auditoria de respostas — HSE (ICAO-35)</div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--tx)">${_hEsc(op.titulo || 'Auditoria de respostas — HSE (ICAO-35)')}</div>
         <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${real ? 'respostas reais' : '<strong style="color:#6d28d9">respostas de LINKS DE TESTE</strong> (não entram em nenhuma análise)'}</div></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
@@ -6769,14 +6770,16 @@ async function renderAuditoriaHSE(panel, empId, cicloId) {
     if (!vis.length) { panel.innerHTML = cabecalho + `<div class="card"><div class="alert alert-y" style="margin:0">Nenhuma resposta para os filtros selecionados.</div></div>`; return; }
 
     const itensOrd = Object.values(meta).sort((a, b) => a.ordem - b.ordem);
-    const porCod = new Map(); itensOrd.forEach(i => { if (!porCod.has(i.codigo)) porCod.set(i.codigo, { ids: [], texto: i.texto, inversa: i.inversa }); porCod.get(i.codigo).ids.push(i.id); });
-    const cods = [...porCod.keys()];
+    const porCod = new Map(); itensOrd.forEach(i => { if (!porCod.has(i.codigo)) porCod.set(i.codigo, { ids: [], texto: i.texto, inversa: i.inversa, dim: i.dimensao }); porCod.get(i.codigo).ids.push(i.id); });
+    // Respostas REAIS de instrumento com dimensões sensíveis: as colunas desses itens não saem por respondente (nem na tela nem no CSV).
+    const ocultas = (real && op.ocultarSensiveis && op.sensiveis) ? [...porCod.entries()].filter(([, v]) => op.sensiveis.has(v.dim)).map(([k]) => k) : [];
+    const cods = [...porCod.keys()].filter(c => !ocultas.includes(c));
     const val = (r, c) => { for (const id of porCod.get(c).ids) if (r.h[id] != null) return r.h[id]; return null; };
     const th = (t, extra = '') => `<th style="text-align:left;padding:7px 9px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:10px;color:var(--tm);font-weight:600;${extra}">${t}</th>`;
     const tbl = `<div class="card" style="padding:0;overflow:hidden">
       <div style="padding:10px 16px;border-bottom:1px solid var(--bs);background:var(--bg);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:13px;font-weight:600;color:var(--tx)">${vis.length} resposta${vis.length !== 1 ? 's' : ''}</div>
-        <div style="font-size:11px;color:var(--tl)">Valores brutos (o que a pessoa marcou): 1=Nunca … 5=Sempre · ↺ item invertido no cálculo (Demandas e Relacionamentos)</div>
+        <div style="font-size:11px;color:var(--tl)">${_hEsc(op.legenda || 'Valores brutos (o que a pessoa marcou): 1=Nunca … 5=Sempre · ↺ item invertido no cálculo (Demandas e Relacionamentos)')}${ocultas.length ? ` · <strong>${ocultas.length} itens de dimensões sensíveis (saúde, estresse, ofensas) ocultos</strong>: não saem por respondente` : ''}</div>
       </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:collapse;width:100%;min-width:${620 + cods.length * 34}px;font-size:11px">
         <thead><tr style="background:var(--bg);position:sticky;top:0;z-index:2">${th('#')}${th('ID')}${th('SETOR / GHE')}${th('FUNÇÃO')}${th('ESCOLARIDADE')}${th('DATA')}${th('VERSÃO')}${th('ITENS')}${th('ALERTAS')}${th('LGPD', 'text-align:center')}${th('DISPOSITIVO')}
@@ -6795,7 +6798,7 @@ async function renderAuditoriaHSE(panel, empId, cicloId) {
         </tbody></table></div></div>`;
     panel.innerHTML = cabecalho + tbl;
     window._auditHSE = {
-      cicloNome: ciclo?.nome || '', real,
+      cicloNome: ciclo?.nome || '', real, arquivo: op.arquivo || 'hse',
       cols: ['ID', 'Setor/GHE', 'Função', 'Escolaridade', 'Data', 'Versão', 'Itens respondidos', 'Alertas', 'LGPD aceito', 'Dispositivo', ...cods],
       rows: vis.map(p => [p.id, p.setor, p.funcao, p.escolaridade, p.r.data ? dia(new Date(p.r.data)) : '', verRot(p.r.questionario_id), `${p.aval.n}/${p.aval.esperado}`,
         _audAlertasDe(p, sessRep).map(k => _AUD_ALERTAS[k].t).join(', '), p.r.lgpd_aceito ? 'Sim' : 'Não',
@@ -6814,7 +6817,7 @@ function exportarAuditoriaHSE() {
   const csv = '﻿' + [a.cols, ...a.rows].map(l => l.map(q).join(';')).join('\r\n');
   const el = document.createElement('a');
   el.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  el.download = `auditoria_hse_${a.real ? 'respostas' : 'teste'}_${new Date().toISOString().slice(0, 10)}.csv`;
+  el.download = `auditoria_${a.arquivo || 'hse'}_${a.real ? 'respostas' : 'teste'}_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(el); el.click(); el.remove(); URL.revokeObjectURL(el.href);
 }
 // ==== HSE (AUD) END ====
@@ -7769,6 +7772,89 @@ async function renderPlanoAcaoCOPSOQ(panel, empId, cicloId) {
   } catch (e) {
     console.warn('renderPlanoAcaoCOPSOQ:', e);
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o plano COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+
+// ── Auditoria COPSOQ: a do HSE com o instrumento do ciclo e as colunas sensíveis ocultas em respostas reais ──
+async function renderAuditoriaCOPSOQ(panel, empId, cicloId) {
+  const dims = await _cqCarregarDimensoes().catch(() => []);
+  return renderAuditoriaHSE(panel, empId, cicloId, {
+    metodologia: METODOLOGIA_COPSOQ, titulo: 'Auditoria de respostas — COPSOQ (rascunho)', arquivo: 'copsoq', ocultarSensiveis: true,
+    sensiveis: new Set(dims.filter(d => d.sensivel).map(d => d.id)),
+    legenda: 'Valores brutos (o que a pessoa marcou): 1=Nunca … 5=Sempre · ↺ item invertido no cálculo (dimensões de sentido negativo)',
+  });
+}
+
+// ── Comparativo entre campanhas COPSOQ ─────────────────────────────────────────────────────────────────────
+// Só campanhas COPSOQ entre si. Sem referência: a leitura é a VARIAÇÃO (índice 0–100 e média) entre campanhas, com a cor da zona
+// fixa só como apoio. Campanha abaixo do n mínimo (no recorte) fica de fora e é nomeada; dimensão sensível só aparece em
+// campanha com N_MIN_SENSIVEL respondentes.
+let _cqUltimoCmp = null;
+const _CQ_ZONA_BG = { VERDE: ['#e8f5e9', '#1b5e20'], AMARELA: ['#fff8e1', '#8a5a00'], VERMELHA: ['#ffebee', '#b71c1c'] };
+async function renderComparativoCOPSOQ(panel, empId, setor) {
+  _cqUltimoCmp = null;
+  const ciclos = _ordenarCiclosPorPeriodo(_ciclos.filter(c => c.empresa_id === empId && _metDoCiclo(c) === METODOLOGIA_COPSOQ));
+  const setorSel = document.getElementById('cmp-setor');
+  if (setorSel) {
+    const emp = _empresas.find(e => e.id === empId), cur = setorSel.value;
+    setorSel.innerHTML = '<option value="">Todos os setores</option>' + (emp?.setores || []).map(s => `<option value="${_hEsc(s)}">${_hEsc(s)}</option>`).join('');
+    if (cur) setorSel.value = cur;
+  }
+  if (ciclos.length < 2) { panel.innerHTML = `<div class="card"><div class="alert alert-y">São necessárias ao menos 2 campanhas COPSOQ para o comparativo. Este cliente tem ${ciclos.length}. Campanhas de outras metodologias não entram: metodologias diferentes nunca são comparadas.</div></div>`; return; }
+  panel.innerHTML = _loadingState('Carregando campanhas COPSOQ…');
+  try {
+    const dims = await _cqCarregarDimensoes();
+    const dados = [], ocultos = [];
+    for (const c of ciclos) {
+      const todas = await carregarRespostasHSE(empId, c.id, { metodologia: METODOLOGIA_COPSOQ });
+      const ls = setor ? todas.filter(r => r.setor === setor) : todas;
+      if (!ls.length) continue;
+      if (ls.length < N_MIN_ANONIMATO) { ocultos.push(`${c.nome} (${ls.length})`); continue; }
+      dados.push({ ciclo: c, n: ls.length, res: calcDimensoesCOPSOQ(ls, _hseMetaDasLinhas(ls), dims), qs: new Set(ls.map(l => l.questionario_id).filter(Boolean)) });
+    }
+    const nomesOcultos = ocultos.length ? `<div style="font-size:11px;color:#6b7280;margin-top:6px"><strong>Fora por anonimato</strong> (menos de ${N_MIN_ANONIMATO} respondentes${setor ? ' no setor' : ''}): ${_hEsc(ocultos.join('; '))}.</div>` : '';
+    if (dados.length < 2) { panel.innerHTML = `<div class="card"><div class="alert alert-y">São necessárias ao menos 2 campanhas COPSOQ <strong>com respostas</strong>${setor ? ' neste setor' : ''} para o comparativo.${nomesOcultos}</div></div>`; return; }
+    const versoes = new Set(dados.flatMap(d => [...d.qs])).size;
+    const th = 'padding:7px 8px;font-size:10px;background:#1f2937;color:#fff;font-weight:600;text-align:center';
+    const oculto = (x, d) => x.sensivel && !_cqSensivelVisivel(d.n);
+    const celula = (x, d) => {
+      if (!x) return '<td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#9ca3af">—</td>';
+      if (oculto(x, d)) return '<td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:10px" title="Dimensão sensível: exige ' + N_MIN_SENSIVEL + ' respondentes">omitido</td>';
+      const [bg, tx] = _CQ_ZONA_BG[x.zona] || ['#f3f4f6', '#374151'];
+      return `<td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:700;background:${bg};color:${tx}" title="média ${_hseNum(x.score)} · ${_cqTxtZona(x.zona)}">${x.indice.toFixed(1).replace('.', ',')}</td>`;
+    };
+    const ult = dados[dados.length - 1], pen = dados[dados.length - 2], pri = dados[0];
+    const delta = (a, b, da, db) => (a && b && a.score != null && b.score != null && !oculto(a, da) && !oculto(b, db)) ? a.score - b.score : null;
+    const linhasTab = dims.map(dm => {
+      const xs = dados.map(d => d.res.dims.find(z => z.id === dm.id));
+      if (xs.every(x => !x)) return '';
+      const u = xs[xs.length - 1], pe = xs[xs.length - 2], f = xs[0];
+      return `<tr><td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;font-weight:600">${_hEsc(dm.nome)}${dm.altoPior ? ' <span style="font-size:9px;color:var(--amber)">↺</span>' : ''}${dm.sensivel ? ' <span style="font-size:9px;color:#7c3aed">● sensível</span>' : ''}<div style="font-size:9px;font-weight:400;color:#6b7280">${_hEsc(dm.dominio)}</div></td>
+        ${xs.map((x, i) => celula(x, dados[i])).join('')}
+        <td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${_hseVariacaoHTML(delta(u, pe, ult, pen))}</td>
+        ${dados.length > 2 ? `<td style="padding:7px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${_hseVariacaoHTML(delta(u, f, ult, pri))}</td>` : ''}</tr>`;
+    }).join('');
+    const resumo = ['MELHORA', 'PIORA'].map(t => {
+      const ds = dims.filter(dm => { const u = ult.res.dims.find(z => z.id === dm.id), pe = pen.res.dims.find(z => z.id === dm.id); return _hseTendencia(delta(u, pe, ult, pen)) === t; });
+      return ds.length ? `<li><strong>${t === 'MELHORA' ? 'Melhoraram' : 'Pioraram'}</strong> desde ${_hEsc(pen.ciclo.nome)}: ${ds.map(d => _hEsc(d.nome)).join(', ')}.</li>` : '';
+    }).join('');
+    const html = `<div class="card" style="margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">Comparativo de campanhas — COPSOQ (rascunho)${setor ? ` · ${_hEsc(setor)}` : ''}</div>
+        <div style="font-size:12px;color:var(--tm)">${dados.length} campanhas · sem referência externa: a leitura é a variação entre campanhas</div>
+        ${versoes > 1 ? '<div class="alert alert-y" style="margin-top:8px">As campanhas usam <strong>versões diferentes</strong> do questionário (o texto dos itens mudou). Compare com cautela.</div>' : ''}
+        <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.5">Índice de favorabilidade de 0 a 100, <strong>maior = melhor</strong>; a cor é a zona fixa (referência interna, sem ponto de corte validado). ▲ melhora · ▼ piora · ≈ variação de média menor que 0,10. Dimensões sensíveis só aparecem em campanhas com ${N_MIN_SENSIVEL} ou mais respondentes.</div>
+        ${nomesOcultos}</div>
+      <div class="card" style="margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr><th style="${th};text-align:left">Dimensão</th>${dados.map(d => `<th style="${th}">${_hEsc(d.ciclo.nome)}<div style="font-weight:400;opacity:.8">n = ${d.n}</div></th>`).join('')}
+          <th style="${th}">vs campanha anterior</th>${dados.length > 2 ? `<th style="${th}">vs primeira campanha</th>` : ''}</tr></thead>
+        <tbody>${linhasTab}</tbody></table></div>
+        ${resumo ? `<ul style="margin:10px 0 0 18px;font-size:12px;color:var(--tx);line-height:1.6">${resumo}</ul>` : `<div style="font-size:12px;color:var(--tm);margin-top:8px">Nenhuma dimensão variou 0,10 ou mais desde ${_hEsc(pen.ciclo.nome)}.</div>`}
+      </div>`;
+    panel.innerHTML = html + '<div style="text-align:right"><button class="btn btn-ghost" style="font-size:11px" onclick="_cqUltimoCmp && _hseImprimirPainel(_cqUltimoCmp.titulo, _cqUltimoCmp.html, \'Instrumento em rascunho: não entregar a cliente.\')">🖨 Imprimir comparativo</button></div>';
+    _cqUltimoCmp = { titulo: `Comparativo de campanhas — COPSOQ (rascunho)${setor ? ' · ' + setor : ''}`, html };
+  } catch (e) {
+    console.warn('renderComparativoCOPSOQ:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o comparativo COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
   }
 }
 // ==== COPSOQ (S10) END ====
@@ -24875,6 +24961,7 @@ async function renderTelaAuditoria() {
   if (!panel) return;
   _sincronizarFiltrosMetodologia('sc-auditoria', cicloId);
   if (_painelSemMotor(panel, cicloId, 'auditoria')) return;
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_COPSOQ) { await renderAuditoriaCOPSOQ(panel, empId, cicloId); return; }
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderAuditoriaHSE(panel, empId, cicloId); return; }
   window._auditHSE = null;
   // Voltando de um ciclo HSE: o combo de setor estava com os valores generalizados — recarrega os reais (BS) e re-renderiza.
@@ -26878,6 +26965,7 @@ async function renderComparativo() {
   // Metodologias nunca se comparam entre si: com ciclo HSE na empresa, o seletor escolhe qual comparar.
   const metCmp = _cmpSincronizarMetodologia(empId);
   if (metCmp === METODOLOGIA_HSE) { await renderComparativoHSE(panel, empId, setor); return; }
+  if (metCmp === METODOLOGIA_COPSOQ) { await renderComparativoCOPSOQ(panel, empId, setor); return; }
   if (metCmp !== METODOLOGIA_BS) {   // metodologia sem comparativo: nunca herdar o do BS 8800
     panel.innerHTML = `<div class="card"><div class="alert alert-y"><strong>Metodologia em desenvolvimento.</strong> ${_hEsc(_metDef(metCmp).rotulo)} ainda não tem comparativo entre campanhas nesta versão do sistema.</div></div>`;
     return;

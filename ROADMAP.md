@@ -92,7 +92,7 @@ o nível **ciclo não herda nada** — todo ciclo novo recomeça do zero. Tudo c
 - **Já em PROD (2026-10-19):** só o banco (família `instrumento_*`, colunas `metodologia`, RPCs). O HSE não aparece até haver questionário publicado.
 - **Bloqueios de pessoas:** B1 (texto validado da ICAO-35 + permissão), severidade por dimensão assinada por SST, valor do n mínimo (5 provisório), B12 (confirmar PITR).
 - **Antes de subir o HTML:** homologar em DEV com login real; `/validar-formulario`; PR para `develop` e `develop`→`main` com merge commit.
-- **COPSOQ (3ª metodologia) — rascunho já em DEV (2026-10-28):** falta Auditoria/Comparativo, valor do `N_MIN_SENSIVEL`; para PROD: obter texto validado + licença por escrito (rascunho de contato pronto), jurídico/DPO (dados de saúde, RIPD), motor próprio, laudo com seção de saúde fora do P×S, glossário próprio por dimensão.
+- **COPSOQ (3ª metodologia) — rascunho já em DEV (2026-10-28):** falta CSV de Resultados, valor do `N_MIN_SENSIVEL`; para PROD: obter texto validado + licença por escrito (rascunho de contato pronto), jurídico/DPO (dados de saúde, RIPD), motor próprio, laudo com seção de saúde fora do P×S, glossário próprio por dimensão.
 - **Backlog técnico:** supressão complementar no BS 8800; k-anonimato no `exportarCSV`; item binário com "de quem" (`detalhe`) se o instrumento exigir.
 
 ---

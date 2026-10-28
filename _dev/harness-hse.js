@@ -78,15 +78,16 @@ const fake = function () {
   const COP_INV = new Set(window.__COP_DIMS.filter(d => d.direcao === 'alto_pior').map(d => d.codigo));
   const COP_META = window.__COP_ITENS.map(it => ({ id: 'cop-item-' + it.n, questionario_id: QC, codigo: 'C' + String(it.n).padStart(2, '0'), ordem: it.n, parte: 1,
     dimensao: it.dim, texto: it.texto, inversa: COP_INV.has(it.dim), escala_labels: 'freq' }));
-  const copResp = n => Array.from({ length: n }, (_, k) => {
+  const CIC3 = 'aaaa0000-0000-4000-8000-0000000000c3';
+  const copResp = (n, ciclo = CIC2, desloc = 0) => Array.from({ length: n }, (_, k) => {
     const i = k + 1, setor = i <= 18 ? 'Produção' : i <= 30 ? 'Administrativo' : 'Logística';
     const h = {}; COP_META.forEach(m => { const base = setor === 'Produção' ? (m.inversa ? 4 : 3) : setor === 'Administrativo' ? (m.inversa ? 2 : 4) : 3;
-      h[m.id] = Math.max(1, Math.min(5, base + ((i * 31 + m.ordem * 17) % 3) - 1 + (setor === 'Produção' && m.dimensao === 'ESTRESSE' ? 1 : 0))); });
-    return { id: 'cop-' + i, setor, funcao: setor === 'Produção' ? (i % 4 === 0 ? 'Supervisor' : 'Operador') : setor === 'Administrativo' ? 'Analista' : 'Auxiliar', escolaridade: 'Ensino Médio',
-      ciclo_id: CIC2, link_token: 'simcopsoq001', questionario_id: QC, respondido_em: '2026-10-20T12:00:00Z', metodologia: 'COPSOQ_II',
+      h[m.id] = Math.max(1, Math.min(5, base + ((i * 31 + m.ordem * 17) % 3) - 1 + desloc + (setor === 'Produção' && m.dimensao === 'ESTRESSE' ? 1 : 0))); });
+    return { id: ciclo.slice(-2) + 'cop-' + i, session_id: (Math.imul(i + 7, 2654435761) >>> 0).toString(16).padStart(8, '0') + '-' + ciclo.slice(-2).padStart(4, '0') + '-4000-8000-000000000000', device_info: i % 2 ? 'Android 14 | Chrome 126' : 'iOS 17 | Safari 17', lgpd_aceito: true, lgpd_aceito_em: '2026-10-20T12:00:00Z', setor, funcao: setor === 'Produção' ? (i % 4 === 0 ? 'Supervisor' : 'Operador') : setor === 'Administrativo' ? 'Analista' : 'Auxiliar', escolaridade: 'Ensino Médio',
+      ciclo_id: ciclo, link_token: 'simcopsoq001', questionario_id: QC, respondido_em: '2026-10-20T12:00:00Z', metodologia: 'COPSOQ_II',
       resposta_itens_instrumento: Object.entries(h).map(([item_id, valor]) => ({ item_id, valor })) };
   });
-  let RESP = [...respostasDe(FX, CIC), ...respostasDe(FX0, CIC0), ...copResp(40)];
+  let RESP = [...respostasDe(FX, CIC), ...respostasDe(FX0, CIC0), ...copResp(40), ...copResp(30, CIC3, 1)];
   const respostasQA = () => QA();
   const tabelas = {
     questionarios: () => [{ id: Q, versao: 2, config: { rascunho: true } }, { id: QC, versao: 1, config: { rascunho: true } }],
@@ -119,6 +120,7 @@ const fake = function () {
       _empresas = [{ id: EMP, nome: 'SIMULAÇÃO HSE (fictícia)', setores: ['Administrativo', 'Logística', 'Produção'], hierarquia: [] }];
       _ciclos = [{ id: CIC0, empresa_id: EMP, nome: 'Avaliação HSE — Março 2026', metodologia: 'HSE_ICAO35', ano_referencia: 2026, mes_referencia: 3 },
                  { id: CIC, empresa_id: EMP, nome: 'Avaliação HSE — Simulação', metodologia: 'HSE_ICAO35', ano_referencia: 2026, mes_referencia: 10 },
+                 { id: CIC3, empresa_id: EMP, nome: 'Avaliação COPSOQ — Abril 2026', metodologia: 'COPSOQ_II', ano_referencia: 2026, mes_referencia: 4 },
                  { id: CIC2, empresa_id: EMP, nome: 'Avaliação COPSOQ — Simulação', metodologia: 'COPSOQ_II', ano_referencia: 2026, mes_referencia: 10 },
                  { id: 'bs-1', empresa_id: EMP, nome: 'Avaliação — Setembro 2026', metodologia: 'BS8800', ano_referencia: 2026, mes_referencia: 9 }];
       // Combos vazios = sem filtro. O boot sem banco cai no modo demo e deixa setores/funções FICTÍCIOS marcados.
@@ -151,6 +153,15 @@ const fake = function () {
       const r = document.getElementById('ld-responsavel'); if (r && !r.value) r.value = 'Responsável de Teste';
       const reg = document.getElementById('ld-registro'); if (reg && !reg.value) reg.value = 'CRP 00/00000';
       const c = await _laudoCOPSOQContexto(); return { pf: _laudoCOPSOQPreflight(c), html: _buildLaudoCOPSOQHTML(c, { preview: true }) };
+    },
+    async copAuditoria(modo = 'real') {
+      this.tela('sc-auditoria'); ['audit-empresa'].forEach(id => { const s = document.getElementById(id); if (s) s.innerHTML = `<option value="${EMP}">SIMULAÇÃO HSE (fictícia)</option>`; });
+      preencherSelectCiclos('audit-ciclo', EMP); const c = document.getElementById('audit-ciclo'); if (c) c.value = CIC2;
+      const m = document.getElementById('audit-hse-modo'); if (m) m.value = modo; await renderTelaAuditoria(); return document.getElementById('audit-table-panel').innerText.slice(0, 700);
+    },
+    async copComparativo(setor = '') {
+      this.tela('sc-comparativo'); _cmpMetEmp = null; await renderComparativo(); const sel = document.getElementById('cmp-metodologia'); if (sel) { sel.value = 'COPSOQ_II'; }
+      const s = document.getElementById('cmp-setor'); if (setor && s) s.value = setor; await renderComparativo(); return document.getElementById('comparativo-panel').innerText.slice(0, 700);
     },
     tela(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); document.getElementById(id).classList.add('on'); },
     async resultados(seg = 'consolidado') {
