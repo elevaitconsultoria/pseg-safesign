@@ -157,6 +157,17 @@ const fake = function () {
     };
     window.addEventListener('load', () => setTimeout(() => go().catch(e => { document.body.innerHTML = '<pre>' + (e && e.stack || e) + '</pre>'; }), 300));
   }
+  // ?auto=resultados[&seg=segregado]: o documento que o botão "Imprimir" da tela Resultados HSE abre (_hseImprimirPainel)
+  if (qs.get('auto') === 'resultados') {
+    const go = async () => {
+      await window.__hse.instalar();
+      await window.__hse.resultados(qs.get('seg') || 'consolidado');
+      const corpo = document.getElementById('resultado-panel').innerHTML;
+      window.open = () => ({ document: { write: h => { document.open(); document.write(h); }, close() { document.close(); } } });
+      _hseImprimirPainel('Resultados HSE — harness', corpo);
+    };
+    window.addEventListener('load', () => setTimeout(() => go().catch(e => { document.body.innerHTML = '<pre>' + (e && e.stack || e) + '</pre>'; }), 300));
+  }
 };
 
 const inj = `<script>window.__HSE_FIXTURE = ${fx};\nwindow.__HSE_FIXTURE_C0 = ${fx0};\nwindow.__HSE_BENCH_SETORES = ${JSON.stringify(benchSetores.map(b => ({ ...b, vigente: true })))};\n(${fake.toString()})();</script>`;

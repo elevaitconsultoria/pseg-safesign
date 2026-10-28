@@ -2866,7 +2866,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Laudo</div>
-      <div class="page-sub">Relatório técnico — NR-01 / NR-17 / BS 8800</div>
+      <div class="page-sub" id="laudo-page-sub">Relatório técnico — NR-01 / NR-17 / BS 8800</div>
     </div>
     <div class="page-hdr-actions">
       <button class="fp-toggle-btn" id="btn-fp-laudo" onclick="toggleFiltroPanel('fl-laudo','btn-fp-laudo')">
@@ -5587,6 +5587,9 @@ function _sincronizarFiltrosMetodologia(screenId, cicloId) {
   tela.querySelectorAll('[data-so-bs]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_BS));
   tela.querySelectorAll('[data-so-hse]').forEach(el => el.classList.toggle('met-off', met !== METODOLOGIA_HSE));
   tela.querySelectorAll('[data-so-met]').forEach(el => el.classList.toggle('met-off', el.dataset.soMet !== met));
+  // O subtítulo do Laudo citava sempre "BS 8800", inclusive num relatório HSE.
+  const sub = screenId === 'sc-laudo' ? document.getElementById('laudo-page-sub') : null;
+  if (sub) sub.textContent = 'Relatório técnico — NR-01 / NR-17 / ' + _metDef(met).rotulo;
 }
 
 // Mostra, abaixo do select de ciclo do modal de link, qual instrumento o funcionário vai responder.
@@ -6349,7 +6352,7 @@ function _hseImprimirPainel(titulo, corpoHTML) {
   w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${_hEsc(titulo)}</title>
 <style>:root{--tx:#1a1a1a;--tm:#4b5563;--tl:#6b7280;--border:#e5e7eb;--amber:#b45309;--bg2:#f9fafb;--g:#1a5e2a}
 body{font-family:Inter,Arial,sans-serif;color:#1a1a1a;margin:24px;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px;break-inside:avoid}.alert{padding:8px 10px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a}
+.card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px}.card div[style*="grid-template-columns"]{break-inside:avoid}.alert{padding:8px 10px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a}
 button.btn{display:none}summary{list-style:none;font-weight:700}@media print{body{margin:10mm}.no-print{display:none!important}}</style></head><body>
 <div class="no-print" style="margin-bottom:12px"><button onclick="window.print()" style="padding:7px 14px">Imprimir / PDF</button></div>
 ${est ? `<div style="font-size:11px;color:#6b7280">${_hEsc(est)}</div>` : ''}<h2 style="margin:4px 0 4px">${_hEsc(titulo)}</h2>
