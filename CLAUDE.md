@@ -435,7 +435,7 @@ uma ideia de "combo" de metodologias, em
 >   `migration_salvar_resposta_instrumento_prod.sql`. Estado: 1.855 respostas, todas `BS8800`; nenhum questionário/ciclo/item HSE; `anon` sem GRANT nas 6 tabelas novas; overload de 9 args sem EXECUTE.
 >   Validado por transação com ROLLBACK (HSE completo, idempotência, 34 itens, valor 6, item BS em ciclo HSE, congelamento, trava de metodologia, submissão BS real). **O HSE só aparece em PROD quando um
 >   questionário `HSE_ICAO35` for publicado** (depende de B1 e da severidade assinada). O HTML antigo de PROD continua compatível com o banco novo.
-> - **COPSOQ (3ª metodologia) — implementado em DEV como RASCUNHO (2026-10-28)**: seeds `seed_copsoq_dev_rascunho.sql` e `seed_copsoq_simulacao_dev.sql`, bloco `COPSOQ (S10)` no admin (Resultados + Laudo; demais telas com aviso),
+> - **COPSOQ (3ª metodologia) — implementado em DEV como RASCUNHO (2026-10-28)**: seeds `seed_copsoq_dev_rascunho.sql` e `seed_copsoq_simulacao_dev.sql`, bloco `COPSOQ (S10)` no admin (Resultados, Gráficos, Plano e Laudo; Auditoria/Comparativo com aviso),
 >   `npm run test:copsoq` (32 casos). **Não existe em PROD** (sem questionário publicado a opção não aparece). Detalhe: `.claude/notes/2026-10-28-copsoq-implementacao-dev-rascunho.md`. Antes disso foi só avaliado;  Os PDFs do outro player são adaptação livre, não o instrumento validado (`.claude/notes/2026-10-19-copsoq-avaliacao-documentos-e-generalizacao.md`).
 >   Decisões do usuário: o texto de "interpretação" vira **glossário do laudo** (não é mostrado ao respondente) e o contato com a rede COPSOQ deve ser iniciado
 >   (rascunhos em `.claude/notes/2026-10-19-copsoq-contato-licenca-e-briefing-juridico.md`; **ainda não enviados**). Bloqueador: texto validado + licença por escrito.

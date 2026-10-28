@@ -5320,9 +5320,9 @@ const METODOLOGIAS = {
     prefixoCiclo: 'Avaliação HSE',
   },
   // RASCUNHO (2026-10-28): enunciados de terceiro, sem validação nem licença confirmada. Só aparece onde houver
-  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados e Laudo; as demais mostram aviso.
+  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados, Gráficos (distribuição), Plano e Laudo; as demais mostram aviso.
   COPSOQ_II: {
-    id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo'],
+    id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo', 'graficos', 'plano'],
     rotulo: 'COPSOQ (rascunho)', nome: 'COPSOQ — questionário psicossocial (rascunho)', curto: 'COPSOQ', tag: 'tb',
     instrumento: 'COPSOQ (40 itens, escala 1–5)',
     descricao: '40 itens, 17 dimensões em 7 domínios, escala de frequência 1–5. Inclui indicadores de saúde e bem-estar (dado sensível, fora do cálculo de risco do PGR). Sem referência nem ponto de corte validados: compara ciclos e recortes da própria empresa. RASCUNHO — só para simulação.',
@@ -7671,6 +7671,105 @@ async function gerarLaudoCOPSOQ(win) {
     recortes_omitidos: (c.recortes || []).filter(r => !r.res).map(r => ({ nome: r.nome, motivo: r._complementar ? 'complementar' : 'n_minimo' })) };
   win.document.open(); win.document.write(_buildLaudoCOPSOQHTML(c, { preview: false })); win.document.close();
   toast('Laudo COPSOQ aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+}
+// ── Distribuição (tela Gráficos) e Plano de Ação do COPSOQ ───────────────────────────────────────────────────
+// Ações-base por dimensão: redação do PsicoMap, PONTOS DE PARTIDA para revisão de SST/psicólogo (como HSE_DIM_INFO).
+// Dimensões de saúde/ofensas: o texto é de ACOMPANHAMENTO — são desfecho/dado sensível, não entram em nível de risco.
+const COPSOQ_ACOES = {
+  DEM_RITMO: ['Mapear carga e prazos por setor e função e redistribuir os picos recorrentes', 'Rever metas e prazos considerados inatingíveis, com quem executa', 'Garantir pausas e limitar horas extras habituais'],
+  DEM_COGNITIVAS: ['Reduzir interrupções e tarefas simultâneas em atividades que exigem concentração', 'Definir quem decide o quê e dar suporte nas decisões difíceis', 'Prever treinamento e apoio técnico para decisões complexas'],
+  DEM_EMOCIONAIS: ['Preparar as equipes que lidam com público ou situações difíceis (protocolos, treinamento)', 'Criar espaço de escuta e rodízio em atividades de maior desgaste emocional', 'Articular com o serviço de saúde ocupacional o acompanhamento de funções expostas'],
+  INFLUENCIA: ['Ampliar a participação da equipe na organização das tarefas e rotinas', 'Definir com as equipes o que pode ser decidido por quem executa', 'Rever regras rígidas que limitam a autonomia sem necessidade'],
+  DESENVOLVIMENTO: ['Oferecer treinamentos e oportunidades de aprendizado ligados à função', 'Combinar com cada equipe um plano simples de desenvolvimento', 'Dar acesso a novas tarefas e desafios compatíveis'],
+  SENTIDO: ['Explicar como cada função contribui para o resultado da empresa', 'Dar retorno regular sobre o impacto do trabalho', 'Reconhecer contribuições das equipes'],
+  APOIO_COLEGAS: ['Favorecer trabalho em equipe e troca de experiência (duplas, rodízio, mentoria)', 'Criar momentos regulares de alinhamento da equipe', 'Integrar novos colaboradores com um colega de referência'],
+  LIDERANCA: ['Capacitar lideranças em escuta, feedback e organização do trabalho', 'Estabelecer rotinas de conversa individual e de equipe com a chefia', 'Acompanhar o clima das equipes e agir sobre problemas relatados'],
+  CLAREZA_PAPEL: ['Revisar e comunicar atribuições e responsabilidades por função', 'Alinhar expectativas e metas com cada equipe', 'Apresentar o fluxo de trabalho e os pontos de decisão'],
+  CONFLITO_PAPEL: ['Eliminar solicitações contraditórias definindo quem prioriza', 'Rever tarefas consideradas desnecessárias com as equipes', 'Padronizar o fluxo de pedidos entre áreas'],
+  JUSTICA: ['Tornar claros os critérios de decisões que afetam as equipes', 'Dar retorno sobre solicitações e reclamações', 'Garantir tratamento igual em situações semelhantes'],
+  CONFLITO_VIDA: ['Prever planejamento de jornada e escalas com antecedência', 'Limitar contato fora do horário de trabalho', 'Avaliar flexibilidade onde a atividade permitir'],
+  INSEGURANCA: ['Comunicar com transparência mudanças e decisões que afetam empregos', 'Dar previsibilidade de escalas, contratos e planos da área', 'Abrir canal para dúvidas sobre o futuro'],
+  OFENSAS: ['Manter canal de relato seguro, confidencial e sem retaliação, com prazo de resposta', 'Formalizar e divulgar a política de conduta e de prevenção ao assédio', 'Capacitar lideranças para agir diante de comportamentos inaceitáveis'],
+  ESTRESSE: ['Reduzir as fontes de sobrecarga identificadas nas dimensões de exigências do trabalho', 'Articular com o serviço de saúde ocupacional o acompanhamento coletivo (sem expor indivíduos)', 'Reavaliar na próxima campanha para verificar a tendência'],
+  SATISFACAO: ['Conversar com as equipes sobre o que mais pesa na motivação', 'Reconhecer entregas e resultados', 'Reavaliar na próxima campanha'],
+  SAUDE_GERAL: ['Articular com o serviço de saúde ocupacional ações coletivas de promoção de saúde', 'Não usar o resultado para avaliar pessoas', 'Reavaliar na próxima campanha'],
+};
+const _cqPrioridades = (res, n) => {
+  const ord = { VERMELHA: 0, AMARELA: 1 };
+  return res.dims.filter(d => d.zona in ord && !(d.sensivel && !_cqSensivelVisivel(n))).sort((a, b) => ord[a.zona] - ord[b.zona] || a.indice - b.indice);
+};
+
+async function renderGraficosCOPSOQ(panel, empId, cicloId) {
+  panel.innerHTML = _loadingState('Carregando distribuição COPSOQ…');
+  try {
+    const [todas, dims] = await Promise.all([carregarRespostasHSE(empId, cicloId, { metodologia: METODOLOGIA_COPSOQ }), _cqCarregarDimensoes()]);
+    const linhas = _filtroGraficos(_presetConfigAtual('graficos'), todas);
+    _hseUltimaDist = null;
+    if (!todas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta COPSOQ nesta campanha ainda.</div></div>'; return; }
+    if (!linhas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>'; return; }
+    if (linhas.length < N_MIN_ANONIMATO) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Resultado oculto: ${_textoOculto(linhas.length)}. Amplie os filtros.</div></div>`; return; }
+    const res = calcDimensoesCOPSOQ(linhas, _hseMetaDasLinhas(linhas), dims);
+    const ciclo = _ciclos.find(c => c.id === cicloId);
+    const ocultas = res.dims.filter(d => d.sensivel && !_cqSensivelVisivel(linhas.length));
+    const html = `<div class="card" style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Distribuição das respostas — COPSOQ (rascunho)</div>
+        <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${linhas.length} respondente(s) no recorte · ${todas.length} no ciclo</div>
+        <div style="font-size:11px;color:#6b7280;margin:8px 0 6px;line-height:1.5">Cada barra é centrada na resposta neutra: à esquerda as respostas desfavoráveis, à direita as favoráveis. As respostas já estão normalizadas — nas dimensões de sentido negativo (↺) “Nunca” conta como muito favorável.</div>
+        ${_hseLegendaDistHTML()}
+        ${ocultas.length ? `<div class="alert alert-y" style="margin-top:8px">Dimensões sensíveis omitidas (${ocultas.map(d => _hEsc(d.nome)).join(', ')}): exigem ${N_MIN_SENSIVEL} respondentes e o recorte tem ${linhas.length}.</div>` : ''}</div>
+      ${res.dims.filter(d => !(d.sensivel && !_cqSensivelVisivel(linhas.length))).map(d => {
+        const pd = _hseDistDimensao(d);
+        return `<div class="card" style="margin-bottom:12px"><div style="display:grid;grid-template-columns:minmax(160px,1fr) 2fr 140px;gap:10px;align-items:center">
+            <div style="font-size:13px;font-weight:700;color:var(--tx)">${_hEsc(d.nome)}${d.altoPior ? ' <span style="font-size:9px;color:var(--amber)">↺</span>' : ''}${d.sensivel ? ' <span style="font-size:9px;color:#7c3aed">● sensível</span>' : ''}<div style="font-size:10px;font-weight:400;color:var(--tm)">${_hEsc(d.dominio)} · média ${_hseNum(d.score)} · ${d.itens.length} itens</div></div>
+            ${_hseBarraDivergenteHTML(pd, 14)}
+            <div style="font-size:11px;text-align:right"><span style="color:${HSE_COR.VERMELHO};font-weight:700">${_pct0(d.desfavoravel)}</span> desfav. · <span style="color:${HSE_COR.VERDE};font-weight:700">${_pct0(d.favoravel)}</span> fav.</div></div>
+          <div style="margin-top:8px;border-top:1px solid var(--border)">${d.itens.map(it => `<div style="display:grid;grid-template-columns:minmax(160px,1fr) 2fr 140px;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--tx)"><span style="color:var(--tl);font-weight:700">${_hEsc(it.codigo)}</span> ${_hEsc(it.texto)}</div>
+            ${_hseBarraDivergenteHTML(_hseDistNormalizada(it), 9)}
+            <div style="font-size:10px;color:#6b7280;text-align:right">${_pct0(it.desfavoravel)} · ${_pct0(it.favoravel)} · média ${_hseNum(it.media)}</div></div>`).join('')}</div></div>`;
+      }).join('')}`;
+    panel.innerHTML = html;
+    _hseUltimaDist = { titulo: `Distribuição das respostas — COPSOQ (rascunho) · ${ciclo?.nome || ''}`, html, rodape: 'Instrumento em rascunho: não entregar a cliente.' };
+  } catch (e) {
+    console.warn('renderGraficosCOPSOQ:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao carregar a distribuição COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+
+async function renderPlanoAcaoCOPSOQ(panel, empId, cicloId) {
+  panel.innerHTML = _loadingState('Montando plano de ação COPSOQ…');
+  try {
+    const [todas, dims] = await Promise.all([carregarRespostasHSE(empId, cicloId, { metodologia: METODOLOGIA_COPSOQ }), _cqCarregarDimensoes()]);
+    if (!todas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta COPSOQ nesta campanha ainda.</div></div>'; return; }
+    if (todas.length < N_MIN_ANONIMATO) { panel.innerHTML = `<div class="card"><div class="alert alert-y">Resultado oculto: ${_textoOculto(todas.length)}.</div></div>`; return; }
+    const geral = calcDimensoesCOPSOQ(todas, _hseMetaDasLinhas(todas), dims);
+    const setoresOrd = [...new Set(todas.map(r => r.setor))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const recs = _hseSupressaoComplementar(setoresOrd.map(s => { const ls = todas.filter(r => r.setor === s); return { nome: s, n: ls.length, linhas: ls, res: ls.length >= N_MIN_ANONIMATO ? calcDimensoesCOPSOQ(ls, _hseMetaDasLinhas(ls), dims) : null }; }), todas);
+    const pr = _cqPrioridades(geral, todas.length);
+    const ciclo = _ciclos.find(c => c.id === cicloId);
+    const rascunho = await _hseQuestionarioEhRascunho([...new Set(todas.map(l => l.questionario_id))]);
+    const ocultas = recs.filter(r => !r.res).length;
+    const cab = `<div class="card" style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Plano de ação sugerido — COPSOQ (rascunho)</div>
+      <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${todas.length} respondente(s) · ${pr.length} de ${geral.dims.length} dimensões em atenção</div>
+      ${rascunho ? '<div style="margin-top:8px;font-size:11px;color:#b45309"><strong>RASCUNHO:</strong> instrumento de terceiro, sem validação; ações-base em revisão por SST.</div>' : ''}
+      <div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.5">Prioridade: primeiro a zona vermelha, depois a amarela; dentro da zona, o menor índice. Sem ponto de corte validado, a zona é uma referência interna. As ações são pontos de partida — confirme o diagnóstico com os trabalhadores (grupos focais) e defina com a empresa <strong>quem</strong>, <strong>quando</strong> e <strong>quanto</strong>. Indicadores de saúde, estresse e ofensas aparecem como <strong>acompanhamento</strong>, não como nível de risco do PGR.</div></div>`;
+    if (!pr.length) { panel.innerHTML = cab + '<div class="card"><div class="alert alert-g">Nenhuma dimensão em zona vermelha ou amarela. Mantenha as práticas atuais e acompanhe na próxima campanha.</div></div>'; return; }
+    panel.innerHTML = cab + pr.map((d, i) => {
+      const onde = recs.filter(r => r.res).map(r => ({ nome: r.nome, x: r.res.dims.find(z => z.id === d.id) })).filter(o => o.x && o.x.indice != null && o.x.zona !== 'VERDE' && !(d.sensivel && !_cqSensivelVisivel(recs.find(r => r.nome === o.nome).n)))
+        .sort((a, b) => a.x.indice - b.x.indice).map(o => `<strong>${_hEsc(o.nome)}</strong> (${o.x.indice.toFixed(1).replace('.', ',')})`);
+      const cor = _cqCorZona(d.zona);
+      return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${cor}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline"><div style="font-size:13px;font-weight:700;color:var(--tx)">${i + 1}. ${_hEsc(d.nome)}${d.sensivel ? ' <span style="font-size:9px;color:#7c3aed">● sensível · acompanhamento</span>' : ''}</div>
+          <div style="font-size:12px"><strong>${_hseNum(d.score)}</strong> <span style="color:var(--tm)">· índice ${_cqIndiceHTML(d.indice)}</span></div></div>
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px">
+          <tr><td style="padding:5px 8px;width:110px;color:var(--tm);font-weight:700;vertical-align:top">Por quê</td><td style="padding:5px 8px">${_hEsc(COPSOQ_GLOSSARIO[d.id] || '')} ${_pct0(d.desfavoravel)} das respostas foram desfavoráveis.</td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Onde</td><td style="padding:5px 8px">${onde.length ? `Maior atenção em ${onde.join(', ')}.` : 'Sem setor com resultado próprio em atenção nesta dimensão.'}${ocultas ? `<div style="font-size:10px;color:#6b7280;margin-top:3px">${ocultas} setor(es) sem resultado próprio (anonimato); isso não significa ausência de risco.</div>` : ''}</td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">O quê</td><td style="padding:5px 8px"><ul style="margin:0 0 0 16px;line-height:1.6">${(COPSOQ_ACOES[d.id] || []).map(a => `<li>${_hEsc(a)}</li>`).join('')}</ul></td></tr>
+          <tr><td style="padding:5px 8px;color:var(--tm);font-weight:700;vertical-align:top">Quem · Quando · Quanto</td><td style="padding:5px 8px;color:#6b7280">A definir com a empresa depois da confirmação com os trabalhadores.</td></tr></table></div>`;
+    }).join('');
+  } catch (e) {
+    console.warn('renderPlanoAcaoCOPSOQ:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o plano COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
+  }
 }
 // ==== COPSOQ (S10) END ====
 
@@ -16312,6 +16411,12 @@ async function renderGraficos() {
   const gfCiclo = document.getElementById('gf-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-graficos', gfCiclo);
   if (_painelSemMotor(document.getElementById('graficos-panel'), gfCiclo, 'graficos')) return;
+  if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_COPSOQ) {
+    Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
+    chartInstances = {};
+    await renderGraficosCOPSOQ(document.getElementById('graficos-panel'), emp, gfCiclo);
+    return;
+  }
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: distribuição normalizada por item
     Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
     chartInstances = {};
@@ -16614,7 +16719,7 @@ async function exportGrafPDF() {
   if (_bloqueiaSemMotor(gfCiclo, 'graficos')) return;
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: sem Chart.js — imprime o painel
     if (!_hseUltimaDist) { toast('Gere a distribuição primeiro.', 'w'); return; }
-    _hseImprimirPainel(_hseUltimaDist.titulo, _hseUltimaDist.html);
+    _hseImprimirPainel(_hseUltimaDist.titulo, _hseUltimaDist.html, _hseUltimaDist.rodape);
     return;
   }
   const panel = document.getElementById('graficos-panel');
@@ -27022,6 +27127,7 @@ async function renderPlanoAcao() {
   preencherSelectCiclos('plano-ciclo', empId);
   if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
   if (_painelSemMotor(panel, cicloId, 'plano')) return;
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_COPSOQ) { await renderPlanoAcaoCOPSOQ(panel, empId, cicloId); return; }
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderPlanoAcaoHSE(panel, empId, cicloId); return; }
 
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';

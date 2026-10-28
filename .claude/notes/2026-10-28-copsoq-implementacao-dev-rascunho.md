@@ -5,7 +5,7 @@
 
 ## O que existe
 - **Banco (DEV):** `seed_copsoq_dev_rascunho.sql` — instrumento `COPSOQ_II` (sensível), **17 dimensões em 7 domínios**, questionário v1 publicado com os **40 itens do documento de terceiro** (`config.rascunho=true`), 20 itens invertidos, ordem **intercalada** entre fatores (códigos C01..C40 = numeração do documento). `seed_copsoq_simulacao_dev.sql` — campanha "Avaliação COPSOQ — Simulação" (empresa fictícia do HSE), link `simcopsoq001`, **40 respostas pela RPC real** (1.600 itens).
-- **Admin:** bloco `COPSOQ (S10)` — `calcDimensoesCOPSOQ` (motor próprio: média das médias dos itens, inversão por item, índice 0–100 = (média−1)/4, zonas fixas, fav/desf), tela **Resultados** (geral/setor/agrupamento/GHE, supressão complementar, impressão) e **Laudo** (preview = PDF; capa, metodologia, resultados por domínio, **saúde e bem-estar em seção própria**, comparação entre recortes, glossário próprio, limitações, referências). Telas **Gráficos, Plano, Auditoria** e Comparativo: aviso "tela ainda não disponível" (registro `telas: ['resultados','laudo']` + `_metSemMotor(cicloId, tela)`).
+- **Admin:** bloco `COPSOQ (S10)` — `calcDimensoesCOPSOQ` (motor próprio: média das médias dos itens, inversão por item, índice 0–100 = (média−1)/4, zonas fixas, fav/desf), tela **Resultados** (geral/setor/agrupamento/GHE, supressão complementar, impressão) e **Laudo** (preview = PDF; capa, metodologia, resultados por domínio, **saúde e bem-estar em seção própria**, comparação entre recortes, glossário próprio, limitações, referências). **Gráficos** (distribuição normalizada por dimensão/item, dimensões sensíveis omitidas com n < `N_MIN_SENSIVEL`, impressão sem a atribuição do HSE) e **Plano de Ação** (prioridade por zona; Por quê/Onde/O quê/Quem·Quando·Quanto; ações-base `COPSOQ_ACOES` em revisão de SST; saúde/estresse/ofensas como *acompanhamento*, sem nível de risco). Telas **Auditoria** e Comparativo: aviso "tela ainda não disponível" (registro `telas: ['resultados','laudo']` + `_metSemMotor(cicloId, tela)`).
 - **Formulário:** nada novo — o genérico já cobre (escala de 5 rótulos, `config.aviso` sobre saúde).
 - **Testes:** `npm run test:copsoq` (32 casos: inversão, limites das zonas, média das médias, versões por código, sensível, consistência do seed) e harness (`?auto=laudocop`).
 
@@ -19,7 +19,7 @@
 
 ## Não faz / pendente
 - Texto validado, licença, mapa item→dimensão da fonte, RIPD/consentimento específico (ver nota de contato/jurídico).
-- Telas Gráficos/Plano/Auditoria/Comparativo e CSV para o COPSOQ; plano de ação e referências por dimensão (SST).
+- Auditoria, Comparativo e CSV para o COPSOQ; revisão de SST das ações-base. Limite conhecido do Plano: a zona amarela é larga (40–74,99), então com dados reais médios muitas dimensões entram em "atenção" — ordenar/filtrar por índice resolve; sem ponto de corte validado não há critério melhor.
 - Valor de `N_MIN_SENSIVEL` (jurídico). Item binário "de quem" (não há no documento).
 - Nada disto foi para PROD nem `develop`; branch `feat/hse-integracao-develop` (push só desta branch → preview do Cloudflare = DEV).
 
