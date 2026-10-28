@@ -22,6 +22,10 @@
 - **PROD hoje:** 1.855 respostas, todas BS 8800; nenhum questionário/ciclo/item HSE; `anon` sem GRANT nas 6 tabelas novas. O HTML antigo de PROD segue compatível.
 - O preview Cloudflare antigo de `feat/hse-icao35` quebrou contra DEV (lê `hse_*`).
 
+## 2b. Atualização 2026-10-28
+- Branch publicada (preview = DEV). Correções vindas da homologação do usuário: PDF de Resultados sem folha em branco; subtítulo do Laudo por metodologia.
+- **COPSOQ implementado em DEV como rascunho** (Resultados + Laudo; seeds, testes, simulação): `2026-10-28-copsoq-implementacao-dev-rascunho.md`. PROD inalterado.
+
 ## 3. Validação feita (resumo)
 - DEV: contagens idênticas, **média por dimensão idêntica (7/7)**, 13 cenários da RPC sob `anon` (ROLLBACK), harness de navegador com todas as telas HSE e um ciclo "fantasma" de 3ª metodologia recusado em todas.
 - PROD: HSE completo, idempotência, 34 itens, valor fora da escala, item BS em ciclo HSE, congelamento do texto, trava de troca de metodologia, submissão BS real (27 itens) — tudo revertido (PROD voltou a 1.855 respostas, 0 itens/questionários/ciclos HSE).

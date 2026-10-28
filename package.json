@@ -7,7 +7,8 @@
     "build:dev": "APP_ENV=development node build.js",
     "build:prod": "APP_ENV=production node build.js",
     "check:build": "node _dev/check-build.js",
-    "test:hse": "node _dev/test-hse-motor.js"
+    "test:hse": "node _dev/test-hse-motor.js",
+    "test:copsoq": "node _dev/test-copsoq-motor.js"
   },
   "engines": {
     "node": ">=18"

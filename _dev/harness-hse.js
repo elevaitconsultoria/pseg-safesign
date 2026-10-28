@@ -39,6 +39,13 @@ const seedB = fs.readFileSync(path.join(raiz, 'seed_hse_benchmark_2023_setores.s
 const benchSetores = [...seedB.matchAll(/\('HSE_2023', 2023, '([A-Z_]+)', '([A-Z_]+)', ([0-9.]+), (\d+), true/g)]
   .map(m => ({ setor: m[1], dimensao: m[2], media: Number(m[3]), n_amostra: Number(m[4]) }));
 
+// COPSOQ (rascunho): dimensoes e itens lidos do seed versionado (o mesmo aplicado em DEV).
+const seedC = fs.readFileSync(path.join(raiz, 'seed_copsoq_dev_rascunho.sql'), 'utf8');
+const copDims = [...seedC.matchAll(/\('COPSOQ_II', '([A-Z_]+)',\s+'([^']+)',\s+'([^']+)',\s+(\d+), '(alto_pior|alto_melhor)',\s+(true|false)\)/g)]
+  .map(m => ({ codigo: m[1], nome: m[2], dominio: m[3], ordem: Number(m[4]), direcao: m[5], sensivel: m[6] === 'true' }));
+const copItens = [...seedC.matchAll(/\(\s*(\d+),'([A-Z_]+)',\s*(\d+),'([^']+)'\)/g)].map(m => ({ n: Number(m[1]), dim: m[2], fator: Number(m[3]), texto: m[4] }));
+if (copDims.length !== 17 || copItens.length !== 40) { console.error(`seed COPSOQ lido com ${copDims.length} dimensoes e ${copItens.length} itens (esperado 17 e 40)`); process.exit(1); }
+
 const fake = function () {
   const FX = window.__HSE_FIXTURE, FX0 = window.__HSE_FIXTURE_C0;
   const EMP = 'aaaa0000-0000-4000-8000-0000000000a1', CIC = 'aaaa0000-0000-4000-8000-0000000000c1', CIC0 = 'aaaa0000-0000-4000-8000-0000000000c0';
@@ -66,15 +73,29 @@ const fake = function () {
     linhaQA('t1', 'Produção', (m, k) => 1 + (k % 5), { link_token: 'simteste0001' }), linhaQA('t2', 'Produção', () => 4, { link_token: 'simteste0001' }),
     linhaQA('t3', 'Logística', (m, k) => 1 + (k % 3), { link_token: 'simteste0001' }), linhaQA('t4', 'Logística', (m, k) => 2 + (k % 4), { link_token: 'simteste0001' }),
   ];
-  let RESP = [...respostasDe(FX, CIC), ...respostasDe(FX0, CIC0)];
+  // COPSOQ: 40 respondentes (Producao 18, Administrativo 12, Logistica 10), valores deterministicos
+  const CIC2 = 'aaaa0000-0000-4000-8000-0000000000c2', QC = '00000000-0000-0000-0000-0000000000c1';
+  const COP_INV = new Set(window.__COP_DIMS.filter(d => d.direcao === 'alto_pior').map(d => d.codigo));
+  const COP_META = window.__COP_ITENS.map(it => ({ id: 'cop-item-' + it.n, questionario_id: QC, codigo: 'C' + String(it.n).padStart(2, '0'), ordem: it.n, parte: 1,
+    dimensao: it.dim, texto: it.texto, inversa: COP_INV.has(it.dim), escala_labels: 'freq' }));
+  const copResp = n => Array.from({ length: n }, (_, k) => {
+    const i = k + 1, setor = i <= 18 ? 'Produção' : i <= 30 ? 'Administrativo' : 'Logística';
+    const h = {}; COP_META.forEach(m => { const base = setor === 'Produção' ? (m.inversa ? 4 : 3) : setor === 'Administrativo' ? (m.inversa ? 2 : 4) : 3;
+      h[m.id] = Math.max(1, Math.min(5, base + ((i * 31 + m.ordem * 17) % 3) - 1 + (setor === 'Produção' && m.dimensao === 'ESTRESSE' ? 1 : 0))); });
+    return { id: 'cop-' + i, setor, funcao: setor === 'Produção' ? (i % 4 === 0 ? 'Supervisor' : 'Operador') : setor === 'Administrativo' ? 'Analista' : 'Auxiliar', escolaridade: 'Ensino Médio',
+      ciclo_id: CIC2, link_token: 'simcopsoq001', questionario_id: QC, respondido_em: '2026-10-20T12:00:00Z', metodologia: 'COPSOQ_II',
+      resposta_itens_instrumento: Object.entries(h).map(([item_id, valor]) => ({ item_id, valor })) };
+  });
+  let RESP = [...respostasDe(FX, CIC), ...respostasDe(FX0, CIC0), ...copResp(40)];
   const respostasQA = () => QA();
   const tabelas = {
-    questionarios: () => [{ id: Q, versao: 2, config: { rascunho: true } }],
-    instrumento_itens: () => FX.meta,
+    questionarios: () => [{ id: Q, versao: 2, config: { rascunho: true } }, { id: QC, versao: 1, config: { rascunho: true } }],
+    instrumento_dimensoes: f => (f.metodologia === 'COPSOQ_II' ? window.__COP_DIMS : []),
+    instrumento_itens: () => [...FX.meta, ...COP_META],
     instrumento_referencias: () => [...Object.entries(BENCH).map(([dimensao, media]) => ({ dimensao, media, setor: 'GERAL', n_amostra: 39484, vigente: true })), ...window.__HSE_BENCH_SETORES],
     instrumento_riscos_config: () => Object.entries(SEV).map(([dimensao, severidade]) => ({ dimensao, severidade, danos: 'Transtorno mental (teste)', versao: 1, validado: false })),
     links_coleta: () => [{ token: 'simteste0001', is_teste: true }],
-    respostas: f => RESP.filter(r => (!f.ciclo_id || r.ciclo_id === f.ciclo_id) && (!f.__in || f.__in.includes(r.link_token)) && (!f.__not || !f.__not.includes(r.link_token))),
+    respostas: f => RESP.filter(r => (!f.ciclo_id || r.ciclo_id === f.ciclo_id) && (!f.metodologia || r.metodologia === f.metodologia) && (!f.__in || f.__in.includes(r.link_token)) && (!f.__not || !f.__not.includes(r.link_token))),
     empresa_headcount: () => HC,
   };
   function q(t) {
@@ -93,11 +114,12 @@ const fake = function () {
     async instalar() {
       sbAdmin = { from: q, rpc: async () => ({ data: null, error: null }), auth: { getSession: async () => ({ data: { session: null } }) } };
       currentUser = { id: 'harness', role: 'admin', tenant_id: 't' };
-      _hseDisponivel = true; _instrPublicados = new Set(['HSE_ICAO35']); _instrNoBanco = {};
+      _hseDisponivel = true; _instrPublicados = new Set(['HSE_ICAO35', 'COPSOQ_II']); _instrNoBanco = {}; _cqDimsCache = null;
       _estPerfil = { nome_empresa: 'Consultoria Harness', responsavel_padrao: 'Responsável de Teste' };
       _empresas = [{ id: EMP, nome: 'SIMULAÇÃO HSE (fictícia)', setores: ['Administrativo', 'Logística', 'Produção'], hierarquia: [] }];
       _ciclos = [{ id: CIC0, empresa_id: EMP, nome: 'Avaliação HSE — Março 2026', metodologia: 'HSE_ICAO35', ano_referencia: 2026, mes_referencia: 3 },
                  { id: CIC, empresa_id: EMP, nome: 'Avaliação HSE — Simulação', metodologia: 'HSE_ICAO35', ano_referencia: 2026, mes_referencia: 10 },
+                 { id: CIC2, empresa_id: EMP, nome: 'Avaliação COPSOQ — Simulação', metodologia: 'COPSOQ_II', ano_referencia: 2026, mes_referencia: 10 },
                  { id: 'bs-1', empresa_id: EMP, nome: 'Avaliação — Setembro 2026', metodologia: 'BS8800', ano_referencia: 2026, mes_referencia: 9 }];
       // Combos vazios = sem filtro. O boot sem banco cai no modo demo e deixa setores/funções FICTÍCIOS marcados.
       Object.keys(comboState).forEach(k => { if (/setor|funcao|escolaridade|ghe|nivel/.test(k)) comboState[k] = new Set(); });
@@ -114,6 +136,22 @@ const fake = function () {
     comQA() { RESP = [...RESP, ...respostasQA()]; _hseMetaCache = {}; return RESP.length; },
     reduzir(n = 3) { let i = 0; RESP = RESP.filter(r => r.ciclo_id !== CIC || r.link_token !== 'simhse000001' || (i++ < n)); _hseMetaCache = {}; return RESP.filter(r => r.ciclo_id === CIC).length; },
     semLogistica(k = 3) { let i = 0; RESP = RESP.filter(r => r.setor !== 'Logística' || r.ciclo_id !== CIC || (i++ < k)); _hseMetaCache = {}; return RESP.filter(r => r.ciclo_id === CIC).length; },
+    // COPSOQ: campanha de simulacao (ciclo c2)
+    async copResultados(seg = 'consolidado') {
+      this.tela('sc-analise'); window._segMode = seg; const s = document.getElementById('f-segmentacao'); if (s) s.value = seg;
+      const c = document.getElementById('f-ciclo'); if (c) c.value = CIC2; await rodarAnalise(); return document.getElementById('resultado-panel').innerText.slice(0, 600);
+    },
+    async copLaudo(gran = 'consolidado') {
+      this.tela('sc-laudo'); this._gran(gran); const c = document.getElementById('ld-ciclo'); if (c) c.value = CIC2;
+      const r = document.getElementById('ld-responsavel'); if (r) r.value = 'Responsável de Teste'; const reg = document.getElementById('ld-registro'); if (reg) reg.value = 'CRP 00/00000';
+      await renderLaudo(); return document.getElementById('laudo-preview-panel').innerText.slice(0, 600);
+    },
+    async copLaudoHTML(gran = 'consolidado') {
+      this._gran(gran); const sc = document.getElementById('ld-ciclo'); if (sc) sc.value = CIC2;
+      const r = document.getElementById('ld-responsavel'); if (r && !r.value) r.value = 'Responsável de Teste';
+      const reg = document.getElementById('ld-registro'); if (reg && !reg.value) reg.value = 'CRP 00/00000';
+      const c = await _laudoCOPSOQContexto(); return { pf: _laudoCOPSOQPreflight(c), html: _buildLaudoCOPSOQHTML(c, { preview: true }) };
+    },
     tela(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); document.getElementById(id).classList.add('on'); },
     async resultados(seg = 'consolidado') {
       this.tela('sc-analise'); window._segMode = seg; const s = document.getElementById('f-segmentacao'); if (s) s.value = seg;
@@ -157,6 +195,14 @@ const fake = function () {
     };
     window.addEventListener('load', () => setTimeout(() => go().catch(e => { document.body.innerHTML = '<pre>' + (e && e.stack || e) + '</pre>'; }), 300));
   }
+  if (qs.get('auto') === 'laudocop') {
+    const go = async () => {
+      await window.__hse.instalar();
+      const { html } = await window.__hse.copLaudoHTML(qs.get('gran') || 'consolidado');
+      document.open(); document.write(html); document.close();
+    };
+    window.addEventListener('load', () => setTimeout(() => go().catch(e => { document.body.innerHTML = '<pre>' + (e && e.stack || e) + '</pre>'; }), 300));
+  }
   // ?auto=resultados[&seg=segregado]: o documento que o botão "Imprimir" da tela Resultados HSE abre (_hseImprimirPainel)
   if (qs.get('auto') === 'resultados') {
     const go = async () => {
@@ -170,7 +216,9 @@ const fake = function () {
   }
 };
 
-const inj = `<script>window.__HSE_FIXTURE = ${fx};\nwindow.__HSE_FIXTURE_C0 = ${fx0};\nwindow.__HSE_BENCH_SETORES = ${JSON.stringify(benchSetores.map(b => ({ ...b, vigente: true })))};\n(${fake.toString()})();</script>`;
+const inj = `<script>window.__HSE_FIXTURE = ${fx};\nwindow.__HSE_FIXTURE_C0 = ${fx0};\nwindow.__HSE_BENCH_SETORES = ${JSON.stringify(benchSetores.map(b => ({ ...b, vigente: true })))};
+window.__COP_DIMS = ${JSON.stringify(copDims)};
+window.__COP_ITENS = ${JSON.stringify(copItens)};\n(${fake.toString()})();</script>`;
 const i = html.lastIndexOf('</body>');
 if (i < 0) { console.error('</body> não encontrado'); process.exit(1); }
 fs.writeFileSync(saida, html.slice(0, i) + inj + html.slice(i));

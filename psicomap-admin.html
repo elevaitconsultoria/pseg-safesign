@@ -5252,6 +5252,7 @@ const MODULOS_CATALOGO = [
   { id:'graficos',    nome:'Distribuição',            desc:'Tela de distribuição de respostas por questão' },
   { id:'links',       nome:'Campanhas',               desc:'Campanhas e links de coleta do formulário' },
   { id:'hse',         nome:'Metodologia HSE',         desc:'Seletor de metodologia HSE ao criar a campanha (sem linha = ligado)' },
+  { id:'copsoq',      nome:'Metodologia COPSOQ (rascunho)', desc:'Seletor da metodologia COPSOQ ao criar a campanha; só existe onde o questionário estiver publicado (sem linha = ligado)' },
 ];
 
 // Telas cuja visibilidade é governada por um módulo (id de goScreen → módulo).
@@ -5318,6 +5319,15 @@ const METODOLOGIAS = {
     descricao: '35 questões, 7 dimensões (Demandas, Controle, Apoio, Colegas, Relacionamentos, Papel, Mudanças), escala 1–5. Compara com a referência internacional do HSE; o nível para o PGR vem de critério definido por SST.',
     prefixoCiclo: 'Avaliação HSE',
   },
+  // RASCUNHO (2026-10-28): enunciados de terceiro, sem validação nem licença confirmada. Só aparece onde houver
+  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados e Laudo; as demais mostram aviso.
+  COPSOQ_II: {
+    id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo'],
+    rotulo: 'COPSOQ (rascunho)', nome: 'COPSOQ — questionário psicossocial (rascunho)', curto: 'COPSOQ', tag: 'tb',
+    instrumento: 'COPSOQ (40 itens, escala 1–5)',
+    descricao: '40 itens, 17 dimensões em 7 domínios, escala de frequência 1–5. Inclui indicadores de saúde e bem-estar (dado sensível, fora do cálculo de risco do PGR). Sem referência nem ponto de corte validados: compara ciclos e recortes da própria empresa. RASCUNHO — só para simulação.',
+    prefixoCiclo: 'Avaliação COPSOQ',
+  },
 };
 // Metodologia que o banco conhece e o código não: rótulo vem de instrumentos.nome, sem motor.
 function _metDef(id) {
@@ -5341,27 +5351,32 @@ function _metsSelecionaveis() {
 function _multiMet() { return _metsSelecionaveis().length > 1; }
 // Ciclo cuja metodologia o código não sabe analisar. Quem despacha por metodologia chama isto ANTES do
 // `=== METODOLOGIA_HSE`: sem esta guarda, o `else` herdaria o fluxo do BS 8800 e leria respostas que não são dele.
-function _metSemMotor(cicloId) {
+// `tela` (opcional): uma metodologia com `telas` só implementa essas (ex.: COPSOQ = resultados e laudo); nas outras, bloqueia.
+function _metSemMotor(cicloId, tela) {
   if (!cicloId) return false;
   const c = _ciclos.find(x => x.id === cicloId);
-  return !!c && !_metDef(_metDoCiclo(c)).motor;
+  if (!c) return false;
+  const m = _metDef(_metDoCiclo(c));
+  if (!m.motor) return true;
+  return !!(tela && m.telas && !m.telas.includes(tela));
 }
-function _avisoSemMotorHTML(cicloId) {
+function _avisoSemMotorHTML(cicloId, tela) {
   const c = _ciclos.find(x => x.id === cicloId);
   const m = _metDef(_metDoCiclo(c));
-  return `<div class="card"><div class="alert alert-y"><strong>Metodologia em desenvolvimento.</strong> A campanha “${_hEsc(c?.nome || '')}” usa ${_hEsc(m.rotulo)}, que ainda não tem análise nesta versão do sistema. Os dados coletados estão preservados; nada foi calculado nem misturado com outras metodologias.</div></div>`;
+  const motivo = m.motor ? `ainda não tem esta tela (${_hEsc(tela || '')}) nesta versão do sistema` : 'ainda não tem análise nesta versão do sistema';
+  return `<div class="card"><div class="alert alert-y"><strong>${m.motor ? 'Tela ainda não disponível.' : 'Metodologia em desenvolvimento.'}</strong> A campanha “${_hEsc(c?.nome || '')}” usa ${_hEsc(m.rotulo)}, que ${motivo}. Os dados coletados estão preservados; nada foi calculado nem misturado com outras metodologias.</div></div>`;
 }
 // Para telas com painel: troca o conteúdo pelo aviso e devolve true quando bloqueou (o chamador dá return).
-function _painelSemMotor(panel, cicloId) {
-  if (!panel || !_metSemMotor(cicloId)) return false;
-  panel.innerHTML = _avisoSemMotorHTML(cicloId);
+function _painelSemMotor(panel, cicloId, tela) {
+  if (!panel || !_metSemMotor(cicloId, tela)) return false;
+  panel.innerHTML = _avisoSemMotorHTML(cicloId, tela);
   window._analiseData = null;
   if (typeof _sincronizarBotaoPacote === 'function') _sincronizarBotaoPacote();
   return true;
 }
 // Para pontos de despacho SEM painel (exportações): avisa e devolve true quando bloqueou.
-function _bloqueiaSemMotor(cicloId) {
-  if (!_metSemMotor(cicloId)) return false;
+function _bloqueiaSemMotor(cicloId, tela) {
+  if (!_metSemMotor(cicloId, tela)) return false;
   toast('Esta campanha usa uma metodologia que ainda não tem análise nesta versão do sistema.', 'w', 5000);
   return true;
 }
@@ -5753,7 +5768,7 @@ async function _hseCarregarBenchmark(empId) {
 // (GHE, agrupamento) casarem com os combos da tela. Links de teste excluídos, como no BS.
 // opts.auditoria: traz também session_id, dispositivo e consentimento LGPD (só a Auditoria precisa deles; as análises não).
 // opts.teste: devolve as respostas dos links de TESTE (que as análises excluem) — para validar a coleta.
-async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {
+async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {   // opts.metodologia: qualquer instrumento generico (padrao HSE)
   const { data: tk } = await sbAdmin.from('links_coleta').select('token').eq('empresa_id', empresaId).eq('is_teste', true);
   const testTokens = (tk || []).map(x => x.token);
   if (opts.teste && !testTokens.length) return [];
@@ -5761,7 +5776,7 @@ async function carregarRespostasHSE(empresaId, cicloId, opts = {}) {
   const { data, error } = await _fetchAllSupabase(() => {
     let q = sbAdmin.from('respostas')
       .select('id,setor,funcao,escolaridade,ciclo_id,link_token,questionario_id,respondido_em' + colsExtra + ',resposta_itens_instrumento(item_id,valor)')
-      .eq('empresa_id', empresaId).eq('metodologia', METODOLOGIA_HSE).eq('ciclo_id', cicloId)
+      .eq('empresa_id', empresaId).eq('metodologia', opts.metodologia || METODOLOGIA_HSE).eq('ciclo_id', cicloId)
       .order('respondido_em', { ascending: false });
     if (opts.teste) q = q.in('link_token', testTokens);
     else if (testTokens.length) q = q.not('link_token', 'in', `(${testTokens.join(',')})`);
@@ -6345,7 +6360,7 @@ function _hseLegendaDistHTML() {
 
 // ── Impressão de um painel HSE (Resultados, Distribuição, Comparativo) ─────────────────────────────────────
 // O HTML dessas telas usa estilo inline + poucas variáveis de tema, redefinidas aqui; <details> sai aberto.
-function _hseImprimirPainel(titulo, corpoHTML) {
+function _hseImprimirPainel(titulo, corpoHTML, rodape = HSE_OGL) {
   const w = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
   if (!w) { toast('Pop-up bloqueado pelo navegador. Habilite pop-ups para este site e tente novamente.', 'w'); return; }
   const est = _estPerfil?.nome_empresa || '';
@@ -6356,7 +6371,7 @@ body{font-family:Inter,Arial,sans-serif;color:#1a1a1a;margin:24px;font-size:12px
 button.btn{display:none}summary{list-style:none;font-weight:700}@media print{body{margin:10mm}.no-print{display:none!important}}</style></head><body>
 <div class="no-print" style="margin-bottom:12px"><button onclick="window.print()" style="padding:7px 14px">Imprimir / PDF</button></div>
 ${est ? `<div style="font-size:11px;color:#6b7280">${_hEsc(est)}</div>` : ''}<h2 style="margin:4px 0 4px">${_hEsc(titulo)}</h2>
-<div style="font-size:10px;color:#6b7280;margin-bottom:12px">Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${HSE_OGL}</div>
+<div style="font-size:10px;color:#6b7280;margin-bottom:12px">Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${rodape}</div>
 ${corpoHTML}<script>document.querySelectorAll('details').forEach(function(d){d.open=true})<\/script></body></html>`);
   w.document.close();
 }
@@ -7357,6 +7372,308 @@ async function gerarLaudoHSE(win) {
   toast('Laudo HSE aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
 }
 // ==== HSE (S8) END ====
+
+// ==== COPSOQ (S10) BEGIN — instrumento genérico "COPSOQ" (RASCUNHO de terceiro): motor, tela de Resultados e Laudo ====
+// 2026-10-28. Um motor PRÓPRIO (regra do projeto: nada de motor genérico configurável), sobre a família instrumento_*.
+// As dimensões, o domínio, a direção (alto_pior/alto_melhor) e a marca de sensível vêm de instrumento_dimensoes; a inversão
+// por item vem de instrumento_itens.inversa. Valor gravado = BRUTO; aqui se espelha (N+1−v) só no cálculo, então
+// "maior = melhor condição" em TODAS as dimensões (mesma leitura do HSE). Índice de favorabilidade 0–100 = (média−1)/(N−1).
+// Sem referência/ponto de corte validado para o Brasil: a cor é a ZONA FIXA (≥75 verde · 40–74,99 amarela · <40 vermelha),
+// declarada como referência interna; o resultado se compara entre ciclos e recortes da própria empresa, nunca com um benchmark.
+// Saúde/estresse/ofensas são DESFECHO ou dado sensível (LGPD art. 5º II): ficam em seção própria, NÃO alimentam nível de
+// risco do PGR, e só aparecem com N_MIN_SENSIVEL respondentes.
+const METODOLOGIA_COPSOQ = 'COPSOQ_II';
+const N_MIN_SENSIVEL = Math.max(10, N_MIN_ANONIMATO * 2);   // PROVISÓRIO, como N_MIN_ANONIMATO (0 em N_MIN_ANONIMATO desliga as duas regras)
+function _cqSensivelVisivel(n) { return !(N_MIN_ANONIMATO > 0) || n >= N_MIN_SENSIVEL; }
+let _cqDimsCache = null;
+
+async function _cqCarregarDimensoes() {
+  if (_cqDimsCache) return _cqDimsCache;
+  const { data, error } = await sbAdmin.from('instrumento_dimensoes')
+    .select('codigo,nome,dominio,ordem,direcao,sensivel').eq('metodologia', METODOLOGIA_COPSOQ).order('ordem');
+  if (error) throw error;
+  _cqDimsCache = (data || []).map(d => ({ id: d.codigo, nome: d.nome, dominio: d.dominio || 'Outras', ordem: d.ordem, altoPior: d.direcao === 'alto_pior', sensivel: d.sensivel === true }));
+  return _cqDimsCache;
+}
+
+// Mesmo desenho de calcDimensoesHSE (média das médias dos itens, itens casados por código entre versões), com a escala,
+// as dimensões e a direção vindas do banco. `emax` = nº de rótulos da escala (aqui 5).
+function calcDimensoesCOPSOQ(linhas, metaPorId, dims, emax = 5) {
+  const meta = _hseMetaDasLinhas(linhas, metaPorId);
+  const qRecente = (linhas || []).find(l => l.questionario_id)?.questionario_id || null;
+  const porCod = new Map();
+  Object.values(meta).forEach(i => {
+    const g = porCod.get(i.codigo);
+    if (!g) porCod.set(i.codigo, { ...i, ids: [i.id] });
+    else { g.ids.push(i.id); if (i.questionario_id === qRecente) Object.assign(g, { texto: i.texto, ordem: i.ordem }); }
+  });
+  const itens = [...porCod.values()];
+  const favMin = emax - 1, desfMax = emax - 3;
+  const out = dims.map(d => {
+    const its = itens.filter(i => i.dimensao === d.id).sort((a, b) => a.ordem - b.ordem);
+    let favD = 0, desfD = 0, nD = 0;
+    const stats = its.map(it => {
+      const dist = {}; for (let k = 1; k <= emax; k++) dist[k] = 0;
+      let soma = 0, n = 0, fav = 0, desf = 0;
+      linhas.forEach(r => {
+        let v; for (const id of it.ids) { if (r.h[id] != null) { v = r.h[id]; break; } }
+        if (v >= 1 && v <= emax) {
+          const s = it.inversa ? (emax + 1 - v) : v;
+          dist[v]++; soma += s; n++;
+          if (s >= favMin) fav++; else if (s <= desfMax) desf++;
+        }
+      });
+      favD += fav; desfD += desf; nD += n;
+      return { id: it.id, codigo: it.codigo, ordem: it.ordem, texto: it.texto, inversa: it.inversa, n, dist, media: n ? soma / n : null,
+               favoravel: n ? fav / n : null, desfavoravel: n ? desf / n : null };
+    });
+    const ef = stats.filter(s => s.media !== null);
+    const score = ef.length ? ef.reduce((a, s) => a + s.media, 0) / ef.length : null;
+    const indice = score == null ? null : Math.round((score - 1) / (emax - 1) * 10000) / 100;
+    return { id: d.id, nome: d.nome, dominio: d.dominio, sensivel: d.sensivel, altoPior: d.altoPior, nItens: its.length, nItensEf: ef.length,
+             score, indice, zona: _hseZonaFixa(indice), favoravel: nD ? favD / nD : null, desfavoravel: nD ? desfD / nD : null, itens: stats };
+  }).filter(d => d.nItens > 0);
+  return { n: linhas.length, dims: out };
+}
+
+// Agrupa as dimensões por domínio, na ordem do instrumento.
+function _cqPorDominio(res) {
+  const m = new Map();
+  res.dims.forEach(d => { if (!m.has(d.dominio)) m.set(d.dominio, []); m.get(d.dominio).push(d); });
+  return [...m.entries()].map(([nome, dims]) => ({ nome, dims, saude: dims.some(d => d.sensivel) }));
+}
+
+// Glossário PRÓPRIO do PsicoMap ("o que a dimensão mede"), para o laudo e a tela. Redação nossa; a revisar por SST/psicólogo.
+// Substitui o texto de "interpretação das perguntas" do documento de terceiro (decisão do usuário, 2026-10-19).
+const COPSOQ_GLOSSARIO = {
+  DEM_RITMO: 'Velocidade, intensidade e prazos do trabalho. Índice baixo indica ritmo e pressão de tempo altos.',
+  DEM_COGNITIVAS: 'Necessidade de concentração e de tomar decisões difíceis. Índice baixo indica alta exigência mental.',
+  DEM_EMOCIONAIS: 'Envolvimento emocional e contato com situações emocionalmente difíceis. Índice baixo indica alto desgaste emocional potencial.',
+  INFLUENCIA: 'Margem para decidir como e em que ordem o trabalho é feito. Índice alto indica mais autonomia.',
+  DESENVOLVIMENTO: 'Oportunidade de aprender e de desenvolver habilidades no trabalho.',
+  SENTIDO: 'Percepção de que o trabalho é importante e tem propósito.',
+  APOIO_COLEGAS: 'Ajuda e confiança entre colegas.',
+  LIDERANCA: 'Apoio, abertura ao diálogo, organização do trabalho e respeito por parte da chefia imediata.',
+  CLAREZA_PAPEL: 'Clareza sobre o que é esperado e sobre as próprias responsabilidades.',
+  CONFLITO_PAPEL: 'Recebimento de tarefas contraditórias ou consideradas desnecessárias. Índice baixo indica conflito de papéis.',
+  JUSTICA: 'Percepção de justiça nas decisões da empresa e no tratamento recebido.',
+  CONFLITO_VIDA: 'Interferência do trabalho na vida pessoal e cansaço ao final da jornada. Índice baixo indica maior conflito.',
+  INSEGURANCA: 'Medo de perder o emprego e incerteza sobre o futuro no trabalho. Índice baixo indica maior insegurança.',
+  OFENSAS: 'Relato de tratamento injusto ou desrespeito no trabalho. Dado sensível e frágil: só é lido em grupos suficientemente grandes e nunca isoladamente.',
+  ESTRESSE: 'Estresse, sobrecarga, esgotamento emocional e falta de energia. É um desfecho percebido, não um diagnóstico, e não é usado como nível de risco do PGR.',
+  SATISFACAO: 'Satisfação e motivação com o trabalho.',
+  SAUDE_GERAL: 'Saúde física e mental percebida pelo respondente. Dado sensível; não é avaliação clínica.',
+};
+
+const _cqCorZona = z => (HSE_ZONA_FIXA[z] || {}).cor || '#9ca3af';
+const _cqTxtZona = z => (HSE_ZONA_FIXA[z] || {}).txt || '—';
+function _cqIndiceHTML(indice) {
+  if (indice == null) return '—';
+  const z = _hseZonaFixa(indice);
+  return `${indice.toFixed(1).replace('.', ',')} <span style="color:${_cqCorZona(z)};font-weight:700;white-space:nowrap">● ${_cqTxtZona(z)}</span>`;
+}
+function _cqBarra(indice) {
+  const w = indice == null ? 0 : Math.max(0, Math.min(100, indice));
+  return `<div style="position:relative;height:12px;background:#eef0f3;border-radius:6px"><div style="position:absolute;left:0;top:0;bottom:0;width:${w.toFixed(1)}%;background:${_cqCorZona(_hseZonaFixa(indice))};border-radius:6px"></div>
+    <div style="position:absolute;left:40%;top:-2px;bottom:-2px;width:1px;background:#9ca3af"></div><div style="position:absolute;left:75%;top:-2px;bottom:-2px;width:1px;background:#9ca3af"></div></div>`;
+}
+const _cqOcultoSensivel = n => `oculto: dimensão sensível, exige ${N_MIN_SENSIVEL} respondentes (este recorte tem ${n})`;
+
+function _cqItensHTML(d) {
+  return `<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;color:var(--tm)">Ver itens (${d.itens.length})</summary>
+    <div style="font-size:10px;color:#6b7280;margin:6px 0">${d.altoPior ? 'Nesta dimensão a resposta bruta é invertida no cálculo: “Nunca” é a melhor resposta. O índice já está normalizado (maior = melhor).' : 'Maior = melhor. O índice é (média − 1) ÷ 4, de 0 a 100.'}</div>
+    ${d.itens.map(s => {
+      const tot = s.n || 1;
+      const distTxt = Object.keys(s.dist).map(k => `${k}: ${Math.round(s.dist[k] / tot * 100)}%`).join(' · ');
+      return `<div style="padding:5px 0;border-top:1px solid var(--border)"><div style="font-size:11px;color:var(--tx)"><span style="color:var(--tl);font-weight:700">${_hEsc(s.codigo)}</span> ${_hEsc(s.texto)}${s.inversa ? ' <span style="font-size:9px;color:var(--amber)">↺ invertido</span>' : ''}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:2px"><div style="flex:1">${_cqBarra(s.media == null ? null : (s.media - 1) / 4 * 100)}</div><div style="font-size:11px;font-weight:700;width:34px;text-align:right">${s.media != null ? _hseNum(s.media) : '—'}</div></div>
+        <div style="font-size:9px;color:#6b7280;margin-top:2px">respostas brutas — ${distTxt}</div></div>`;
+    }).join('')}</details>`;
+}
+
+function _cqLinhaDimHTML(d, n) {
+  const oculta = d.sensivel && !_cqSensivelVisivel(n);
+  return `<div style="padding:8px 0;border-top:1px solid var(--border)">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:700;color:var(--tx)">${_hEsc(d.nome)}${d.altoPior ? ' <span style="font-size:9px;color:var(--amber)">↺ resposta invertida</span>' : ''}${d.sensivel ? ' <span style="font-size:9px;color:#7c3aed">● sensível</span>' : ''}</div>
+      ${oculta ? '' : `<div style="font-size:12px"><strong>${_hseNum(d.score)}</strong> <span style="color:var(--tm)">· índice ${_cqIndiceHTML(d.indice)}</span></div>`}</div>
+    ${oculta ? `<div style="font-size:11px;color:#6b7280;font-style:italic;margin-top:3px">Resultado ${_cqOcultoSensivel(n)}.</div>`
+      : `<div style="margin:6px 0 2px">${_cqBarra(d.indice)}</div>
+         <div style="font-size:9.5px;color:#6b7280">${d.nItensEf} de ${d.nItens} itens com resposta · ${_pct0(d.desfavoravel)} das respostas desfavoráveis · ${_pct0(d.favoravel)} favoráveis</div>
+         <div style="font-size:10px;color:var(--tm);margin-top:3px">${_hEsc(COPSOQ_GLOSSARIO[d.id] || '')}</div>${_cqItensHTML(d)}`}
+  </div>`;
+}
+
+function _cqBlocoHTML(label, linhas, dims) {
+  const n = linhas.length;
+  const cab = label ? `<div style="font-size:13px;font-weight:700;color:var(--tx);margin:4px 0 8px">${_hEsc(label)} <span style="font-weight:500;color:var(--tm)">· ${n} respondente(s)</span></div>` : '';
+  if (n < N_MIN_ANONIMATO) return `<div class="card" style="margin-bottom:12px">${cab}<div class="alert alert-y">Resultado oculto: ${_textoOculto(n)}. Use uma segmentação mais ampla (Geral ou Agrupamento).</div></div>`;
+  const res = calcDimensoesCOPSOQ(linhas, _hseMetaDasLinhas(linhas), dims);
+  return `<div class="card" style="margin-bottom:12px">${cab}${_cqPorDominio(res).map(g => `
+    <div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px">${_hEsc(g.nome)}</div>
+    ${g.saude ? '<div style="font-size:10px;color:#6b7280;margin:2px 0 2px">Indicadores de saúde e bem-estar: desfecho percebido, <strong>não entram em nível de risco do PGR</strong> e não são avaliação individual.</div>' : ''}
+    ${g.dims.map(d => _cqLinhaDimHTML(d, n)).join('')}</div>`).join('')}</div>`;
+}
+
+async function rodarAnaliseCOPSOQ(panel, empresaId, cicloId) {
+  try {
+    const [todas, dims] = await Promise.all([carregarRespostasHSE(empresaId, cicloId, { metodologia: METODOLOGIA_COPSOQ }), _cqCarregarDimensoes()]);
+    window._analiseData = null;
+    ['btn-export-csv', 'btn-export-pdf', 'btn-export-png'].forEach(id => { const b = document.getElementById(id); if (b) b.style.display = 'none'; });
+    _sincronizarBotaoPacote();
+    const ciclo = _ciclos.find(c => c.id === cicloId);
+    if (!todas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta COPSOQ nesta campanha ainda.</div></div>'; return; }
+    const filtrado = _filtroResultados(_presetConfigAtual('resultados'), todas);
+    if (!filtrado.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>'; return; }
+    const { headcount, taxa } = await _hseTaxaResposta(empresaId, todas.length);
+    const leitura = _hseLeituraTaxa(taxa);
+    const rascunho = await _hseQuestionarioEhRascunho([...new Set(filtrado.map(l => l.questionario_id))]);
+    const grupos = agruparPorGrupos([...new Set(filtrado.map(r => r.setor))], gruposSetor);
+    window._segMode = window._segMode || SEG_PADRAO;
+    _atualizarSegSelect();
+    const segmentos = _segmentosResultado(filtrado, grupos).filter(s => s.linhas.length);
+    const cab = `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div>
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">Resultados COPSOQ</div>
+        <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${filtrado.length} respondente(s) no recorte · ${todas.length} no ciclo${headcount ? ` · quadro: ${headcount}` : ''}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="tag tb">${SEG_LABEL[window._segMode] || 'Geral'}</span>${_tagMet(METODOLOGIA_COPSOQ)}</div></div>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="_cqImprimirResultados()">🖨 Imprimir</button></div>
+      ${rascunho ? '<div style="margin-top:10px;padding:8px 10px;border-radius:8px;border:1px solid #f9a825;background:#fffbeb;font-size:11px;color:var(--tx)"><strong>RASCUNHO.</strong> Enunciados de terceiro, sem validação nem licença confirmada; dimensões e direções propostas pelo PsicoMap. Não entregar a cliente.</div>' : ''}
+      <div style="margin-top:10px;padding:8px 10px;border-radius:8px;border:1px solid ${leitura.cor};font-size:12px;color:var(--tx)"><strong style="color:${leitura.cor}">${leitura.txt}.</strong>${leitura.indicativo ? ' <strong>Dados apenas indicativos.</strong>' : ''}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior = melhor condição em todas as dimensões (as de sentido negativo são invertidas). O <strong>índice de favorabilidade</strong> é (média − 1) ÷ 4, de 0 a 100; as zonas (verde ≥75 · amarela 40–74,99 · vermelha &lt;40) são só uma referência interna — <strong>não há ponto de corte validado</strong>. Compare ciclos e recortes da própria empresa. Dimensões sensíveis só aparecem com ${N_MIN_SENSIVEL} ou mais respondentes.</div></div>`;
+    const recs = _hseSupressaoComplementar(segmentos.map(s => ({ label: s.label, nome: s.label || 'Geral', n: s.linhas.length, linhas: s.linhas, res: s.linhas.length >= N_MIN_ANONIMATO ? true : null })), filtrado);
+    panel.innerHTML = cab + recs.map(r => r._complementar
+      ? `<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:700;margin:4px 0 8px">${_hEsc(r.nome)} <span style="font-weight:500;color:var(--tm)">· ${r.n} respondente(s)</span></div><div class="alert alert-y">Resultado omitido para impedir que um recorte com menos de ${N_MIN_ANONIMATO} respondentes seja deduzido por subtração do total. Use uma segmentação mais ampla.</div></div>`
+      : _cqBlocoHTML(r.label, r.linhas, dims)).join('');
+  } catch (e) {
+    console.warn('rodarAnaliseCOPSOQ:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao carregar a análise COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+function _cqImprimirResultados() {
+  const p = document.getElementById('resultado-panel');
+  if (!p) return;
+  _hseImprimirPainel('Resultados COPSOQ (rascunho)', p.innerHTML, 'Instrumento em rascunho: não entregar a cliente.');
+}
+
+// ── Laudo COPSOQ: UM gerador para preview e PDF (mesma estratégia do HSE) ────────────────────────────────────
+async function _laudoCOPSOQContexto() {
+  const empId = document.getElementById('ld-empresa')?.value || '';
+  const cicloId = document.getElementById('ld-ciclo')?.value || '';
+  const ciclo = _ciclos.find(c => c.id === cicloId);
+  const [todas, dims] = await Promise.all([carregarRespostasHSE(empId, cicloId, { metodologia: METODOLOGIA_COPSOQ }), _cqCarregarDimensoes()]);
+  const linhas = _filtroLaudo(_presetConfigAtual('laudo'), todas);
+  const { headcount, taxa } = await _hseTaxaResposta(empId, todas.length);
+  const granEscolhida = _granularidadeLaudo();
+  const gran = granEscolhida === 'preset' ? 'consolidado' : granEscolhida;
+  const grupos = _gruposPorGranularidade(linhas, gran);
+  const responsavel = (document.getElementById('ld-responsavel')?.value || '').trim() || _estPerfil?.responsavel_padrao || '';
+  const itensMeta = Object.values(_hseMetaDasLinhas(linhas)).sort((a, b) => a.ordem - b.ordem);
+  const rascunho = await _hseQuestionarioEhRascunho([...new Set(linhas.map(l => l.questionario_id))]);
+  const recortes = (gran !== 'consolidado' && grupos.length > 1)
+    ? _hseSupressaoComplementar(grupos.map(g => { const ls = _linhasDoGrupo(g, linhas); return { nome: g.nome, n: ls.length, linhas: ls, res: ls.length >= N_MIN_ANONIMATO ? calcDimensoesCOPSOQ(ls, _hseMetaDasLinhas(ls), dims) : null }; }), linhas)
+    : [];
+  return { empId, cicloId, cicloNome: ciclo?.nome || '', nomeEmp: _empresas.find(e => e.id === empId)?.nome || '', granPresetIgnorado: granEscolhida === 'preset',
+    todas, linhas, dims, headcount, taxa, leitura: _hseLeituraTaxa(taxa), gran, recortes, hoje: _laudoDataEmissao(), responsavel,
+    registro: (document.getElementById('ld-registro')?.value || '').trim(), estPerfil: _estPerfil, itensMeta, rascunho,
+    questionarioId: linhas[0]?.questionario_id || todas[0]?.questionario_id || null };
+}
+function _laudoCOPSOQPreflight(c) {
+  const erros = [], avisos = [];
+  if (!c.cicloId) erros.push('Selecione uma campanha COPSOQ.');
+  else if (!c.todas.length) erros.push('Esta campanha ainda não tem respostas COPSOQ.');
+  else if (!c.linhas.length) erros.push('Nenhuma resposta para os filtros selecionados.');
+  else if (c.linhas.length < N_MIN_ANONIMATO) erros.push(`Há apenas ${c.linhas.length} respondente(s) no recorte; o mínimo para exibir resultado é ${N_MIN_ANONIMATO} (anonimato).`);
+  if (!c.responsavel) erros.push('Informe o responsável técnico (campo "Responsável técnico" ou perfil da EST).');
+  if (!c.registro) avisos.push('Registro profissional do responsável não informado — a assinatura sairá sem ele.');
+  if (!c.estPerfil?.nome_empresa) avisos.push('Nome da consultoria não cadastrado no perfil da EST — o documento usará "PsicoMap".');
+  if (c.leitura.indicativo) avisos.push(`${c.leitura.txt}: o documento sairá com o selo "dados apenas indicativos".`);
+  if (c.linhas.length >= N_MIN_ANONIMATO && c.linhas.length < N_MIN_SENSIVEL) avisos.push(`Com menos de ${N_MIN_SENSIVEL} respondentes as dimensões sensíveis (saúde, estresse, ofensas) sairão omitidas.`);
+  const omit = (c.recortes || []).filter(r => !r.res).length;
+  if (omit) avisos.push(`${omit} recorte(s) terão o resultado omitido (anonimato).`);
+  if (c.granPresetIgnorado) avisos.push('A segmentação por preset de filtro ainda não vale para o laudo COPSOQ: o documento sairá sem segmentação (geral).');
+  if (c.rascunho) avisos.push('Os textos dos itens NÃO foram validados e não há licença confirmada (questionário marcado como rascunho). O documento sairá marcado como RASCUNHO e não pode ser entregue a cliente.');
+  return { erros, avisos };
+}
+
+function _buildLaudoCOPSOQHTML(c, opts = {}) {
+  const e = _hEsc;
+  const estNome = c.estPerfil?.nome_empresa || 'PsicoMap';
+  const geral = calcDimensoesCOPSOQ(c.linhas, _hseMetaDasLinhas(c.linhas), c.dims);
+  const doms = _cqPorDominio(geral);
+  const expo = doms.filter(g => !g.saude), saude = doms.filter(g => g.saude);
+  const nSens = _cqSensivelVisivel(c.linhas.length);
+  const rasc = c.rascunho ? '<div class="box draft"><span class="draft-tag">RASCUNHO.</span> Enunciados de terceiro, sem validação por profissional de SST e sem licença de uso confirmada; dimensões e direções propostas pelo PsicoMap. Documento de teste: não deve ser entregue a cliente.</div>' : '';
+  const ind = c.leitura.indicativo ? `<div class="box warn"><strong>Dados apenas indicativos.</strong> ${e(c.leitura.txt)}. Interprete com cautela e confirme com os trabalhadores.</div>` : '';
+  const footer = (t = '') => `<div class="page-footer"><div class="l1"><span>${e(estNome)}${c.rascunho ? ' · <span class="draft-tag">RASCUNHO</span>' : ''}</span><span>${e(t)}</span></div></div>`;
+  const linha = d => `<tr class="nobreak"><td><strong>${e(d.nome)}</strong>${d.altoPior ? '<div style="font-size:9px;color:#b45309">resposta invertida no cálculo</div>' : ''}</td>
+    <td style="width:30%"><div class="bar"><i style="width:${Math.max(0, Math.min(100, d.indice ?? 0)).toFixed(1)}%;background:${_cqCorZona(d.zona)}"></i></div></td>
+    <td class="num"><strong>${d.score != null ? _hseNum(d.score) : '—'}</strong></td><td class="num">${_cqIndiceHTML(d.indice)}</td><td class="num" style="font-size:9.5px">${_pct0(d.desfavoravel)} · ${_pct0(d.favoravel)}</td></tr>`;
+  const tabela = g => `<div class="nobreak"><div class="lbl-sub">${e(g.nome)}</div><table class="tbl-compacta cqt"><thead><tr><th>Dimensão</th><th>Índice (0–100)</th><th class="num">Média</th><th class="num">Índice · zona</th><th class="num">Desf. · Fav.</th></tr></thead><tbody>${g.dims.map(linha).join('')}</tbody></table></div>`;
+  const tabelaSaude = g => nSens ? tabela(g) : `<div class="lbl-sub nobreak">${e(g.nome)}</div><p class="dim-nota">Resultados omitidos: o recorte tem ${c.linhas.length} respondente(s) e as dimensões sensíveis exigem ${N_MIN_SENSIVEL}.</p>${(() => { const ns = g.dims.filter(d => !d.sensivel); return ns.length ? tabela({ nome: g.nome + ' (dimensões não sensíveis)', dims: ns }) : ''; })()}`;
+  const recTab = c.recortes.length > 1 ? `<div class="sec-title">Comparação entre recortes</div><p class="dim-nota">Índice de favorabilidade (0–100) por dimensão em cada recorte. Dimensões sensíveis só aparecem em recortes com ${N_MIN_SENSIVEL} ou mais respondentes.</p>
+    <div style="overflow-x:auto"><table class="tbl-compacta"><thead><tr><th>Dimensão</th>${c.recortes.map(r => `<th class="num">${e(r.nome)}<div style="font-weight:400">n=${r.res ? r.n : '&lt; ' + N_MIN_ANONIMATO}</div></th>`).join('')}</tr></thead><tbody>
+    ${geral.dims.map(d => `<tr class="nobreak"><td>${e(d.nome)}</td>${c.recortes.map(r => { const x = r.res && r.res.dims.find(z => z.id === d.id); return !x ? '<td class="num" style="color:#9ca3af">omitido</td>' : (d.sensivel && !_cqSensivelVisivel(r.n)) ? '<td class="num" style="color:#9ca3af">omitido (sensível)</td>' : `<td class="num">${_cqIndiceHTML(x.indice)}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+  const gloss = `<table class="tbl-compacta"><thead><tr><th>Dimensão</th><th>O que mede</th></tr></thead><tbody>${geral.dims.filter(d => nSens || !d.sensivel).map(d => `<tr class="nobreak"><td><strong>${e(d.nome)}</strong></td><td>${e(COPSOQ_GLOSSARIO[d.id] || '')}</td></tr>`).join('')}</tbody></table>`;
+  const css = HSE_LAUDO_CSS + '@page{size:A4 portrait;margin:0 0 12mm 0}.cqt{table-layout:fixed}.cqt th:nth-child(1){width:34%}.cqt th:nth-child(2){width:26%}.cqt th:nth-child(3){width:10%}.cqt th:nth-child(4){width:17%}.cqt th:nth-child(5){width:13%}.cqt td{padding:2px 6px;font-size:10px;line-height:1.3}.cqt th{padding:3px 6px}.cqt+*{margin:0}.cqt .bar{height:8px}.cqt{margin-bottom:4px}';
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Laudo COPSOQ — ${e(c.nomeEmp)}</title><style>${css}</style></head><body>
+${opts.preview ? '' : `<div class="toolbar no-print"><div class="tt">Laudo COPSOQ${c.rascunho ? ' — RASCUNHO' : ''}</div><button class="btn-print" onclick="window.print()">Imprimir / salvar PDF</button></div>`}
+<div class="page"><div class="cover-header"><div class="cover-logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div><div class="cover-company"><div class="cover-company-name">${e(estNome)}</div><div class="cover-company-sub">Avaliação de riscos psicossociais</div></div></div>
+  <div class="cover-body"><div class="cover-tag">NR-01 · NR-17 · Questionário psicossocial (COPSOQ)</div><div class="cover-title">Laudo de avaliação psicossocial</div><div class="cover-subtitle">${e(c.nomeEmp)}</div>
+  <div class="cover-meta"><div><div class="cover-meta-label">Campanha</div><div class="cover-meta-value">${e(c.cicloNome)}</div></div><div><div class="cover-meta-label">Emissão</div><div class="cover-meta-value">${e(c.hoje)}</div></div>
+  <div><div class="cover-meta-label">Respondentes</div><div class="cover-meta-value">${c.linhas.length}${c.linhas.length !== c.todas.length ? ` de ${c.todas.length}` : ''}</div></div><div><div class="cover-meta-label">Taxa de resposta</div><div class="cover-meta-value">${c.taxa != null ? Math.round(c.taxa * 100) + '%' : 'não calculável'}</div></div></div>
+  ${rasc}${ind}</div>${footer('Capa')}</div>
+<div class="page"><div class="sec-title">1. Metodologia</div>
+  <p>Foi aplicado, de forma anônima e on-line, um questionário psicossocial de ${c.itensMeta.length} itens, em escala de frequência de 1 a 5 (Nunca, Raramente, Às vezes, Frequentemente, Sempre), referente aos últimos seis meses de trabalho. Os itens estão agrupados em dimensões e domínios.</p>
+  <p>Itens que descrevem situações negativas têm a resposta <strong>invertida no cálculo</strong>, de modo que, em todas as dimensões, <strong>maior = melhor condição</strong>. O resultado de cada dimensão é a média de seus itens, apresentada como <strong>índice de favorabilidade</strong> de 0 a 100, calculado como (média − 1) ÷ 4. As zonas (verde ≥ 75 · amarela de 40 a 74,99 · vermelha &lt; 40) são uma referência interna do PsicoMap: <strong>não há ponto de corte validado</strong> para esta versão, e o resultado deve ser lido por comparação entre campanhas e recortes da própria empresa.</p>
+  <div class="box"><strong>Anonimato.</strong> Nenhum resultado é exibido para menos de ${N_MIN_ANONIMATO} respondentes e, para as dimensões sensíveis (saúde, estresse e comportamentos ofensivos), para menos de ${N_MIN_SENSIVEL}. Recortes pequenos podem ser omitidos também para que não sejam deduzidos por subtração do total.</div>
+  <div class="box draft"><strong>Exposição × desfecho.</strong> As dimensões de saúde e bem-estar são <strong>desfechos percebidos</strong>, não avaliação clínica, e <strong>não alimentam nível de risco do PGR</strong>. Este documento não atribui nível P×S.</div>
+  ${footer('Metodologia')}</div>
+<div class="page"><div class="sec-title">2. Resultados por domínio</div>
+  <p>Índice de favorabilidade por dimensão (0–100; maior = melhor). Dimensões de exposição:</p>${expo.map(tabela).join('')}
+  ${recTab}${footer('Resultados')}</div>
+<div class="page"><div class="sec-title">3. Indicadores de saúde e bem-estar</div>
+  <div class="box draft"><strong>Desfecho, não exposição.</strong> Estes indicadores descrevem a percepção de saúde, estresse e tratamento no trabalho. Não são avaliação clínica, <strong>não alimentam nível de risco do PGR</strong> e, por serem dados sensíveis, só são exibidos para grupos com ${N_MIN_SENSIVEL} ou mais respondentes.</div>
+  ${saude.map(tabelaSaude).join('')}${footer('Saúde e bem-estar')}</div>
+<div class="page"><div class="sec-title">4. Glossário das dimensões</div><p class="dim-nota">Redação do PsicoMap, em revisão por profissional de SST.</p>${gloss}
+  ${footer('Glossário')}</div>
+<div class="page"><div class="sec-title">5. Limitações e responsabilidades</div><ul class="lista"><li>Resultado de percepção coletiva, não diagnóstico individual nem avaliação clínica.</li><li>Sem valores de referência nem pontos de corte validados para esta versão do instrumento.</li><li>Os resultados de recortes pequenos são omitidos para preservar o anonimato; a omissão não deve ser lida como ausência de risco.</li><li>As medidas de prevenção devem ser definidas pela empresa, com a participação dos trabalhadores, e integradas ao PGR.</li></ul>
+  <div class="sec-title sub">Referências</div><p class="ref">Kristensen TS, Hannerz H, Høgh A, Borg V. The Copenhagen Psychosocial Questionnaire — a tool for the assessment and improvement of the psychosocial work environment. Scand J Work Environ Health, 2005.</p><p class="ref">Pejtersen JH, et al. The second version of the Copenhagen Psychosocial Questionnaire. Scand J Public Health, 2010.</p><p class="ref">Gonçalves MB, et al. Versão brasileira do COPSOQ II (curta). Rev Saúde Pública, 55:69, 2021.</p>
+  <div class="box draft">${c.rascunho ? 'Esta versão usa enunciados e agrupamentos de terceiro e <strong>não é</strong> a versão validada citada acima; as referências indicam a origem do instrumento, não a fidelidade desta adaptação.' : 'Conforme a versão aplicada.'}</div>
+  <div class="assinatura"><div class="linha"></div><div class="nome">${e(c.responsavel)}</div>${c.registro ? `<div class="reg">${e(c.registro)}</div>` : ''}</div>${footer('Limitações')}</div>
+</body></html>`;
+}
+async function _laudoCOPSOQPreview(panel, seq) {
+  try {
+    panel.innerHTML = _loadingState('Montando laudo COPSOQ…');
+    const c = await _laudoCOPSOQContexto();
+    if (seq !== _laudoRenderSeq) return;
+    const pf = _laudoCOPSOQPreflight(c);
+    const lista = (arr, cor, tit) => arr.length ? `<div style="margin-bottom:8px;padding:8px 10px;border-radius:8px;border:1px solid ${cor};font-size:12px"><strong style="color:${cor}">${tit}</strong><ul style="margin:4px 0 0 18px">${arr.map(x => `<li>${_hEsc(x)}</li>`).join('')}</ul></div>` : '';
+    const html = lista(pf.erros, HSE_COR.VERMELHO, 'Pendências que impedem gerar o laudo') + lista(pf.avisos, HSE_COR.AMBAR, 'Avisos');
+    if (pf.erros.length) { panel.innerHTML = html; return; }
+    panel.innerHTML = html + '<iframe id="laudo-copsoq-iframe" title="Pré-visualização do laudo COPSOQ" style="width:100%;height:78vh;border:1px solid #e5e7eb;border-radius:8px;background:#f1f3f4"></iframe>';
+    document.getElementById('laudo-copsoq-iframe').srcdoc = _buildLaudoCOPSOQHTML(c, { preview: true });
+  } catch (e) {
+    console.warn('_laudoCOPSOQPreview:', e);
+    panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o laudo COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
+  }
+}
+async function gerarLaudoCOPSOQ(win) {
+  const c = await _laudoCOPSOQContexto();
+  const pf = _laudoCOPSOQPreflight(c);
+  if (pf.erros.length) { win.close(); toast('Não foi possível gerar: ' + pf.erros[0], 'w', 6000); return; }
+  if (pf.avisos.length && !confirm('Confira antes de gerar:\n\n• ' + pf.avisos.join('\n• ') + '\n\nGerar o laudo assim mesmo?')) { win.close(); return; }
+  _laudoUltimoN = c.linhas.length;
+  _laudoEdicaoSnap = { blocos: {}, acoes: { listas: {} } };
+  _laudoMetSnap = { metodologia: METODOLOGIA_COPSOQ, questionario_id: c.questionarioId, rascunho: c.rascunho,
+    itens: c.itensMeta.map(i => ({ codigo: i.codigo, texto: i.texto })), taxa_resposta: c.taxa, headcount: c.headcount, indicativo: c.leitura.indicativo,
+    recortes_omitidos: (c.recortes || []).filter(r => !r.res).map(r => ({ nome: r.nome, motivo: r._complementar ? 'complementar' : 'n_minimo' })) };
+  win.document.open(); win.document.write(_buildLaudoCOPSOQHTML(c, { preview: false })); win.document.close();
+  toast('Laudo COPSOQ aberto — use Ctrl+P / ⌘P para salvar como PDF.', 'g');
+}
+// ==== COPSOQ (S10) END ====
+
 
 const BLOCOS_INFO = {
   A:{nome:'Bloco A — Demandas de Trabalho',    cor:'#4b5ea8',bg:'#f0f2fb'},
@@ -9387,7 +9704,8 @@ async function rodarAnalise() {
   const emp      = document.getElementById('f-empresa').value;
   const cicloSel = document.getElementById('f-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-analise', cicloSel);
-  if (_painelSemMotor(panel, cicloSel)) return;
+  if (_painelSemMotor(panel, cicloSel, 'resultados')) return;
+  if (cicloSel && _metodologiaDoCiclo(cicloSel) === METODOLOGIA_COPSOQ) { await rodarAnaliseCOPSOQ(panel, emp, cicloSel); return; }
   if (cicloSel && _metodologiaDoCiclo(cicloSel) === METODOLOGIA_HSE) {   // perfil HSE: motor e tela próprios
     await rodarAnaliseHSE(panel, emp, cicloSel);
     return;
@@ -15993,7 +16311,7 @@ async function renderGraficos() {
   const emp      = document.getElementById('gf-empresa').value;
   const gfCiclo = document.getElementById('gf-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-graficos', gfCiclo);
-  if (_painelSemMotor(document.getElementById('graficos-panel'), gfCiclo)) return;
+  if (_painelSemMotor(document.getElementById('graficos-panel'), gfCiclo, 'graficos')) return;
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: distribuição normalizada por item
     Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
     chartInstances = {};
@@ -16293,7 +16611,7 @@ function exportChartPNG(codigo) {
 // ── EXPORT PDF / PRINT ──
 async function exportGrafPDF() {
   const gfCiclo = document.getElementById('gf-ciclo')?.value || '';
-  if (_bloqueiaSemMotor(gfCiclo)) return;
+  if (_bloqueiaSemMotor(gfCiclo, 'graficos')) return;
   if (gfCiclo && _metodologiaDoCiclo(gfCiclo) === METODOLOGIA_HSE) {   // HSE: sem Chart.js — imprime o painel
     if (!_hseUltimaDist) { toast('Gere a distribuição primeiro.', 'w'); return; }
     _hseImprimirPainel(_hseUltimaDist.titulo, _hseUltimaDist.html);
@@ -17707,7 +18025,8 @@ async function renderLaudo() {
   const emp     = document.getElementById('ld-empresa').value;
   const cicloId = document.getElementById('ld-ciclo')?.value || '';
   _sincronizarFiltrosMetodologia('sc-laudo', cicloId);
-  if (_painelSemMotor(document.getElementById('laudo-preview-panel'), cicloId)) return;
+  if (_painelSemMotor(document.getElementById('laudo-preview-panel'), cicloId, 'laudo')) return;
+  if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_COPSOQ) { await _laudoCOPSOQPreview(document.getElementById('laudo-preview-panel'), seq); return; }
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) {   // laudo HSE: gerador único (preview = PDF)
     await _laudoHSEPreview(document.getElementById('laudo-preview-panel'), seq);
     return;
@@ -21416,7 +21735,8 @@ async function gerarLaudoPDF(opts = {}) {
     const nomeEmp   = _empresas.find(e=>e.id===empId)?.nome || 'Todos os clientes';
     const cicloId   = document.getElementById('ld-ciclo')?.value || '';
     _laudoMetSnap = null;   // BS 8800: snapshot_json segue exatamente como era
-    if (_bloqueiaSemMotor(cicloId)) { try { win.close(); } catch (e) {} return; }
+    if (_bloqueiaSemMotor(cicloId, 'laudo')) { try { win.close(); } catch (e) {} return; }
+    if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_COPSOQ) { await gerarLaudoCOPSOQ(win); return; }
     if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await gerarLaudoHSE(win); return; }
     const setores   = [...(comboState['combo-ld-setor'] || new Set())];
     const niveisLd  = [...(comboState['combo-ld-nivel'] || new Set())];
@@ -24449,7 +24769,7 @@ async function renderTelaAuditoria() {
   const panel = document.getElementById('audit-table-panel');
   if (!panel) return;
   _sincronizarFiltrosMetodologia('sc-auditoria', cicloId);
-  if (_painelSemMotor(panel, cicloId)) return;
+  if (_painelSemMotor(panel, cicloId, 'auditoria')) return;
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderAuditoriaHSE(panel, empId, cicloId); return; }
   window._auditHSE = null;
   // Voltando de um ciclo HSE: o combo de setor estava com os valores generalizados — recarrega os reais (BS) e re-renderiza.
@@ -26701,7 +27021,7 @@ async function renderPlanoAcao() {
   // Atualizar select de ciclos
   preencherSelectCiclos('plano-ciclo', empId);
   if (cicloId) document.getElementById('plano-ciclo').value = cicloId;
-  if (_painelSemMotor(panel, cicloId)) return;
+  if (_painelSemMotor(panel, cicloId, 'plano')) return;
   if (cicloId && _metodologiaDoCiclo(cicloId) === METODOLOGIA_HSE) { await renderPlanoAcaoHSE(panel, empId, cicloId); return; }
 
   panel.innerHTML = '<div class="card"><div style="display:flex;align-items:center;gap:8px;color:var(--tm);font-size:13px"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></div>Calculando riscos…</div></div>';
