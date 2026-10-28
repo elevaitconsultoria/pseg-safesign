@@ -14,7 +14,8 @@ const ctx = vm.createContext({ console, N_MIN_ANONIMATO: 5, Math, Object, Number
   HSE_ZONA_FIXA: { VERMELHA: { txt: 'Vermelha', cor: '#d32f2f' }, AMARELA: { txt: 'Amarela', cor: '#f9a825' }, VERDE: { txt: 'Verde', cor: '#2e7d32' } } });
 vm.runInContext(funcDe('_hseMetaDasLinhas') + funcDe('_hseZonaFixa').replace(/^function/, 'function') + `
 function _hseIndice(media) { return media == null ? null : Math.round((media - 1) / (HSE_ESCALA_MAX - 1) * 10000) / 100; }`, ctx);
-vm.runInContext(html.slice(ini, fim) + '\n;globalThis.__m = { calcDimensoesCOPSOQ, _cqPorDominio, _cqSensivelVisivel, N_MIN_SENSIVEL, COPSOQ_GLOSSARIO };', ctx);
+vm.runInContext(html.match(/const HSE_CSV_GENERICO = \{[^}]*\};/)[0] + funcDe('_hseGeneralizarCSV'), ctx);
+vm.runInContext(html.slice(ini, fim) + '\n;globalThis.__m = { calcDimensoesCOPSOQ, _cqPorDominio, _cqSensivelVisivel, N_MIN_SENSIVEL, COPSOQ_GLOSSARIO, _cqMontarCSV };', ctx);
 const M = ctx.__m;
 
 let ok = 0, falhas = 0;
@@ -77,6 +78,22 @@ t('17 dimensões no seed', codigos.length, 17); t('glossário completo', codigos
 const altoPior = [...seed.matchAll(/\('COPSOQ_II', '([A-Z_]+)',[^\n]*'alto_pior'/g)].map(m => m[1]).sort();
 const inv = (seed.match(/dim IN \(([^)]*)\)/) || [])[1]; const invList = [...(inv || '').matchAll(/'([A-Z_]+)'/g)].map(m => m[1]).sort();
 t('inversa ⇔ alto_pior', invList, altoPior);
+
+// 14) CSV: sem colunas de itens sensíveis, valor bruto, sem identificação fora do tripé, grupos pequenos generalizados
+{
+  const mk = (h, setor, funcao, esc = 'Médio') => ({ questionario_id: 'q1', setor, funcao, escolaridade: esc, sessao: 'x', data: '2026-01-01', h });
+  const ls = [];
+  for (let i = 0; i < 6; i++) ls.push(mk({ a1: 5, a2: 1, b1: 4, s1: 3 }, 'Produção', 'Operador'));
+  ls.push(mk({ a1: 2, a2: 2, b1: 2, s1: 5 }, 'RH', 'Analista'));   // grupo de 1 → generalizado
+  const csv = M._cqMontarCSV(ls, meta, new Set(['S']), 'Emp', 'Ciclo');
+  t('colunas', csv.cab, ['empresa', 'ciclo', 'setor', 'funcao', 'escolaridade', 'C01', 'C02', 'C03']);   // C04 (dimensão S, sensível) fora
+  t('omitidas', csv.omitidas, ['C04']);
+  t('valor bruto (sem inverter)', csv.linhas[0].slice(5), [5, 1, 4]);
+  t('sem sessão/data/dispositivo', csv.cab.filter(c => /sess|data|disp/i.test(c)), []);
+  t('grupo pequeno generalizado', csv.linhas.filter(l => l[2] === 'RH').length, 0);
+  t('nGen conta a linha generalizada', csv.nGen >= 1, true);
+  t('mesma quantidade de linhas', csv.linhas.length, 7);
+}
 
 console.log(`\nMotor COPSOQ — ${ok} ok, ${falhas} falha(s)`);
 process.exit(falhas ? 1 : 0);

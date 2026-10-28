@@ -5320,7 +5320,7 @@ const METODOLOGIAS = {
     prefixoCiclo: 'Avaliação HSE',
   },
   // RASCUNHO (2026-10-28): enunciados de terceiro, sem validação nem licença confirmada. Só aparece onde houver
-  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados, Gráficos (distribuição), Plano, Auditoria, Comparativo e Laudo (CSV não).
+  // questionário COPSOQ_II PUBLICADO (hoje: DEV). Telas implementadas: Resultados, Gráficos (distribuição), Plano, Auditoria, Comparativo, Laudo e CSV.
   COPSOQ_II: {
     id: 'COPSOQ_II', ordem: 3, motor: true, modulo: 'copsoq', telas: ['resultados', 'laudo', 'graficos', 'plano', 'auditoria'],
     rotulo: 'COPSOQ (rascunho)', nome: 'COPSOQ — questionário psicossocial (rascunho)', curto: 'COPSOQ', tag: 'tb',
@@ -7528,6 +7528,7 @@ async function rodarAnaliseCOPSOQ(panel, empresaId, cicloId) {
     if (!todas.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta COPSOQ nesta campanha ainda.</div></div>'; return; }
     const filtrado = _filtroResultados(_presetConfigAtual('resultados'), todas);
     if (!filtrado.length) { panel.innerHTML = '<div class="card"><div class="alert alert-y">Nenhuma resposta para os filtros selecionados.</div></div>'; return; }
+    _cqUltimo = { empresaId, cicloId, cicloNome: _ciclos.find(c => c.id === cicloId)?.nome || '', linhas: filtrado };
     const { headcount, taxa } = await _hseTaxaResposta(empresaId, todas.length);
     const leitura = _hseLeituraTaxa(taxa);
     const rascunho = await _hseQuestionarioEhRascunho([...new Set(filtrado.map(l => l.questionario_id))]);
@@ -7540,7 +7541,8 @@ async function rodarAnaliseCOPSOQ(panel, empresaId, cicloId) {
         <div style="font-size:14px;font-weight:700;color:var(--tx)">Resultados COPSOQ</div>
         <div style="font-size:12px;color:var(--tm)">${_hEsc(ciclo?.nome || '')} · ${filtrado.length} respondente(s) no recorte · ${todas.length} no ciclo${headcount ? ` · quadro: ${headcount}` : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="tag tb">${SEG_LABEL[window._segMode] || 'Geral'}</span>${_tagMet(METODOLOGIA_COPSOQ)}</div></div>
-        <button class="btn btn-ghost" style="font-size:11px" onclick="_cqImprimirResultados()">🖨 Imprimir</button></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost" style="font-size:11px" onclick="_cqImprimirResultados()">🖨 Imprimir</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="exportarCSVCOPSOQ()">⬇ Exportar CSV (COPSOQ)</button></div></div>
       ${rascunho ? '<div style="margin-top:10px;padding:8px 10px;border-radius:8px;border:1px solid #f9a825;background:#fffbeb;font-size:11px;color:var(--tx)"><strong>RASCUNHO.</strong> Enunciados de terceiro, sem validação nem licença confirmada; dimensões e direções propostas pelo PsicoMap. Não entregar a cliente.</div>' : ''}
       <div style="margin-top:10px;padding:8px 10px;border-radius:8px;border:1px solid ${leitura.cor};font-size:12px;color:var(--tx)"><strong style="color:${leitura.cor}">${leitura.txt}.</strong>${leitura.indicativo ? ' <strong>Dados apenas indicativos.</strong>' : ''}</div>
       <div style="font-size:10px;color:#6b7280;margin-top:8px;line-height:1.5">Maior = melhor condição em todas as dimensões (as de sentido negativo são invertidas). O <strong>índice de favorabilidade</strong> é (média − 1) ÷ 4, de 0 a 100; as zonas (verde ≥75 · amarela 40–74,99 · vermelha &lt;40) são só uma referência interna — <strong>não há ponto de corte validado</strong>. Compare ciclos e recortes da própria empresa. Dimensões sensíveis só aparecem com ${N_MIN_SENSIVEL} ou mais respondentes.</div></div>`;
@@ -7856,6 +7858,40 @@ async function renderComparativoCOPSOQ(panel, empId, setor) {
     console.warn('renderComparativoCOPSOQ:', e);
     panel.innerHTML = `<div class="card"><div class="alert alert-y">Erro ao montar o comparativo COPSOQ: ${_hEsc(e?.message || e)}</div></div>`;
   }
+}
+
+// ── CSV de Resultados do COPSOQ ────────────────────────────────────────────────────────────────────────────
+// Item a item, SEM identificação (nem sessão, dispositivo ou data), mesmo mínimo de respondentes da tela e setor/função/escolaridade
+// generalizados em grupos pequenos (_hseGeneralizarCSV). DIFERENÇA do HSE: as colunas dos itens de dimensões SENSÍVEIS (saúde,
+// estresse, ofensas) NÃO saem por respondente — o resultado dessas dimensões só existe agregado, na tela e no laudo, com n mínimo reforçado.
+// Valor BRUTO (o que a pessoa marcou); a inversão é só do cálculo. Uma coluna por CÓDIGO (estável entre versões). Puro e testado.
+function _cqMontarCSV(linhas, metaPorId, sensiveis, empNome, cicloNome) {
+  const itens = Object.values(_hseMetaDasLinhas(linhas, metaPorId)).sort((a, b) => a.ordem - b.ordem);
+  const porCod = new Map();
+  itens.forEach(i => { if (!porCod.has(i.codigo)) porCod.set(i.codigo, { ids: [], dim: i.dimensao }); porCod.get(i.codigo).ids.push(i.id); });
+  const omitidas = [...porCod.entries()].filter(([, v]) => sensiveis.has(v.dim)).map(([k]) => k);
+  const cods = [...porCod.keys()].filter(c => !omitidas.includes(c));
+  const val = (r, c) => { for (const id of porCod.get(c).ids) if (r.h[id] != null) return r.h[id]; return ''; };
+  const gen = _hseGeneralizarCSV(linhas);
+  return { cab: ['empresa', 'ciclo', 'setor', 'funcao', 'escolaridade', ...cods],
+    linhas: gen.map(o => [empNome || '', cicloNome || '', o.setor, o.funcao, o.escolaridade, ...cods.map(c => val(o.r, c))]),
+    omitidas, nGen: gen.filter(o => o.setor !== o.r.setor || o.funcao !== o.r.funcao || o.escolaridade !== o.r.escolaridade).length };
+}
+let _cqUltimo = null;   // recorte renderizado por rodarAnaliseCOPSOQ (o CSV exporta exatamente ele)
+async function exportarCSVCOPSOQ() {
+  if (!_cqUltimo || !_cqUltimo.linhas.length) { toast('Rode a análise primeiro.', 'w'); return; }
+  if (_cqUltimo.linhas.length < N_MIN_ANONIMATO) { toast(`Exportação bloqueada: menos de ${N_MIN_ANONIMATO} respondentes no recorte.`, 'w'); return; }
+  const dims = await _cqCarregarDimensoes();
+  const emp = _empresas.find(e => e.id === _cqUltimo.empresaId);
+  const r = _cqMontarCSV(_cqUltimo.linhas, _hseMetaCache, new Set(dims.filter(d => d.sensivel).map(d => d.id)), emp?.nome, _cqUltimo.cicloNome);
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  if (r.nGen) toast(`${r.nGen} linha(s) com setor/função/escolaridade generalizados para preservar o anonimato (grupos com menos de ${N_MIN_ANONIMATO}).`, '', 6000);
+  if (r.omitidas.length) toast(`${r.omitidas.length} itens de dimensões sensíveis (saúde, estresse, ofensas) não saem por respondente.`, '', 6000);
+  const csv = '﻿' + [r.cab, ...r.linhas].map(l => l.map(q).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `copsoq_${(emp?.nome || 'empresa').replace(/[^\w]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
 }
 // ==== COPSOQ (S10) END ====
 
