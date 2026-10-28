@@ -430,7 +430,7 @@ uma ideia de "combo" de metodologias, em
 > **Estado (2026-10-19, fim do dia):** v1 completa **em DEV**; **no PROD só o BANCO** (4 migrations aplicadas e validadas — ver abaixo); **HTML novo e questionário HSE NÃO estão em PROD; nada em `develop`**.
 > Trabalho na branch **`feat/hse-integracao-develop`** (worktree `../pseg-safesign-hse-integ`, só local, = `feat/hse-icao35-sim` + merge da `develop` + generalização).
 > `feat/hse-icao35` (GitHub) e `feat/hse-icao35-sim` ficaram como histórico; o preview antigo de `feat/hse-icao35` **não funciona mais contra DEV** (lê `hse_*`, removidas).
-> **Retomar por `.claude/notes/2026-10-19-sessao-encerramento-hse-generalizacao-prod.md`** (o que foi feito, o que depende de pessoas, próximos passos) e `.claude/notes/2026-10-13-hse-handoff-proxima-sessao.md`.
+> **Retomar por `.claude/notes/2026-10-28-sessao-encerramento-copsoq-dev.md`** (e, para o que está em PROD, `2026-10-19-sessao-encerramento-hse-generalizacao-prod.md`)** (o que foi feito, o que depende de pessoas, próximos passos) e `.claude/notes/2026-10-13-hse-handoff-proxima-sessao.md`.
 > - **PROD (2026-10-19):** aplicadas, nesta ordem, `migration_metodologias_instrumentos.sql`, `migration_instrumento_riscos_config.sql`, `migration_obter_instrumento_link.sql` e
 >   `migration_salvar_resposta_instrumento_prod.sql`. Estado: 1.855 respostas, todas `BS8800`; nenhum questionário/ciclo/item HSE; `anon` sem GRANT nas 6 tabelas novas; overload de 9 args sem EXECUTE.
 >   Validado por transação com ROLLBACK (HSE completo, idempotência, 34 itens, valor 6, item BS em ciclo HSE, congelamento, trava de metodologia, submissão BS real). **O HSE só aparece em PROD quando um

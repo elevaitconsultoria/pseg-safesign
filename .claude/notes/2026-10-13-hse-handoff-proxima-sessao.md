@@ -1,5 +1,7 @@
 # HSE/ICAO-35 — HANDOFF para a próxima sessão (2026-10-13)
 
+> **ENCERRAMENTO MAIS RECENTE: 2026-10-28 — leia `2026-10-28-sessao-encerramento-copsoq-dev.md` primeiro.**
+>
 > **ENCERRAMENTO 2026-10-19 — leia `2026-10-19-sessao-encerramento-hse-generalizacao-prod.md` primeiro** (banco genérico JÁ está em PROD; HTML e questionário HSE não).
 >
 > **Atualização 2026-10-19 (noite) — ONDE RETOMAR:** o trabalho está agora na branch **`feat/hse-integracao-develop`** (worktree **`../pseg-safesign-hse-integ`**,
