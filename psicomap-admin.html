@@ -1068,23 +1068,213 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
 .ham-drop-item svg{flex-shrink:0;color:var(--tm)}
 .ham-drop-sep{height:1px;background:var(--border);margin:4px 0}
 
-/* ── PASSO A PASSO POR CLIENTE (cartão da tela Clientes + #modal-trilha) ── */
-.trl-chip{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:inherit;text-align:left}
-.trl-chip:hover{border-color:var(--gm)}
-.trl-chip:not(.trl-chip-card){width:auto;margin:0;flex-shrink:0}
-.trl-anel{--p:0;position:relative;width:30px;height:30px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(var(--g) calc(var(--p)*1%),var(--border) 0)}
-.trl-anel::before{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--w)}
-.trl-anel span{position:relative;font-size:8.5px;font-weight:800;color:var(--tx)}
-.trl-prox{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trl-ver{font-size:10px;color:var(--tl);flex-shrink:0}
-.trl-passo{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bs)}
-.trl-passo:last-of-type{border-bottom:none}
-.trl-ic{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--bg);color:var(--tl);border:1px solid var(--border)}
-.trl-feito .trl-ic{background:var(--gl);color:var(--g);border-color:var(--gm)}
-.trl-bloqueado .trl-ic{background:var(--amberbg);border-color:transparent}
-.trl-rot{font-size:12px;font-weight:700;color:var(--tx)}
-.trl-mot{font-size:11px;color:var(--tm);line-height:1.5;margin-top:2px}
-.trl-feito .trl-rot{color:var(--tm)}
+/* ── LOGO OFICIAL (topbar): quadrado verde com "E", "Eleva" em branco e "IT" em verde.
+   O branco só existe sobre fundo escuro, então a marca vive numa pastilha escura. ── */
+.brand-lockup{display:flex;align-items:center;gap:var(--sp-3);background:var(--nav-bg);padding:5px 12px 5px 5px;border-radius:9px;flex-shrink:0}
+.brand-lockup .brand-icon{width:26px;height:26px;border-radius:7px;background:var(--gm);color:#06210f;font-size:14px;font-weight:var(--fw-xb);letter-spacing:-.04em}
+.brand-lockup .brand-name{color:var(--n0);font-size:var(--fs-lg);letter-spacing:-.01em;text-transform:none}
+.brand-lockup .brand-name b{color:var(--gm);font-weight:var(--fw-b)}
+
+/* ── JORNADA DO CLIENTE (Dashboard, Clientes e tela do cliente) ──
+   Prefixo jn- para não colidir com .card/.btn. Cores e escala vêm dos tokens do app. */
+.jn-card{background:var(--w);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh-sm);margin-bottom:var(--sp-5)}
+.jn-lbl{font-size:var(--fs-base);font-weight:var(--fw-sb);color:var(--tm)}
+.jn-av{width:34px;height:34px;border-radius:9px;background:var(--nav-bg);color:var(--gm);font-weight:var(--fw-b);font-size:var(--fs-lg);display:grid;place-items:center;flex:none;overflow:hidden}
+.jn-av img{width:100%;height:100%;object-fit:contain;background:var(--w);padding:3px}
+
+/* panorama da carteira */
+.jn-pulse{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);overflow:hidden}
+.jn-pulse-l{padding:24px 28px 22px}
+.jn-pulse-r{padding:24px 28px 22px;border-left:1px solid var(--border);background:var(--gp);display:flex;flex-direction:column;gap:22px}
+.jn-big{display:flex;align-items:baseline;gap:14px;margin:6px 0 4px;flex-wrap:wrap}
+.jn-big-n{font-size:60px;font-weight:var(--fw-b);letter-spacing:-.05em;line-height:.95;font-variant-numeric:tabular-nums}
+.jn-big-n sup{font-size:.42em;letter-spacing:-.02em;margin-left:2px;vertical-align:.55em}
+.jn-big-t{font-size:var(--fs-md);color:var(--tm);max-width:240px;line-height:1.45}
+.jn-big-t b{color:var(--tx);font-weight:var(--fw-sb)}
+.jn-meter{position:relative;margin-top:30px;height:10px}
+.jn-meter-track{position:absolute;inset:0;border-radius:var(--rpill);background:var(--n100);overflow:hidden}
+.jn-meter-fill{height:100%;width:0;border-radius:var(--rpill);transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.jn-meter-goal{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--tx);border-radius:2px}
+.jn-meter-goal span{position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:var(--fs-sm);font-weight:var(--fw-sb);white-space:nowrap}
+.jn-ledger{display:grid;grid-template-columns:repeat(3,1fr)}
+.jn-ledger>div{padding:0 16px;border-left:1px solid var(--border)}
+.jn-ledger>div:first-child{padding-left:0;border-left:0}
+.jn-ledger .v{font-size:var(--fs-4xl);font-weight:var(--fw-b);letter-spacing:-.04em;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.jn-ledger .s{font-size:var(--fs-base);color:var(--tl)}
+.jn-funnel-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+.jn-funnel-h small{font-size:var(--fs-base);color:var(--tl)}
+.jn-funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.jn-fn{padding:10px 12px 9px;border-radius:var(--rl);border:1px solid var(--border);background:var(--w);text-align:left;cursor:pointer;font-family:inherit;color:inherit;transition:border-color .12s,box-shadow .12s}
+.jn-fn:hover{border-color:var(--n300)}
+.jn-fn[aria-pressed="true"]{border-color:var(--tx);box-shadow:0 0 0 1px var(--tx)}
+.jn-fn:disabled{cursor:default;opacity:.7}
+.jn-fn:disabled:hover{border-color:var(--border)}
+.jn-fn .c{font-size:var(--fs-3xl);font-weight:var(--fw-b);letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.jn-fn .c.z{color:var(--n200)}
+.jn-fn .l{font-size:var(--fs-base);font-weight:var(--fw-sb);margin-top:6px}
+.jn-fn .d{font-size:var(--fs-sm);color:var(--tl);line-height:1.3;margin-top:1px}
+
+/* fila de ações e diretório de clientes */
+.jn-list-h{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 20px 12px}
+.jn-list-h h2{font-size:var(--fs-xl);font-weight:var(--fw-b);letter-spacing:-.01em;margin-right:auto}
+.jn-list-h h2 small{display:block;font-size:var(--fs-base);font-weight:var(--fw-m);color:var(--tm);margin-top:2px;letter-spacing:0}
+.jn-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.jn-chips{display:flex;gap:6px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.jn-chip{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:var(--rpill);border:1px solid var(--border);font-size:var(--fs-base);font-weight:var(--fw-m);color:var(--tm);background:var(--w);cursor:pointer;font-family:inherit}
+.jn-chip:hover{border-color:var(--n300);color:var(--tx)}
+.jn-chip[aria-pressed="true"]{background:var(--tx);border-color:var(--tx);color:var(--n0)}
+.jn-chip em{font-style:normal;font-size:var(--fs-sm);opacity:.65}
+.jn-cols,.jn-row{display:grid;align-items:center;column-gap:18px}
+.jn-fila .jn-cols,.jn-fila .jn-row{grid-template-columns:minmax(200px,2fr) minmax(160px,1.2fr) minmax(200px,1.7fr) 210px}
+.jn-dir .jn-cols,.jn-dir .jn-row{grid-template-columns:minmax(220px,2.1fr) minmax(160px,1.2fr) minmax(150px,1.2fr) minmax(120px,.9fr) 36px}
+.jn-cols{padding:9px 20px 9px 24px;font-size:var(--fs-sm);font-weight:var(--fw-sb);color:var(--tl);border-top:1px solid var(--bs);border-bottom:1px solid var(--bs)}
+.jn-row{position:relative;padding:14px 20px 14px 24px;border-bottom:1px solid var(--bs);cursor:pointer;transition:background .12s}
+.jn-row:last-child{border-bottom:0}
+.jn-row:hover{background:var(--gp)}
+.jn-row::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--rail,var(--n200))}
+.jn-cli-n{font-size:var(--fs-lg);font-weight:var(--fw-sb);letter-spacing:-.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-wrap:anywhere}
+.jn-cli-m{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;font-size:var(--fs-base);color:var(--tm)}
+.jn-cli-wrap{display:flex;align-items:center;gap:12px;min-width:0}
+.jn-cli-wrap>div:last-child{min-width:0}
+.jn-et-n{font-size:var(--fs-md);font-weight:var(--fw-sb)}
+.jn-et-s{font-size:var(--fs-base);color:var(--tm);margin-top:2px}
+.jn-rail5{display:flex;gap:3px;margin-top:7px}
+.jn-rail5 i{width:100%;max-width:28px;height:5px;border-radius:3px;background:var(--n100)}
+.jn-rail5 i.feito{background:var(--g)}
+.jn-rail5 i.atual{background:var(--cc,var(--amber))}
+.jn-rail5 i.livre{background:var(--w);box-shadow:inset 0 0 0 1.5px #86d9a4}
+.jn-why{font-size:var(--fs-base);color:var(--tm);line-height:1.5}
+.jn-why b{font-weight:var(--fw-sb);color:var(--tx)}
+.jn-urg{color:var(--red);font-weight:var(--fw-sb)}
+.jn-act{display:flex;justify-content:flex-end}
+.jn-act .btn{white-space:normal;text-align:center;line-height:1.25;width:100%}
+.jn-mini{position:relative;height:6px;border-radius:var(--rpill);background:var(--n100)}
+.jn-mini>i{position:absolute;left:0;top:0;bottom:0;border-radius:var(--rpill);background:var(--c,var(--red))}
+.jn-mini>u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--tx);opacity:.55;border-radius:2px;text-decoration:none}
+.jn-ad-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+.jn-ad-top b{font-size:var(--fs-xl);font-weight:var(--fw-b);letter-spacing:-.02em}
+.jn-ad-top span{font-size:var(--fs-base);color:var(--tm)}
+.jn-nobase{font-size:var(--fs-base);color:var(--tl)}
+.jn-nums{font-size:var(--fs-base);color:var(--tm);line-height:1.55}
+.jn-nums b{color:var(--tx);font-weight:var(--fw-sb)}
+.jn-ok-block{padding:13px 20px 13px 24px;border-top:1px solid var(--border);background:var(--gp);font-size:var(--fs-md);color:var(--tm);display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-radius:0 0 var(--rl) var(--rl)}
+.jn-ok-block b{color:var(--tx)}
+.jn-ok-block button{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.jn-empty{padding:40px 20px;text-align:center;color:var(--tm);font-size:var(--fs-md)}
+.jn-empty b{display:block;color:var(--tx);font-size:var(--fs-lg);margin-bottom:4px}
+.jn-addrow{display:flex;align-items:center;gap:10px;width:100%;padding:14px 24px;color:var(--g);font-weight:var(--fw-sb);font-size:var(--fs-md);border:0;border-top:1px dashed var(--n200);background:none;border-radius:0 0 var(--rl) var(--rl);cursor:pointer;font-family:inherit}
+.jn-addrow:hover{background:var(--gl)}
+.jn-foot{margin:-4px 0 var(--sp-5);font-size:var(--fs-base);color:var(--tl);line-height:1.5}
+.jn-row:focus-visible,.jn-fn:focus-visible,.jn-chip:focus-visible{outline:2px solid var(--gm);outline-offset:2px}
+
+/* menu ⋯ */
+.jn-kebab{position:relative}
+.jn-kebab>button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--tm);background:none;border:0;cursor:pointer}
+.jn-kebab>button:hover{background:var(--bs);color:var(--tx)}
+.jn-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);width:220px;background:var(--w);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh-dd);padding:5px;z-index:var(--z-dropdown)}
+.jn-menu.open{display:block}
+.jn-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:7px;font-size:var(--fs-md);background:none;border:0;cursor:pointer;color:var(--tx);font-family:inherit;text-align:left}
+.jn-menu button:hover{background:var(--bg)}
+.jn-menu button.danger{color:var(--red)}
+.jn-menu hr{border:0;border-top:1px solid var(--bs);margin:4px 2px}
+
+/* tela do cliente */
+.jn-back{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-md);color:var(--tm);margin-bottom:14px;background:none;border:0;cursor:pointer;font-family:inherit;padding:0}
+.jn-back:hover{color:var(--tx)}
+.jn-hub-h{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.jn-hub-h .jn-av{width:50px;height:50px;border-radius:12px;font-size:var(--fs-3xl)}
+.jn-hub-h h1{font-size:var(--fs-3xl);font-weight:var(--fw-b);letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere}
+.jn-hub-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:var(--fs-md);color:var(--tm)}
+.jn-grow{flex:1;min-width:240px}
+.jn-next{background:var(--nav-bg);color:var(--n0);border-radius:var(--rl);padding:20px 24px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;position:relative;overflow:hidden}
+.jn-next::after{content:"";position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.22),transparent 65%);pointer-events:none}
+.jn-next .k{font-size:var(--fs-base);color:rgba(255,255,255,.55);font-weight:var(--fw-sb)}
+.jn-next h2{font-size:var(--fs-2xl);font-weight:var(--fw-b);letter-spacing:-.02em;margin-top:3px}
+.jn-next p{color:rgba(255,255,255,.68);margin-top:4px;font-size:var(--fs-md);max-width:560px;line-height:1.5}
+.jn-next .jn-grow{position:relative;z-index:1}
+.jn-next .btn{position:relative;z-index:1;background:var(--gm);border-color:var(--gm);color:#06210f;font-weight:var(--fw-b);padding:11px 20px;font-size:var(--fs-md)}
+.jn-next .btn:hover{background:#4ade80;border-color:#4ade80}
+.jn-stepper{display:grid;grid-template-columns:repeat(var(--n,5),1fr);margin:18px 0 20px}
+.jn-stp{position:relative;padding:0 8px 0 0;text-align:left;background:none;border:0;cursor:pointer;font-family:inherit;color:inherit}
+.jn-stp .node{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:var(--fs-base);font-weight:var(--fw-b);background:var(--w);border:2px solid var(--n200);color:var(--tl);position:relative;z-index:1}
+.jn-stp::before{content:"";position:absolute;left:26px;right:0;top:12px;height:2px;background:var(--n100)}
+.jn-stp:last-child::before{display:none}
+.jn-stp.feito .node{background:var(--g);border-color:var(--g);color:var(--n0)}
+.jn-stp.feito::before{background:var(--g)}
+.jn-stp.atual .node{border-color:var(--cc,var(--amber));color:var(--cc,var(--amber));box-shadow:0 0 0 4px color-mix(in srgb,var(--cc,var(--amber)) 18%,transparent)}
+.jn-stp.livre .node{border-color:#86d9a4;color:var(--g)}
+.jn-stp .nm{font-size:var(--fs-md);font-weight:var(--fw-sb);margin-top:8px}
+.jn-stp .sb{font-size:var(--fs-base);color:var(--tm);margin-top:1px;line-height:1.35;padding-right:10px}
+.jn-stp.bloq .nm,.jn-stp.incerta .nm{color:var(--tl)}
+.jn-stp:hover .nm{text-decoration:underline}
+.jn-stp:focus-visible{outline:2px solid var(--gm);outline-offset:3px;border-radius:6px}
+.jn-hub-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.jn-stage{overflow:hidden;scroll-margin-top:72px}
+.jn-stage.atual{border-color:var(--cc,var(--amber));box-shadow:0 0 0 1px var(--cc,var(--amber))}
+.jn-stage-h{display:flex;align-items:center;gap:12px;padding:15px 20px}
+.jn-stage-h .node{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:var(--fs-base);font-weight:var(--fw-b);border:2px solid var(--n200);color:var(--tl);flex:none}
+.jn-stage.feito .node{background:var(--g);border-color:var(--g);color:var(--n0)}
+.jn-stage.atual .node{border-color:var(--cc,var(--amber));color:var(--cc,var(--amber))}
+.jn-stage.livre .node{border-color:#86d9a4;color:var(--g)}
+.jn-stage-h>div:nth-child(2){min-width:0}
+.jn-stage-h h3{font-size:var(--fs-xl);font-weight:var(--fw-b);letter-spacing:-.01em}
+.jn-stage-h p{font-size:var(--fs-md);color:var(--tm)}
+.jn-pill{margin-left:auto;font-size:var(--fs-base);font-weight:var(--fw-sb);padding:3px 10px;border-radius:var(--rpill);background:var(--bg);color:var(--tm);white-space:nowrap}
+.jn-pill.feito,.jn-pill.livre{background:var(--gl);color:var(--g)}
+.jn-pill.atual{background:var(--amberbg);color:var(--amber)}
+.jn-stage.bloq,.jn-stage.incerta{background:var(--bg)}
+.jn-stage.bloq .jn-stage-h h3,.jn-stage.incerta .jn-stage-h h3{color:var(--tm)}
+.jn-items{border-top:1px solid var(--bs)}
+.jn-it{display:flex;align-items:center;gap:14px;padding:11px 20px;border-bottom:1px solid var(--bs)}
+.jn-it:last-child{border-bottom:0}
+.jn-it .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:var(--fs-sm);font-weight:var(--fw-b);border:1.5px solid var(--n200);color:transparent}
+.jn-it .ic.ok{background:var(--g);border-color:var(--g);color:var(--n0)}
+.jn-it .ic.pend{border-color:var(--amber)}
+.jn-it .tt{flex:1;min-width:0}
+.jn-it .tt b{font-weight:var(--fw-sb);font-size:var(--fs-md);display:block}
+.jn-it .tt span{font-size:var(--fs-base);color:var(--tm)}
+.jn-it .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.jn-lock{padding:0 20px 15px 60px;font-size:var(--fs-base);color:var(--tl);margin-top:-4px}
+.jn-tools{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 20px 18px;border-top:1px solid var(--bs)}
+.jn-tool{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--border);border-radius:var(--rl);font-size:var(--fs-md);font-weight:var(--fw-sb);background:var(--w);cursor:pointer;font-family:inherit;color:inherit;text-align:left}
+.jn-tool:hover{border-color:var(--n300);background:var(--bg)}
+.jn-tool small{display:block;font-size:var(--fs-base);font-weight:var(--fw-n);color:var(--tm)}
+.jn-sum{position:sticky;top:72px;padding:20px;margin-bottom:0}
+.jn-sum .r2{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--bs);font-size:var(--fs-md);color:var(--tm)}
+.jn-sum .r2 b{color:var(--tx);font-size:var(--fs-lg)}
+.jn-sum .big2{font-size:42px;font-weight:var(--fw-b);letter-spacing:-.05em;line-height:1}
+
+@media (max-width:1240px){
+  .jn-fila .jn-cols,.jn-dir .jn-cols{display:none}
+  .jn-fila .jn-row,.jn-dir .jn-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);row-gap:12px}
+  .jn-fila .jn-row>:first-child,.jn-dir .jn-row>:first-child{grid-column:1/-1}
+  .jn-fila .jn-row .jn-act{grid-column:1/-1;justify-content:flex-start}
+  .jn-fila .jn-act .btn{width:auto}
+  .jn-dir .jn-row .jn-kebab{position:absolute;right:12px;top:12px}
+  .jn-hub-grid{grid-template-columns:minmax(0,1fr)}
+  .jn-sum{position:static}
+}
+@media (max-width:1040px){
+  .jn-pulse{grid-template-columns:1fr}
+  .jn-pulse-r{border-left:0;border-top:1px solid var(--border)}
+}
+@media (max-width:860px){
+  .jn-big-n{font-size:52px}
+  .jn-pulse-l,.jn-pulse-r{padding:20px}
+  .jn-funnel{grid-template-columns:repeat(2,1fr)}
+  .jn-stepper{grid-template-columns:minmax(0,1fr);gap:6px}
+  .jn-hub-h{gap:12px}
+  .jn-next{padding:18px}
+  .jn-next .btn{width:100%}
+  .jn-stp::before{display:none}
+  .jn-stp{display:flex;gap:10px;align-items:center}
+  .jn-stp .nm{margin:0}
+  .jn-stp .sb{display:none}
+  .jn-tools{grid-template-columns:1fr}
+  .jn-it{flex-wrap:wrap}
+  .jn-ledger .v{font-size:var(--fs-3xl)}
+}
+@media (prefers-reduced-motion:reduce){.jn-meter-fill{transition:none}}
 /* ── GUIA "COMO USAR" (tela #sc-ajuda) ──
    Reaproveita os blocos .tut-* do tutorial antigo; o modal em si foi removido. */
 .tut-step{display:flex;gap:18px;padding:20px 0;border-bottom:1px solid var(--bs)}
@@ -1505,8 +1695,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
     <button class="menu-btn" id="menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="brand-icon" style="background:#1d4ed8;font-size:14px;font-weight:800;color:white;font-family:var(--font-ui);letter-spacing:-.5px">E</div>
-    <span class="brand-name">Eleva IT</span>
+    <div class="brand-lockup" aria-label="Eleva IT"><div class="brand-icon" aria-hidden="true">E</div><span class="brand-name">Eleva <b>IT</b></span></div>
     <span class="brand-module">Módulo Psicossocial — NR-17 / NR-01</span>
     <div class="empresa-chip chip-empty" id="empresa-chip" onclick="toggleChipDropdown(event)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
@@ -2023,7 +2212,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Dashboard</div>
-      <div class="page-sub">Visão geral dos seus clientes, coleta ativa e respostas recebidas</div>
+      <div class="page-sub">Panorama da carteira e o que cada cliente precisa que você faça agora</div>
     </div>
     <div class="page-hdr-actions" id="dash-hdr-actions">
       <button class="btn btn-g" onclick="irParaNovaEmpresa()">
@@ -2032,46 +2221,9 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </button>
     </div>
   </div>
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="dash-kpi" title="Percentual de respostas recebidas sobre o quadro de funcionários dos clientes com GHE importado.">
-      <div class="dash-kpi-val is-mute" id="dash-n-adesao">—</div>
-      <div class="dash-kpi-lbl">Adesão da carteira</div>
-    </div>
-    <div class="dash-kpi">
-      <div class="dash-kpi-val" id="dash-n-empresas">—</div>
-      <div class="dash-kpi-lbl">Empresas ativas</div>
-    </div>
-    <div class="dash-kpi">
-      <div class="dash-kpi-val is-ok" id="dash-n-respostas">—</div>
-      <div class="dash-kpi-lbl">Respostas totais</div>
-    </div>
-    <div class="dash-kpi">
-      <div class="dash-kpi-val is-info" id="dash-n-links">—</div>
-      <div class="dash-kpi-lbl">Links ativos</div>
-    </div>
-    <div class="dash-kpi is-clickable" id="dash-kpi-alerta" onclick="_dashSetFiltro('parada')"
-      role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_dashSetFiltro('parada')}"
-      title="Clientes com coleta parada — clique para filtrar a lista abaixo">
-      <div class="dash-kpi-val is-warn" id="dash-n-sem-resp">—</div>
-      <div class="dash-kpi-lbl">Precisam de cobrança</div>
-    </div>
-  </div>
-
-  <!-- Banner boas-vindas / contexto -->
-  <div id="dash-welcome"></div>
-
-  <!-- Lista empresas -->
-  <div id="dash-controls" class="list-controls" style="display:none">
-    <div class="list-controls-label">Selecione o cliente</div>
-    <input type="text" id="dash-busca" class="input-busca" placeholder="Buscar por nome ou CNPJ…"
-      aria-label="Buscar cliente por nome ou CNPJ" oninput="_dashSetBusca(this.value)">
-    <div class="seg-toggle-group" title="Urgência: quem tem mais pessoas faltando e mais tempo sem resposta primeiro">
-      <button id="dashord-urgencia" onclick="_dashSetOrdem('urgencia')">Urgência</button>
-      <button id="dashord-nome" onclick="_dashSetOrdem('nome')">Nome</button>
-    </div>
-  </div>
-  <div id="dash-empresas-list">
+  <!-- Panorama da carteira e fila de ações: montados por renderDashboard() -->
+  <div id="dash-painel"></div>
+  <div id="dash-fila">
     <!-- Skeleton: sem isso a tela ficava vazia durante o boot, indistinguível de
          "nenhum cliente cadastrado" ou de uma falha de rede. -->
     <div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div>
@@ -4463,7 +4615,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
   <div class="page-header">
     <div class="page-hdr-left">
       <div class="page-title">Clientes</div>
-      <div class="page-sub">Empresas atendidas pela sua consultoria — GHEs e ciclos de avaliação</div>
+      <div class="page-sub">Cadastro e configuração das empresas atendidas. Para saber quem precisa de ação hoje, use o Dashboard</div>
     </div>
     <div class="page-hdr-actions">
       <button class="btn btn-g" onclick="abrirModalClientePerfil(null)">
@@ -4472,24 +4624,26 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
       </button>
     </div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+  <div class="jn-toolbar">
     <input type="text" id="emp-busca" class="input-busca" placeholder="Buscar por nome, CNPJ, razão social ou código…"
       aria-label="Buscar cliente" oninput="renderTelaEmpresas()">
-    <select id="emp-ordem" onchange="_setEmpOrdem(this.value)" class="filter-select" style="width:auto;min-width:150px">
+    <select id="emp-ordem" onchange="_setEmpOrdem(this.value)" class="filter-select" style="width:auto;min-width:150px" aria-label="Ordenar clientes">
       <option value="nome">Ordenar: Nome</option>
       <option value="adesao">Ordenar: Adesão</option>
       <option value="respostas">Ordenar: Respostas</option>
     </select>
-    <div class="seg-toggle-group">
-      <button id="empbtn-grade" onclick="_setEmpresasViewMode('grade')">Grade</button>
-      <button id="empbtn-lista" onclick="_setEmpresasViewMode('lista')">Lista</button>
-    </div>
   </div>
-  <div id="emp-filtros" style="display:flex;gap:6px;align-items:center;margin-bottom:14px;flex-wrap:wrap"></div>
-  <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
-  <div id="empresas-lista" style="display:none;flex-direction:column;gap:8px"></div>
+  <div id="emp-filtros" class="jn-chips"></div>
+  <div id="emp-diretorio"></div>
 </div>
 
+<!-- ══════════════════════════════════════
+     TELA DO CLIENTE — jornada de um cliente (aberta a partir do Dashboard ou de Clientes)
+     Não tem item próprio no menu: o realce fica em "Clientes".
+══════════════════════════════════════ -->
+<div class="screen" id="sc-cliente">
+  <div id="cliente-corpo"></div>
+</div>
 
 <!-- ══ MODAL QR CODE ══ -->
 <div class="modal-bg" id="modal-qr">
@@ -4508,18 +4662,6 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--tx);min-height:
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Baixar
       </a>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL PASSO A PASSO DO CLIENTE ══ -->
-<div class="modal-bg" id="modal-trilha" onclick="if(event.target===this)fecharTrilha()">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-title" id="trilha-titulo">Passo a passo</div>
-    <div class="modal-sub">Onde este cliente parou no fluxo, do cadastro ao laudo.</div>
-    <div id="trilha-corpo"></div>
-    <div class="modal-footer" style="margin-top:14px">
-      <button class="btn btn-ghost" onclick="fecharTrilha()">Fechar</button>
     </div>
   </div>
 </div>
@@ -6296,7 +6438,6 @@ const FUNCOES_DEMO  = ['Operador','Técnico','Assistente','Supervisor','Engenhei
 let _empresas = []; // [{id, nome, cnpj, razao_social, endereco, contato, logo_base64, ativo, numero_cliente}]
 let _cpEmpresaId = null; // empresa sendo editada no modal de perfil
 let _cpLogoBase64 = '';  // logo carregado no modal de perfil
-let _empresasViewMode = localStorage.getItem('pseg_empresas_view') || 'grade';
 let _ciclos   = []; // [{id, nome, empresa_id}]
 
 // Supabase/PostgREST limita SELECT a 1000 linhas por padrao — silenciosamente,
@@ -6642,6 +6783,7 @@ async function salvarPerfilCliente() {
     return;
   }
 
+  let novoId = null;
   try {
     if (isNovo) {
       const { data, error } = await sbAdmin.from('empresas')
@@ -6650,6 +6792,7 @@ async function salvarPerfilCliente() {
         .single();
       if (error) throw error;
       _empresas.push({ ...data, setores: [], funcoes: [] });
+      novoId = data.id;
     } else {
       const { error } = await sbAdmin.from('empresas').update(payload).eq('id', _cpEmpresaId);
       if (error) throw error;
@@ -6661,6 +6804,8 @@ async function salvarPerfilCliente() {
     renderTelaEmpresas();
     fecharModalClientePerfil();
     toast(isNovo ? 'Empresa cadastrada com sucesso!' : 'Cliente atualizado com sucesso!', 'g');
+    // Cliente novo começa em Preparar: leva direto à tela dele, onde a próxima ação já está dita.
+    if (novoId) abrirCliente(novoId);
   } catch(e) {
     erroEl.textContent = 'Erro ao salvar: ' + e.message;
     erroEl.style.display = '';
@@ -13569,6 +13714,10 @@ async function carregarHeadcountCarteira() {
 // null = não carregado OU falhou: nesse caso o passo é "desconhecido", nunca "pendente"
 // (não se cobra o que não se sabe). Uma consulta agregada para a carteira inteira.
 let _laudosPorEmpresa = null; // {empresaId: nº de laudos}
+// Tela do cliente: qual cliente está aberta e de onde veio (define o "voltar"). Escopo de tenant:
+// zerado em _limparEstadoTenant(). Declarado aqui, antes dessa função, para não cair em TDZ.
+let _clienteAtualId = null;
+let _clienteOrigem  = 'empresas';   // 'dashboard' | 'empresas'
 async function carregarLaudosCarteira() {
   if (isDemoMode || !sbAdmin) return;
   if (currentUser?.id === 'local-admin' || currentUser?.id === 'demo') return;
@@ -19215,6 +19364,7 @@ function _limparEstadoTenant() {
   _invalidarHeadcountCache();
   _headcountPorEmpresa = null;
   _laudosPorEmpresa    = null;
+  _clienteAtualId      = null;
   _p2Limpar();   // dados do laudo e imagens anexadas pertencem ao tenant anterior
   // Resultado da ultima analise: sobrevivia ao logout e ao modo suporte, e
   // _sincronizarBotaoPacote() so checa `_podeBaixarTodos() && window._analiseData`
@@ -20887,175 +21037,160 @@ async function salvarNovoUsuario() {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
-// Estado da Home: busca, ordenação e filtro rápido por status.
-let _dashBusca  = '';
-let _dashOrdem  = 'urgencia';  // 'urgencia' | 'nome'
-let _dashFiltro = '';          // '' = todos; chave de _EMP_STATUS
+// Home: panorama da carteira + fila "O que fazer agora" (uma linha por cliente, com a próxima ação).
+// Busca, ordenação e cadastro ficam em Clientes; aqui a ordem é sempre a urgência.
+let _dashFiltro   = '';     // '' = todos; chave de etapa (preparar|coletar|acompanhar|entregar|emdia)
+let _dashAnimado  = false;  // a curva/medidor animam só na 1ª pintura — repintar a cada resposta nova piscaria
 
-function _dashSetBusca(v)  { _dashBusca = v; _renderDashLista(); }
-function _dashSetOrdem(v)  { _dashOrdem = v; renderDashboard(); }
-function _dashSetFiltro(v) { _dashFiltro = (_dashFiltro === v) ? '' : v; renderDashboard(); }
+function _dashSetFiltro(k) { _dashFiltro = (_dashFiltro === k) ? '' : k; renderDashboard(); }
+
+const JN_FUNIL = [
+  { k:'preparar',   d:'Setores e quadro' },
+  { k:'coletar',    d:'Campanha e link' },
+  { k:'acompanhar', d:`Até a meta de ${AD_META_PCT}%` },
+  { k:'entregar',   d:'Pronto para o laudo' },
+  { k:'emdia',      d:'Laudo gerado' },
+];
 
 function renderDashboard() {
-  const metricas = _empresas.map(e => ({ e, m: _calcMetricasEmpresa(e) }));
-
-  // "Empresas ativas" contava também as inativas (emp.ativo === false).
-  const nEmp   = metricas.filter(x => !x.m.inativa).length;
-  const nLinks = _links.filter(l => l.ativo).length;
-  const nResp  = _links.reduce((s, l) => s + (l.respostas || 0), 0);
-  // Alerta acionável: empresas cuja coleta está parada ou nunca começou.
-  const paradas = metricas.filter(x => ['parada','aguardando'].includes(x.m.st.chave));
-
-  // Adesão bruta da carteira: soma das respostas ÷ soma dos quadros importados.
-  const ativas = metricas.filter(x => !x.m.inativa);
-  const quadroTot = ativas.reduce((s, x) => s + x.m.quadro, 0);
-  const respComQuadro = ativas.filter(x => x.m.quadro > 0).reduce((s, x) => s + x.m.respTotal, 0);
-  const pctCart = quadroTot > 0 ? Math.round(respComQuadro / quadroTot * 100) : null;
-
-  const setKpi = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setKpi('dash-n-empresas',  nEmp);
-  setKpi('dash-n-respostas', nResp);
-  setKpi('dash-n-links',     nLinks);
-  setKpi('dash-n-sem-resp',  paradas.length);
-
-  const kpiAd = document.getElementById('dash-n-adesao');
-  if (kpiAd) {
-    kpiAd.textContent = pctCart === null ? '—' : pctCart + '%';
-    kpiAd.style.color = pctCart === null ? 'var(--tl)' : _gheCorAdesao(pctCart).cor;
-    const card = kpiAd.closest('.dash-kpi');
-    if (card) card.title = quadroTot > 0
-      ? `${respComQuadro} respostas ÷ ${quadroTot} funcionários no quadro das empresas com GHE importado. Adesão bruta — inclui respostas com setor/função fora do quadro. Veja a adesão classificada por cliente na tela Adesão.`
-      : 'Nenhum cliente tem quadro de funcionários importado — sem denominador não há adesão.';
-  }
-
-  // Card de alerta clicável: filtra a lista abaixo
-  const cardAlerta = document.getElementById('dash-kpi-alerta');
-  if (cardAlerta) {
-    const on = _dashFiltro === 'parada';
-    cardAlerta.style.cursor = paradas.length ? 'pointer' : 'default';
-    cardAlerta.style.outline = on ? '2px solid var(--amber)' : 'none';
-    cardAlerta.title = 'Clique para ver apenas os clientes que precisam de cobrança';
-  }
-
-  // ── Banner de boas-vindas / contexto ────────────────────────
-  const welcome = document.getElementById('dash-welcome');
-  if (welcome) {
-    const userName = (currentUser?.email || '').split('@')[0] || 'usuário';
-    const temEmpresa = !!_empresaAtiva?.id;
-    if (temEmpresa) {
-      welcome.innerHTML = `
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="flex:1;min-width:200px">
-            <div style="font-size:13px;font-weight:700;color:var(--tx)">Trabalhando em: <span style="color:var(--g)">${_escAd(_empresaAtiva.nome)}</span></div>
-            <div style="font-size:12px;color:var(--tm);margin-top:2px">Todos os módulos de análise estão filtrados para esta empresa.</div>
-          </div>
-          <button class="btn btn-ghost" style="font-size:11px;flex-shrink:0" onclick="setEmpresaAtiva('','');renderDashboard()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-            Trocar empresa
-          </button>
-        </div>`;
-      welcome.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:20px';
-    } else {
-      welcome.innerHTML = `
-        <div style="display:flex;align-items:flex-start;gap:16px">
-          <div style="width:40px;height:40px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-          </div>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">Bem-vindo, ${_escAd(userName)}!</div>
-            <div style="font-size:13px;color:var(--tm);line-height:1.6">Para iniciar, <strong>selecione a empresa cliente</strong> abaixo. Todos os módulos de análise, relatórios e distribuição serão carregados automaticamente para a empresa escolhida.</div>
-          </div>
-        </div>`;
-      welcome.style.cssText = 'background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:16px 18px;margin-bottom:20px';
-    }
-  }
-
-  // Barra de controles (busca + ordenação) só aparece com clientes cadastrados
-  const ctrl = document.getElementById('dash-controls');
-  if (ctrl) ctrl.style.display = _empresas.length ? 'flex' : 'none';
-  const btnU = document.getElementById('dashord-urgencia');
-  const btnN = document.getElementById('dashord-nome');
-  if (btnU) btnU.classList.toggle('stg-active', _dashOrdem === 'urgencia');
-  if (btnN) btnN.classList.toggle('stg-active', _dashOrdem === 'nome');
-
-  _renderDashLista(metricas);
-}
-
-function _renderDashLista(metricas) {
-  const list = document.getElementById('dash-empresas-list');
-  if (!list) return;
-  metricas = metricas || _empresas.map(e => ({ e, m: _calcMetricasEmpresa(e) }));
+  const painel = document.getElementById('dash-painel');
+  const fila   = document.getElementById('dash-fila');
+  if (!painel || !fila) return;
+  const viewer = _roleAtual() === 'cliente_viewer';
 
   if (!_empresas.length) {
-    list.innerHTML = `<div class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      <div class="empty-state-title">Nenhum cliente cadastrado</div>
-      <div class="empty-state-sub">Cadastre o primeiro cliente para iniciar a coleta.</div>
-      <button class="btn btn-g" onclick="irParaNovaEmpresa()">Cadastrar cliente</button>
-    </div>`;
+    painel.innerHTML = '';
+    fila.innerHTML = _empresasErro
+      ? _errorState('Não foi possível carregar os clientes: ' + _empresasErro, 'carregarEmpresas().then(renderDashboard)')
+      : _emptyState({
+          icone: 'cliente',
+          titulo: 'Nenhum cliente cadastrado',
+          texto: viewer ? 'Nenhum cliente está liberado para a sua conta.' : 'Cadastre o primeiro cliente para iniciar a coleta.',
+          acao: viewer ? '' : '<button class="btn btn-g" onclick="irParaNovaEmpresa()">Cadastrar cliente</button>',
+        });
+    _renderClienteSeAtivo();
     return;
   }
 
-  const termo = _normEmpBusca(_dashBusca);
-  let itens = metricas.filter(({ e }) =>
-    !termo || _normEmpBusca(e.nome).includes(termo) || _normEmpBusca(e.cnpj).includes(termo));
-  if (_dashFiltro === 'parada') itens = itens.filter(x => ['parada','aguardando'].includes(x.m.st.chave));
+  const itens  = _empresas.map(e => ({ e, j: _jornadaCliente(e) }));
+  const ativos = itens.filter(x => !x.j.inativa);
 
-  itens.sort((a, b) => _dashOrdem === 'nome'
-    ? (a.e.nome || '').localeCompare(b.e.nome || '')
-    : _urgenciaEmpresa(b.m) - _urgenciaEmpresa(a.m) || (a.e.nome || '').localeCompare(b.e.nome || ''));
+  // Adesão bruta da carteira: soma das respostas ÷ soma dos quadros importados.
+  const quadroTot     = ativos.reduce((s, x) => s + x.j.m.quadro, 0);
+  const respComQuadro = ativos.filter(x => x.j.m.quadro > 0).reduce((s, x) => s + x.j.m.respTotal, 0);
+  const pctCart = quadroTot > 0 ? Math.round(respComQuadro / quadroTot * 100) : null;
+  const corCart = pctCart === null ? 'var(--tl)' : _gheCorAdesao(pctCart).cor;
+  const nLinks  = _links.filter(l => l.ativo).length;
+  const nResp   = _links.reduce((s, l) => s + (l.respostas || 0), 0);
 
-  if (!itens.length) {
-    list.innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--tl);font-size:13px">
-      Nenhum cliente ${_dashFiltro ? 'precisando de cobrança' : 'encontrado'}.
-      ${_dashFiltro ? '<div style="margin-top:10px"><button class="btn btn-ghost" style="font-size:11px" onclick="_dashSetFiltro(\'parada\')">Ver todos</button></div>' : ''}
-    </div>`;
-    return;
-  }
+  const precisam = ativos.filter(x => x.j.atual).sort((a, b) => b.j.urg - a.j.urg || (a.e.nome || '').localeCompare(b.e.nome || '', 'pt-BR'));
+  const emdia    = ativos.filter(x => x.j.etapa === 'emdia');
+  const nConf    = ativos.filter(x => x.j.etapa === 'conferindo').length;
+  const nInativo = itens.length - ativos.length;
+  const cont = {};
+  ativos.forEach(x => { cont[x.j.etapa] = (cont[x.j.etapa] || 0) + 1; });
+  if (_dashFiltro && !cont[_dashFiltro]) _dashFiltro = '';   // filtro de uma etapa que esvaziou: não deixar a lista vazia sem saída
 
-  list.innerHTML = itens.map(({ e, m }) => {
-    const isAtiva = e.id === _empresaAtiva?.id;
-    const st = m.st;
-    // Chip de adesão: só existe quando há quadro importado — sem denominador
-    // "43 respostas" não diz nada sobre cobertura.
-    const chipAd = m.quadro > 0
-      ? `<span title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} no quadro" style="font-size:10px;font-weight:700;color:${_gheCorAdesao(m.pctBruto).cor};background:${_gheCorAdesao(m.pctBruto).bg};border:1px solid ${_gheCorAdesao(m.pctBruto).cor};border-radius:4px;padding:1px 6px">${m.respTotal}/${m.quadro} · ${m.pctBruto}%</span>`
-      : `<span title="Sem quadro de funcionários importado — não há denominador para calcular adesão" style="font-size:10px;color:#6b7280">${m.respTotal} resp. · sem quadro</span>`;
-    // Empresa inativa não está sendo cobrada — o alarme vermelho só confunde.
-    const chipParado = m.inativa ? ''
-      : (m.diasParado !== null && m.diasParado >= 7)
-      ? `<span style="font-size:10px;color:#dc2626;font-weight:600">sem resposta há ${m.diasParado}d</span>`
-      : (m.diasParado !== null ? `<span style="font-size:10px;color:#6b7280">última há ${m.diasParado === 0 ? 'menos de 1d' : m.diasParado + 'd'}</span>` : '');
+  const tipAdesao = quadroTot > 0
+    ? `${respComQuadro} respostas ÷ ${quadroTot} funcionários no quadro dos clientes com GHE importado. Adesão bruta — inclui respostas com setor/função fora do quadro. A adesão classificada fica na tela Adesão.`
+    : 'Nenhum cliente tem quadro de funcionários importado — sem denominador não há adesão.';
 
-    return `<div class="dash-empresa-card" style="${isAtiva ? 'border-color:#86efac;background:#f0fdf4' : ''}">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0">
-        <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
-        <div style="min-width:0">
-          <div class="dash-empresa-nome" style="${isAtiva ? 'color:var(--g)' : ''}">
-            ${_escAd(e.nome || '—')}
-            ${isAtiva ? '<span style="font-size:10px;font-weight:600;background:var(--g);color:white;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle">ativo</span>' : ''}
-          </div>
-          <div class="dash-empresa-sub" style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span class="tag ${st.tag}">${st.rotulo}</span>
-            ${chipAd}
-            ${chipParado}
-            <span style="font-size:10px;color:#6b7280">${m.linksAtiv} link(s) ativo(s)</span>
-          </div>
-        </div>
+  painel.innerHTML = `
+  <section class="jn-card jn-pulse" aria-label="Panorama da carteira">
+    <div class="jn-pulse-l">
+      <div class="jn-lbl" title="${_escAd(tipAdesao)}">Adesão da carteira</div>
+      <div class="jn-big">
+        <div class="jn-big-n" id="jn-big-n" style="color:${corCart}">${pctCart === null ? '—' : `<span id="jn-big-v">${_dashAnimado ? pctCart : 0}</span><sup>%</sup>`}</div>
+        <div class="jn-big-t">${pctCart === null
+          ? (_headcountPorEmpresa === null ? 'Conferindo o quadro de funcionários…' : 'Nenhum cliente tem o quadro de funcionários importado.')
+          : `<b>${respComQuadro}</b> de <b>${quadroTot}</b> colaboradores previstos já responderam.`}</div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        ${!isAtiva ? `<button class="btn btn-ghost" style="font-size:11px" onclick="setEmpresaAtiva('${e.id}','${m.nomeEsc}');renderDashboard()">Selecionar</button>` : ''}
-        <button class="btn btn-ghost" data-modulo="adesao" style="font-size:11px" onclick="_abrirAdesao('${e.id}','')">Adesão</button>
-        <button class="btn btn-g" style="font-size:11px"
-          onclick="setEmpresaAtiva('${e.id}','${m.nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
-          Analisar
-        </button>
+      ${pctCart === null ? '' : `<div class="jn-meter" role="img" aria-label="Adesão da carteira: ${pctCart}% frente à meta de ${AD_META_PCT}%">
+        <div class="jn-meter-track"><div class="jn-meter-fill" id="jn-meter-fill" style="background:${corCart};width:${_dashAnimado ? Math.max(pctCart, 2) : 0}%"></div></div>
+        <div class="jn-meter-goal" style="left:${AD_META_PCT}%"><span>Meta ${AD_META_PCT}%</span></div>
+      </div>`}
+    </div>
+    <div class="jn-pulse-r">
+      <div class="jn-ledger">
+        <div><div class="jn-lbl">Clientes</div><div class="v">${ativos.length}</div><div class="s">${viewer ? 'com acesso' : `${precisam.length} ${precisam.length === 1 ? 'precisa' : 'precisam'} de você`}</div></div>
+        <div><div class="jn-lbl">Respostas</div><div class="v">${nResp}</div><div class="s">recebidas</div></div>
+        <div><div class="jn-lbl">Links ativos</div><div class="v">${nLinks}</div><div class="s">em coleta</div></div>
       </div>
-    </div>`;
-  }).join('');
+      <div>
+        <div class="jn-funnel-h"><span class="jn-lbl">Onde estão os clientes</span><small>Clique para filtrar a lista</small></div>
+        <div class="jn-funnel">${JN_FUNIL.map(f => `<button class="jn-fn" onclick="_dashSetFiltro('${f.k}')" aria-pressed="${_dashFiltro === f.k}"${cont[f.k] ? '' : ' disabled'}>
+          <div class="c ${cont[f.k] ? '' : 'z'}">${cont[f.k] || 0}</div><div class="l">${_jnEtapaNome(f.k)}</div><div class="d">${f.d}</div></button>`).join('')}</div>
+      </div>
+    </div>
+  </section>`;
 
-  // Botões nascem neste render — reaplicar o flag de módulo da EST
-  if (_modulosOff.size) _esconderElementosModulos();
+  const lista = _dashFiltro === 'emdia' ? [] : (_dashFiltro ? precisam.filter(x => x.j.etapa === _dashFiltro) : precisam);
+  const mostraEmdia = !_dashFiltro || _dashFiltro === 'emdia';
+  const titulo = viewer ? 'Seus clientes' : 'O que fazer agora';
+  const sub = _dashFiltro
+    ? `Mostrando só ${_jnEtapaNome(_dashFiltro)}`
+    : viewer ? 'Etapa atual e adesão de cada cliente'
+    : `${precisam.length} ${precisam.length === 1 ? 'cliente precisa' : 'clientes precisam'} de uma ação, do mais urgente ao menos`;
+
+  const notas = [];
+  if (nConf)    notas.push(`${nConf} ${nConf === 1 ? 'cliente ainda está sendo conferido' : 'clientes ainda estão sendo conferidos'}`);
+  if (nInativo) notas.push(`${nInativo} ${nInativo === 1 ? 'cliente inativo' : 'clientes inativos'} fora desta lista`);
+
+  fila.innerHTML = `
+  <section class="jn-card jn-fila" aria-label="${titulo}">
+    <div class="jn-list-h">
+      <h2>${titulo}<small>${sub}</small></h2>
+      ${_dashFiltro ? `<button class="btn btn-ghost" onclick="_dashSetFiltro('${_dashFiltro}')">Limpar filtro</button>` : ''}
+    </div>
+    <div class="jn-cols" aria-hidden="true"><div>Cliente</div><div>Etapa</div><div>Por que está aqui</div><div></div></div>
+    ${lista.length ? lista.map(x => _jnFilaRow(x.e, x.j)).join('')
+      : (_dashFiltro === 'emdia' ? '' : `<div class="jn-empty"><b>${_dashFiltro ? 'Nenhum cliente nesta etapa' : 'Nenhum cliente precisa de ação agora'}</b>${_dashFiltro ? 'Escolha outra etapa acima ou limpe o filtro.' : 'Quando uma coleta parar ou uma etapa ficar pendente, o cliente aparece aqui.'}</div>`)}
+    ${mostraEmdia && emdia.length ? `<div class="jn-ok-block"><span style="color:${JN_COR_EMDIA}">✓</span><span><b>${emdia.length} ${emdia.length === 1 ? 'cliente em dia' : 'clientes em dia'}:</b> ${emdia.map(x => `<button onclick="abrirCliente('${x.e.id}')">${_escAd(x.e.nome)}</button>`).join(', ')}</span></div>` : ''}
+  </section>
+  <p class="jn-foot">Adesão = respostas ÷ quadro cadastrado. <b>Analisar</b> abre na primeira resposta e não segura o cliente na lista.${notas.length ? ' ' + notas.join(' · ') + '.' : ''}</p>`;
+
+  _jnAnimarPanorama(pctCart);
+  _renderClienteSeAtivo();
+}
+
+function _jnFilaRow(e, j) {
+  const m = j.m;
+  const parado = j.atual === 'acompanhar' && m.diasParado !== null && m.diasParado >= 7;
+  const sub = m.st.rotulo;
+  const ritmo = j.atual !== 'acompanhar' || m.diasParado === null ? ''
+    : parado ? `<span class="jn-urg">Sem resposta há ${m.diasParado} dias.</span> `
+    : `Última resposta ${_jnDias(m.diasParado)}. `;
+  const why = (j.atual === 'acompanhar' && j.pct !== null ? `<b>${j.pct}%</b> de adesão. ` : '')
+    + ritmo
+    + _escAd(j.acao ? j.acao.m : '');
+  return `<article class="jn-row" style="--rail:${j.cor}" tabindex="0" role="link" aria-label="Abrir ${_escAd(e.nome)}"
+      onclick="abrirCliente('${e.id}')" onkeydown="_jnRowKey(event,'${e.id}')">
+    <div><div class="jn-cli-n">${_escAd(e.nome || '—')}</div><div class="jn-cli-m">${m.codigo ? `<span class="tag tgr">${m.codigo}</span>` : ''}${e.cnpj ? _escAd(e.cnpj) : ''}</div></div>
+    <div><div class="jn-et-n" style="color:${j.cor}">${_jnEtapaNome(j.etapa)}</div><div class="jn-et-s">${_escAd(sub)}</div>${_jnRail5(j)}</div>
+    <div class="jn-why">${why}</div>
+    <div class="jn-act">${_jnBotaoPrincipal(e, j)}</div>
+  </article>`;
+}
+
+// Medidor e número animam uma vez por sessão de página; depois nascem já no valor final.
+// Só conta se o Dashboard está na tela — renderizado em segundo plano a animação passaria despercebida.
+function _jnAnimarPanorama(pct) {
+  if (_dashAnimado || pct === null) return;
+  if (!document.getElementById('sc-dashboard')?.classList.contains('on')) return;
+  _dashAnimado = true;
+  const fill = document.getElementById('jn-meter-fill');
+  const num  = document.getElementById('jn-big-v');
+  requestAnimationFrame(() => requestAnimationFrame(() => { if (fill) fill.style.width = Math.max(pct, 2) + '%'; }));
+  if (!num) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { num.textContent = pct; return; }
+  let t0;
+  const passo = ts => {
+    t0 = t0 || ts;
+    const k = Math.min(1, (ts - t0) / 900);
+    num.textContent = Math.round(pct * (1 - Math.pow(1 - k, 3)));
+    if (k < 1) requestAnimationFrame(passo);
+  };
+  requestAnimationFrame(passo);
 }
 
 // ══════════════════════════════════════════
@@ -21209,8 +21344,9 @@ function _urgenciaEmpresa(m) {
 // PASSO A PASSO POR CLIENTE — onde cada cliente parou no fluxo
 // ══════════════════════════════════════════════════════════════
 // Eixo diferente de _statusEmpresa (que diz COMO ESTÁ a coleta): aqui é "o que falta fazer".
-// Tudo DERIVADO de dado em memória — nada é gravado. Fonte única: o cartão, a linha da lista e
-// o modal chamam _trilhaCliente(); recalcular em dois lugares foi como a adesão divergiu em 27/08.
+// Tudo DERIVADO de dado em memória — nada é gravado. Fonte única: _jornadaCliente() agrupa estes
+// passos em 5 etapas para Dashboard, Clientes e tela do cliente; recalcular em dois lugares foi
+// como a adesão divergiu em 27/08.
 // estado: feito | pendente | bloqueado | desconhecido.
 function _trilhaCliente(emp) {
   const m = _calcMetricasEmpresa(emp);
@@ -21269,64 +21405,10 @@ function _trilhaCliente(emp) {
   return passos;
 }
 
-// Resumo para cartão/lista: feitos, total e o primeiro passo que ainda exige ação.
-function _trilhaResumo(emp) {
-  const passos = _trilhaCliente(emp);
-  const feitos = passos.filter(p => p.estado === 'feito').length;
-  const proximo = passos.find(p => p.estado === 'pendente' || p.estado === 'bloqueado') || null;
-  return { passos, feitos, total: passos.length, proximo };
-}
-
-function _trilhaChipHTML(emp, compacto) {
-  const r = _trilhaResumo(emp);
-  const pct = Math.round(r.feitos / r.total * 100);
-  const completo = !r.proximo && r.passos.every(p => p.estado !== 'desconhecido');
-  const prox = completo ? 'Passo a passo completo' : (r.proximo ? `Próximo: ${r.proximo.rotulo}` : 'Conferindo…');
-  const anel = `<span class="trl-anel" style="--p:${pct}"><span>${r.feitos}/${r.total}</span></span>`;
-  if (compacto) {
-    return `<button class="trl-chip" title="Passo a passo — ${prox}" onclick="abrirTrilha('${emp.id}')">${anel}<span class="trl-prox">${prox}</span></button>`;
-  }
-  return `<button class="trl-chip trl-chip-card" title="Ver o passo a passo deste cliente" onclick="abrirTrilha('${emp.id}')">${anel}<span class="trl-prox">${prox}</span><span class="trl-ver">Ver passos ›</span></button>`;
-}
-
-const _TRILHA_ICONE = { feito: '✓', pendente: '○', bloqueado: '🔒', desconhecido: '?' };
-function abrirTrilha(empId) {
-  if (!empId || empId === 'null') return;
-  const emp = _empresas.find(e => e.id === empId);
-  if (!emp) return;
-  document.getElementById('trilha-titulo').textContent = 'Passo a passo — ' + emp.nome;
-  const r = _trilhaResumo(emp);
-  const rotulos = Object.fromEntries(r.passos.map(p => [p.id, p.rotulo]));
-  const rotuloAcao = { cliente:'Abrir ficha', setores:'Abrir Setores & Funções', quadro:'Abrir Setores & Funções',
-    campanha:'Criar campanha', link:'Abrir Campanhas', respostas:'Ver Campanhas', adesao:'Abrir Adesão', laudo:'Abrir Laudo' };
-  document.getElementById('trilha-corpo').innerHTML =
-    `<div style="font-size:12px;color:var(--tm);margin-bottom:12px">${r.feitos} de ${r.total} passos concluídos.
-      ${r.proximo ? `Próximo: <strong>${r.proximo.rotulo}</strong>.` : ''}</div>` +
-    r.passos.map((p, i) => {
-      const dest = p.estado === 'bloqueado' && p.depende ? p.depende : p.id;
-      const textoBtn = p.estado === 'bloqueado' && p.depende ? `Fazer antes: ${rotulos[p.depende] || ''} →` : (rotuloAcao[p.id] || 'Abrir') + ' →';
-      const mostrarBtn = p.estado !== 'feito' && p.estado !== 'desconhecido';
-      return `<div class="trl-passo trl-${p.estado}">
-        <div class="trl-ic">${_TRILHA_ICONE[p.estado]}</div>
-        <div style="flex:1;min-width:0">
-          <div class="trl-rot">${i + 1}. ${p.rotulo}</div>
-          ${p.motivo ? `<div class="trl-mot">${p.motivo}</div>` : ''}
-        </div>
-        ${mostrarBtn ? `<button class="btn ${p.estado === 'bloqueado' ? 'btn-ghost' : 'btn-g'}" style="font-size:11px;padding:5px 10px;flex-shrink:0" onclick="_trilhaIr('${dest}','${emp.id}')">${textoBtn}</button>` : ''}
-      </div>`;
-    }).join('') +
-    `<div style="font-size:10px;color:var(--tl);margin-top:12px;line-height:1.5">Calculado a partir do que já está cadastrado — nada é gravado aqui.
-      A adesão é a bruta (respostas ÷ quadro); a classificada fica na tela Adesão.</div>`;
-  document.getElementById('modal-trilha').classList.add('open');
-  if (_modulosOff.size) _esconderElementosModulos();
-}
-function fecharTrilha() { document.getElementById('modal-trilha')?.classList.remove('open'); }
-
 // Cada passo leva ao que o app já tem — nada de navegação nova. Tudo que muda de tela passa por goScreen (RBAC).
 function _trilhaIr(passo, empId) {
   const emp = _empresas.find(e => e.id === empId);
   if (!emp) return;
-  fecharTrilha();
   switch (passo) {
     case 'cliente':   abrirModalClientePerfil(empId); break;
     case 'setores':
@@ -21346,240 +21428,480 @@ function _trilhaIr(passo, empId) {
   }
 }
 
-let _empFiltroStatus = '';      // '' = todos; chave de _EMP_STATUS
-let _empOrdem        = 'nome';  // 'nome' | 'adesao' | 'respostas'
-
-function _setEmpFiltro(v) { _empFiltroStatus = (_empFiltroStatus === v) ? '' : v; renderTelaEmpresas(); }
-function _setEmpOrdem(v)  { _empOrdem = v; renderTelaEmpresas(); }
-
-function _setEmpresasViewMode(mode) {
-  _empresasViewMode = mode;
-  try { localStorage.setItem('pseg_empresas_view', mode); } catch(e) {}
-  renderTelaEmpresas();
+// Abre uma tela de trabalho já com o cliente em foco (chip da topbar + selects de cada tela).
+function _irTela(tela, empId) {
+  const emp = _empresas.find(e => e.id === empId);
+  if (emp) setEmpresaAtiva(emp.id, emp.nome);
+  goScreen(tela, document.getElementById('nb-' + tela));
 }
 
-function renderTelaEmpresas() {
-  const grid  = document.getElementById('empresas-grid');
-  const lista = document.getElementById('empresas-lista');
-  if (!grid || !lista) return;
+// ══════════════════════════════════════════════════════════════
+// JORNADA DO CLIENTE — os passos de _trilhaCliente() agrupados em 5 etapas
+// ══════════════════════════════════════════════════════════════
+// _trilhaCliente() continua sendo a ÚNICA fonte do que está feito ou falta; aqui só se agrupa
+// (Preparar → Coletar → Acompanhar → Analisar → Entregar) e se deriva a próxima ação. Nada é gravado.
+// Dashboard, Clientes e a tela do cliente leem daqui — recalcular em outro lugar foi como a adesão divergiu em 27/08.
+// "Analisar" não segura o cliente: abre na primeira resposta real e pode ser feito a qualquer momento depois.
+const JN_ETAPAS = [
+  { k:'preparar',   nome:'Preparar',   desc:'Cadastro, setores e quadro de funcionários', passos:['cliente','setores','quadro'] },
+  { k:'coletar',    nome:'Coletar',    desc:'Campanha e links para os funcionários',      passos:['campanha','link'] },
+  { k:'acompanhar', nome:'Acompanhar', desc:'Respostas chegando até a meta de adesão',    passos:['respostas','adesao'] },
+  { k:'analisar',   nome:'Analisar',   desc:'Riscos por setor, função e questão',         passos:[] },
+  { k:'entregar',   nome:'Entregar',   desc:'Laudo e plano de ação para o cliente',       passos:['laudo'] },
+];
+const JN_SEQ = ['preparar', 'coletar', 'acompanhar', 'entregar'];
+const JN_COR_EMDIA   = '#16a34a';
+const JN_COR_INATIVA = '#9ca3af';
 
-  const btnGrade = document.getElementById('empbtn-grade');
-  const btnLista = document.getElementById('empbtn-lista');
-  if (btnGrade) btnGrade.classList.toggle('stg-active', _empresasViewMode === 'grade');
-  if (btnLista) btnLista.classList.toggle('stg-active', _empresasViewMode === 'lista');
-  grid.style.display  = _empresasViewMode === 'grade' ? 'grid' : 'none';
-  lista.style.display = _empresasViewMode === 'lista' ? 'flex' : 'none';
+// Tela que cada passo exige: decide se o botão de ação aparece para o role e os módulos atuais.
+const JN_TELA_DO_PASSO = { cliente:'empresas', setores:'ghe', quadro:'ghe', campanha:'empresas',
+                           link:'links', respostas:'links', adesao:'adesao', laudo:'laudo' };
+const JN_VERBO = { setores:'Importar setores e funções', quadro:'Importar o quadro de funcionários',
+                   campanha:'Criar a campanha', link:'Gerar o link de coleta', respostas:'Divulgar o link',
+                   adesao:'Cobrar respostas', laudo:'Gerar o laudo' };
 
-  if (!_empresas.length && _empresasErro) {
-    const erro = `<div style="grid-column:1/-1">${_errorState('Não foi possível carregar os clientes: ' + _empresasErro, 'carregarEmpresas().then(renderTelaEmpresas)')}</div>`;
-    grid.innerHTML = erro;
-    lista.innerHTML = erro;
-    return;
+function _jnFaltam(m) {
+  return m.quadro > 0 ? Math.max(0, Math.ceil(m.quadro * AD_META_PCT / 100) - m.respTotal) : 0;
+}
+
+function _jnMotivo(passo, m, adesaoFeita) {
+  switch (passo) {
+    case 'setores':   return 'Sem setores o funcionário não consegue se identificar no formulário.';
+    case 'quadro':    return 'Sem o quadro de funcionários não há como medir a adesão.';
+    case 'campanha':  return 'Todo link novo fica dentro de uma campanha.';
+    case 'link':      return 'Envie o link aos funcionários por WhatsApp ou QR Code.';
+    case 'respostas': return 'Nenhuma resposta ainda.';
+    case 'adesao':    return `Faltam ${_jnFaltam(m)} ${_jnFaltam(m) === 1 ? 'resposta' : 'respostas'} para a meta de ${AD_META_PCT}%.`;
+    case 'laudo':     return (adesaoFeita ? 'Meta de adesão atingida. ' : '') + 'Confira os agrupamentos antes de emitir.';
+    default:          return '';
+  }
+}
+
+// Estado de cada etapa + próxima ação de UM cliente.
+//   est[k]: feito | atual | livre | bloq | incerta | omitida
+//   etapa:  chave usada por funil e filtros: preparar|coletar|acompanhar|entregar|emdia|conferindo|inativa
+function _jornadaCliente(emp) {
+  const m = _calcMetricasEmpresa(emp);
+  const passos = _trilhaCliente(emp);
+  const porId = {};
+  passos.forEach(p => { porId[p.id] = p; });
+
+  // Resultado por etapa a partir dos seus passos. "desconhecido" (ainda carregando ou falhou)
+  // nunca vira ação: não se cobra o que não se sabe.
+  const bruto = {};
+  JN_SEQ.forEach(k => {
+    const ps = JN_ETAPAS.find(e => e.k === k).passos.map(id => porId[id]).filter(Boolean);
+    bruto[k] = !ps.length ? 'omitida'
+      : ps.every(p => p.estado === 'feito') ? 'feito'
+      : ps.some(p => p.estado === 'pendente' || p.estado === 'bloqueado') ? 'precisa'
+      : 'incerta';
+  });
+  const atual   = m.inativa ? null : (JN_SEQ.find(k => bruto[k] === 'precisa') || null);
+  const incerta = !m.inativa && !atual && JN_SEQ.some(k => bruto[k] === 'incerta');
+
+  const est = {};
+  JN_SEQ.forEach(k => {
+    est[k] = bruto[k] === 'feito' ? 'feito' : k === atual ? 'atual'
+           : bruto[k] === 'omitida' ? 'omitida' : bruto[k] === 'incerta' ? 'incerta' : 'bloq';
+  });
+  const respReais = m.linksEmp.filter(l => !l.is_teste).reduce((s, l) => s + (l.respostas || 0), 0);
+  const laudos = _laudosPorEmpresa ? (_laudosPorEmpresa[emp.id] || 0) : null;
+  est.analisar = respReais > 0 ? (laudos > 0 ? 'feito' : 'livre') : 'bloq';
+
+  // Próxima ação = primeiro passo da etapa atual que ainda não está feito.
+  let acao = null;
+  if (atual) {
+    const ids = JN_ETAPAS.find(e => e.k === atual).passos;
+    const p = passos.find(x => ids.includes(x.id) && (x.estado === 'pendente' || x.estado === 'bloqueado'));
+    if (p) {
+      const alvo = (p.estado === 'bloqueado' && p.depende) ? p.depende : p.id;
+      acao = { passo: alvo, v: JN_VERBO[alvo] || p.rotulo,
+               m: _jnMotivo(alvo, m, porId.adesao?.estado === 'feito') };
+    }
+  } else if (!m.inativa && !incerta) {
+    // Sem o passo "laudo" (módulo desligado) não há como afirmar que o laudo saiu.
+    acao = { passo:'campanha', v:'Iniciar nova campanha',
+             m:(porId.laudo ? 'Laudo gerado. ' : 'Nenhuma etapa pendente nesta conta. ') + 'Uma nova rodada de avaliação começa numa nova campanha.' };
   }
 
+  // Ordem da fila: quanto maior, antes. Acompanhar reaproveita _urgenciaEmpresa (faltam×10 + dias parado);
+  // as demais etapas pesam menos que uma coleta com muita gente faltando, e "pronto para o laudo" fica no meio.
+  const urg = !atual ? -1
+    : atual === 'acompanhar' ? Math.max(_urgenciaEmpresa(m), 1)
+    : atual === 'entregar'   ? 500
+    : atual === 'preparar'   ? 60 : 40;
+
+  const etapa = m.inativa ? 'inativa' : (atual || (incerta ? 'conferindo' : 'emdia'));
+  const cor = m.inativa ? JN_COR_INATIVA : (etapa === 'emdia' ? JN_COR_EMDIA : m.st.dot);
+  return { m, passos, porId, est, atual, incerta, etapa, acao, urg, cor, laudos, respReais,
+           inativa: m.inativa, pct: m.pctBruto };
+}
+
+const _jnEtapaNome = k => JN_ETAPAS.find(e => e.k === k)?.nome
+  || ({ emdia:'Em dia', conferindo:'Conferindo', inativa:'Inativo' }[k] || '');
+
+function _jnDias(d) {
+  return d === 0 ? 'hoje' : d === 1 ? 'há 1 dia' : `há ${d} dias`;
+}
+
+// Miniatura das 5 etapas: verde = feita, cor do cliente = atual, contorno = disponível.
+function _jnRail5(j) {
+  return `<div class="jn-rail5" aria-hidden="true" style="--cc:${j.cor}">` +
+    JN_ETAPAS.map(e => {
+      const s = j.est[e.k];
+      return `<i class="${s === 'feito' || s === 'atual' || s === 'livre' ? s : ''}" title="${e.nome}"></i>`;
+    }).join('') + `</div>`;
+}
+
+function _jnAvatar(emp) {
+  return emp.logo_base64
+    ? `<div class="jn-av"><img src="${_escAd(emp.logo_base64)}" alt=""></div>`
+    : `<div class="jn-av" aria-hidden="true">${_escAd((emp.nome || '?').trim().charAt(0).toUpperCase())}</div>`;
+}
+
+// Barra de adesão com a marca da meta. Adesão BRUTA (respostas ÷ quadro): a classificada fica na tela Adesão.
+function _jnAdesaoHTML(m) {
+  if (!m.quadro) {
+    return `<div class="jn-nobase">${_headcountPorEmpresa === null ? 'Conferindo o quadro…' : 'Quadro de funcionários não importado'}</div>`;
+  }
+  const { cor } = _gheCorAdesao(m.pctBruto);
+  return `<div class="jn-ad-top"><b style="color:${cor}">${m.pctBruto}%</b><span>${m.respTotal} de ${m.quadro}</span></div>
+    <div class="jn-mini" title="Adesão bruta: ${m.pctBruto}% · meta ${AD_META_PCT}%"><i style="--c:${cor};width:${Math.min(100, Math.max(m.pctBruto, 2))}%"></i><u style="left:${AD_META_PCT}%"></u></div>`;
+}
+
+// A ação só aparece se o role e os módulos atuais permitem a tela de destino. Cliente (viewer) nunca
+// executa passo de escrita; para ele o botão vira "Ver resultados", quando já há o que ver.
+function _jnPodeAgir(j) {
+  if (!j.acao || _roleAtual() === 'cliente_viewer') return false;
+  const tela = JN_TELA_DO_PASSO[j.acao.passo];
+  return !tela || !_motivoTelaIndisponivel(tela);
+}
+function _jnBotaoPrincipal(emp, j) {
+  if (_jnPodeAgir(j)) {
+    return `<button class="btn btn-g" onclick="event.stopPropagation();_trilhaIr('${j.acao.passo}','${emp.id}')">${_escAd(j.acao.v)}</button>`;
+  }
+  if (j.est.analisar !== 'bloq' && !_motivoTelaIndisponivel('analise')) {
+    return `<button class="btn btn-ghost" onclick="event.stopPropagation();_irTela('analise','${emp.id}')">Ver resultados</button>`;
+  }
+  return '';
+}
+
+// Menu ⋯ (Clientes e tela do cliente). Fecha ao clicar fora; os itens chamam stopPropagation
+// para não acionar o clique da linha.
+function _jnKebab(ev, id) {
+  ev.stopPropagation();
+  const menu = document.getElementById('jn-kb-' + id);
+  const aberto = !!menu?.classList.contains('open');
+  _jnFecharMenus();
+  if (menu && !aberto) menu.classList.add('open');
+}
+function _jnFecharMenus() {
+  document.querySelectorAll('.jn-menu.open').forEach(m => m.classList.remove('open'));
+}
+function _jnRowKey(ev, empId) {
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target === ev.currentTarget) {
+    ev.preventDefault();
+    abrirCliente(empId);
+  }
+}
+if (!window._jnMenusLigados) {
+  window._jnMenusLigados = true;
+  document.addEventListener('click', _jnFecharMenus);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') _jnFecharMenus(); });
+}
+
+// Diretório de clientes: cadastro e configuração. "Quem precisa de ação hoje" é a fila do Dashboard;
+// aqui cada linha mostra a etapa da jornada, a adesão e o movimento, e abre a tela do cliente.
+let _empFiltroEtapa = '';      // '' = todas; chave de etapa (preparar|coletar|acompanhar|entregar|emdia|conferindo|inativa)
+let _empOrdem       = 'nome';  // 'nome' | 'adesao' | 'respostas'
+
+function _setEmpFiltro(v) { _empFiltroEtapa = (_empFiltroEtapa === v) ? '' : v; renderTelaEmpresas(); }
+function _setEmpOrdem(v)  { _empOrdem = v; renderTelaEmpresas(); }
+
+function renderTelaEmpresas() {
+  const box   = document.getElementById('emp-diretorio');
+  const chips = document.getElementById('emp-filtros');
+  if (!box) return;
+
+  if (!_empresas.length && _empresasErro) {
+    if (chips) chips.innerHTML = '';
+    box.innerHTML = _errorState('Não foi possível carregar os clientes: ' + _empresasErro, 'carregarEmpresas().then(renderTelaEmpresas)');
+    _renderClienteSeAtivo();
+    return;
+  }
   if (!_empresas.length) {
-    const vazio = `<div style="grid-column:1/-1">${_emptyState({
+    if (chips) chips.innerHTML = '';
+    box.innerHTML = _emptyState({
       icone: 'cliente',
       titulo: 'Nenhum cliente cadastrado',
       texto: 'Cadastre a primeira empresa cliente para iniciar a coleta.',
       acao: '<button class="btn btn-g" onclick="abrirModalClientePerfil(null)">Novo cliente</button>',
-    })}</div>`;
-    grid.innerHTML = vazio;
-    lista.innerHTML = vazio;
-    return;
-  }
-
-  // Busca cobre nome, CNPJ, razão social e o código CLI-xxx — o código aparece no
-  // card mas não era pesquisável, então buscar por ele não achava nada.
-  const termo = _normEmpBusca(document.getElementById('emp-busca')?.value);
-  let filtradas = termo
-    ? _empresas.filter(emp => {
-        const cod = emp.numero_cliente ? `CLI-${String(emp.numero_cliente).padStart(3,'0')}` : '';
-        return _normEmpBusca(emp.nome).includes(termo)
-            || _normEmpBusca(emp.cnpj).includes(termo)
-            || _normEmpBusca(emp.razao_social).includes(termo)
-            || _normEmpBusca(cod).includes(termo);
-      })
-    : _empresas.slice();
-
-  if (_empFiltroStatus) filtradas = filtradas.filter(e => _calcMetricasEmpresa(e).st.chave === _empFiltroStatus);
-
-  if (_empOrdem !== 'nome') {
-    filtradas.sort((a, b) => {
-      const ma = _calcMetricasEmpresa(a), mb = _calcMetricasEmpresa(b);
-      if (_empOrdem === 'respostas') return mb.respTotal - ma.respTotal;
-      // 'adesao': sem quadro importado não há percentual — vai para o fim.
-      return (mb.pctBruto ?? -1) - (ma.pctBruto ?? -1);
     });
-  }
-
-  _renderEmpFiltros();
-
-  if (!filtradas.length) {
-    const semResultado = `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tl)">
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente encontrado</div>
-      <div style="font-size:12px">Ajuste a busca ou o filtro de status.</div>
-    </div>`;
-    grid.innerHTML = semResultado;
-    lista.innerHTML = semResultado;
+    _renderClienteSeAtivo();
     return;
   }
 
-  // Renderizar apenas a visão ativa — a grade era montada mesmo em modo lista.
-  if (_empresasViewMode === 'lista') { _renderEmpresasLista(filtradas); return; }
+  const itens = _empresas.map(e => ({ e, j: _jornadaCliente(e) }));
+  _renderEmpFiltros(itens);
 
-  grid.innerHTML = filtradas.map(emp => {
-    const { linksEmp, respTotal, linksAtiv, ciclosEmp, nSetores, nomeEsc, codigo, status, statusBg, statusColor } = _calcMetricasEmpresa(emp);
+  // Busca cobre nome, CNPJ, razão social e o código CLI-xxx — o código aparece na linha
+  // mas não era pesquisável, então buscar por ele não achava nada.
+  const termo = _normEmpBusca(document.getElementById('emp-busca')?.value);
+  let linhas = itens.filter(({ e, j }) => {
+    if (_empFiltroEtapa && j.etapa !== _empFiltroEtapa) return false;
+    if (!termo) return true;
+    return _normEmpBusca(e.nome).includes(termo)
+        || _normEmpBusca(e.cnpj).includes(termo)
+        || _normEmpBusca(e.razao_social).includes(termo)
+        || _normEmpBusca(j.m.codigo).includes(termo);
+  });
 
-    const avatarHtml = emp.logo_base64
-      ? `<div style="width:40px;height:40px;border-radius:8px;background:white;border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:3px">
-           <img src="${emp.logo_base64}" style="width:100%;height:100%;object-fit:contain;display:block">
-         </div>`
-      : `<div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:800;color:white">
-           ${emp.nome.charAt(0).toUpperCase()}
-         </div>`;
+  linhas.sort((a, b) => {
+    if (_empOrdem === 'respostas') return b.j.m.respTotal - a.j.m.respTotal || (a.e.nome || '').localeCompare(b.e.nome || '', 'pt-BR');
+    // 'adesao': sem quadro importado não há percentual — vai para o fim.
+    if (_empOrdem === 'adesao')    return (b.j.pct ?? -1) - (a.j.pct ?? -1) || (a.e.nome || '').localeCompare(b.e.nome || '', 'pt-BR');
+    return (a.e.nome || '').localeCompare(b.e.nome || '', 'pt-BR');
+  });
 
-    return `<div class="card" style="padding:0;overflow:hidden" id="emp-card-${emp.id}">
-      <div style="padding:14px 16px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-            ${avatarHtml}
-            <div style="min-width:0;flex:1">
-              <div style="display:flex;align-items:center;gap:6px">
-                <div style="font-size:14px;font-weight:700;color:var(--tx);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
-                ${codigo ? `<span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;flex-shrink:0">${codigo}</span>` : ''}
-              </div>
-              <div style="font-size:11px;color:var(--tl);margin-top:2px">${emp.cnpj||'Sem CNPJ'}${emp.razao_social?` · <span style="font-style:italic">${emp.razao_social}</span>`:''}</div>
-            </div>
-          </div>
-          <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0;margin-left:8px">${status}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
-          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
-            <div style="font-size:16px;font-weight:700;color:var(--tx)">${linksAtiv}</div>
-            <div style="font-size:9px;color:var(--tl);margin-top:1px">Links</div>
-          </div>
-          <div title="Respostas recebidas. A cobertura sobre o quadro aparece na barra de adesão abaixo." style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px;cursor:default">
-            <div style="font-size:16px;font-weight:700;color:var(--tx)">${respTotal}</div>
-            <div style="font-size:9px;color:var(--tl);margin-top:1px">Respostas</div>
-          </div>
-          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
-            <div style="font-size:16px;font-weight:700;color:var(--tx)">${nSetores}</div>
-            <div style="font-size:9px;color:var(--tl);margin-top:1px">Setores</div>
-          </div>
-          <div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:6px">
-            <div style="font-size:16px;font-weight:700;color:var(--tx)">${ciclosEmp.length}</div>
-            <div style="font-size:9px;color:var(--tl);margin-top:1px">Campanhas</div>
-          </div>
-        </div>
-        ${_empBarraAdesao(emp)}
-        ${_trilhaChipHTML(emp, false)}
-        ${nSetores ? `<div style="font-size:10px;color:#6b7280;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GHE: ${(emp.setores||[]).join(', ')}</div>` : ''}
-      </div>
-      <div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalClientePerfil('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-          Configurar
-        </button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalGHE('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          Setores
-        </button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="abrirModalCiclo('${emp.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Campanhas
-        </button>
-        <button class="btn btn-ghost" data-modulo="links" style="font-size:11px;padding:5px 10px" onclick="goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-          Links
-        </button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="setEmpresaAtiva('${emp.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Resultados
-        </button>
-        <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--red);border-color:transparent" onclick="excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-          Excluir
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-
-
+  const total = _empresas.length;
+  box.innerHTML = `
+  <section class="jn-card jn-dir" aria-label="Clientes">
+    <div class="jn-list-h"><h2>${linhas.length === total ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : `${linhas.length} de ${total} clientes`}</h2></div>
+    <div class="jn-cols" aria-hidden="true"><div>Cliente</div><div>Etapa atual</div><div>Adesão (meta ${AD_META_PCT}%)</div><div>Movimento</div><div></div></div>
+    ${linhas.length ? linhas.map(x => _jnDirRow(x.e, x.j)).join('')
+      : `<div class="jn-empty"><b>Nenhum cliente encontrado</b>Ajuste a busca ou escolha "Todos" nos filtros.</div>`}
+    <button class="jn-addrow" onclick="abrirModalClientePerfil(null)">+ Cadastrar novo cliente</button>
+  </section>`;
+  _renderClienteSeAtivo();
 }
 
-// Barra de adesão com denominador. "43 respostas" sozinho não diz nada sobre
-// cobertura — é adesão BRUTA (inclui respostas fora do quadro); a classificada
-// fica na tela de Adesão.
-function _empBarraAdesao(emp) {
-  const m = _calcMetricasEmpresa(emp);
-  if (!m.quadro) {
-    return `<div style="font-size:10px;color:var(--tl);margin-bottom:8px">Sem quadro de funcionários importado — adesão indisponível.</div>`;
-  }
-  const { cor } = _gheCorAdesao(m.pctBruto);
-  const larg = Math.min(100, m.pctBruto);
-  return `<div style="margin-bottom:8px" title="Adesão bruta: ${m.respTotal} respostas ÷ ${m.quadro} funcionários no quadro. Inclui respostas com setor/função fora do GHE.">
-    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:10px;margin-bottom:3px">
-      <span style="color:var(--tm);font-weight:600">Adesão</span>
-      <span style="color:${cor};font-weight:700">${m.respTotal} / ${m.quadro} · ${m.pctBruto}%</span>
-    </div>
-    <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
-      <div style="height:100%;width:${larg}%;background:${cor}"></div>
-    </div>
-  </div>`;
+function _jnDirRow(e, j) {
+  const m = j.m;
+  const sub = j.etapa === 'emdia' && j.porId.laudo ? 'Laudo gerado' : j.etapa === 'inativa' ? 'Cliente inativo' : m.st.rotulo;
+  return `<article class="jn-row" style="--rail:${j.cor}" tabindex="0" role="link" aria-label="Abrir ${_escAd(e.nome)}"
+      onclick="abrirCliente('${e.id}')" onkeydown="_jnRowKey(event,'${e.id}')">
+    <div class="jn-cli-wrap">${_jnAvatar(e)}
+      <div><div class="jn-cli-n">${_escAd(e.nome || '—')}</div>
+        <div class="jn-cli-m">${m.codigo ? `<span class="tag tgr">${m.codigo}</span>` : ''}${e.cnpj ? _escAd(e.cnpj) : 'Sem CNPJ'}</div></div></div>
+    <div><div class="jn-et-n" style="color:${j.cor}">${_jnEtapaNome(j.etapa)}</div><div class="jn-et-s">${_escAd(sub)}</div>${_jnRail5(j)}</div>
+    <div>${_jnAdesaoHTML(m)}</div>
+    <div class="jn-nums"><b>${m.ciclosEmp.length}</b> ${m.ciclosEmp.length === 1 ? 'campanha' : 'campanhas'}<br><b>${m.linksAtiv}</b> ${m.linksAtiv === 1 ? 'link ativo' : 'links ativos'} · <b>${m.respTotal}</b> resp.</div>
+    <div class="jn-kebab"><button aria-label="Mais ações para ${_escAd(e.nome)}" aria-haspopup="true" onclick="_jnKebab(event,'${e.id}')">⋯</button>
+      <div class="jn-menu" id="jn-kb-${e.id}" role="menu" onclick="event.stopPropagation()">
+        <button role="menuitem" onclick="_jnFecharMenus();abrirCliente('${e.id}')">Abrir cliente</button>
+        <button role="menuitem" onclick="_jnFecharMenus();abrirModalClientePerfil('${e.id}')">Configurar dados</button>
+        <hr>
+        <button role="menuitem" class="danger" onclick="_jnFecharMenus();_jnExcluir('${e.id}')">Excluir cliente</button>
+      </div></div>
+  </article>`;
 }
 
-// Chips de status: contagem calculada sobre a carteira inteira, não sobre o
-// resultado filtrado — senão o chip ativo mostraria sempre o próprio total.
-function _renderEmpFiltros() {
+// Chips por etapa: contagem sobre a carteira inteira, não sobre o resultado da busca —
+// senão o chip ativo mostraria sempre o próprio total.
+function _renderEmpFiltros(itens) {
   const box = document.getElementById('emp-filtros');
   if (!box) return;
   const cont = {};
-  _empresas.forEach(e => { const k = _calcMetricasEmpresa(e).st.chave; cont[k] = (cont[k]||0)+1; });
-  const ordem = ['parada','aguardando','coletando','completa','finalizada','semLinks','inativa'];
-  const chips = ordem.filter(k => cont[k]).map(k => {
-    const st = _EMP_STATUS[k];
-    const on = _empFiltroStatus === k;
-    return `<button onclick="_setEmpFiltro('${k}')" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;cursor:pointer;white-space:nowrap;background:${on?st.cor:st.bg};color:${on?'#fff':st.cor};border:1px solid ${st.cor}">${st.rotulo} ${cont[k]}</button>`;
-  }).join('');
-  box.innerHTML = chips
-    ? chips + (_empFiltroStatus ? `<button onclick="_setEmpFiltro('${_empFiltroStatus}')" style="font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;background:none;border:1px solid var(--border);color:var(--tm)">Limpar</button>` : '')
-    : '';
+  itens.forEach(({ j }) => { cont[j.etapa] = (cont[j.etapa] || 0) + 1; });
+  if (_empFiltroEtapa && !cont[_empFiltroEtapa]) _empFiltroEtapa = '';   // a etapa esvaziou: não prender o usuário num filtro vazio
+  const ordem = ['preparar', 'coletar', 'acompanhar', 'entregar', 'emdia', 'conferindo', 'inativa'].filter(k => cont[k]);
+  const chip = (k, rot, n) => `<button class="jn-chip" aria-pressed="${_empFiltroEtapa === k}" onclick="_setEmpFiltro('${k}')">${rot}<em>${n}</em></button>`;
+  box.innerHTML = chip('', 'Todos', itens.length) + ordem.map(k => chip(k, _jnEtapaNome(k), cont[k])).join('');
 }
 
-function _renderEmpresasLista(filtradas) {
-  const lista = document.getElementById('empresas-lista');
-  if (!lista) return;
+// ══════════════════════════════════════════════════════════════
+// TELA DO CLIENTE — a jornada de UM cliente: próxima ação, 5 etapas e resumo
+// ══════════════════════════════════════════════════════════════
+// Substitui o modal "Passo a passo": o que ele mostrava agora é a página inicial do cliente, e os botões
+// de Clientes (Configurar, Setores, Campanhas, Links, Resultados) viraram os itens de cada etapa.
+// _clienteAtualId / _clienteOrigem ficam declarados junto de _laudosPorEmpresa (ver _limparEstadoTenant).
 
-  const btn = (title, svg, onclick, extraStyle) => `<button class="btn btn-ghost" title="${title}" style="padding:5px 7px;${extraStyle||''}" onclick="${onclick}">${svg}</button>`;
+function abrirCliente(empId) {
+  if (!empId || empId === 'null') return;
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+  _jnFecharMenus();
+  const daqui = document.querySelector('.screen.on')?.id;
+  if (daqui !== 'sc-cliente') _clienteOrigem = daqui === 'sc-dashboard' ? 'dashboard' : 'empresas';
+  _clienteAtualId = empId;
+  // Todas as telas de trabalho abrem já filtradas por este cliente.
+  setEmpresaAtiva(emp.id, emp.nome);
+  goScreen('cliente', document.getElementById('nb-empresas'));
+}
 
-  lista.innerHTML = filtradas.map(emp => {
-    const { linksAtiv, respTotal, nSetores, ciclosEmp, nomeEsc, codigo, status, statusBg, statusColor, linksEmp, quadro } = _calcMetricasEmpresa(emp);
+function _voltarDoCliente() {
+  const tela = (_clienteOrigem === 'dashboard' || _motivoTelaIndisponivel('empresas')) ? 'dashboard' : 'empresas';
+  goScreen(tela, document.getElementById('nb-' + tela));
+}
 
-    return `<div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="emp-row-${emp.id}">
-      <span style="font-size:9px;font-weight:700;color:var(--tl);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex-shrink:0;min-width:56px;text-align:center">${codigo||'—'}</span>
-      <div style="min-width:0;flex:1 1 220px">
-        <div style="font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.nome}</div>
-        <div style="font-size:11px;color:var(--tl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.cnpj||'Sem CNPJ'}</div>
-      </div>
-      <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:${statusBg};color:${statusColor};white-space:nowrap;flex-shrink:0">${status}</span>
-      ${_trilhaChipHTML(emp, true)}
-      <div style="display:flex;gap:10px;font-size:11px;color:var(--tm);flex-shrink:0;white-space:nowrap">
-        <span title="Links ativos"><strong>${linksAtiv}</strong> links</span>
-        <span title="Respostas recebidas ÷ quadro de funcionários (adesão bruta). A adesão classificada fica na tela Adesão."><strong>${respTotal}</strong>${quadro ? ` / ${quadro}` : ''} resp.</span>
-        <span title="Setores"><strong>${nSetores}</strong> set.</span>
-        <span title="Ciclos"><strong>${ciclosEmp.length}</strong> cic.</span>
-      </div>
-      <div style="display:flex;gap:4px;flex-shrink:0;margin-left:auto">
-        ${btn('Configurar', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', `abrirModalClientePerfil('${emp.id}')`)}
-        ${btn('Setores', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', `abrirModalGHE('${emp.id}')`)}
-        ${btn('Campanhas', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', `abrirModalCiclo('${emp.id}')`)}
-        ${btn('Links', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>', `goScreen('links',document.getElementById('nb-links'));setTimeout(()=>{const el=document.getElementById('link-f-empresa');if(el){el.value='${emp.id}';renderLinks();}},100)`)}
-        ${btn('Resultados', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', `setEmpresaAtiva('${emp.id}','${nomeEsc}');goScreen('analise',document.getElementById('nb-analise'))`)}
-        ${btn('Excluir', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>', `excluirEmpresa('${emp.id}','${nomeEsc}',${linksEmp.length})`, 'color:var(--red);border-color:transparent')}
-      </div>
-    </div>`;
-  }).join('');
+// Excluir recebe só o id: o nome vem de _empresas, em vez de ir dentro de um atributo onclick.
+function _jnExcluir(empId) {
+  const emp = _empresas.find(e => e.id === empId);
+  if (!emp) return;
+  excluirEmpresa(emp.id, emp.nome, _calcMetricasEmpresa(emp).linksEmp.length);
+}
+
+function _jnAnchor(k) {
+  document.getElementById('jn-st-' + k)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Repinta a tela do cliente quando o dado muda por baixo dela (resposta nova, quadro importado, laudo gerado).
+function _renderClienteSeAtivo() {
+  if (_clienteAtualId && document.getElementById('sc-cliente')?.classList.contains('on')) renderTelaCliente();
+}
+
+function renderTelaCliente() {
+  const corpo = document.getElementById('cliente-corpo');
+  if (!corpo) return;
+  const emp = _empresas.find(e => e.id === _clienteAtualId);
+  if (!emp) { _clienteAtualId = null; _voltarDoCliente(); return; }   // excluído ou de outro tenant
+
+  const j = _jornadaCliente(emp), m = j.m, id = emp.id;
+  const viewer = _roleAtual() === 'cliente_viewer';
+  const P = pid => j.porId[pid];
+  const disp = tela => !_motivoTelaIndisponivel(tela);
+  // Estado de um passo para o ícone do item: true = feito, false = pendente, null = sem dado / desconhecido.
+  const ok = pid => !P(pid) ? null : P(pid).estado === 'feito' ? true : P(pid).estado === 'desconhecido' ? null : false;
+  const feito = pid => P(pid)?.estado === 'feito';
+
+  const it = (st, titulo, sub, btns) => `<div class="jn-it"><div class="ic ${st === true ? 'ok' : st === false ? 'pend' : ''}">${st === true ? '✓' : ''}</div>
+    <div class="tt"><b>${titulo}</b><span>${_escAd(sub)}</span></div><div class="btns">${btns || ''}</div></div>`;
+  const bt = (rot, js, kind) => `<button class="btn ${kind || 'btn-ghost'}" onclick="${js}">${rot}</button>`;
+  // Botão de um passo: só aparece se a tela de destino está liberada para o role e o módulo.
+  // `escrita` esconde do cliente (viewer) o que altera dado, mesmo quando a tela dele é liberada.
+  const passoBt = (pid, rotFeito, rotPend, escrita, forte) => {
+    if (escrita && viewer) return '';
+    if (!disp(JN_TELA_DO_PASSO[pid])) return '';
+    const f = feito(pid);
+    return bt(f ? rotFeito : rotPend, `_trilhaIr('${pid}','${id}')`, (!f || forte) ? 'btn-g' : 'btn-ghost');
+  };
+  const telaBt = (tela, rot, kind) => (!viewer && disp(tela)) ? bt(rot, `_irTela('${tela}','${id}')`, kind) : '';
+
+  // ── itens de cada etapa ──
+  const corpoEtapa = {};
+  corpoEtapa.preparar =
+    it(true, 'Dados do cliente', (emp.cnpj || 'Sem CNPJ') + (m.codigo ? ' · ' + m.codigo : ''),
+       (!viewer && disp('empresas')) ? bt('Editar', `abrirModalClientePerfil('${id}')`) : '')
+  + it(ok('setores'), 'Setores e funções',
+       m.nSetores ? `${m.nSetores} ${m.nSetores === 1 ? 'setor' : 'setores'} no catálogo` : (P('setores')?.motivo || ''),
+       passoBt('setores', 'Abrir', 'Importar planilha', true))
+  + it(ok('quadro'), 'Quadro de funcionários',
+       m.quadro ? `${m.quadro} funcionários` : (P('quadro')?.motivo || ''),
+       passoBt('quadro', 'Atualizar', 'Importar quadro', true))
+  + ((!viewer && disp('agrupamentos'))
+      ? it(null, 'Agrupamentos GHE', 'Opcional. Define como setores e funções entram no laudo.', telaBt('agrupamentos', 'Abrir')) : '');
+
+  corpoEtapa.coletar =
+    it(ok('campanha'), 'Campanhas', P('campanha')?.motivo || '', passoBt('campanha', 'Gerenciar', 'Criar campanha', true))
+  + (P('link') ? it(ok('link'), 'Links de coleta', P('link').motivo, passoBt('link', 'Abrir links', 'Gerar link', true)) : '');
+
+  corpoEtapa.acompanhar =
+    (P('respostas') ? it(ok('respostas'), 'Respostas', P('respostas').motivo, passoBt('respostas', 'Ver por link', 'Ver por link', false)) : '')
+  + (P('adesao') ? it(ok('adesao'), 'Meta de adesão', P('adesao').motivo,
+       passoBt('adesao', 'Abrir adesão', 'Abrir adesão', false, j.atual === 'acompanhar')) : '');
+
+  const FERRAMENTAS = [
+    ['analise',     'Resultados',   'Risco por setor, função e questão'],
+    ['graficos',    'Distribuição', 'Como as respostas se distribuem'],
+    ['comparativo', 'Comparativo',  'Entre setores e campanhas'],
+    ['auditoria',   'Auditoria',    'Respostas individuais, sem identificação'],
+  ].filter(([tela]) => disp(tela));
+  corpoEtapa.analisar = `<div class="jn-tools">${FERRAMENTAS.map(([tela, nome, desc]) =>
+    `<button class="jn-tool" onclick="_irTela('${tela}','${id}')"><span>${nome}<small>${desc}</small></span></button>`).join('')}</div>`;
+
+  corpoEtapa.entregar =
+    (P('laudo') ? it(ok('laudo'), 'Laudo', P('laudo').motivo, passoBt('laudo', 'Abrir', 'Gerar laudo', false, j.atual === 'entregar')) : '')
+  + ((!viewer && disp('plano')) ? it(null, 'Plano de ação', 'Ações recomendadas por fator de risco', telaBt('plano', 'Abrir')) : '');
+
+  // Etapa sem nenhum item para este role/módulo some, em vez de aparecer vazia.
+  const vazia = k => k === 'analisar' ? !FERRAMENTAS.length : !String(corpoEtapa[k] || '').trim();
+  const visiveis = JN_ETAPAS.filter(e => j.est[e.k] !== 'omitida' && !vazia(e.k));
+
+  const resumoSub = {
+    preparar:   `${m.nSetores} ${m.nSetores === 1 ? 'setor' : 'setores'} · ${m.quadro ? m.quadro + ' func.' : 'sem quadro'}`,
+    coletar:    `${m.ciclosEmp.length} camp. · ${m.linksEmp.length} ${m.linksEmp.length === 1 ? 'link' : 'links'}`,
+    acompanhar: j.pct === null ? 'sem quadro' : `${j.pct}% de adesão`,
+    analisar:   j.respReais ? 'telas de análise' : 'aguardando respostas',
+    entregar:   j.laudos === null ? 'não conferido' : j.laudos ? `${j.laudos} ${j.laudos === 1 ? 'laudo' : 'laudos'}` : 'sem laudo',
+  };
+  const pillTxt = { feito:'Concluída', atual:'Etapa atual', livre:'Disponível', bloq:'Bloqueada', incerta:'Conferindo' };
+  const lockMsg = {
+    coletar:    'Libera quando setores e quadro estiverem importados.',
+    acompanhar: 'Libera quando a campanha e o link de coleta estiverem prontos.',
+    analisar:   'Libera na primeira resposta.',
+    entregar:   'Libera quando a adesão chegar à meta.',
+  };
+
+  // ── cabeçalho e próxima ação ──
+  const voltarPara = (_clienteOrigem === 'dashboard' || _motivoTelaIndisponivel('empresas')) ? 'Dashboard' : 'Todos os clientes';
+  const statusTxt = j.inativa ? 'Cliente inativo' : j.etapa === 'emdia' ? 'Em dia' : m.st.rotulo;
+  const gerencia = !viewer && disp('empresas');
+
+  let banner;
+  if (j.inativa) {
+    banner = { k:'Cliente inativo', h:'Fora da fila de ações', p:'Este cliente não aparece em "O que fazer agora". Os dados continuam disponíveis para consulta.', btn:'' };
+  } else if (!j.acao) {
+    banner = { k:'Conferindo', h:'Ainda conferindo as etapas', p:'Não foi possível confirmar o quadro de funcionários ou os laudos. Atualize a página para tentar de novo.', btn:'' };
+  } else if (viewer) {
+    banner = { k:'Situação do cliente', h:'Etapa atual: ' + _jnEtapaNome(j.etapa), p:j.acao.m, btn:'' };
+  } else {
+    const n = JN_ETAPAS.findIndex(e => e.k === j.atual) + 1;
+    banner = {
+      k: j.atual ? `Próxima ação · etapa ${n} de ${JN_ETAPAS.length}, ${_jnEtapaNome(j.atual)}` : 'Tudo em dia',
+      h: j.acao.v,
+      p: j.acao.m + (j.atual === 'acompanhar' && m.diasParado !== null && m.diasParado >= 7 ? ` Sem resposta há ${m.diasParado} dias.` : ''),
+      btn: _jnPodeAgir(j) ? `<button class="btn" onclick="_trilhaIr('${j.acao.passo}','${id}')">${_escAd(j.acao.v)} →</button>` : '',
+    };
+  }
+
+  const cor = j.cor;
+  corpo.innerHTML = `
+  <button class="jn-back" onclick="_voltarDoCliente()">← ${voltarPara}</button>
+  <div class="jn-hub-h">
+    ${_jnAvatar(emp)}
+    <div class="jn-grow"><h1>${_escAd(emp.nome)}</h1>
+      <div class="jn-hub-meta">${m.codigo ? `<span class="tag tgr">${m.codigo}</span>` : ''}${emp.cnpj ? _escAd(emp.cnpj) : ''}<span style="color:${cor};font-weight:var(--fw-sb)">● ${_escAd(statusTxt)}</span></div></div>
+    ${gerencia ? `<button class="btn btn-ghost" onclick="abrirModalClientePerfil('${id}')">Configurar dados</button>
+    <div class="jn-kebab"><button aria-label="Mais ações" aria-haspopup="true" onclick="_jnKebab(event,'hub')">⋯</button>
+      <div class="jn-menu" id="jn-kb-hub" role="menu" onclick="event.stopPropagation()">
+        <button role="menuitem" class="danger" onclick="_jnFecharMenus();_jnExcluir('${id}')">Excluir cliente</button>
+      </div></div>` : ''}
+  </div>
+
+  <section class="jn-next" style="--cc:${cor}">
+    <div class="jn-grow"><div class="k">${_escAd(banner.k)}</div><h2>${_escAd(banner.h)}</h2><p>${_escAd(banner.p)}</p></div>
+    ${banner.btn}
+  </section>
+
+  <nav class="jn-stepper" aria-label="Etapas deste cliente" style="--cc:${cor};--n:${visiveis.length}">
+    ${visiveis.map((e, i) => { const s = j.est[e.k];
+      return `<button class="jn-stp ${s}" onclick="_jnAnchor('${e.k}')"><div class="node">${s === 'feito' ? '✓' : i + 1}</div>
+        <div><div class="nm">${e.nome}</div><div class="sb">${_escAd(resumoSub[e.k])}</div></div></button>`; }).join('')}
+  </nav>
+
+  <div class="jn-hub-grid">
+    <div>
+      ${visiveis.map((e, i) => { const s = j.est[e.k];
+        return `<section class="jn-card jn-stage ${s}" id="jn-st-${e.k}" style="--cc:${cor}">
+          <div class="jn-stage-h"><div class="node">${s === 'feito' ? '✓' : i + 1}</div>
+            <div><h3>${e.nome}</h3><p>${e.desc}</p></div><span class="jn-pill ${s}">${pillTxt[s]}</span></div>
+          ${s === 'bloq' ? `<div class="jn-lock">${lockMsg[e.k] || ''}</div>` : `<div class="jn-items">${corpoEtapa[e.k]}</div>`}
+        </section>`; }).join('')}
+    </div>
+    <aside class="jn-card jn-sum" aria-label="Resumo do cliente">
+      <div class="jn-lbl" title="Adesão bruta: respostas ÷ quadro cadastrado. A classificada fica na tela Adesão.">Adesão</div>
+      ${j.pct === null
+        ? `<div class="jn-nobase" style="margin:6px 0 14px">${_headcountPorEmpresa === null ? 'Conferindo o quadro…' : 'Importe o quadro de funcionários para medir a adesão.'}</div>`
+        : `<div class="big2" style="color:${_gheCorAdesao(j.pct).cor};margin:6px 0 14px">${j.pct}%</div>
+           <div class="jn-meter" style="margin:24px 0 14px"><div class="jn-meter-track"><div class="jn-meter-fill" style="width:${Math.min(100, Math.max(j.pct, 2))}%;background:${_gheCorAdesao(j.pct).cor}"></div></div>
+           <div class="jn-meter-goal" style="left:${AD_META_PCT}%"><span>Meta ${AD_META_PCT}%</span></div></div>`}
+      <div class="r2"><span>Respostas</span><b>${m.respTotal}${m.quadro ? ` de ${m.quadro}` : ''}</b></div>
+      <div class="r2"><span>Última resposta</span><b>${m.ultima ? _jnDias(_diasDesde(m.ultima)) : '—'}</b></div>
+      <div class="r2"><span>Links ativos</span><b>${m.linksAtiv}</b></div>
+      <div class="r2"><span>Campanhas</span><b>${m.ciclosEmp.length}</b></div>
+      <div class="r2"><span>Laudos</span><b>${j.laudos === null ? '—' : j.laudos}</b></div>
+    </aside>
+  </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -24422,28 +24744,37 @@ async function exportarPlanoCSV() {
 // ══════════════════════════════════════════
 // NAVEGAÇÃO
 // ══════════════════════════════════════════
+// Telas vedadas a cada role. Fonte única: goScreen() bloqueia a navegação e _jnPodeAgir()/a tela do
+// cliente decidem com ela se um botão deve existir — esconder só o botão sem esta regra deixaria
+// um atalho que termina em "Acesso restrito".
+const _TELAS_RESTRITAS = {
+  consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
+  admin:          new Set(['gestao-ests']),
+  // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
+  cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','ghe','agrupamentos','adesao','comparativo','auditoria']),
+};
+// '' = liberada; 'role' = vedada ao perfil; 'modulo' = módulo desligado para a EST.
+// _roleAtual() e nao currentUser.role cru: o Supabase poe 'authenticated' (role do JWT) ate
+// loadPerfil() sobrescrever, e _TELAS_RESTRITAS['authenticated'] e undefined — esta camada
+// inteira ficava desligada nessa janela, liberando qualquer tela.
+function _motivoTelaIndisponivel(id) {
+  if (_TELAS_RESTRITAS[_roleAtual()]?.has(id)) return 'role';
+  // Controle por módulo da EST (independente do role) — ver MODULOS_CATALOGO
+  const modTela = MODULO_POR_TELA[id];
+  if (modTela && _modulosOff.has(modTela)) return 'modulo';
+  return '';
+}
+
 // Retorna true se a navegação aconteceu, false se foi bloqueada (role ou módulo).
 // Quem encadeia uma ação depois de navegar precisa checar — ver irParaNovaEmpresa().
 function goScreen(id, btn) {
-  // Controle de acesso por role. _roleAtual() e nao currentUser.role cru: o
-  // Supabase poe 'authenticated' (role do JWT) ate loadPerfil() sobrescrever, e
-  // restritos['authenticated'] e undefined — esta camada inteira ficava
-  // desligada nessa janela, liberando qualquer tela.
-  const role = _roleAtual();
-  const restritos = {
-    consultor:      new Set(['usuarios','assinatura','riscos','plano','gestao-ests','est-perfil']),
-    admin:          new Set(['gestao-ests']),
-    // viewer: apenas dashboard + links (leitura) + análise + graficos + laudo
-    cliente_viewer: new Set(['empresas','q','assinatura','riscos','plano','usuarios','gestao-ests','est-perfil','metodologia','ghe','agrupamentos','adesao','comparativo','auditoria']),
-  };
-  if (restritos[role]?.has(id)) {
+  // Controle de acesso por role e por módulo da EST — regras em _motivoTelaIndisponivel().
+  const bloqueio = _motivoTelaIndisponivel(id);
+  if (bloqueio === 'role') {
     toast('Acesso restrito ao seu perfil.', 'r');
     return false;
   }
-
-  // Controle por módulo da EST (independente do role) — ver MODULOS_CATALOGO
-  const modTela = MODULO_POR_TELA[id];
-  if (modTela && _modulosOff.has(modTela)) {
+  if (bloqueio === 'modulo') {
     toast('Módulo não disponível para esta EST.', 'r');
     return false;
   }
@@ -24459,7 +24790,7 @@ function goScreen(id, btn) {
   // 3. Ativar botão no sidebar
   if (btn) btn.classList.add('on');
   const map = {
-    dashboard:'nb-dashboard', ajuda:'nb-ajuda', empresas:'nb-empresas', ghe:'nb-ghe', agrupamentos:'nb-agrupamentos',
+    dashboard:'nb-dashboard', ajuda:'nb-ajuda', empresas:'nb-empresas', cliente:'nb-empresas', ghe:'nb-ghe', agrupamentos:'nb-agrupamentos',
     adesao:'nb-adesao', links:'nb-links', q:'nb-q',
     analise:'nb-analise', graficos:'nb-graficos', auditoria:'nb-auditoria',
     laudo:'nb-laudo', comparativo:'nb-comparativo', plano:'nb-plano',
@@ -24497,6 +24828,9 @@ function goScreen(id, btn) {
           break;
         case 'empresas':
           renderTelaEmpresas();
+          break;
+        case 'cliente':
+          renderTelaCliente();
           break;
         case 'ghe':
           _setupTelaGHE(_empresaAtiva?.id || null);
@@ -25025,7 +25359,7 @@ const GUIA_DUVIDAS = [
   { p:'O funcionário não encontra o setor dele no formulário', r:'Cadastre ou importe o setor em <strong>Setores &amp; Funções</strong>. O formulário lê o cadastro a cada abertura — não é preciso gerar um link novo.', roles:['admin','consultor','super_admin'] },
   { p:'O link não abre ou não aceita a resposta', r:'Em <strong>Campanhas</strong>, confira se o link está ativo (não pausado nem finalizado) e se não passou da validade.', roles:['admin','consultor','super_admin'] },
   { p:'A adesão está baixa', r:'Abra <strong>Adesão</strong>, veja quais setores têm mais pendências e reenvie o link a eles. A meta de referência é 70% do quadro.', roles:['admin','consultor','super_admin'] },
-  { p:'Onde cada cliente parou?', r:'Em <strong>Clientes</strong>, cada cartão mostra o progresso (por exemplo 5/8) e o <strong>próximo passo</strong>. Clique para ver o passo a passo completo, com um botão para cada etapa.', roles:['admin','consultor','super_admin'] },
+  { p:'Onde cada cliente parou?', r:'No <strong>Dashboard</strong>, a lista <strong>O que fazer agora</strong> mostra a próxima ação de cada cliente. Ao abrir um cliente, a página dele reúne as cinco etapas (Preparar, Coletar, Acompanhar, Analisar e Entregar), com um botão para cada item.', roles:['admin','consultor','super_admin'] },
   { p:'Os números não são os que eu esperava', r:'Confira os filtros no topo da tela, principalmente o <strong>ciclo</strong>: cada ciclo é analisado separadamente.' },
   { p:'As respostas são anônimas?', r:'Sim. O sistema registra setor, função e escolaridade — nunca nome ou CPF — e o relatório de adesão mostra apenas totais.' },
 ];

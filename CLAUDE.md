@@ -1680,7 +1680,34 @@ Menu "Links de Coleta" → **Campanhas** (id `nb-links`/`sc-links`/módulo `link
   após recarregar). `modal-ciclo` ganha z-index acima do modal de link quando aberto por ele (vem antes
   no DOM e ficaria escondido).
 
-## Passo a passo por cliente (2026-10-09)
+## Jornada do cliente — Dashboard, Clientes e tela do cliente (2026-10-29)
+
+Só `psicomap-admin.html`, sem migration. **Supera o modal "Passo a passo" e os cartões/grade de
+Clientes** da seção seguinte (a lógica de `_trilhaCliente` continua valendo — é a fonte).
+
+- **`_jornadaCliente(emp)` agrupa os passos de `_trilhaCliente()` em 5 etapas** (Preparar → Coletar →
+  Acompanhar → Analisar → Entregar) e deriva a próxima ação. Dashboard, Clientes e a tela do cliente
+  leem só dela; nunca recalcular etapa/ação em outro lugar. **Analisar não segura o cliente** (abre na
+  1ª resposta real). Passo `desconhecido` nunca vira ação; etapa só com dado incerto → `conferindo`.
+- **Papéis separados:** Dashboard = triagem ("O que fazer agora", 1 ação por cliente, ordem por
+  urgência); Clientes = cadastro/configuração (tabela, busca, chips por etapa, "Excluir" só no menu ⋯);
+  tela do cliente (`#sc-cliente`, `abrirCliente(id)`) = as 5 etapas de UM cliente. Ela não tem item
+  no menu: o realce fica em "Clientes". `abrirCliente` já põe o cliente em foco (`setEmpresaAtiva`).
+- **`_TELAS_RESTRITAS` + `_motivoTelaIndisponivel(id)`** são a regra única de role/módulo: `goScreen()`
+  bloqueia com ela e `_jnPodeAgir()`/a tela do cliente decidem com ela se um botão existe. Botão que
+  só some por CSS deixaria atalho que termina em "Acesso restrito". `cliente_viewer` nunca recebe botão
+  de escrita (vê "Ver resultados").
+- Cliente novo (`salvarClientePerfil`) abre direto a tela dele, em Preparar.
+- `_clienteAtualId` está em `_limparEstadoTenant()`. `renderDashboard`/`renderTelaEmpresas` repintam a
+  tela do cliente quando ela está aberta (`_renderClienteSeAtivo`).
+- A animação do medidor roda 1× por carga de página (`_dashAnimado`) e só com o Dashboard visível.
+- Topbar: logo oficial (pastilha escura com "E" verde, "Eleva" branco, "IT" verde).
+- **Não feito (fase seguinte):** reagrupar o menu lateral por etapa e a barra de contexto do cliente nas
+  telas internas.
+- Teste sem login: mock de `_empresas/_links/_ciclos/_headcountPorEmpresa/_laudosPorEmpresa` +
+  `goScreen`. Screenshot headless (Edge) tem largura mínima — para mobile use `resize_window` e meça no DOM.
+
+## Passo a passo por cliente (2026-10-09) — superado pela jornada acima
 
 Só `psicomap-admin.html`, **sem migration e sem nada persistido**: tudo derivado de dado em memória.
 Eixo diferente de `_statusEmpresa` (que diz COMO ESTÁ a coleta): aqui é "o que falta fazer" no fluxo.
